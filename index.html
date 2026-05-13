@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nara — Prototype</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===== AUTH SCREENS ===== */
+  #screen-signup, #screen-login {
+    background: var(--honey); position: relative;
+    justify-content: flex-end; align-items: center; padding-bottom: 48px;
+  }
+  .auth-blob-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .auth-form-wrap {
+    position: relative; z-index: 2; width: 100%; padding: 0 28px;
+  }
+  .auth-logo {
+    font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 300;
+    color: var(--sage); letter-spacing: 0.2em; text-align: center;
+    display: block; margin-bottom: 4px;
+  }
+  .auth-tagline {
+    font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; font-style: italic;
+    color: var(--text-mid); text-align: center; margin-bottom: 28px; display: block;
+  }
+  .auth-card {
+    background: white; border-radius: 24px; padding: 24px 22px; margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  }
+  .auth-card-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 400;
+    color: var(--text-dark); margin-bottom: 20px; text-align: center;
+  }
+  .auth-field { margin-bottom: 14px; }
+  .auth-field label {
+    display: block; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 6px;
+  }
+  .auth-input {
+    width: 100%; padding: 13px 16px; border: 1.5px solid var(--oat);
+    border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+    color: var(--text-dark); background: var(--cream); outline: none;
+    transition: border-color 0.2s;
+  }
+  .auth-input:focus { border-color: var(--sage); }
+  .auth-input::placeholder { color: var(--text-light); }
+  .auth-btn-primary {
+    width: 100%; padding: 15px; background: var(--sage); color: white; border: none;
+    border-radius: 14px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    letter-spacing: 0.06em; cursor: pointer; margin-top: 6px; transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .auth-btn-primary:hover { background: #6b6e52; }
+  .auth-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-switch {
+    text-align: center; font-size: 0.78rem; color: var(--text-light); margin-top: 4px;
+  }
+  .auth-switch span {
+    color: var(--sage); cursor: pointer; font-weight: 500; text-decoration: underline;
+  }
+  .auth-error {
+    background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px;
+    padding: 10px 14px; font-size: 0.78rem; color: #dc2626; margin-bottom: 12px;
+    display: none;
+  }
+  .auth-success {
+    background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px;
+    padding: 10px 14px; font-size: 0.78rem; color: #16a34a; margin-bottom: 12px;
+    display: none;
+  }
+  .auth-divider { height: 1px; background: var(--oat); margin: 14px 0; }
+  .auth-spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+/* User menu in home header */
+.user-menu-btn {
+width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+background: linear-gradient(135deg, var(–blush), var(–peach));
+display: flex; align-items: center; justify-content: center;
+font-size: 1.1rem; border: none; position: relative;
+}
+.user-dropdown {
+position: absolute; top: 54px; right: 24px; background: white;
+border-radius: 16px; padding: 8px; min-width: 180px; z-index: 200;
+box-shadow: 0 8px 32px rgba(0,0,0,0.12); display: none;
+}
+.user-dropdown.open { display: block; }
+.user-dropdown-name {
+padding: 10px 12px 6px; font-size: 0.78rem; font-weight: 500; color: var(–text-dark);
+}
+.user-dropdown-email { padding: 0 12px 10px; font-size: 0.68rem; color: var(–text-light); border-bottom: 1px solid var(–oat); margin-bottom: 6px; }
+.user-dropdown-item {
+padding: 10px 12px; font-size: 0.82rem; color: var(–text-mid); border-radius: 10px;
+cursor: pointer; transition: background 0.15s;
+}
+.user-dropdown-item:hover { background: var(–honey); }
+.user-dropdown-item.danger { color: #dc2626; }
+
+/* Auth status badge outside phone */
+.auth-status-badge {
+margin-top: 16px; padding: 8px 18px; border-radius: 20px;
+font-size: 0.72rem; letter-spacing: 0.06em; text-align: center;
+background: white; border: 1px solid var(–oat); color: var(–text-mid);
+}
+.auth-status-badge.connected { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
+:root {
+–sage: #818263; –avocado: #C2C395; –blush: #DDBAAE;
+–peach: #EFD7CF; –oat: #DCD4C1; –honey: #F6EAD4; –cream: #FFFAF2;
+–text-dark: #3d3a30; –text-mid: #6b6655; –text-light: #9e9783;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+  background: #e8e3d9; font-family: ‘DM Sans’, sans-serif;
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; padding: 40px 20px;
+  }
+  .page-header { text-align: center; margin-bottom: 40px; }
+  .page-header h1 {
+  font-family: ‘Cormorant Garamond’, serif; font-size: 2.2rem;
+  font-weight: 300; color: var(–sage); letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .page-header p { font-size: 0.8rem; color: var(–text-light); letter-spacing: 0.1em; margin-top: 4px; }
+  .screens-nav { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; justify-content: center; }
+  .nav-btn {
+  padding: 8px 18px; border-radius: 20px; border: 1.5px solid var(–oat);
+  background: transparent; color: var(–text-mid); font-family: ‘DM Sans’, sans-serif;
+  font-size: 0.75rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.25s;
+  }
+  .nav-btn:hover, .nav-btn.active { background: var(–sage); border-color: var(–sage); color: white; }
+  .phone-wrapper { position: relative; }
+  .phone-frame {
+  width: 375px; height: 812px; background: var(–cream); border-radius: 48px;
+  box-shadow: 0 0 0 10px #2a2520, 0 0 0 12px #3d3830, 0 40px 80px rgba(0,0,0,0.35), 0 10px 20px rgba(0,0,0,0.15);
+  overflow: hidden; position: relative;
+  }
+  .notch {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 30px; background: #2a2520; border-radius: 20px; z-index: 100;
+  }
+  .screen { width: 100%; height: 100%; overflow: hidden; display: none; flex-direction: column; }
+  .screen.active { display: flex; }
+
+/* ===== ONBOARDING ===== */
+#screen-onboarding { background: var(–honey); position: relative; justify-content: flex-end; align-items: center; padding-bottom: 60px; }
+.onboarding-bg { position: absolute; inset: 0; overflow: hidden; }
+.blob1 { position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, var(–blush) 0%, transparent 70%); top: -60px; right: -60px; opacity: 0.7; animation: float1 6s ease-in-out infinite; }
+.blob2 { position: absolute; width: 250px; height: 250px; background: radial-gradient(circle, var(–avocado) 0%, transparent 70%); top: 150px; left: -80px; opacity: 0.5; animation: float2 8s ease-in-out infinite; }
+.blob3 { position: absolute; width: 200px; height: 200px; background: radial-gradient(circle, var(–peach) 0%, transparent 70%); bottom: 200px; right: 20px; opacity: 0.6; animation: float1 7s ease-in-out infinite reverse; }
+@keyframes float1 { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
+@keyframes float2 { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(15px) scale(0.97); } }
+.onboarding-content { position: relative; z-index: 2; text-align: center; padding: 0 32px; }
+.onboarding-logo { font-family: ‘Cormorant Garamond’, serif; font-size: 4.5rem; font-weight: 300; color: var(–sage); letter-spacing: 0.2em; line-height: 1; margin-bottom: 8px; }
+.onboarding-tagline { font-style: italic; font-family: ‘Cormorant Garamond’, serif; font-size: 1.1rem; color: var(–text-mid); letter-spacing: 0.08em; margin-bottom: 48px; }
+.btn-primary { width: 100%; padding: 18px; background: var(–sage); color: white; border: none; border-radius: 16px; font-family: ‘DM Sans’, sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; margin-bottom: 12px; }
+.btn-secondary { width: 100%; padding: 18px; background: transparent; color: var(–text-mid); border: 1.5px solid var(–oat); border-radius: 16px; font-family: ‘DM Sans’, sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; }
+.onboarding-top { position: absolute; top: 80px; left: 0; right: 0; text-align: center; z-index: 2; }
+.onboarding-illustration { font-size: 5rem; margin-bottom: 16px; display: block; animation: float1 4s ease-in-out infinite; }
+
+/* ===== HOME ===== */
+#screen-home { background: var(–cream); }
+.status-bar { height: 50px; padding: 0 24px; display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 8px; font-size: 0.7rem; color: var(–text-mid); }
+.home-header { padding: 16px 24px 20px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+.home-greeting { font-family: ‘Cormorant Garamond’, serif; font-size: 1.6rem; font-weight: 400; color: var(–text-dark); line-height: 1.2; }
+.home-greeting span { color: var(–sage); }
+.avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(–blush), var(–peach)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.home-scroll { flex: 1; overflow-y: auto; padding: 0 24px 16px; scrollbar-width: none; }
+.home-scroll::-webkit-scrollbar { display: none; }
+.score-card { background: linear-gradient(135deg, var(–sage) 0%, #6b6e52 100%); border-radius: 24px; padding: 24px; margin-bottom: 20px; color: white; position: relative; overflow: hidden; }
+.score-card::before { content: ‘’; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+.score-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; margin-bottom: 8px; }
+.score-value { font-family: ‘Cormorant Garamond’, serif; font-size: 3.5rem; font-weight: 300; line-height: 1; margin-bottom: 4px; }
+.score-sub { font-size: 0.8rem; opacity: 0.75; margin-bottom: 20px; }
+.score-bars { display: flex; gap: 8px; align-items: flex-end; height: 40px; }
+.score-bar { flex: 1; background: rgba(255,255,255,0.2); border-radius: 4px; position: relative; overflow: hidden; }
+.score-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.6); border-radius: 4px; }
+.section-title { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(–text-light); margin-bottom: 12px; }
+.quick-log { background: var(–honey); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+.quick-log-title { font-family: ‘Cormorant Garamond’, serif; font-size: 1.1rem; color: var(–text-dark); margin-bottom: 16px; }
+.quick-row { display: flex; gap: 10px; }
+.quick-btn { flex: 1; padding: 12px 8px; border-radius: 14px; border: 1.5px solid var(–oat); background: white; text-align: center; cursor: pointer; }
+.quick-btn .emoji { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+.quick-btn .label { font-size: 0.65rem; color: var(–text-mid); letter-spacing: 0.04em; }
+.insight-card { border-radius: 20px; padding: 20px; margin-bottom: 12px; }
+.insight-card.gut { background: linear-gradient(135deg, var(–avocado) 0%, #d4d7a8 100%); }
+.insight-card.skin { background: linear-gradient(135deg, var(–peach) 0%, var(–blush) 100%); }
+.insight-icon { font-size: 1.6rem; margin-bottom: 8px; }
+.insight-tag { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text-mid); margin-bottom: 6px; }
+.insight-text { font-size: 0.85rem; color: var(–text-dark); line-height: 1.5; }
+.insight-text strong { color: var(–sage); }
+.bottom-nav { flex-shrink: 0; height: 72px; background: white; border-top: 1px solid var(–oat); display: flex; align-items: center; justify-content: space-around; padding: 0 10px 8px; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px 10px; border-radius: 12px; transition: background 0.2s; }
+.nav-item.active { background: var(–honey); }
+.nav-icon { font-size: 1.2rem; }
+.nav-label { font-size: 0.6rem; color: var(–text-light); letter-spacing: 0.06em; }
+.nav-item.active .nav-label { color: var(–sage); }
+.nav-add { width: 44px; height: 44px; background: var(–sage); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.4rem; cursor: pointer; box-shadow: 0 4px 14px rgba(129,130,99,0.35); margin-bottom: 4px; }
+
+/* ===== JOURNAL ===== */
+#screen-journal { background: var(–cream); }
+.screen-header { padding: 56px 24px 20px; display: flex; align-items: center; gap: 12px; }
+.back-btn { width: 36px; height: 36px; border-radius: 50%; background: var(–honey); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; cursor: pointer; }
+.screen-title { font-family: ‘Cormorant Garamond’, serif; font-size: 1.5rem; font-weight: 400; color: var(–text-dark); }
+.journal-scroll { flex: 1; overflow-y: auto; padding: 0 24px 16px; scrollbar-width: none; }
+.journal-scroll::-webkit-scrollbar { display: none; }
+.date-chip { display: inline-flex; align-items: center; gap: 6px; background: var(–honey); border-radius: 20px; padding: 6px 14px; font-size: 0.75rem; color: var(–text-mid); margin-bottom: 24px; }
+.journal-section { margin-bottom: 24px; }
+.journal-section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.journal-section-dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-gut { background: var(–avocado); } .dot-skin { background: var(–blush); } .dot-life { background: var(–oat); }
+.journal-section-name { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text-mid); }
+.emoji-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.emoji-option { flex: 1; padding: 12px 6px; border-radius: 14px; border: 1.5px solid var(–oat); background: white; text-align: center; cursor: pointer; }
+.emoji-option.selected { border-color: var(–sage); background: var(–honey); }
+.emoji-option .e { font-size: 1.3rem; } .emoji-option .t { font-size: 0.6rem; color: var(–text-light); margin-top: 3px; }
+.slider-row { background: white; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+.slider-label { font-size: 0.78rem; color: var(–text-dark); margin-bottom: 10px; display: flex; justify-content: space-between; }
+.slider-label span { color: var(–sage); font-weight: 500; }
+.fake-slider { height: 4px; background: var(–oat); border-radius: 4px; position: relative; }
+.fake-slider-fill { height: 100%; background: var(–sage); border-radius: 4px; width: 60%; }
+.fake-slider-thumb { position: absolute; top: 50%; left: 60%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: var(–sage); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(129,130,99,0.4); }
+.food-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.food-chip { padding: 8px 14px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1.5px solid var(–oat); color: var(–text-mid); background: white; }
+.food-chip.selected { background: var(–avocado); border-color: var(–avocado); color: white; }
+.photo-zone { border: 1.5px dashed var(–oat); border-radius: 16px; padding: 24px; text-align: center; background: white; }
+.photo-zone .ph-icon { font-size: 2rem; margin-bottom: 8px; }
+.photo-zone .ph-text { font-size: 0.78rem; color: var(–text-light); }
+.save-btn { width: 100%; padding: 18px; background: var(–sage); color: white; border: none; border-radius: 16px; font-family: ‘DM Sans’, sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; margin-top: 8px; }
+
+/* ===== INSIGHTS ===== */
+#screen-insights { background: var(–cream); }
+.insights-scroll { flex: 1; overflow-y: auto; padding: 0 24px 16px; scrollbar-width: none; }
+.insights-scroll::-webkit-scrollbar { display: none; }
+.insight-big-card { background: linear-gradient(135deg, var(–sage), #5a5e40); border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; }
+.ibc-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 10px; }
+.ibc-title { font-family: ‘Cormorant Garamond’, serif; font-size: 1.3rem; font-weight: 400; line-height: 1.4; margin-bottom: 16px; }
+.ibc-detail { font-size: 0.8rem; opacity: 0.85; line-height: 1.6; }
+.confidence-bar { margin-top: 16px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+.confidence-fill { height: 100%; background: rgba(255,255,255,0.7); border-radius: 4px; width: 78%; }
+.confidence-label { font-size: 0.62rem; opacity: 0.6; margin-top: 6px; }
+.mini-insight { border-radius: 18px; padding: 18px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 14px; }
+.mi-gut { background: var(–honey); } .mi-skin { background: linear-gradient(135deg, #f5e8e2, var(–peach)); }
+.mi-icon { font-size: 1.8rem; flex-shrink: 0; }
+.mi-tag { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text-light); margin-bottom: 4px; }
+.mi-text { font-size: 0.82rem; color: var(–text-dark); line-height: 1.5; }
+.mi-text strong { color: var(–sage); }
+.chart-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+.chart-title { font-family: ‘Cormorant Garamond’, serif; font-size: 1rem; color: var(–text-dark); margin-bottom: 4px; }
+.chart-sub { font-size: 0.72rem; color: var(–text-light); margin-bottom: 16px; }
+.chart-area { height: 130px; display: flex; align-items: flex-end; gap: 6px; padding-top: 8px; }
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.chart-bar-wrap { width: 100%; display: flex; align-items: flex-end; }
+.chart-bar { width: 100%; border-radius: 5px 5px 0 0; min-height: 4px; }
+.bar-gut { background: var(–avocado); } .bar-skin { background: var(–blush); }
+.chart-day { font-size: 0.58rem; color: var(–text-light); margin-top: 4px; }
+.pdf-btn { background: var(–honey); border: 1.5px solid var(–oat); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; margin-bottom: 20px; }
+.pdf-icon { font-size: 2rem; }
+.pdf-title { font-size: 0.9rem; color: var(–text-dark); font-weight: 500; margin-bottom: 2px; }
+.pdf-sub { font-size: 0.72rem; color: var(–text-light); }
+
+/* ===== LIBRARY ===== */
+#screen-library { background: var(–cream); }
+.lib-scroll { flex: 1; overflow-y: auto; padding: 0 24px 100px; scrollbar-width: none; }
+.lib-scroll::-webkit-scrollbar { display: none; }
+.lib-featured { background: linear-gradient(135deg, var(–blush), var(–peach)); border-radius: 24px; padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden; }
+.lib-feat-label { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(–text-mid); margin-bottom: 10px; }
+.lib-feat-title { font-family: ‘Cormorant Garamond’, serif; font-size: 1.4rem; font-weight: 400; color: var(–text-dark); line-height: 1.3; margin-bottom: 12px; }
+.lib-feat-desc { font-size: 0.8rem; color: var(–text-mid); line-height: 1.5; margin-bottom: 16px; }
+.lib-feat-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; background: var(–sage); color: white; border-radius: 20px; font-size: 0.75rem; letter-spacing: 0.06em; cursor: pointer; }
+.lib-feat-deco { position: absolute; right: -20px; top: -20px; font-size: 6rem; opacity: 0.15; }
+.lib-grid { display: flex; flex-direction: column; gap: 12px; }
+.lib-card { background: white; border-radius: 18px; padding: 18px; display: flex; gap: 14px; align-items: flex-start; cursor: pointer; }
+.lib-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.lci-1 { background: linear-gradient(135deg, var(–avocado), #d4d8a0); }
+.lci-2 { background: linear-gradient(135deg, var(–peach), var(–blush)); }
+.lci-3 { background: linear-gradient(135deg, var(–honey), var(–oat)); }
+.lci-4 { background: linear-gradient(135deg, #c8d4ae, var(–avocado)); }
+.lib-card-tag { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(–text-light); margin-bottom: 4px; }
+.lib-card-title { font-size: 0.88rem; color: var(–text-dark); line-height: 1.4; font-weight: 500; }
+.lib-card-time { font-size: 0.7rem; color: var(–text-light); margin-top: 4px; }
+
+/* ===== ROUTINES — LISTE ===== */
+#screen-routines { background: var(–cream); }
+.rout-list-header { padding: 52px 24px 16px; }
+.rout-scroll { flex: 1; overflow-y: auto; padding: 0 24px 16px; scrollbar-width: none; }
+.rout-scroll::-webkit-scrollbar { display: none; }
+.rout-hero-card { border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; cursor: pointer; }
+.rout-hero-card::before { content:’’; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:rgba(255,255,255,0.07); border-radius:50%; }
+.rout-hero-card::after { content:’’; position:absolute; bottom:-30px; left:-30px; width:120px; height:120px; background:rgba(255,255,255,0.04); border-radius:50%; }
+.rout-hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.2); border-radius:20px; padding:4px 12px; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:12px; }
+.rout-hero-emoji { font-size:2.6rem; display:block; margin-bottom:8px; position:relative; z-index:1; }
+.rout-hero-titre { font-family:‘Cormorant Garamond’,serif; font-size:1.6rem; font-weight:400; line-height:1.2; margin-bottom:6px; position:relative; z-index:1; }
+.rout-hero-sous { font-size:0.75rem; opacity:0.8; margin-bottom:16px; position:relative; z-index:1; }
+.rout-hero-prog-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; position:relative; z-index:1; }
+.rout-hero-prog-bar { flex:1; height:6px; background:rgba(255,255,255,0.2); border-radius:6px; overflow:hidden; }
+.rout-hero-prog-fill { height:100%; background:rgba(255,255,255,0.8); border-radius:6px; }
+.rout-hero-prog-label { font-size:0.72rem; opacity:0.85; white-space:nowrap; }
+.rout-hero-days { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:16px; position:relative; z-index:1; }
+.rout-hero-day { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.55rem; font-weight:600; }
+.rout-hero-day.done { background:rgba(255,255,255,0.85); color:#555; }
+.rout-hero-day.today { background:white; color:#333; box-shadow:0 0 0 2px rgba(255,255,255,0.6); }
+.rout-hero-day.future { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.5); }
+.rout-hero-cta { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); border-radius:14px; padding:12px 18px; font-size:0.82rem; letter-spacing:0.04em; cursor:pointer; position:relative; z-index:1; }
+.rout-dispo-card { border-radius:20px; overflow:hidden; margin-bottom:14px; cursor:pointer; position:relative; transition:transform 0.15s; }
+.rout-dispo-card:active { transform:scale(0.98); }
+.rout-dispo-inner { padding:20px; display:flex; gap:14px; align-items:center; }
+.rout-dispo-emoji { font-size:2.4rem; flex-shrink:0; }
+.rout-dispo-body { flex:1; }
+.rout-dispo-tag { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.7); margin-bottom:4px; }
+.rout-dispo-titre { font-family:‘Cormorant Garamond’,serif; font-size:1.1rem; color:white; margin-bottom:4px; }
+.rout-dispo-desc { font-size:0.72rem; color:rgba(255,255,255,0.75); line-height:1.4; }
+.rout-dispo-badge { position:absolute; top:14px; right:14px; background:rgba(255,255,255,0.2); border-radius:10px; padding:3px 10px; font-size:0.6rem; color:white; letter-spacing:0.05em; }
+/* ===== ROUTINE DÉTAIL ===== */
+#screen-routine-detail { background: var(–cream); }
+.rout-detail-inner { display:flex; flex-direction:column; height:100%; }
+.rout-detail-hero { flex-shrink:0; padding:50px 24px 22px; position:relative; }
+.rout-detail-back { position:absolute; top:50px; left:18px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; color:white; z-index:10; }
+.rout-detail-emoji { font-size:2.4rem; margin-bottom:6px; display:block; }
+.rout-detail-titre { font-family:‘Cormorant Garamond’,serif; font-size:1.5rem; font-weight:400; color:white; margin-bottom:4px; }
+.rout-detail-sous { font-size:0.75rem; color:rgba(255,255,255,0.75); margin-bottom:14px; }
+.rout-detail-desc { font-size:0.8rem; color:rgba(255,255,255,0.85); line-height:1.5; margin-bottom:16px; }
+.rout-detail-prog-row { display:flex; align-items:center; gap:10px; }
+.rout-detail-prog-bar { flex:1; height:5px; background:rgba(255,255,255,0.2); border-radius:5px; overflow:hidden; }
+.rout-detail-prog-fill { height:100%; background:rgba(255,255,255,0.8); border-radius:5px; }
+.rout-detail-prog-txt { font-size:0.7rem; color:rgba(255,255,255,0.8); white-space:nowrap; }
+.rout-detail-scroll { flex:1; overflow-y:auto; padding:20px 24px 24px; scrollbar-width:none; }
+.rout-detail-scroll::-webkit-scrollbar { display:none; }
+.rout-semaine-block { margin-bottom:20px; }
+.rout-semaine-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:12px 16px; border-radius:14px; cursor:pointer; }
+.rout-semaine-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; color:white; flex-shrink:0; }
+.rout-semaine-titre { font-family:‘Cormorant Garamond’,serif; font-size:1.05rem; color:var(–text-dark); flex:1; }
+.rout-semaine-chevron { font-size:0.8rem; color:var(–text-light); transition:transform 0.2s; }
+.rout-semaine-chevron.open { transform:rotate(90deg); }
+.rout-semaine-tasks { display:flex; flex-direction:column; gap:10px; }
+.rout-tache-item { background:white; border-radius:16px; padding:14px 16px; display:flex; gap:12px; align-items:center; cursor:pointer; transition:transform 0.12s; border-left:3px solid transparent; }
+.rout-tache-item:active { transform:scale(0.98); }
+.rout-tache-ico { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.rout-tache-body { flex:1; }
+.rout-tache-type { font-size:0.58rem; letter-spacing:0.08em; text-transform:uppercase; color:var(–text-light); margin-bottom:2px; }
+.rout-tache-titre { font-size:0.86rem; color:var(–text-dark); font-weight:500; margin-bottom:2px; }
+.rout-tache-desc { font-size:0.71rem; color:var(–text-mid); line-height:1.4; }
+.rout-tache-duree { font-size:0.65rem; color:var(–text-light); margin-top:4px; }
+.rout-tache-arrow { font-size:0.9rem; color:var(–text-light); flex-shrink:0; }
+/* ===== MODALE GUIDÉE ===== */
+.rout-modale-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.65); z-index:300; display:none; align-items:center; justify-content:center; padding:24px; }
+.rout-modale-overlay.open { display:flex; }
+.rout-modale-card { border-radius:28px; padding:28px 24px; width:100%; max-height:82%; overflow-y:auto; position:relative; }
+.rout-modale-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.25); border:none; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:1rem; cursor:pointer; color:white; }
+.rout-modale-titre { font-family:‘Cormorant Garamond’,serif; font-size:1.3rem; font-weight:400; color:white; margin-bottom:6px; line-height:1.3; }
+.rout-modale-duree { font-size:0.68rem; color:rgba(255,255,255,0.7); margin-bottom:20px; letter-spacing:0.06em; text-transform:uppercase; }
+.rout-modale-etapes { display:flex; flex-direction:column; gap:14px; }
+.rout-modale-etape { display:flex; gap:12px; align-items:flex-start; }
+.rout-modale-num { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:white; flex-shrink:0; margin-top:1px; }
+.rout-modale-etape-text { font-size:0.82rem; color:rgba(255,255,255,0.9); line-height:1.6; }
+
+/* ===== RECETTES — ÉCRAN LISTE ===== */
+#screen-recipes { background: var(–cream); }
+.rec-screen-header {
+padding: 52px 24px 0;
+display: flex; align-items: center; gap: 12px;
+}
+.rec-scroll { flex: 1; overflow-y: auto; padding: 0 24px 16px; scrollbar-width: none; }
+.rec-scroll::-webkit-scrollbar { display: none; }
+.rec-tabs-wrap { padding: 16px 24px 0; }
+.rec-tabs {
+display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
+margin-bottom: 20px;
+}
+.rec-tabs::-webkit-scrollbar { display: none; }
+.rec-tab {
+padding: 8px 14px; border-radius: 20px; font-size: 0.73rem;
+white-space: nowrap; cursor: pointer; border: 1.5px solid var(–oat);
+color: var(–text-mid); background: white; flex-shrink: 0; transition: all 0.2s;
+font-family: ‘DM Sans’, sans-serif;
+}
+.rec-tab.active { color: white; border-color: transparent; }
+
+/* CARDS LISTE */
+.rec-list { display: flex; flex-direction: column; gap: 14px; }
+.rec-card-list {
+border-radius: 20px; overflow: hidden; background: white;
+box-shadow: 0 2px 14px rgba(0,0,0,0.06); cursor: pointer;
+transition: transform 0.15s; display: flex; align-items: stretch;
+}
+.rec-card-list:active { transform: scale(0.98); }
+.rec-card-thumb {
+width: 90px; flex-shrink: 0; display: flex; align-items: center;
+justify-content: center; font-size: 2.4rem;
+}
+.rec-card-info { flex: 1; padding: 14px 14px 14px 0; }
+.rec-card-rubrique { font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text-light); margin-bottom: 3px; }
+.rec-card-titre { font-family: ‘Cormorant Garamond’, serif; font-size: 1rem; color: var(–text-dark); line-height: 1.3; margin-bottom: 6px; }
+.rec-card-meta-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.rec-meta-chip { font-size: 0.62rem; color: var(–text-mid); }
+.rec-badge-pill {
+display: inline-block; margin-top: 6px; padding: 3px 10px;
+border-radius: 20px; font-size: 0.6rem; letter-spacing: 0.06em;
+color: white; font-weight: 500;
+}
+
+/* ===== ÉCRAN DÉTAIL RECETTE ===== */
+#screen-recipe-detail { background: var(–cream); }
+.recipe-detail-inner { display: flex; flex-direction: column; height: 100%; }
+.recipe-hero {
+padding: 52px 24px 20px; position: relative; flex-shrink: 0;
+}
+.recipe-hero-back {
+position: absolute; top: 52px; left: 20px;
+width: 36px; height: 36px; border-radius: 50%;
+background: rgba(255,255,255,0.85); display: flex; align-items: center;
+justify-content: center; font-size: 0.9rem; cursor: pointer; z-index: 10;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.recipe-hero-emoji { font-size: 3rem; display: block; text-align: center; margin-bottom: 8px; }
+.recipe-hero-rubrique { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; margin-bottom: 4px; opacity: 0.75; }
+.recipe-hero-titre {
+font-family: ‘Cormorant Garamond’, serif; font-size: 1.4rem;
+font-weight: 400; text-align: center; line-height: 1.3; margin-bottom: 14px;
+}
+.recipe-chips-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+.recipe-chip { padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; background: rgba(255,255,255,0.6); color: var(–text-dark); border: 1px solid rgba(255,255,255,0.5); }
+.recipe-sub-tabs { display: flex; border-bottom: 1.5px solid var(–oat); margin: 0 24px; }
+.recipe-sub-tab {
+flex: 1; padding: 12px; text-align: center; font-size: 0.78rem;
+color: var(–text-light); cursor: pointer; border-bottom: 2px solid transparent;
+margin-bottom: -1.5px; letter-spacing: 0.04em; transition: all 0.2s;
+}
+.recipe-sub-tab.active { color: var(–text-dark); font-weight: 500; }
+.recipe-content { flex: 1; overflow-y: auto; padding: 20px 24px 24px; scrollbar-width: none; }
+.recipe-content::-webkit-scrollbar { display: none; }
+
+/* Résumé */
+.note-nara-box {
+border-radius: 16px; padding: 16px; margin-bottom: 16px;
+background: var(–honey); border-left: 3px solid var(–sage);
+}
+.note-nara-label { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text-light); margin-bottom: 6px; }
+.note-nara-text { font-size: 0.8rem; color: var(–text-dark); line-height: 1.6; }
+.info-cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.info-card { background: white; border-radius: 14px; padding: 14px; text-align: center; }
+.info-card-icon { font-size: 1.4rem; margin-bottom: 4px; }
+.info-card-val { font-family: ‘Cormorant Garamond’, serif; font-size: 1.1rem; color: var(–text-dark); }
+.info-card-label { font-size: 0.62rem; color: var(–text-light); margin-top: 2px; }
+.tags-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tag-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; background: var(–oat); color: var(–text-mid); }
+.article-link-card { background: var(–honey); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; cursor: pointer; }
+.article-link-icon { font-size: 1.6rem; }
+.article-link-label { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(–text-light); margin-bottom: 2px; }
+.article-link-title { font-size: 0.82rem; color: var(–text-dark); }
+.precaution-box { background: #fff8e1; border-left: 3px solid #f59e0b; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.75rem; color: #92400e; line-height: 1.5; }
+
+/* Ingrédients */
+.ingredients-list { margin-bottom: 16px; }
+.ingredient-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(–oat); }
+.ingredient-item:last-child { border-bottom: none; }
+.ingredient-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ingredient-name { font-size: 0.85rem; color: var(–text-dark); flex: 1; }
+.ingredient-qty { font-size: 0.78rem; color: var(–text-light); }
+.ingredient-key .ingredient-name { font-weight: 500; }
+.conseil-bulle { background: var(–honey); border-radius: 14px; padding: 12px 14px; margin-bottom: 20px; font-size: 0.78rem; color: var(–text-mid); line-height: 1.5; }
+.conseil-bulle::before { content: ’💡 ’; }
+
+/* CTA Button */
+.cta-btn {
+width: 100%; padding: 18px; border: none; border-radius: 16px;
+font-family: ‘DM Sans’, sans-serif; font-size: 0.9rem; letter-spacing: 0.08em;
+cursor: pointer; color: white; position: sticky; bottom: 0;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* ===== MODALE CUISSON ===== */
+.modale-overlay {
+position: absolute; inset: 0; background: rgba(0,0,0,0.6);
+z-index: 200; display: none; align-items: center; justify-content: center;
+padding: 24px;
+}
+.modale-overlay.open { display: flex; }
+.modale-card {
+background: white; border-radius: 28px; padding: 28px 24px;
+width: 100%; max-height: 80%; overflow-y: auto; position: relative;
+}
+.modale-step-counter { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(–text-light); margin-bottom: 10px; }
+.modale-progress { height: 4px; background: var(–oat); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+.modale-progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.modale-etape-titre { font-family: ‘Cormorant Garamond’, serif; font-size: 1.2rem; color: var(–text-dark); margin-bottom: 10px; line-height: 1.3; }
+.modale-duree-badge { display: inline-block; background: var(–honey); border-radius: 20px; padding: 4px 12px; font-size: 0.72rem; color: var(–text-mid); margin-bottom: 14px; }
+.modale-instruction { font-size: 0.85rem; color: var(–text-mid); line-height: 1.65; margin-bottom: 16px; }
+.modale-conseil { border-radius: 12px; padding: 12px 14px; font-size: 0.78rem; line-height: 1.5; margin-bottom: 20px; color: white; }
+.modale-btns { display: flex; gap: 10px; }
+.modale-btn-prev { flex: 1; padding: 14px; border-radius: 14px; border: 1.5px solid var(–oat); background: transparent; color: var(–text-mid); font-family: ‘DM Sans’, sans-serif; font-size: 0.85rem; cursor: pointer; }
+.modale-btn-next { flex: 2; padding: 14px; border-radius: 14px; border: none; color: white; font-family: ‘DM Sans’, sans-serif; font-size: 0.85rem; cursor: pointer; }
+.modale-close { position: absolute; top: 14px; right: 14px; font-size: 1.2rem; cursor: pointer; color: var(–text-light); background: none; border: none; }
+
+.prototype-label { text-align: center; font-size: 0.7rem; color: var(–text-light); letter-spacing: 0.08em; margin-top: 20px; text-transform: uppercase; }
+
+/* ===== BIBLIOTHÈQUE — LISTE ===== */
+#screen-library { background: var(–cream); }
+.lib-header { padding: 52px 24px 0; }
+.lib-tabs-wrap { padding: 14px 24px 0; }
+.lib-tabs {
+display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+scrollbar-width: none; margin-bottom: 0;
+}
+.lib-tabs::-webkit-scrollbar { display: none; }
+.lib-tab {
+padding: 8px 14px; border-radius: 20px; font-size: 0.72rem; font-family: ‘DM Sans’, sans-serif;
+white-space: nowrap; cursor: pointer; border: 1.5px solid var(–oat);
+color: var(–text-mid); background: white; flex-shrink: 0; transition: all 0.2s;
+}
+.lib-tab.active { color: white; border-color: transparent; }
+.lib-scroll-dyn { flex: 1; overflow-y: auto; padding: 16px 24px 16px; scrollbar-width: none; }
+.lib-scroll-dyn::-webkit-scrollbar { display: none; }
+
+/* Card à la une */
+.lib-featured-dyn {
+border-radius: 24px; padding: 22px; margin-bottom: 20px;
+position: relative; overflow: hidden; cursor: pointer; transition: transform 0.15s;
+}
+.lib-featured-dyn:active { transform: scale(0.98); }
+.lib-feat-dyn-deco { position: absolute; right: -16px; top: -16px; font-size: 5rem; opacity: 0.15; }
+.lib-feat-dyn-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
+.lib-feat-dyn-title { font-family: ‘Cormorant Garamond’, serif; font-size: 1.3rem; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+.lib-feat-dyn-desc { font-size: 0.78rem; opacity: 0.8; line-height: 1.5; margin-bottom: 14px; }
+.lib-feat-dyn-btn {
+display: inline-flex; align-items: center; gap: 6px;
+padding: 9px 16px; background: rgba(255,255,255,0.25);
+border: 1px solid rgba(255,255,255,0.4);
+border-radius: 20px; font-size: 0.72rem; letter-spacing: 0.05em; cursor: pointer;
+}
+
+/* Grille articles */
+.lib-section-label { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(–text-light); margin-bottom: 12px; margin-top: 4px; }
+.lib-grid-dyn { display: flex; flex-direction: column; gap: 10px; }
+.lib-art-card {
+background: white; border-radius: 18px; padding: 16px 18px;
+display: flex; gap: 14px; align-items: flex-start; cursor: pointer;
+transition: transform 0.15s; border-left: 3px solid transparent;
+}
+.lib-art-card:active { transform: scale(0.98); }
+.lib-art-icon {
+width: 40px; height: 40px; border-radius: 12px; display: flex;
+align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+}
+.lib-art-tag { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(–text-light); margin-bottom: 3px; }
+.lib-art-title { font-size: 0.86rem; color: var(–text-dark); line-height: 1.4; font-weight: 500; margin-bottom: 4px; }
+.lib-art-meta { font-size: 0.68rem; color: var(–text-light); }
+.lib-art-alert { display: inline-block; font-size: 0.6rem; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
+
+/* ===== ARTICLE DÉTAIL ===== */
+#screen-article-detail { background: var(–cream); position: relative; }
+.art-progress-bar {
+position: absolute; top: 0; left: 0; right: 0; height: 3px;
+background: rgba(0,0,0,0.08); z-index: 50;
+}
+.art-progress-fill { height: 100%; width: 0%; transition: width 0.2s; border-radius: 0 2px 2px 0; }
+.art-detail-inner { display: flex; flex-direction: column; height: 100%; }
+.art-hero {
+flex-shrink: 0; padding: 48px 24px 22px; position: relative;
+}
+.art-back-btn {
+position: absolute; top: 48px; left: 18px; width: 34px; height: 34px;
+border-radius: 50%; background: rgba(255,255,255,0.3);
+display: flex; align-items: center; justify-content: center;
+font-size: 0.9rem; cursor: pointer; z-index: 10;
+border: 1px solid rgba(255,255,255,0.4);
+}
+.art-hero-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 10px; }
+.art-hero-titre { font-family: ‘Cormorant Garamond’, serif; font-size: 1.5rem; font-weight: 400; line-height: 1.3; margin-bottom: 6px; }
+.art-hero-sous { font-size: 0.82rem; opacity: 0.75; font-style: italic; margin-bottom: 14px; }
+.art-hero-meta { font-size: 0.7rem; opacity: 0.65; }
+.art-body-scroll { flex: 1; overflow-y: auto; padding: 24px 24px 24px; scrollbar-width: none; }
+.art-body-scroll::-webkit-scrollbar { display: none; }
+
+/* Corps article */
+.art-points-titre { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text-light); margin-bottom: 12px; }
+.art-point-item {
+display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(–oat);
+align-items: flex-start;
+}
+.art-point-item:last-of-type { border-bottom: none; }
+.art-point-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+.art-point-text { font-size: 0.84rem; color: var(–text-dark); line-height: 1.55; }
+.art-note-nara {
+border-radius: 16px; padding: 16px 18px; margin: 20px 0;
+}
+.art-note-label { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; margin-bottom: 6px; }
+.art-note-text { font-size: 0.82rem; line-height: 1.6; }
+.art-alerte-consult {
+background: #fff8e1; border-left: 3px solid #f59e0b; border-radius: 12px;
+padding: 12px 14px; margin: 16px 0; font-size: 0.78rem; color: #92400e; line-height: 1.5;
+}
+
+/* Navigation bas article */
+.art-nav-btns {
+display: flex; gap: 10px; margin-top: 28px; padding-top: 20px;
+border-top: 1px solid var(–oat);
+}
+.art-nav-btn {
+flex: 1; padding: 14px 12px; border-radius: 14px; border: 1.5px solid var(–oat);
+background: white; font-family: ‘DM Sans’, sans-serif; font-size: 0.78rem;
+color: var(–text-mid); cursor: pointer; text-align: center; line-height: 1.3;
+transition: all 0.2s;
+}
+.art-nav-btn.primary { color: white; border-color: transparent; }
+.art-nav-btn-label { font-size: 0.6rem; opacity: 0.7; display: block; margin-bottom: 2px; }
+.art-nav-btn-title { font-weight: 500; display: block; }
+
+/* ===== SHARED BOTTOM NAV ===== */
+.bottom-nav-shared {
+flex-shrink: 0; height: 72px; background: white;
+border-top: 1px solid var(–oat);
+display: flex; align-items: center; justify-content: space-around;
+padding: 0 10px 8px; z-index: 50;
+}
+.bnav-item {
+display: flex; flex-direction: column; align-items: center; gap: 3px;
+cursor: pointer; padding: 6px 10px; border-radius: 12px; transition: background 0.2s;
+}
+.bnav-item.active { background: var(–honey); }
+.bnav-icon { font-size: 1.2rem; }
+.bnav-label { font-size: 0.6rem; color: var(–text-light); letter-spacing: 0.06em; }
+.bnav-item.active .bnav-label { color: var(–sage); }
+.bnav-add {
+width: 44px; height: 44px; background: var(–sage); border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+color: white; font-size: 1.4rem; cursor: pointer;
+box-shadow: 0 4px 14px rgba(129,130,99,0.35); margin-bottom: 4px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Nara</h1>
+  <p>Prototype interactif — naviguer entre les écrans</p>
+</div>
+
+<div class="screens-nav">
+  <button class="nav-btn active" onclick="showScreen('onboarding', this)">① Accueil</button>
+  <button class="nav-btn" onclick="showScreen('signup', this)" id="nav-signup">② Inscription</button>
+  <button class="nav-btn" onclick="showScreen('login', this)" id="nav-login">③ Connexion</button>
+  <button class="nav-btn" onclick="showScreen('home', this)">④ Dashboard</button>
+  <button class="nav-btn" onclick="showScreen('journal', this)">⑤ Journal</button>
+  <button class="nav-btn" onclick="showScreen('insights', this)">⑥ Insights IA</button>
+  <button class="nav-btn" onclick="showScreen('routines', this)">⑦ Routines</button>
+  <button class="nav-btn" onclick="showScreen('library', this)">⑧ Bibliothèque</button>
+  <button class="nav-btn" onclick="showScreen('recipes', this)">⑨ Recettes</button>
+</div>
+
+<div class="auth-status-badge" id="auth-status-badge">⚪ Non connecté</div>
+
+<div class="phone-wrapper">
+  <div class="phone-frame">
+    <div class="notch"></div>
+
+```
+<!-- SCREEN 1 — ONBOARDING -->
+<div class="screen active" id="screen-onboarding">
+  <div class="onboarding-bg">
+    <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+  </div>
+  <div class="onboarding-top">
+    <span class="onboarding-illustration">🌿</span>
+    <div class="onboarding-logo">nara</div>
+    <div class="onboarding-tagline">Ta peau parle.<br>Apprends à l'écouter.</div>
+  </div>
+  <div class="onboarding-content">
+    <button class="btn-primary" onclick="go('signup')">Créer mon compte</button>
+    <button class="btn-secondary" onclick="go('login')">J'ai déjà un compte</button>
+  </div>
+</div>
+
+<!-- SCREEN 2 — INSCRIPTION -->
+<div class="screen" id="screen-signup">
+  <div class="auth-blob-bg">
+    <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+  </div>
+  <div class="auth-form-wrap">
+    <span class="auth-logo">nara</span>
+    <span class="auth-tagline">Commence ton suivi holistique</span>
+    <div class="auth-card">
+      <div class="auth-card-title">Créer mon compte</div>
+      <div class="auth-error" id="signup-error"></div>
+      <div class="auth-success" id="signup-success"></div>
+      <div class="auth-field">
+        <label>Prénom</label>
+        <input class="auth-input" type="text" id="signup-prenom" placeholder="Manon" autocomplete="given-name">
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input class="auth-input" type="email" id="signup-email" placeholder="manon@exemple.fr" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Mot de passe</label>
+        <input class="auth-input" type="password" id="signup-password" placeholder="8 caractères minimum" autocomplete="new-password">
+      </div>
+      <button class="auth-btn-primary" id="signup-btn" onclick="handleSignup()">
+        <span id="signup-btn-text">Créer mon compte →</span>
+        <div class="auth-spinner" id="signup-spinner"></div>
+      </button>
+    </div>
+    <div class="auth-switch">
+      Déjà un compte ? <span onclick="go('login')">Se connecter</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3 — CONNEXION -->
+<div class="screen" id="screen-login">
+  <div class="auth-blob-bg">
+    <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+  </div>
+  <div class="auth-form-wrap">
+    <span class="auth-logo">nara</span>
+    <span class="auth-tagline">Bon retour parmi nous</span>
+    <div class="auth-card">
+      <div class="auth-card-title">Me connecter</div>
+      <div class="auth-error" id="login-error"></div>
+      <div class="auth-success" id="login-success"></div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input class="auth-input" type="email" id="login-email" placeholder="manon@exemple.fr" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Mot de passe</label>
+        <input class="auth-input" type="password" id="login-password" placeholder="Ton mot de passe" autocomplete="current-password">
+      </div>
+      <button class="auth-btn-primary" id="login-btn" onclick="handleLogin()">
+        <span id="login-btn-text">Se connecter →</span>
+        <div class="auth-spinner" id="login-spinner"></div>
+      </button>
+      <div class="auth-divider"></div>
+      <div class="auth-switch" style="font-size:0.72rem">
+        <span onclick="handleForgotPassword()" style="font-weight:400;text-decoration:none;color:var(--text-light)">Mot de passe oublié ?</span>
+      </div>
+    </div>
+    <div class="auth-switch">
+      Pas encore de compte ? <span onclick="go('signup')">S'inscrire</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4 — HOME -->
+<div class="screen" id="screen-home">
+  <div class="status-bar"><span>9:41</span><span>●●● 100%</span></div>
+  <div class="home-header">
+    <div>
+      <div style="font-size:0.72rem;color:var(--text-light);letter-spacing:0.06em;margin-bottom:2px;">Bonjour,</div>
+      <div class="home-greeting"><span id="home-user-name">Manon</span> ✨</div>
+    </div>
+    <button class="user-menu-btn" onclick="toggleUserMenu()" id="user-menu-btn">🌸</button>
+    <div class="user-dropdown" id="user-dropdown">
+      <div class="user-dropdown-name" id="dropdown-name">Manon</div>
+      <div class="user-dropdown-email" id="dropdown-email">manon@exemple.fr</div>
+      <div class="user-dropdown-item" onclick="toggleUserMenu(); go('journal')">📓 Mon journal</div>
+      <div class="user-dropdown-item danger" onclick="handleLogout()">← Se déconnecter</div>
+    </div>
+  </div>
+  <div class="home-scroll">
+    <div class="score-card">
+      <div class="score-label">Équilibre intestinal</div>
+      <div class="score-value">74<span style="font-size:1.5rem;opacity:0.6">/100</span></div>
+      <div class="score-sub">+6 points cette semaine · Bonne progression 🌱</div>
+      <div class="score-bars">
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:55%"></div></div>
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:40%"></div></div>
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:65%"></div></div>
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:50%"></div></div>
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:70%"></div></div>
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:80%"></div></div>
+        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:74%"></div></div>
+      </div>
+    </div>
+    <div class="quick-log">
+      <div class="quick-log-title">Comment tu te sens aujourd'hui ?</div>
+      <div class="quick-row">
+        <div class="quick-btn"><span class="emoji">🫀</span><span class="label">Transit</span></div>
+        <div class="quick-btn"><span class="emoji">🥗</span><span class="label">Repas</span></div>
+        <div class="quick-btn"><span class="emoji">✨</span><span class="label">Peau</span></div>
+        <div class="quick-btn"><span class="emoji">😮‍💨</span><span class="label">Stress</span></div>
+      </div>
+    </div>
+    <div class="section-title">Insights du jour</div>
+    <div class="insight-card gut">
+      <div class="insight-icon">🔬</div>
+      <div class="insight-tag">Pattern détecté · Intestin</div>
+      <div class="insight-text">Ton transit ralentit <strong>4 jours après</strong> les repas riches en gluten. C'est la 3ème fois qu'on observe ce schéma.</div>
+    </div>
+    <div class="insight-card skin">
+      <div class="insight-icon">🌸</div>
+      <div class="insight-tag">Observation · Peau</div>
+      <div class="insight-text">Tes plaques semblent <strong>moins intenses</strong> cette semaine. Corrélé avec ta routine anti-inflammatoire.</div>
+    </div>
+  </div>
+  <div class="bottom-nav" id="bottom-nav-home">
+    <div class="nav-item active" id="bnav-home" onclick="go('home')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
+    <div class="nav-item" id="bnav-insights" onclick="go('insights')"><span class="nav-icon">📊</span><span class="nav-label">Insights</span></div>
+    <div class="nav-add" onclick="go('journal')">+</div>
+    <div class="nav-item" id="bnav-routines" onclick="go('routines')"><span class="nav-icon">🌿</span><span class="nav-label">Routines</span></div>
+    <div class="nav-item" id="bnav-library" onclick="go('library')"><span class="nav-icon">📚</span><span class="nav-label">Apprendre</span></div>
+    <div class="nav-item" id="bnav-recipes" onclick="go('recipes')"><span class="nav-icon">🍽️</span><span class="nav-label">Recettes</span></div>
+  </div>
+</div>
+
+<!-- SCREEN 3 — JOURNAL -->
+<div class="screen" id="screen-journal">
+  <div class="screen-header"><div class="back-btn" onclick="go('home')">←</div><div class="screen-title">Mon journal</div></div>
+  <div class="journal-scroll">
+    <div class="date-chip">📅 Aujourd'hui · Mardi 28 avril</div>
+    <div class="journal-section">
+      <div class="journal-section-header"><div class="journal-section-dot dot-gut"></div><div class="journal-section-name">Intestin & Transit</div></div>
+      <div style="font-size:0.78rem;color:var(--text-mid);margin-bottom:8px;">Comment est ton transit ?</div>
+      <div class="emoji-row">
+        <div class="emoji-option"><div class="e">🐢</div><div class="t">Lent</div></div>
+        <div class="emoji-option selected"><div class="e">👍</div><div class="t">Normal</div></div>
+        <div class="emoji-option"><div class="e">💨</div><div class="t">Rapide</div></div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Ballonnements <span>3/5</span></div>
+        <div class="fake-slider"><div class="fake-slider-fill"></div><div class="fake-slider-thumb"></div></div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-mid);margin-bottom:8px;">Qu'as-tu mangé ?</div>
+      <div class="food-chips">
+        <div class="food-chip selected">🥑 Avocat</div>
+        <div class="food-chip selected">🥦 Légumes verts</div>
+        <div class="food-chip">🍞 Gluten</div>
+        <div class="food-chip">🥛 Produits laitiers</div>
+        <div class="food-chip selected">🫙 Fermentés</div>
+        <div class="food-chip">🍬 Sucre raffiné</div>
+        <div class="food-chip">+ Ajouter</div>
+      </div>
+    </div>
+    <div class="journal-section">
+      <div class="journal-section-header"><div class="journal-section-dot dot-skin"></div><div class="journal-section-name">Peau</div></div>
+      <div class="emoji-row">
+        <div class="emoji-option"><div class="e">🔴</div><div class="t">Poussée</div></div>
+        <div class="emoji-option selected"><div class="e">🟡</div><div class="t">Stable</div></div>
+        <div class="emoji-option"><div class="e">🟢</div><div class="t">Calme</div></div>
+      </div>
+      <div class="photo-zone">
+        <div class="ph-icon">📷</div>
+        <div class="ph-text">Ajouter une photo de suivi<br><span style="font-size:0.65rem;opacity:0.6">Confidentiel · Jamais partagé</span></div>
+      </div>
+    </div>
+    <div class="journal-section">
+      <div class="journal-section-header"><div class="journal-section-dot dot-life"></div><div class="journal-section-name">Mode de vie</div></div>
+      <div class="slider-row">
+        <div class="slider-label">Stress du jour <span>2/5</span></div>
+        <div class="fake-slider"><div class="fake-slider-fill" style="width:35%"></div><div class="fake-slider-thumb" style="left:35%"></div></div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Qualité du sommeil <span>4/5</span></div>
+        <div class="fake-slider"><div class="fake-slider-fill" style="width:80%"></div><div class="fake-slider-thumb" style="left:80%"></div></div>
+      </div>
+    </div>
+    <button class="save-btn">Enregistrer mon journal ✓</button>
+  </div>
+
+  <!-- shared bottom nav -->
+  <div class="bottom-nav-shared">
+    <div class="bnav-item" id="jrn-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
+    <div class="bnav-item" id="jrn-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
+    <div class="bnav-add" onclick="go('journal')">+</div>
+    <div class="bnav-item" id="jrn-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
+    <div class="bnav-item" id="jrn-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
+    <div class="bnav-item" id="jrn-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+  </div>
+</div>
+
+<!-- SCREEN 4 — INSIGHTS -->
+<div class="screen" id="screen-insights">
+  <div class="screen-header"><div class="back-btn" onclick="go('home')">←</div><div class="screen-title">Mes insights</div></div>
+  <div class="insights-scroll">
+    <div class="insight-big-card">
+      <div class="ibc-label">✦ Pattern principal · 3 semaines de données</div>
+      <div class="ibc-title">"Gluten → Transit lent → Poussée cutanée"</div>
+      <div class="ibc-detail">On observe que 4 à 6 jours après une consommation de gluten, ton transit ralentit, suivi d'une inflammation cutanée dans 78% des cas.</div>
+      <div class="confidence-bar"><div class="confidence-fill"></div></div>
+      <div class="confidence-label">Confiance du modèle : 78% · Basé sur 21 entrées</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Évolution sur 7 jours</div>
+      <div class="chart-sub">Transit 🟢 · Peau 🌸</div>
+      <div class="chart-area">
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:45px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:28px;width:100%"></div></div><div class="chart-day">Lun</div></div>
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:35px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:38px;width:100%"></div></div><div class="chart-day">Mar</div></div>
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:50px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:32px;width:100%"></div></div><div class="chart-day">Mer</div></div>
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:58px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:22px;width:100%"></div></div><div class="chart-day">Jeu</div></div>
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:55px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:18px;width:100%"></div></div><div class="chart-day">Ven</div></div>
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:63px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:14px;width:100%"></div></div><div class="chart-day">Sam</div></div>
+        <div class="chart-col"><div class="chart-bar-wrap"><div class="chart-bar bar-gut" style="height:68px;width:100%"></div></div><div class="chart-bar-wrap"><div class="chart-bar bar-skin" style="height:10px;width:100%"></div></div><div class="chart-day">Dim</div></div>
+      </div>
+    </div>
+    <div class="section-title">Autres observations</div>
+    <div class="mini-insight mi-gut"><div class="mi-icon">😴</div><div class="mi-body"><div class="mi-tag">Sommeil · Intestin</div><div class="mi-text">Moins de <strong>6h de sommeil</strong> correspond à un transit plus lent le lendemain dans 70% des cas.</div></div></div>
+    <div class="mini-insight mi-skin"><div class="mi-icon">🫙</div><div class="mi-body"><div class="mi-tag">Alimentation · Peau</div><div class="mi-text">Les semaines où tu consommes des <strong>aliments fermentés</strong>, ta peau est notée 1,8 points plus haute.</div></div></div>
+    <div class="section-title">Rapport médecin</div>
+    <div class="pdf-btn"><div class="pdf-icon">📄</div><div><div class="pdf-title">Générer mon rapport PDF</div><div class="pdf-sub">À partager avec ton dermatologue ou gastroentérologue</div></div><span style="color:var(--text-light);font-size:1.1rem;margin-left:auto">→</span></div>
+  </div>
+
+  <!-- shared bottom nav -->
+  <div class="bottom-nav-shared">
+    <div class="bnav-item" id="ins-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
+    <div class="bnav-item" id="ins-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
+    <div class="bnav-add" onclick="go('journal')">+</div>
+    <div class="bnav-item" id="ins-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
+    <div class="bnav-item" id="ins-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
+    <div class="bnav-item" id="ins-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+  </div>
+</div>
+
+<!-- SCREEN 5 — LIBRARY -->
+<div class="screen" id="screen-library">
+  <div class="lib-header">
+    <div class="screen-title" style="padding:0;font-size:1.4rem">Ma bibliothèque</div>
+  </div>
+  <div class="lib-tabs-wrap">
+    <div class="lib-tabs" id="lib-tabs"></div>
+  </div>
+  <div class="lib-scroll-dyn" id="lib-list-scroll">
+    <div id="lib-featured-zone"></div>
+    <div class="lib-grid-dyn" id="lib-grid"></div>
+  </div>
+
+  <!-- shared bottom nav -->
+  <div class="bottom-nav-shared">
+    <div class="bnav-item" id="lib-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
+    <div class="bnav-item" id="lib-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
+    <div class="bnav-add" onclick="go('journal')">+</div>
+    <div class="bnav-item" id="lib-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
+    <div class="bnav-item" id="lib-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
+    <div class="bnav-item" id="lib-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+  </div>
+</div>
+
+<!-- SCREEN ARTICLE DÉTAIL -->
+<div class="screen" id="screen-article-detail">
+  <div class="art-progress-bar"><div class="art-progress-fill" id="art-progress-fill"></div></div>
+  <div class="art-detail-inner">
+    <div class="art-hero" id="art-hero">
+      <div class="art-back-btn" onclick="go('library')">←</div>
+      <div class="art-hero-label" id="art-hero-label"></div>
+      <div class="art-hero-titre" id="art-hero-titre"></div>
+      <div class="art-hero-sous" id="art-hero-sous"></div>
+      <div class="art-hero-meta" id="art-hero-meta"></div>
+    </div>
+    <div class="art-body-scroll" id="art-body-scroll">
+      <div id="art-body-content"></div>
+      <div class="art-nav-btns" id="art-nav-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 6 — ROUTINES LISTE -->
+<div class="screen" id="screen-routines">
+  <div class="rout-list-header">
+    <div class="screen-title" style="padding:0;font-size:1.4rem">Mes routines</div>
+  </div>
+  <div class="rout-scroll" id="rout-list-scroll"></div>
+
+  <!-- shared bottom nav -->
+  <div class="bottom-nav-shared">
+    <div class="bnav-item" id="rout-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
+    <div class="bnav-item" id="rout-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
+    <div class="bnav-add" onclick="go('journal')">+</div>
+    <div class="bnav-item" id="rout-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
+    <div class="bnav-item" id="rout-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
+    <div class="bnav-item" id="rout-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+  </div>
+</div>
+
+<!-- SCREEN ROUTINE DÉTAIL -->
+<div class="screen" id="screen-routine-detail">
+  <div class="rout-detail-inner">
+    <div class="rout-detail-hero" id="rout-detail-hero">
+      <div class="rout-detail-back" onclick="go('routines')">←</div>
+      <span class="rout-detail-emoji" id="rout-detail-emoji"></span>
+      <div class="rout-detail-titre" id="rout-detail-titre"></div>
+      <div class="rout-detail-sous" id="rout-detail-sous"></div>
+      <div class="rout-detail-desc" id="rout-detail-desc"></div>
+      <div class="rout-detail-prog-row">
+        <div class="rout-detail-prog-bar"><div class="rout-detail-prog-fill" id="rout-detail-prog-fill"></div></div>
+        <div class="rout-detail-prog-txt" id="rout-detail-prog-txt"></div>
+      </div>
+    </div>
+    <div class="rout-detail-scroll" id="rout-detail-scroll"></div>
+  </div>
+  <!-- Modale guidée -->
+  <div class="rout-modale-overlay" id="rout-modale-overlay" onclick="handleRoutModaleClick(event)">
+    <div class="rout-modale-card" id="rout-modale-card">
+      <button class="rout-modale-close" onclick="closeRoutModale()">✕</button>
+      <div class="rout-modale-titre" id="rout-modale-titre"></div>
+      <div class="rout-modale-duree" id="rout-modale-duree"></div>
+      <div class="rout-modale-etapes" id="rout-modale-etapes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 7 — RECETTES LISTE -->
+<div class="screen" id="screen-recipes">
+  <div class="rec-screen-header">
+    <div class="screen-title" style="padding:0;font-size:1.4rem">Cuisine Inside-Out</div>
+  </div>
+  <div class="rec-tabs-wrap">
+    <div class="rec-tabs" id="rec-tabs"></div>
+  </div>
+  <div class="rec-scroll">
+    <div class="rec-list" id="rec-list"></div>
+  </div>
+
+  <!-- shared bottom nav -->
+  <div class="bottom-nav-shared">
+    <div class="bnav-item" id="rec-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
+    <div class="bnav-item" id="rec-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
+    <div class="bnav-add" onclick="go('journal')">+</div>
+    <div class="bnav-item" id="rec-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
+    <div class="bnav-item" id="rec-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
+    <div class="bnav-item" id="rec-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+  </div>
+</div>
+
+<!-- SCREEN 8 — RECETTE DÉTAIL -->
+<div class="screen" id="screen-recipe-detail">
+  <div class="recipe-detail-inner">
+    <div class="recipe-hero" id="recipe-hero">
+      <div class="recipe-hero-back" onclick="go('recipes')">←</div>
+      <span class="recipe-hero-emoji" id="detail-emoji"></span>
+      <div class="recipe-hero-rubrique" id="detail-rubrique"></div>
+      <div class="recipe-hero-titre" id="detail-titre"></div>
+      <div class="recipe-chips-row" id="detail-chips"></div>
+    </div>
+    <div class="recipe-sub-tabs">
+      <div class="recipe-sub-tab active" onclick="switchSubTab('resume', this)" id="subtab-resume">Résumé</div>
+      <div class="recipe-sub-tab" onclick="switchSubTab('ingredients', this)" id="subtab-ingredients">Ingrédients</div>
+    </div>
+    <div class="recipe-content" id="recipe-content-resume"></div>
+    <div class="recipe-content" id="recipe-content-ingredients" style="display:none"></div>
+  </div>
+
+  <!-- Modale cuisson -->
+  <div class="modale-overlay" id="modale-cuisson" onclick="handleOverlayClick(event)">
+    <div class="modale-card" id="modale-card">
+      <button class="modale-close" onclick="closeModale()">✕</button>
+      <div class="modale-step-counter" id="modale-counter"></div>
+      <div class="modale-progress"><div class="modale-progress-fill" id="modale-progress-fill"></div></div>
+      <div class="modale-etape-titre" id="modale-etape-titre"></div>
+      <div class="modale-duree-badge" id="modale-duree"></div>
+      <div class="modale-instruction" id="modale-instruction"></div>
+      <div class="modale-conseil" id="modale-conseil"></div>
+      <div class="modale-btns">
+        <button class="modale-btn-prev" id="modale-prev" onclick="stepPrev()">← Précédent</button>
+        <button class="modale-btn-next" id="modale-next" onclick="stepNext()">Suivant →</button>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+  </div><!-- /phone-frame -->
+</div><!-- /phone-wrapper -->
+
+<div class="prototype-label">Nara © 2026 — Navigation complète · Auth Supabase · 3 routines · 20 recettes · 35 articles</div>
+
+<script>
+// ===== SUPABASE INIT =====
+const SUPABASE_URL = 'https://efpdmamvpfjcupffwdlz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_NGK_ChSW3ts5xWky6RH4SA_gI9Qy84F';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Session active
+let currentUser = null;
+
+// ===== HELPERS UI =====
+function setAuthLoading(screen, loading) {
+  const btn = document.getElementById(`${screen}-btn`);
+  const txt = document.getElementById(`${screen}-btn-text`);
+  const spinner = document.getElementById(`${screen}-spinner`);
+  btn.disabled = loading;
+  txt.style.display = loading ? 'none' : 'inline';
+  spinner.style.display = loading ? 'block' : 'none';
+}
+
+function showAuthMsg(type, screen, msg) {
+  const el = document.getElementById(`${screen}-${type}`);
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (type === 'error') setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function clearAuthMsgs(screen) {
+  document.getElementById(`${screen}-error`).style.display = 'none';
+  document.getElementById(`${screen}-success`).style.display = 'none';
+}
+
+function updateAuthBadge(user) {
+  const badge = document.getElementById('auth-status-badge');
+  if (user) {
+    const name = user.user_metadata?.prenom || user.email.split('@')[0];
+    badge.textContent = `🟢 Connecté·e — ${name}`;
+    badge.className = 'auth-status-badge connected';
+  } else {
+    badge.textContent = '⚪ Non connecté';
+    badge.className = 'auth-status-badge';
+  }
+}
+
+function updateHomeUser(user) {
+  if (!user) return;
+  const prenom = user.user_metadata?.prenom || user.email.split('@')[0];
+  const capitalized = prenom.charAt(0).toUpperCase() + prenom.slice(1);
+  document.getElementById('home-user-name').textContent = capitalized;
+  document.getElementById('dropdown-name').textContent = capitalized;
+  document.getElementById('dropdown-email').textContent = user.email;
+}
+
+function toggleUserMenu() {
+  document.getElementById('user-dropdown').classList.toggle('open');
+}
+
+// Ferme le menu si clic ailleurs
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-dropdown');
+  const btn = document.getElementById('user-menu-btn');
+  if (menu && !menu.contains(e.target) && e.target !== btn) {
+    menu.classList.remove('open');
+  }
+});
+
+// ===== INSCRIPTION =====
+async function handleSignup() {
+  clearAuthMsgs('signup');
+  const prenom = document.getElementById('signup-prenom').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+
+  if (!prenom) return showAuthMsg('error', 'signup', 'Ton prénom est requis.');
+  if (!email) return showAuthMsg('error', 'signup', 'Ton email est requis.');
+  if (password.length < 8) return showAuthMsg('error', 'signup', 'Le mot de passe doit faire au moins 8 caractères.');
+
+  setAuthLoading('signup', true);
+  try {
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password,
+      options: { data: { prenom } }
+    });
+    if (error) throw error;
+
+    if (data.user && !data.session) {
+      // Email de confirmation requis
+      showAuthMsg('success', 'signup', `✅ Compte créé ! Vérifie ton email (${email}) pour confirmer.`);
+    } else if (data.session) {
+      // Auto-confirmed
+      currentUser = data.user;
+      updateAuthBadge(currentUser);
+      updateHomeUser(currentUser);
+      showAuthMsg('success', 'signup', `🎉 Bienvenue ${prenom} ! Redirection…`);
+      setTimeout(() => go('home'), 1200);
+    }
+  } catch (err) {
+    const msg = err.message.includes('already registered')
+      ? 'Cet email est déjà utilisé. Connecte-toi plutôt.'
+      : err.message.includes('invalid') ? 'Email invalide.'
+      : err.message;
+    showAuthMsg('error', 'signup', msg);
+  } finally {
+    setAuthLoading('signup', false);
+  }
+}
+
+// ===== CONNEXION =====
+async function handleLogin() {
+  clearAuthMsgs('login');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!email || !password) return showAuthMsg('error', 'login', 'Email et mot de passe requis.');
+
+  setAuthLoading('login', true);
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    currentUser = data.user;
+    updateAuthBadge(currentUser);
+    updateHomeUser(currentUser);
+
+    const prenom = currentUser.user_metadata?.prenom || email.split('@')[0];
+    showAuthMsg('success', 'login', `Bienvenue ${prenom} ! 🌿`);
+    setTimeout(() => go('home'), 900);
+  } catch (err) {
+    const msg = err.message.includes('Invalid login')
+      ? 'Email ou mot de passe incorrect.'
+      : err.message.includes('Email not confirmed')
+      ? 'Confirme ton email avant de te connecter.'
+      : err.message;
+    showAuthMsg('error', 'login', msg);
+  } finally {
+    setAuthLoading('login', false);
+  }
+}
+
+// ===== DÉCONNEXION =====
+async function handleLogout() {
+  document.getElementById('user-dropdown').classList.remove('open');
+  await sb.auth.signOut();
+  currentUser = null;
+  updateAuthBadge(null);
+  document.getElementById('home-user-name').textContent = 'Manon';
+  document.getElementById('dropdown-name').textContent = 'Manon';
+  document.getElementById('dropdown-email').textContent = 'manon@exemple.fr';
+  go('onboarding');
+}
+
+// ===== MOT DE PASSE OUBLIÉ =====
+async function handleForgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) return showAuthMsg('error', 'login', 'Entre ton email d\'abord.');
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href
+  });
+  if (error) showAuthMsg('error', 'login', error.message);
+  else showAuthMsg('success', 'login', `Email de réinitialisation envoyé à ${email}.`);
+}
+
+// ===== RESTAURER SESSION AU CHARGEMENT =====
+async function initSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    updateAuthBadge(currentUser);
+    updateHomeUser(currentUser);
+  }
+}
+
+// Écoute les changements de session (confirm email, token refresh…)
+sb.auth.onAuthStateChange((event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    updateAuthBadge(currentUser);
+    updateHomeUser(currentUser);
+    if (event === 'SIGNED_IN') {
+      // Nettoyage champs
+      ['signup-email','signup-password','signup-prenom','login-email','login-password']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    }
+  } else {
+    currentUser = null;
+    updateAuthBadge(null);
+  }
+});
+
+initSession();
+// ===== DATA =====
+const onglets = [
+  { id: "dig",      label: "🫃 Digestion",  couleur: "#818263" },
+  { id: "corps",    label: "🫀 Corps",       couleur: "#6a3a90" },
+  { id: "peau",     label: "✨ Peau",         couleur: "#6a8c50" },
+  { id: "stress",   label: "🧠 Stress",       couleur: "#504090" },
+  { id: "sommeil",  label: "😴 Sommeil",      couleur: "#4a1870" },
+  { id: "patterns", label: "🔍 Patterns",     couleur: "#4a6828" }
+];
+
+const recettes = [
+  { id:"001", titre:"Bouillon lacto-fermenté au gingembre & curcuma", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🫖", badge:"Anti-inflammatoire", hero_gradient:"linear-gradient(160deg, #f5e8d0, #d4a850)", couleur_accent:"#818263", note_nara:"Le miso non pasteurisé contient des bactéries lactiques vivantes. Curcuma + poivre noir : la pipérine augmente l'absorption de la curcumine jusqu'à 2000%.", tags:["Anti-inflammatoire","Probiotiques","Intestin","Sans gluten","Vegan"], article:"Le microbiome intestinal expliqué", precaution:null,
+    ingredients:[{nom:"Bouillon de légumes",qty:"600 ml"},{nom:"Miso non pasteurisé",qty:"2 c.s.",key:true},{nom:"Gingembre frais",qty:"3 cm",key:true},{nom:"Curcuma en poudre",qty:"1 c.c.",key:true},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Algues wakamé",qty:"1 c.s."},{nom:"Citron",qty:"½"}],
+    conseil:"Le miso ne doit jamais bouillir — ajoute-le hors du feu pour préserver les probiotiques.",
+    etapes:[{titre:"Préparer le bouillon",duree:"5 min",instruction:"Faire chauffer le bouillon de légumes à feu doux sans le porter à ébullition.",conseil:null},{titre:"Ajouter les aromates",duree:"3 min",instruction:"Râper le gingembre frais et l'ajouter au bouillon. Incorporer curcuma et poivre noir.",conseil:"La pipérine du poivre noir multiplie par 20 l'absorption du curcuma."},{titre:"Réhydrater les algues",duree:"5 min",instruction:"Faire tremper les algues wakamé dans un bol d'eau tiède pendant 5 minutes.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Ajouter les algues réhydratées au bouillon. Retirer du feu.",conseil:null},{titre:"Incorporer le miso",duree:"1 min",instruction:"Délayer le miso dans une louche de bouillon tiède (pas bouillant) puis verser dans la casserole.",conseil:"Ne jamais cuire le miso : ses bactéries lactiques seraient détruites au-delà de 60°C."},{titre:"Finition",duree:"1 min",instruction:"Presser le demi-citron. Servir chaud dans un bol. Déguster lentement.",conseil:null}]
+  },
+  { id:"002", titre:"Salade saumon, avocat, graines de courge & roquette", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Midi", temps:"15 min", portions:2, niveau:"Facile", regime:"Sans gluten", emoji:"🥗", badge:"Oméga-3", hero_gradient:"linear-gradient(160deg, #e8f0d8, #88b850)", couleur_accent:"#6a8c50", note_nara:"Saumon riche en oméga-3 EPA/DHA. Avocat : vitamine E + acides gras mono-insaturés. Graines de courge : zinc essentiel à la cicatrisation.", tags:["Oméga-3","Zinc","Peau","Anti-inflammatoire","Sans gluten"], article:"Oméga-3 et inflammation cutanée", precaution:null,
+    ingredients:[{nom:"Saumon fumé ou frais cuit",qty:"200 g",key:true},{nom:"Avocat mûr",qty:"1",key:true},{nom:"Roquette",qty:"80 g"},{nom:"Graines de courge",qty:"2 c.s.",key:true},{nom:"Citron",qty:"1"},{nom:"Huile d'olive",qty:"2 c.s."},{nom:"Sel, poivre",qty:"à goût"}],
+    conseil:"Choisir du saumon sauvage si possible : teneur en oméga-3 plus élevée que l'élevage.",
+    etapes:[{titre:"Préparer la base",duree:"3 min",instruction:"Laver et essorer la roquette. La disposer dans un grand bol.",conseil:null},{titre:"Préparer les ingrédients",duree:"5 min",instruction:"Trancher l'avocat en lamelles. Couper le saumon en morceaux. Presser le citron.",conseil:"Citronner l'avocat immédiatement pour éviter l'oxydation."},{titre:"Assembler",duree:"2 min",instruction:"Disposer le saumon et l'avocat sur la roquette. Parsemer de graines de courge.",conseil:null},{titre:"Assaisonner et servir",duree:"1 min",instruction:"Arroser d'huile d'olive et de jus de citron. Saler, poivrer. Servir immédiatement.",conseil:"Manger dans les 20 minutes pour bénéficier au maximum des oméga-3 non oxydés."}]
+  },
+  { id:"003", titre:"Golden milk au lait d'avoine, cannelle & miel", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"8 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"✨", badge:"Système nerveux", hero_gradient:"linear-gradient(160deg, #f5e8c0, #c8880a)", couleur_accent:"#b87820", note_nara:"La cannelle stabilise la glycémie en soirée. Curcuma + poivre noir. Le rituel lui-même active le système nerveux parasympathique.", tags:["Anti-inflammatoire","Stress","Sommeil","Sans gluten","Vegan"], article:"Stress et alimentation : le lien oublié", precaution:null,
+    ingredients:[{nom:"Lait d'avoine",qty:"250 ml"},{nom:"Curcuma",qty:"½ c.c.",key:true},{nom:"Cannelle",qty:"½ c.c.",key:true},{nom:"Gingembre en poudre",qty:"¼ c.c."},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Miel",qty:"1 c.c."},{nom:"Vanille (optionnel)",qty:"1 pincée"}],
+    conseil:"Préparer ce rituel sans écran, dans le calme. Le contexte influence autant que les ingrédients.",
+    etapes:[{titre:"Chauffer le lait",duree:"3 min",instruction:"Faire chauffer doucement le lait d'avoine sans le bouillir.",conseil:null},{titre:"Ajouter les épices",duree:"2 min",instruction:"Incorporer curcuma, cannelle, gingembre et poivre noir. Mélanger au fouet.",conseil:"Le poivre noir est indispensable : il active la curcumine."},{titre:"Finition douce",duree:"1 min",instruction:"Hors du feu, ajouter le miel et la vanille. Fouetter jusqu'à légère mousse.",conseil:"Le miel chauffé au-delà de 40°C perd ses propriétés — toujours l'ajouter hors feu."},{titre:"Savourer",duree:"2 min",instruction:"Verser dans une belle tasse. Boire lentement, sans écran, idéalement 1h avant le coucher.",conseil:"Ce rituel en lui-même active le système parasympathique : prends le temps."}]
+  },
+  { id:"004", titre:"Porridge banane verte, graines de lin & amandes", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"15 min", portions:1, niveau:"Facile", regime:"Vegan", emoji:"🥣", badge:"Tryptophane", hero_gradient:"linear-gradient(160deg, #f0e8d0, #b88820)", couleur_accent:"#9a7830", note_nara:"Avoine + banane : tryptophane, précurseur de la mélatonine. Banane semi-verte : amidon résistant prébiotique. Lin moulu : oméga-3 végétaux.", tags:["Sommeil","Tryptophane","Microbiome","Sans gluten","Vegan"], article:"Alimentation et qualité du sommeil", precaution:null,
+    ingredients:[{nom:"Flocons d'avoine",qty:"60 g"},{nom:"Lait végétal",qty:"200 ml"},{nom:"Banane semi-verte",qty:"1",key:true},{nom:"Graines de lin moulues",qty:"1 c.s.",key:true},{nom:"Amandes effilées",qty:"1 c.s."},{nom:"Cannelle",qty:"½ c.c."},{nom:"Miel ou sirop d'érable",qty:"1 c.c."}],
+    conseil:"La banane semi-verte (légèrement jaune) contient plus d'amidon résistant que la banane mûre : meilleur carburant pour les bactéries du côlon.",
+    etapes:[{titre:"Cuire l'avoine",duree:"5 min",instruction:"Faire chauffer les flocons d'avoine avec le lait végétal à feu moyen, en remuant jusqu'à consistance crémeuse.",conseil:null},{titre:"Incorporer les graines",duree:"1 min",instruction:"Hors du feu, mélanger les graines de lin moulues et la cannelle.",conseil:"Lin moulu = oméga-3 biodisponibles. Entiers, ils passent sans être assimilés."},{titre:"Garnir",duree:"2 min",instruction:"Trancher la banane. Disposer sur le porridge avec les amandes effilées.",conseil:null},{titre:"Finaliser",duree:"1 min",instruction:"Ajouter le miel ou sirop d'érable. Servir tiède, pas brûlant.",conseil:"Un petit-déjeuner riche en tryptophane prépare la synthèse de mélatonine pour la nuit suivante."}]
+  },
+  { id:"005", titre:"Smoothie anti-inflammatoire myrtilles, gingembre & curcuma", onglet:"corps", rubrique:"Comprendre mon corps", moment:"Matin", temps:"5 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"🫐", badge:"Antioxydants", hero_gradient:"linear-gradient(160deg, #e8d0f0, #6030a0)", couleur_accent:"#6a3a90", note_nara:"Myrtilles : anthocyanines parmi les antioxydants les plus puissants. Manger coloré = diversité de composés protecteurs que les compléments ne reproduisent pas.", tags:["Antioxydants","Anti-inflammatoire","Intestin","Peau","Vegan","Express"], article:"Antioxydants et inflammation", precaution:null,
+    ingredients:[{nom:"Myrtilles (fraîches ou surgelées)",qty:"150 g",key:true},{nom:"Banane",qty:"½"},{nom:"Lait végétal",qty:"150 ml"},{nom:"Gingembre frais",qty:"1 cm",key:true},{nom:"Curcuma",qty:"¼ c.c.",key:true},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Graines de chia (optionnel)",qty:"1 c.c."}],
+    conseil:"Les myrtilles surgelées sont souvent plus riches en anthocyanines que les fraîches — la congélation préserve les polyphénols.",
+    etapes:[{titre:"Préparer",duree:"1 min",instruction:"Mettre tous les ingrédients dans le blender.",conseil:"Si myrtilles surgelées : pas besoin de les décongeler."},{titre:"Mixer",duree:"1 min",instruction:"Mixer à haute vitesse 60 secondes jusqu'à consistance lisse.",conseil:null},{titre:"Ajuster",duree:"1 min",instruction:"Goûter. Ajouter du lait végétal si trop épais, une datte si pas assez sucré.",conseil:"La couleur violette intense = signe de richesse en anthocyanines."},{titre:"Boire immédiatement",duree:"2 min",instruction:"Consommer dans les 10 minutes. Les antioxydants s'oxydent rapidement à l'air.",conseil:"Ce smoothie vaut mieux le matin à jeun ou avant l'activité physique."}]
+  },
+  { id:"006", titre:"Bowl riz complet, légumes rôtis & sauce tahini-citron", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Midi", temps:"40 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🥙", badge:"Repas traceur", hero_gradient:"linear-gradient(160deg, #d8e8c8, #4a7030)", couleur_accent:"#4a6828", note_nara:"Repas de référence pour décoder les patterns digestifs. Fibres solubles (pois chiches) + insolubles (riz, légumes) + protéines végétales.", tags:["Fibres","Équilibré","Microbiome","Repas traceur","Sans gluten","Vegan"], article:"Décoder ses patterns digestifs", precaution:null,
+    ingredients:[{nom:"Riz complet",qty:"160 g"},{nom:"Courgette",qty:"1"},{nom:"Poivron",qty:"1"},{nom:"Pois chiches cuits",qty:"200 g",key:true},{nom:"Tahini",qty:"2 c.s.",key:true},{nom:"Citron",qty:"1"},{nom:"Ail",qty:"1 gousse"},{nom:"Huile d'olive",qty:"2 c.s."}],
+    conseil:"Note dans ton journal comment tu te sens 2h et 4h après ce repas. C'est le point de référence de tes patterns.",
+    etapes:[{titre:"Cuire le riz",duree:"30 min",instruction:"Rincer le riz complet. Cuire dans 2 fois son volume d'eau salée pendant 25-30 min.",conseil:"Le riz complet met plus longtemps mais son IG bas est clé pour ce repas traceur."},{titre:"Rôtir les légumes",duree:"20 min",instruction:"Couper courgette et poivron en dés. Arroser d'huile. Rôtir à 200°C pendant 20 min.",conseil:null},{titre:"Préparer la sauce",duree:"3 min",instruction:"Mélanger tahini, jus de citron, ail pressé et 3 c.s. d'eau. Fouetter jusqu'à consistance crémeuse.",conseil:"La sauce peut sembler solide au départ : continue de fouetter, elle s'allège."},{titre:"Chauffer les pois chiches",duree:"3 min",instruction:"Faire revenir les pois chiches à la poêle avec un filet d'huile et du cumin.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Disposer riz, légumes et pois chiches dans un bol. Napper de sauce tahini.",conseil:"Ce repas, bien toléré, devient ta référence. Si inconfort après = note dans Nara."}]
+  },
+  { id:"007", titre:"Soupe miso aux légumes racines & algues wakamé", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"25 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🍜", badge:"Miso · Wakamé", hero_gradient:"linear-gradient(160deg, #d0e8e0, #106040)", couleur_accent:"#106040", note_nara:"Miso non pasteurisé : bactéries lactiques. Wakamé : fucanes prébiotiques. Shiitake : bêta-glucane immunomodulateur. Ne jamais faire bouillir le miso.", tags:["Probiotiques","Microbiome","Minéraux","Sans gluten","Vegan"], article:"Les aliments fermentés et le microbiome", precaution:null,
+    ingredients:[{nom:"Miso non pasteurisé",qty:"2 c.s.",key:true},{nom:"Algues wakamé séchées",qty:"1 c.s.",key:true},{nom:"Champignons shiitake",qty:"6"},{nom:"Carotte",qty:"1"},{nom:"Panais",qty:"1"},{nom:"Eau",qty:"700 ml"},{nom:"Gingembre frais",qty:"2 cm"}],
+    conseil:"Achète le miso au rayon réfrigéré des épiceries asiatiques ou bio. Le miso en sachet stable est pasteurisé = plus de probiotiques.",
+    etapes:[{titre:"Préparer les légumes",duree:"5 min",instruction:"Couper carotte et panais en rondelles fines. Émincer les champignons shiitake.",conseil:null},{titre:"Réhydrater les algues",duree:"5 min",instruction:"Faire tremper les algues wakamé 5 min dans l'eau froide.",conseil:null},{titre:"Cuire les légumes",duree:"12 min",instruction:"Porter l'eau à frémissement. Ajouter carotte, panais, shiitake et gingembre râpé. Cuire 12 min.",conseil:null},{titre:"Ajouter les algues",duree:"1 min",instruction:"Égoutter les algues et les ajouter à la soupe. Retirer du feu.",conseil:null},{titre:"Incorporer le miso",duree:"2 min",instruction:"Délayer le miso dans une louche de bouillon tiède. Verser dans la casserole hors feu.",conseil:"La température idéale pour préserver les probiotiques : moins de 60°C."},{titre:"Servir",duree:"1 min",instruction:"Répartir dans des bols. Déguster chaud, en silence si possible.",conseil:null}]
+  },
+  { id:"008", titre:"Kefir bowl aux fruits rouges & granola maison", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Matin", temps:"30 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🫙", badge:"Probiotiques", hero_gradient:"linear-gradient(160deg, #f0d8e8, #903060)", couleur_accent:"#903060", note_nara:"Kefir : jusqu'à 30 souches de bactéries et levures. Fruits rouges : polyphénols = carburant pour les bonnes bactéries. Avoine : bêta-glucane favorable au microbiome.", tags:["Probiotiques","Fermenté","Fibres","Microbiome","Végétarien"], article:"Kéfir et santé intestinale", precaution:null,
+    ingredients:[{nom:"Kéfir de lait",qty:"250 ml",key:true},{nom:"Flocons d'avoine",qty:"80 g"},{nom:"Noisettes",qty:"30 g"},{nom:"Miel",qty:"1 c.s."},{nom:"Fruits rouges",qty:"150 g",key:true},{nom:"Graines de chanvre",qty:"1 c.s."},{nom:"Noix de coco râpée",qty:"1 c.s."}],
+    conseil:"Si tu ne trouves pas de kéfir de lait, le kéfir de coco (vegan) contient aussi des souches probiotiques variées.",
+    etapes:[{titre:"Granola maison",duree:"20 min",instruction:"Mélanger flocons d'avoine, noisettes concassées, miel et noix de coco. Étaler sur plaque. Cuire 15-18 min à 170°C. Laisser refroidir.",conseil:"Le granola refroidit en devenant croustillant — ne pas s'inquiéter si mou à la sortie du four."},{titre:"Préparer les fruits",duree:"2 min",instruction:"Laver les fruits rouges. Les laisser entiers ou les couper selon leur taille.",conseil:null},{titre:"Assembler",duree:"3 min",instruction:"Verser le kéfir dans un bol. Ajouter granola, fruits rouges, graines de chanvre.",conseil:"Ajouter le granola au dernier moment pour conserver le croquant."},{titre:"Déguster",duree:"5 min",instruction:"Consommer immédiatement. Le kéfir froid + fruits froids = microbiome heureux.",conseil:"Ce bowl est encore meilleur quand tu as préparé le granola la veille."}]
+  },
+  { id:"009", titre:"Wrap de laitue, quinoa & sauce yaourt-citron", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Midi", temps:"30 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🥬", badge:"Sans gluten", hero_gradient:"linear-gradient(160deg, #d8f0d8, #287028)", couleur_accent:"#287028", note_nara:"La laitue remplace le pain — naturellement sans gluten, plus digeste. Quinoa : protéine complète, 9 acides aminés. Yaourt : probiotiques doux sans alourdir.", tags:["Sans gluten","Digestion","Léger","Protéines végétales","Végétarien"], article:"Sans gluten : quand et pourquoi ?", precaution:null,
+    ingredients:[{nom:"Feuilles de laitue iceberg",qty:"8 grandes"},{nom:"Quinoa cuit",qty:"200 g",key:true},{nom:"Avocat",qty:"1"},{nom:"Carotte râpée",qty:"1"},{nom:"Yaourt nature",qty:"100 g",key:true},{nom:"Citron",qty:"1"},{nom:"Herbes fraîches (menthe, coriandre)",qty:"1 bouquet"},{nom:"Graines de sésame",qty:"1 c.s."}],
+    conseil:"Choisir des grandes feuilles de laitue bien fermes : rincer et sécher soigneusement pour qu'elles ne se déchirent pas.",
+    etapes:[{titre:"Préparer le quinoa",duree:"20 min",instruction:"Rincer le quinoa. Cuire dans 2x son volume d'eau 15 min. Égrener à la fourchette.",conseil:"Rincer le quinoa retire la saponine amère en surface."},{titre:"Préparer la sauce",duree:"3 min",instruction:"Mélanger yaourt, jus de citron, herbes ciselées, sel et poivre.",conseil:null},{titre:"Préparer les garnitures",duree:"5 min",instruction:"Écraser l'avocat grossièrement. Râper la carotte.",conseil:null},{titre:"Assembler les wraps",duree:"3 min",instruction:"Disposer quinoa, avocat, carotte sur chaque feuille de laitue. Napper de sauce. Parsemer de graines de sésame.",conseil:"Manger avec les mains, comme des rouleaux de printemps — c'est le but."}]
+  },
+  { id:"010", titre:"Compote pomme-poire au gingembre & cardamome", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Collation", temps:"20 min", portions:3, niveau:"Très facile", regime:"Vegan", emoji:"🍏", badge:"Transit doux", hero_gradient:"linear-gradient(160deg, #f5ecd0, #a07020)", couleur_accent:"#a07020", note_nara:"Pectine des pommes/poires : gel apaisant qui régule le transit dans les deux sens. Gingembre : antispasmodique. Cardamome : propriétés digestives ayurvédiques.", tags:["Digestion","Transit","Doux","Sans gluten","Vegan"], article:"Les fruits comme alliés digestifs", precaution:null,
+    ingredients:[{nom:"Pommes",qty:"3"},{nom:"Poires",qty:"2"},{nom:"Gingembre frais",qty:"2 cm",key:true},{nom:"Cardamome moulue",qty:"½ c.c.",key:true},{nom:"Cannelle",qty:"½ c.c."},{nom:"Eau",qty:"4 c.s."},{nom:"Citron",qty:"½"}],
+    conseil:"Ne pas éplucher les pommes : la pectine se concentre juste sous la peau. Mixer avec la peau pour bénéficier de toutes les fibres.",
+    etapes:[{titre:"Couper les fruits",duree:"5 min",instruction:"Laver les fruits. Couper pommes et poires en dés. Retirer les pépins mais garder la peau.",conseil:null},{titre:"Cuire",duree:"12 min",instruction:"Mettre dans une casserole avec l'eau, le gingembre râpé et les épices. Cuire à couvert 12 min à feu doux.",conseil:"Feu doux = cuisson vapeur douce. La pectine se libère mieux ainsi."},{titre:"Mixer",duree:"2 min",instruction:"Hors du feu, mixer grossièrement (pas trop lisse — les fibres restent actives).",conseil:null},{titre:"Finition",duree:"1 min",instruction:"Ajouter le jus de citron. Mélanger. Servir tiède ou froid.",conseil:"Se conserve 4-5 jours au réfrigérateur. Parfait en petite quantité à n'importe quelle heure."}]
+  },
+  { id:"011", titre:"Soupe de lentilles corail, carotte & lait de coco", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Soir", temps:"35 min", portions:3, niveau:"Facile", regime:"Vegan", emoji:"🍲", badge:"Bêta-carotène", hero_gradient:"linear-gradient(160deg, #f8e0c0, #b04010)", couleur_accent:"#b04010", note_nara:"Carottes : bêta-carotène → vitamine A essentielle au renouvellement cutané. Lentilles corail : zinc + protéines → synthèse du collagène. Lait de coco : barrière cutanée.", tags:["Zinc","Bêta-carotène","Peau","Anti-inflammatoire","Sans gluten","Vegan"], article:"Nutri-cosmétique : nourrir sa peau de l'intérieur", precaution:null,
+    ingredients:[{nom:"Lentilles corail",qty:"200 g",key:true},{nom:"Carottes",qty:"3",key:true},{nom:"Lait de coco",qty:"200 ml"},{nom:"Oignon",qty:"1"},{nom:"Ail",qty:"2 gousses"},{nom:"Cumin",qty:"1 c.c."},{nom:"Curcuma",qty:"½ c.c."},{nom:"Bouillon de légumes",qty:"600 ml"},{nom:"Huile de coco",qty:"1 c.s."}],
+    conseil:"La lentille corail ne nécessite pas de trempage : c'est la légumineuse la plus digeste, idéale si tu as le côlon sensible.",
+    etapes:[{titre:"Faire revenir les aromates",duree:"4 min",instruction:"Chauffer l'huile. Faire revenir oignon émincé et ail 3-4 min. Ajouter cumin et curcuma.",conseil:null},{titre:"Ajouter les carottes",duree:"2 min",instruction:"Couper les carottes en rondelles et les ajouter à la casserole. Remuer.",conseil:"Plus les carottes sont orangées, plus elles sont riches en bêta-carotène."},{titre:"Ajouter les lentilles",duree:"1 min",instruction:"Rincer les lentilles corail et les ajouter. Verser le bouillon.",conseil:null},{titre:"Cuire",duree:"20 min",instruction:"Porter à frémissement. Cuire 18-20 min jusqu'à ce que les lentilles soient fondantes.",conseil:null},{titre:"Mixer et finir",duree:"5 min",instruction:"Mixer la soupe. Ajouter le lait de coco. Réchauffer doucement sans bouillir. Ajuster l'assaisonnement.",conseil:"Le lait de coco ajoute des acides gras à chaîne moyenne bénéfiques pour la barrière cutanée."}]
+  },
+  { id:"012", titre:"Tartines de sardines, avocat & graines de tournesol", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Matin", temps:"8 min", portions:2, niveau:"Très facile", regime:"Sans sucre ajouté", emoji:"🐟", badge:"Oméga-3 · Vit. D", hero_gradient:"linear-gradient(160deg, #e8d8c0, #906030)", couleur_accent:"#8a5020", note_nara:"Sardines : source concentrée en oméga-3 EPA/DHA + vitamine D. Bas de la chaîne alimentaire = moins de métaux lourds. Petit-déjeuner salé = meilleure stabilité glycémique.", tags:["Oméga-3","Vitamine D","Peau","Protéines","Sans sucre"], article:"Vitamine D et peau : le lien méconnu", precaution:null,
+    ingredients:[{nom:"Pain au levain ou sans gluten",qty:"4 tranches"},{nom:"Sardines à l'huile d'olive",qty:"1 boîte",key:true},{nom:"Avocat mûr",qty:"1",key:true},{nom:"Graines de tournesol",qty:"1 c.s.",key:true},{nom:"Citron",qty:"½"},{nom:"Piment d'Espelette",qty:"1 pincée"},{nom:"Herbes fraîches (persil, ciboulette)",qty:"quelques brins"}],
+    conseil:"Si tu n'aimes pas les sardines : remplacer par du maquereau fumé — profil nutritionnel similaire, goût plus doux.",
+    etapes:[{titre:"Écraser l'avocat",duree:"2 min",instruction:"Écraser l'avocat à la fourchette avec le jus de citron, sel et piment d'Espelette.",conseil:"Citronner immédiatement pour éviter l'oxydation."},{titre:"Toaster le pain",duree:"3 min",instruction:"Toaster les tranches de pain jusqu'à légère dorure.",conseil:null},{titre:"Égoutter les sardines",duree:"1 min",instruction:"Égoutter légèrement les sardines, garder un peu d'huile.",conseil:"L'huile d'olive de conservation contient aussi des oméga-3."},{titre:"Assembler et servir",duree:"2 min",instruction:"Tartiner d'avocat écrasé. Disposer les sardines. Parsemer de graines de tournesol et d'herbes fraîches.",conseil:"Ce petit-déjeuner protéiné stabilise la glycémie toute la matinée."}]
+  },
+  { id:"013", titre:"Salade de betterave, orange & noix", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Midi", temps:"12 min", portions:2, niveau:"Très facile", regime:"Vegan", emoji:"🫐", badge:"Bétalaïnes", hero_gradient:"linear-gradient(160deg, #f0d0e8, #901050)", couleur_accent:"#901050", note_nara:"Bétalaïnes de la betterave : antioxydants anti-vieillissement cutané. Vitamine C des oranges : synthèse du collagène. Noix : oméga-3 + vitamine E → barrière lipidique.", tags:["Antioxydants","Oméga-3 végétaux","Peau","Sans gluten","Vegan"], article:"Antioxydants et vieillissement cutané", precaution:null,
+    ingredients:[{nom:"Betteraves cuites",qty:"3 moyennes",key:true},{nom:"Oranges",qty:"2",key:true},{nom:"Noix",qty:"40 g",key:true},{nom:"Mâche ou roquette",qty:"60 g"},{nom:"Huile de noix",qty:"2 c.s."},{nom:"Vinaigre balsamique",qty:"1 c.s."},{nom:"Sel, poivre",qty:"à goût"}],
+    conseil:"Choisir des betteraves crues et les cuire soi-même : les betteraves sous vide ont souvent du vinaigre ajouté qui détruit certains pigments.",
+    etapes:[{titre:"Préparer les légumes",duree:"4 min",instruction:"Couper les betteraves en quartiers ou en rondelles. Peler les oranges à vif et couper en tranches.",conseil:"Couper les oranges à vif (sans peau blanche) = moins d'amertume."},{titre:"Concasser les noix",duree:"1 min",instruction:"Concasser grossièrement les noix à la main ou au couteau.",conseil:null},{titre:"Assembler",duree:"3 min",instruction:"Disposer la mâche dans les assiettes. Ajouter betteraves et oranges.",conseil:null},{titre:"Assaisonner",duree:"2 min",instruction:"Préparer la vinaigrette : huile de noix + vinaigre balsamique + sel. Verser. Parsemer de noix concassées.",conseil:"L'huile de noix est fragile : ne jamais la chauffer. Idéale crue."}]
+  },
+  { id:"014", titre:"Tisane adaptogène ashwagandha, réglisse & camomille", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"10 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"🌿", badge:"Adaptogène", hero_gradient:"linear-gradient(160deg, #e8e0f0, #504090)", couleur_accent:"#504090", note_nara:"Ashwagandha : réduction du cortisol cliniquement prouvée. Camomille : apigénine → récepteurs GABA. ⚠️ Réglisse contre-indiquée si hypertension.", tags:["Adaptogène","Cortisol","Stress","Sans gluten","Vegan","Rituel"], article:"Adaptogènes : que dit la science ?", precaution:"Si hypertension ou médicaments : consulter avant usage régulier de réglisse",
+    ingredients:[{nom:"Ashwagandha en poudre",qty:"½ c.c.",key:true},{nom:"Réglisse (racine ou en poudre)",qty:"¼ c.c.",key:true},{nom:"Camomille séchée",qty:"1 c.s.",key:true},{nom:"Eau",qty:"250 ml"},{nom:"Miel",qty:"1 c.c."}],
+    conseil:"L'ashwagandha a une légère amertume terreuse — le miel et la réglisse la masquent naturellement. Commence par une petite dose.",
+    etapes:[{titre:"Bouillir l'eau",duree:"2 min",instruction:"Porter 250 ml d'eau à ébullition.",conseil:null},{titre:"Infuser",duree:"7 min",instruction:"Mettre camomille, ashwagandha et réglisse dans une théière ou infuseur. Verser l'eau bouillante. Laisser infuser 7 min à couvert.",conseil:"Couvrir pendant l'infusion pour ne pas perdre les composés volatils actifs."},{titre:"Filtrer et sucrer",duree:"1 min",instruction:"Filtrer la tisane. Ajouter le miel hors feu.",conseil:"Boire idéalement 1h avant le coucher dans le calme, sans écran."}]
+  },
+  { id:"015", titre:"Energy balls chocolat noir, noix du Brésil & datte", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Collation", temps:"15 min", portions:12, niveau:"Très facile", regime:"Vegan", emoji:"🍫", badge:"Magnésium", hero_gradient:"linear-gradient(160deg, #2a1a10, #5a2810)", couleur_accent:"#5a2810", note_nara:"Magnésium des amandes + sélénium des noix du Brésil → régulation système nerveux. Le stress épuise le magnésium : cercle vicieux réel. 2 noix du Brésil/jour = 100% des besoins en sélénium.", tags:["Magnésium","Sélénium","Stress","Sans cuisson","Sans sucre ajouté","Vegan"], article:"Magnésium et système nerveux", precaution:null,
+    ingredients:[{nom:"Dattes Medjool",qty:"150 g",key:true},{nom:"Amandes",qty:"100 g"},{nom:"Noix du Brésil",qty:"40 g",key:true},{nom:"Cacao en poudre non sucré",qty:"2 c.s.",key:true},{nom:"Noix de coco râpée",qty:"2 c.s. + pour enrobage"},{nom:"Sel de mer",qty:"1 pincée"},{nom:"Vanille",qty:"½ c.c."}],
+    conseil:"Si les dattes sont sèches, les tremper 10 min dans l'eau tiède avant utilisation. Mixer d'abord les fruits secs, puis ajouter les dattes petit à petit.",
+    etapes:[{titre:"Dénoyauter",duree:"3 min",instruction:"Dénoyauter les dattes. Réserver.",conseil:null},{titre:"Mixer les fruits secs",duree:"2 min",instruction:"Mixer amandes et noix du Brésil en poudre grossière dans un blender.",conseil:"Ne pas trop mixer : des petits morceaux donnent de la texture."},{titre:"Assembler la pâte",duree:"3 min",instruction:"Ajouter les dattes, cacao, noix de coco, vanille et sel. Mixer jusqu'à obtenir une pâte qui se tient.",conseil:"La pâte doit coller légèrement aux doigts sans être collante."},{titre:"Former et rouler",duree:"5 min",instruction:"Former des boules de la taille d'une noix. Rouler dans la noix de coco râpée.",conseil:"Se conserve 2 semaines au réfrigérateur. Parfait pour anticiper les moments de stress."}]
+  },
+  { id:"016", titre:"Riz basmati aux légumes verts & amandes grillées", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Midi", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🥦", badge:"Magnésium", hero_gradient:"linear-gradient(160deg, #d0e8d0, #306030)", couleur_accent:"#306030", note_nara:"Légumes verts : meilleures sources de magnésium végétal. Riz basmati : IG plus bas que le riz blanc — évite les pics glycémiques anxiogènes.", tags:["Magnésium","Tryptophane","Stress","Sans gluten","Vegan"], article:"Alimentation anti-stress au quotidien", precaution:null,
+    ingredients:[{nom:"Riz basmati",qty:"160 g"},{nom:"Brocoli",qty:"½ tête",key:true},{nom:"Haricots verts",qty:"150 g",key:true},{nom:"Épinards frais",qty:"80 g"},{nom:"Amandes effilées",qty:"30 g",key:true},{nom:"Ail",qty:"2 gousses"},{nom:"Huile d'olive",qty:"2 c.s."},{nom:"Citron",qty:"1"},{nom:"Sel, poivre",qty:"à goût"}],
+    conseil:"Griller les amandes à sec dans une poêle anti-adhésive — elles développent des arômes et deviennent croustillantes sans matière grasse ajoutée.",
+    etapes:[{titre:"Cuire le riz",duree:"18 min",instruction:"Rincer le riz. Cuire selon les instructions, à l'eau salée. Égrener à la fourchette.",conseil:null},{titre:"Cuire les légumes",duree:"8 min",instruction:"Cuire le brocoli et les haricots verts à la vapeur ou à l'eau bouillante salée — rester al dente.",conseil:"Légumes al dente = plus de magnésium conservé. La surcuisson dégrade les minéraux."},{titre:"Faire revenir",duree:"3 min",instruction:"Chauffer l'huile d'olive, faire revenir l'ail. Ajouter les épinards 1 min.",conseil:null},{titre:"Griller les amandes",duree:"3 min",instruction:"Dans une poêle sèche, griller les amandes effilées à feu moyen 2-3 min en remuant.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Mélanger riz, légumes, épinards. Disposer dans les assiettes. Parsemer d'amandes. Zester le citron.",conseil:"Le zeste de citron ajoute de la vivacité sans acidité."}]
+  },
+  { id:"017", titre:"Dîner léger : velouté de courgette & fromage de chèvre", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Soir", temps:"28 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🥣", badge:"Léger", hero_gradient:"linear-gradient(160deg, #d8f0d8, #185028)", couleur_accent:"#185028", note_nara:"Repas lourd le soir = maintien en mode actif → retarde endormissement. Fromage de chèvre : tryptophane → mélatonine. Idéalement avant 20h.", tags:["Sommeil","Tryptophane","Léger","Sans gluten","Végétarien"], article:"Ce que tu manges le soir change ton sommeil", precaution:null,
+    ingredients:[{nom:"Courgettes",qty:"3 moyennes"},{nom:"Fromage de chèvre frais",qty:"80 g",key:true},{nom:"Oignon",qty:"1"},{nom:"Bouillon de légumes",qty:"500 ml"},{nom:"Huile d'olive",qty:"1 c.s."},{nom:"Noix de muscade",qty:"1 pincée"},{nom:"Sel, poivre",qty:"à goût"},{nom:"Graines de courge",qty:"1 c.s. pour servir"}],
+    conseil:"Manger ce velouté idéalement au moins 2h avant de dormir. L'heure du dîner influence la qualité du sommeil autant que le contenu de l'assiette.",
+    etapes:[{titre:"Faire revenir",duree:"4 min",instruction:"Faire revenir l'oignon émincé dans l'huile d'olive jusqu'à transparence.",conseil:null},{titre:"Ajouter les courgettes",duree:"2 min",instruction:"Couper les courgettes en rondelles. Ajouter à la casserole et faire revenir 2 min.",conseil:null},{titre:"Cuire",duree:"15 min",instruction:"Verser le bouillon. Porter à frémissement et cuire 15 min.",conseil:null},{titre:"Mixer et crémer",duree:"3 min",instruction:"Mixer finement. Ajouter le fromage de chèvre et mixer à nouveau. Assaisonner avec muscade, sel, poivre.",conseil:"Le fromage de chèvre en fin de cuisson = texte crémeuse sans matière grasse lourde."},{titre:"Servir",duree:"1 min",instruction:"Verser dans des bols. Parsemer de graines de courge. Servir chaud.",conseil:"Un dîner terminé avant 20h optimise la fenêtre de récupération nocturne."}]
+  },
+  { id:"018", titre:"Overnight oats cerise, lavande & graines de courge", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"8 min", portions:1, niveau:"Très facile", regime:"Végétarien", emoji:"🍒", badge:"Mélatonine", hero_gradient:"linear-gradient(160deg, #2a1040, #7020b0)", couleur_accent:"#7020b0", note_nara:"Cerises : source alimentaire la plus documentée de mélatonine naturelle. Graines de courge : magnésium + tryptophane = précurseurs directs de la mélatonine.", tags:["Mélatonine","Sommeil","Magnésium","Sans cuisson","Végétarien"], article:"Mélatonine alimentaire : mythe ou réalité ?", precaution:null,
+    ingredients:[{nom:"Flocons d'avoine",qty:"60 g"},{nom:"Lait d'amande ou de vache",qty:"150 ml"},{nom:"Yaourt nature",qty:"50 g"},{nom:"Cerises (fraîches ou surgelées)",qty:"100 g",key:true},{nom:"Graines de courge",qty:"1 c.s.",key:true},{nom:"Lavande alimentaire séchée",qty:"½ c.c.",key:true},{nom:"Miel",qty:"1 c.c."}],
+    conseil:"Préparer la veille au soir — 8 heures de trempage permettent aux flocons de libérer leur amidon résistant prébiotique.",
+    etapes:[{titre:"Préparer la base (veille au soir)",duree:"3 min",instruction:"Mélanger flocons d'avoine, lait, yaourt, lavande et miel dans un bocal. Remuer.",conseil:"La lavande : une petite pincée suffit, l'effet est subtil et apaisant."},{titre:"Laisser reposer",duree:"0 min",instruction:"Couvrir et réfrigérer toute la nuit (minimum 6h).",conseil:"Plus le trempage est long, plus l'amidon résistant se développe : meilleur pour le microbiome."},{titre:"Garnir le matin",duree:"3 min",instruction:"Le matin, remuer les oats. Disposer les cerises dénoyautées et les graines de courge par-dessus.",conseil:"Cerises fraîches en saison, surgelées le reste de l'année — la mélatonine est préservée par la congélation."}]
+  },
+  { id:"019", titre:"Omelette aux herbes fraîches & légumes sautés", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Midi", temps:"18 min", portions:1, niveau:"Facile", regime:"Sans lactose", emoji:"🍳", badge:"Traceur", hero_gradient:"linear-gradient(160deg, #f0e8d0, #907020)", couleur_accent:"#907020", note_nara:"Repas traceur idéal Nara : peu d'ingrédients, composition claire, reproductible. Œufs : protéine complète hautement biodisponible.", tags:["Protéines","Repas traceur","Digestion","Sans gluten","Sans lactose"], article:"Comment utiliser un repas traceur", precaution:null,
+    ingredients:[{nom:"Œufs",qty:"3",key:true},{nom:"Poivron",qty:"½"},{nom:"Courgette",qty:"½"},{nom:"Herbes fraîches (persil, ciboulette)",qty:"1 bouquet"},{nom:"Huile d'olive",qty:"1 c.s."},{nom:"Sel, poivre",qty:"à goût"}],
+    conseil:"Observer dans les 2h et 4h après ce repas : ballonnements ? Transit ? Énergie ? Ce sont tes données patterns.",
+    etapes:[{titre:"Préparer les légumes",duree:"5 min",instruction:"Couper poivron et courgette en petits dés.",conseil:null},{titre:"Sauter les légumes",duree:"5 min",instruction:"Chauffer l'huile à feu moyen-vif. Faire sauter les légumes 4-5 min jusqu'à légère dorure.",conseil:"Feu assez vif = légumes saisis, pas bouillis. Meilleure texture et plus digeste."},{titre:"Préparer les œufs",duree:"2 min",instruction:"Battre les œufs avec sel, poivre et herbes ciselées.",conseil:null},{titre:"Cuire l'omelette",duree:"3 min",instruction:"Verser les œufs sur les légumes. Cuire à feu moyen 2-3 min. Replier et servir légèrement baveuse.",conseil:"Omelette légèrement baveuse = protéines moins dénaturées, plus faciles à digérer."},{titre:"Observer",duree:"0 min",instruction:"Manger lentement. Ouvrir Nara et noter: comment tu te sens avant le repas. Revenir 2h et 4h après.",conseil:null}]
+  },
+  { id:"020", titre:"Bouillon de légumes maison à congeler", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Base culinaire", temps:"70 min", portions:8, niveau:"Facile", regime:"Vegan", emoji:"🫙", badge:"Base neutre", hero_gradient:"linear-gradient(160deg, #d8e8d8, #204820)", couleur_accent:"#204820", note_nara:"Game-changer pour les repas traceurs : contrôle total des ingrédients. Zéro glutamate, zéro additif. Quand tu sais exactement ce que tu as mangé, identifier l'inconfort devient possible.", tags:["Repas traceur","Patterns","Congélation","Sans gluten","Vegan"], article:"L'élimination alimentaire expliquée", precaution:null,
+    ingredients:[{nom:"Carottes",qty:"3"},{nom:"Branches de céleri",qty:"3"},{nom:"Oignon",qty:"2"},{nom:"Poireaux",qty:"2"},{nom:"Ail",qty:"4 gousses"},{nom:"Persil frais",qty:"1 bouquet"},{nom:"Thym frais",qty:"3 branches"},{nom:"Laurier",qty:"2 feuilles"},{nom:"Eau",qty:"2 litres"},{nom:"Sel",qty:"1 c.c."}],
+    conseil:"Faire de grandes quantités et congeler en portions de 200-300 ml dans des sachets ou des bacs à glaçons : disponible en 5 min pour n'importe quelle recette.",
+    etapes:[{titre:"Préparer les légumes",duree:"10 min",instruction:"Laver et couper grossièrement tous les légumes. Pas besoin d'éplucher : gratter ou laver soigneusement.",conseil:"Les pelures contiennent des minéraux : les utiliser quand elles sont bio."},{titre:"Faire revenir (optionnel)",duree:"5 min",instruction:"Dans une grande casserole, faire revenir les légumes à sec 4-5 min pour développer les saveurs.",conseil:"Cette étape n'est pas obligatoire mais donne plus de profondeur."},{titre:"Mijoter",duree:"45 min",instruction:"Couvrir d'eau froide. Porter à ébullition puis réduire à frémissement. Cuire 45 min à couvert.",conseil:"Ne jamais bouillir fort : le bouillon deviendrait trouble et amer."},{titre:"Filtrer",duree:"5 min",instruction:"Filtrer à travers une passoire fine. Presser les légumes pour extraire tout le liquide.",conseil:null},{titre:"Conditionner et congeler",duree:"5 min",instruction:"Laisser refroidir. Portionner dans des récipients adaptés à la congélation. Étiqueter avec la date.",conseil:"Se conserve 3 mois au congélateur. La base de tous tes repas traceurs."}]
+  }
+];
+
+// ===== STATE =====
+let currentOnglet = "dig";
+let currentRecette = null;
+let currentSubTab = "resume";
+let etapeIndex = 0;
+
+// ===== NAV =====
+// Screens that show the bottom nav
+const MAIN_SCREENS = ['home','journal','insights','library','routines','recipes'];
+// Map screen → which bnav item is "active"
+const BNAV_MAP = {
+  home: 'home', journal: null, insights: 'insights',
+  library: 'library', routines: 'routines',
+  recipes: 'recipes', 'recipe-detail': 'recipes',
+  'article-detail': 'library', 'routine-detail': 'routines'
+};
+
+function updateBottomNav(screenId) {
+  // Update the fixed home bottom nav
+  ['home','insights','routines','library','recipes'].forEach(k => {
+    const el = document.getElementById('bnav-' + k);
+    if (el) el.classList.toggle('active', BNAV_MAP[screenId] === k);
+  });
+  // Update all shared bottom navs (prefixed)
+  const prefixes = ['jrn','ins','lib','rout','rec'];
+  prefixes.forEach(pfx => {
+    ['home','insights','routines','library','recipes'].forEach(k => {
+      const el = document.getElementById(pfx + '-bnav-' + k);
+      if (el) el.classList.toggle('active', BNAV_MAP[screenId] === k);
+    });
+  });
+}
+
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'recipes') renderRecettes();
+  if (id === 'library') renderBibliotheque();
+  if (id === 'routines') renderRoutines();
+  updateBottomNav(id);
+  // Scroll to top on screen change
+  if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
+}
+
+// Simplified nav function — use this everywhere instead of showScreen(id, querySelector(...))
+function go(screenId) {
+  showScreen(screenId, null);
+}
+
+// ===== RECETTES — LISTE =====
+function getOngletColor(id) {
+  return onglets.find(o => o.id === id)?.couleur || '#818263';
+}
+
+function renderRecettes() {
+  renderTabs();
+  renderList();
+}
+
+function renderTabs() {
+  const container = document.getElementById('rec-tabs');
+  container.innerHTML = onglets.map(o => `
+    <div class="rec-tab${o.id === currentOnglet ? ' active' : ''}"
+      style="${o.id === currentOnglet ? `background:${o.couleur};` : ''}"
+      onclick="selectOnglet('${o.id}', this)">${o.label}</div>
+  `).join('');
+}
+
+function selectOnglet(id, el) {
+  currentOnglet = id;
+  document.querySelectorAll('.rec-tab').forEach(t => {
+    t.classList.remove('active');
+    t.style.background = '';
+    t.style.color = '';
+    t.style.borderColor = '';
+  });
+  el.classList.add('active');
+  el.style.background = getOngletColor(id);
+  el.style.color = 'white';
+  el.style.borderColor = 'transparent';
+  renderList();
+}
+
+function renderList() {
+  const list = recettes.filter(r => r.onglet === currentOnglet);
+  const color = getOngletColor(currentOnglet);
+  document.getElementById('rec-list').innerHTML = list.map(r => `
+    <div class="rec-card-list" onclick="openRecette('${r.id}')">
+      <div class="rec-card-thumb" style="background:${r.hero_gradient}">${r.emoji}</div>
+      <div class="rec-card-info">
+        <div class="rec-card-rubrique">${r.rubrique}</div>
+        <div class="rec-card-titre">${r.titre}</div>
+        <div class="rec-card-meta-row">
+          <span class="rec-meta-chip">⏱ ${r.temps}</span>
+          <span class="rec-meta-chip">🍽 ${r.portions} pers.</span>
+          <span class="rec-meta-chip">${r.niveau}</span>
+        </div>
+        <div><span class="rec-badge-pill" style="background:${color}">${r.badge}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== RECETTE DÉTAIL =====
+function openRecette(id) {
+  currentRecette = recettes.find(r => r.id === id);
+  const r = currentRecette;
+  const color = r.couleur_accent;
+
+  // Hero
+  document.getElementById('recipe-hero').style.background = r.hero_gradient;
+  document.getElementById('detail-emoji').textContent = r.emoji;
+  document.getElementById('detail-rubrique').textContent = r.rubrique;
+  document.getElementById('detail-rubrique').style.color = color;
+  document.getElementById('detail-titre').textContent = r.titre;
+
+  // Chips
+  const chips = [r.moment, r.temps, `${r.portions} pers.`, r.niveau, r.regime];
+  document.getElementById('detail-chips').innerHTML = chips.map(c =>
+    `<span class="recipe-chip">${c}</span>`
+  ).join('');
+
+  // Sub tabs accent color
+  document.querySelectorAll('.recipe-sub-tab').forEach(t => t.style.borderBottomColor = '');
+  document.querySelector('.recipe-sub-tab.active').style.borderBottomColor = color;
+
+  // Résumé
+  const precaution = r.precaution ? `<div class="precaution-box">⚠️ ${r.precaution}</div>` : '';
+  const tagsHtml = r.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
+  document.getElementById('recipe-content-resume').innerHTML = `
+    ${precaution}
+    <div class="note-nara-box" style="border-left-color:${color}">
+      <div class="note-nara-label">✦ Note Nara</div>
+      <div class="note-nara-text">${r.note_nara}</div>
+    </div>
+    <div class="info-cards-grid">
+      <div class="info-card"><div class="info-card-icon">⏱</div><div class="info-card-val">${r.temps}</div><div class="info-card-label">Temps total</div></div>
+      <div class="info-card"><div class="info-card-icon">🍽</div><div class="info-card-val">${r.portions}</div><div class="info-card-label">Portions</div></div>
+      <div class="info-card"><div class="info-card-icon">📅</div><div class="info-card-val">${r.moment}</div><div class="info-card-label">Moment</div></div>
+      <div class="info-card"><div class="info-card-icon">⚡</div><div class="info-card-val">${r.niveau}</div><div class="info-card-label">Niveau</div></div>
+    </div>
+    <div class="tags-pills">${tagsHtml}</div>
+    <div class="article-link-card">
+      <div class="article-link-icon">📖</div>
+      <div><div class="article-link-label">Article lié</div><div class="article-link-title">${r.article}</div></div>
+      <span style="color:var(--text-light);margin-left:auto;font-size:1rem">→</span>
+    </div>
+    <button class="cta-btn" style="background:${color}" onclick="openModale()">C'est parti ! →</button>
+  `;
+
+  // Ingrédients
+  const ingredsHtml = r.ingredients.map(ing => `
+    <div class="ingredient-item ${ing.key ? 'ingredient-key' : ''}">
+      <div class="ingredient-dot" style="background:${ing.key ? color : 'var(--oat)'}"></div>
+      <div class="ingredient-name">${ing.nom}${ing.key ? ' ✦' : ''}</div>
+      <div class="ingredient-qty">${ing.qty}</div>
+    </div>
+  `).join('');
+  document.getElementById('recipe-content-ingredients').innerHTML = `
+    <div class="ingredients-list">${ingredsHtml}</div>
+    <div class="conseil-bulle">${r.conseil}</div>
+    <button class="cta-btn" style="background:${color}" onclick="openModale()">C'est parti ! →</button>
+  `;
+
+  // Reset sub tab
+  switchSubTab('resume', document.getElementById('subtab-resume'));
+
+  showScreen('recipe-detail', null);
+}
+
+function switchSubTab(tab, el) {
+  currentSubTab = tab;
+  const color = currentRecette?.couleur_accent || '#818263';
+  document.querySelectorAll('.recipe-sub-tab').forEach(t => {
+    t.classList.remove('active');
+    t.style.borderBottomColor = 'transparent';
+  });
+  el.classList.add('active');
+  el.style.borderBottomColor = color;
+  document.getElementById('recipe-content-resume').style.display = tab === 'resume' ? 'block' : 'none';
+  document.getElementById('recipe-content-ingredients').style.display = tab === 'ingredients' ? 'block' : 'none';
+}
+
+// ===== MODALE CUISSON =====
+function openModale() {
+  etapeIndex = 0;
+  renderEtape();
+  document.getElementById('modale-cuisson').classList.add('open');
+}
+
+function closeModale() {
+  document.getElementById('modale-cuisson').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modale-cuisson')) closeModale();
+}
+
+function renderEtape() {
+  const r = currentRecette;
+  const etapes = r.etapes;
+  const etape = etapes[etapeIndex];
+  const total = etapes.length;
+  const color = r.couleur_accent;
+
+  document.getElementById('modale-counter').textContent = `Étape ${etapeIndex + 1} sur ${total}`;
+  document.getElementById('modale-progress-fill').style.width = `${((etapeIndex + 1) / total) * 100}%`;
+  document.getElementById('modale-progress-fill').style.background = color;
+  document.getElementById('modale-etape-titre').textContent = etape.titre;
+  document.getElementById('modale-duree').textContent = etape.duree && etape.duree !== "0 min" ? `⏱ ${etape.duree}` : '';
+  document.getElementById('modale-instruction').textContent = etape.instruction;
+
+  const conseilEl = document.getElementById('modale-conseil');
+  if (etape.conseil) {
+    conseilEl.textContent = etape.conseil;
+    conseilEl.style.display = 'block';
+    conseilEl.style.background = color;
+  } else {
+    conseilEl.style.display = 'none';
+  }
+
+  const prevBtn = document.getElementById('modale-prev');
+  prevBtn.style.display = etapeIndex === 0 ? 'none' : 'block';
+
+  const nextBtn = document.getElementById('modale-next');
+  if (etapeIndex === total - 1) {
+    nextBtn.textContent = 'Terminé ✓';
+    nextBtn.style.background = '#C2C395';
+  } else {
+    nextBtn.textContent = 'Suivant →';
+    nextBtn.style.background = color;
+  }
+}
+
+function stepNext() {
+  const total = currentRecette.etapes.length;
+  if (etapeIndex < total - 1) {
+    etapeIndex++;
+    renderEtape();
+  } else {
+    closeModale();
+  }
+}
+
+function stepPrev() {
+  if (etapeIndex > 0) {
+    etapeIndex--;
+    renderEtape();
+  }
+}
+
+// Init
+renderRecettes();
+
+// ===== BIBLIOTHÈQUE DATA =====
+const libSections = [
+  { id:"s1", label:"🧠 Comprendre", couleur:"#c8963c", gradient:"linear-gradient(135deg, #F6EAD4, #EFD7CF)", text:"#3d3a30" },
+  { id:"s2", label:"🥗 Alimentation", couleur:"#818263", gradient:"linear-gradient(135deg, #C2C395, #818263)", text:"#fff" },
+  { id:"s3", label:"✨ Peau", couleur:"#c06060", gradient:"linear-gradient(135deg, #EFD7CF, #DDBAAE)", text:"#3d3a30" },
+  { id:"s4", label:"🌿 Stress", couleur:"#8a8ec4", gradient:"linear-gradient(135deg, #e8e4f4, #8a8ec4)", text:"#3d3a30" },
+  { id:"s5", label:"🌙 Sommeil", couleur:"#4a4080", gradient:"linear-gradient(135deg, #1a1a2e, #4a4080)", text:"#fff" },
+  { id:"s6", label:"🔍 Patterns", couleur:"#2a5a2a", gradient:"linear-gradient(135deg, #1e2a1e, #2a5a2a)", text:"#fff" }
+];
+
+const libArticles = [
+  { id:"001", section:"s1", titre:"L'axe intestin-peau : le lien que personne ne t'a expliqué", sous_titre:"Introduction à l'approche holistique Nara", temps:"6 min", prev:null, next:"002", points_cles:["L'intestin et la peau communiquent en permanence via le microbiome","80% du système immunitaire réside dans l'intestin","Un déséquilibre intestinal se lit souvent sur la peau avant tout symptôme digestif","L'approche Nara : observer les deux ensemble pour trouver la cause"], note_nara:"Ce n'est pas de la médecine alternative — c'est de la gastro-dermatologie, une spécialité médicale reconnue qui étudie précisément cette connexion.", alerte:false },
+  { id:"002", section:"s1", titre:"L'axe intestin-peau : quand ton ventre s'exprime sur ta peau", sous_titre:"Les mécanismes concrets de la connexion", temps:"5 min", prev:"001", next:"003", points_cles:["La perméabilité intestinale : quand la barrière intestinale laisse passer ce qu'elle ne devrait pas","Les LPS (lipopolysaccharides) : molécules bactériennes pro-inflammatoires qui atteignent la peau","Le rôle des cytokines inflammatoires dans les poussées cutanées","Pourquoi traiter la peau de l'extérieur ne suffit pas"], note_nara:"La perméabilité intestinale n'est pas un diagnostic médical reconnu officiellement, mais un mécanisme physiologique documenté dans la littérature scientifique.", alerte:false },
+  { id:"003", section:"s1", titre:"Le microbiome : 38 000 milliards d'alliés (ou d'ennemis)", sous_titre:"Comprendre la communauté microbienne qui vit en toi", temps:"7 min", prev:"002", next:"004", points_cles:["Le microbiome intestinal pèse entre 1,5 et 2 kg","Diversité = santé : plus tu as de souches différentes, mieux tu te portes","Les facteurs qui appauvrissent le microbiome : antibiotiques, stress, sucre, manque de fibres","Les facteurs qui le nourrissent : fibres variées, fermentés, polyphénols, sommeil"], note_nara:"Le microbiome est unique à chaque personne — comme une empreinte digitale. Ce qui fonctionne pour une personne peut ne pas fonctionner pour une autre.", alerte:false },
+  { id:"004", section:"s1", titre:"Inflammation chronique : le feu silencieux", sous_titre:"Pourquoi l'inflammation de bas grade change tout", temps:"6 min", prev:"003", next:"005", points_cles:["Différence entre inflammation aiguë (protectrice) et inflammation chronique (destructrice)","L'inflammation chronique de bas grade : invisible mais omniprésente","Ses marqueurs : CRP, IL-6, TNF-α — ce qu'ils signifient","Alimentation anti-inflammatoire : ce que dit réellement la science"], note_nara:"L'inflammation chronique est impliquée dans la majorité des maladies chroniques modernes — pas seulement les maladies auto-immunes.", alerte:false },
+  { id:"005", section:"s1", titre:"Comment lire les signaux de ton corps", sous_titre:"Développer son intelligence corporelle", temps:"5 min", prev:"004", next:null, points_cles:["Les symptômes comme langage : ce que ton corps essaie de te dire","La différence entre symptôme et cause","L'importance du timing : symptômes immédiats vs différés (4-72h)","Commencer à observer sans interpréter — la première étape"], note_nara:"Observer ses symptômes n'est pas de l'hypocondrie — c'est de l'intelligence corporelle. Nara t'aide à transformer cette observation en données exploitables.", alerte:false },
+  { id:"006", section:"s2", titre:"Manger pour ton microbiome : les grands principes", sous_titre:"Les bases de la nutrition fonctionnelle pour l'intestin", temps:"6 min", prev:null, next:"007", points_cles:["La règle des 30 végétaux par semaine (étude American Gut Project)","Diversité > perfection : varier les sources plutôt que d'optimiser une seule","Prébiotiques (nourriture des bactéries) vs Probiotiques (bactéries elles-mêmes)","Les polyphénols : les pigments colorés des végétaux comme carburant du microbiome"], note_nara:"Manger 30 végétaux différents par semaine semble beaucoup — mais herbes aromatiques, épices et thés comptent.", alerte:false },
+  { id:"007", section:"s2", titre:"Les aliments pro-inflammatoires à connaître", sous_titre:"Ce qui alimente le feu silencieux", temps:"5 min", prev:"006", next:"008", points_cles:["Sucres raffinés et index glycémique élevé","Huiles végétales riches en oméga-6 (tournesol, maïs) en excès","Aliments ultra-transformés : émulsifiants, additifs et microbiome","Alcool et perméabilité intestinale","Gluten et produits laitiers : pour qui, dans quels contextes"], note_nara:"Aucun aliment n'est universellement mauvais. Le contexte (fréquence, quantité, état de ton microbiome) détermine l'impact réel.", alerte:false },
+  { id:"008", section:"s2", titre:"Aliments fermentés : pourquoi et comment les intégrer", sous_titre:"Le retour des probiotiques naturels dans l'assiette", temps:"7 min", prev:"007", next:"009", points_cles:["Fermentation lacto vs fermentation alcoolique : ce qui compte pour le microbiome","Kefir, yaourt, miso, kimchi, choucroute, tempeh : les champions","La règle d'or : non pasteurisé = vivant = efficace","Comment introduire les fermentés sans ballonnements"], note_nara:"Commencer doucement : 1 cuillère à soupe de choucroute crue par jour pendant une semaine, puis augmenter progressivement.", alerte:false },
+  { id:"009", section:"s2", titre:"Fibres : les deux types et pourquoi ça change tout", sous_titre:"Solubles, insolubles — le guide complet", temps:"5 min", prev:"008", next:"010", points_cles:["Fibres solubles (pectine, bêta-glucane, inuline) : nourrissent les bactéries, forment un gel","Fibres insolubles (cellulose, lignine) : accélèrent le transit, nettoient mécaniquement","Objectif : 25-30g/jour — la majorité des gens en consomment 15g","Augmenter progressivement pour éviter les inconforts"], note_nara:"Les fibres prébiotiques sont la nourriture préférée de Lactobacillus et Bifidobacterium — les deux genres les plus étudiés pour la santé intestinale.", alerte:false },
+  { id:"010", section:"s2", titre:"Sucre et intestin : ce que la science dit vraiment", sous_titre:"Au-delà des idées reçues sur le sucre", temps:"6 min", prev:"009", next:"011", points_cles:["Sucres naturels vs sucres raffinés : une distinction importante mais pas absolue","Le fructose en excès et la perméabilité intestinale","Index glycémique vs charge glycémique : ce qui compte vraiment","Les édulcorants artificiels et le microbiome","Pic glycémique et inflammation : le mécanisme"], note_nara:"Le sucre n'est pas le diable — mais la fréquence, la quantité et le contexte (repas complet vs à jeun) changent tout.", alerte:false },
+  { id:"011", section:"s2", titre:"Comprendre ses inconforts digestifs", sous_titre:"Ballonnements, transit, crampes : décoder les signaux", temps:"8 min", prev:"010", next:"012", points_cles:["Ballonnements : gaz de fermentation vs rétention d'eau vs hypersensibilité viscérale","Transit lent vs transit rapide : causes et approches différentes","FODMAP : les glucides fermentescibles qui posent problème à certains","Quand les inconforts digestifs signalent quelque chose de plus sérieux","L'approche d'élimination : comment la faire intelligemment"], note_nara:"Les inconforts digestifs chroniques méritent une consultation médicale pour exclure une pathologie. Nara complète le suivi médical, ne le remplace pas.", alerte:true },
+  { id:"012", section:"s2", titre:"Le jeûne intermittent et le microbiome", sous_titre:"Ce que les fenêtres alimentaires font à ta flore", temps:"5 min", prev:"011", next:null, points_cles:["L'autophagie et le nettoyage cellulaire : ce qui se passe pendant le jeûne","Impact sur la diversité microbienne : données actuelles","16:8, 5:2, OMAD : quel protocole pour quel profil","Les contre-indications : pour qui le jeûne est déconseillé"], note_nara:"Le jeûne intermittent n'est pas adapté à tout le monde — notamment aux personnes avec antécédents de TCA, femmes enceintes, ou insuffisance pondérale.", alerte:false },
+  { id:"013", section:"s3", titre:"La peau, miroir de l'intérieur", sous_titre:"Pourquoi la peau est le dernier organe informé", temps:"5 min", prev:null, next:"014", points_cles:["La peau : 3e organe d'élimination après le foie et les reins","Ce que les zones du visage révèlent selon la médecine chinoise (avec nuances)","Peau grasse, peau sèche, peau mixte : ce que ça dit du métabolisme","Les cycles cutanés et leur lien avec les cycles hormonaux"], note_nara:"La cartographie faciale chinoise est une tradition millénaire — pas une science validée. Mais certaines corrélations (foie/tempes, intestin/menton) trouvent des échos dans la recherche moderne.", alerte:false },
+  { id:"014", section:"s3", titre:"Ce que ton alimentation écrit sur ta peau", sous_titre:"Le lien direct entre assiette et teint", temps:"6 min", prev:"013", next:"015", points_cles:["Index glycémique et acné : une relation scientifiquement documentée","Oméga-3 et hydratation cutanée : le mécanisme","Vitamine A (bêta-carotène) et renouvellement cellulaire","Zinc et cicatrisation : sources alimentaires et absorption","Le protocole 'manger pour sa peau' de Nara"], note_nara:"Des études cliniques montrent qu'un régime à faible indice glycémique réduit significativement les lésions acnéiques en 12 semaines.", alerte:false },
+  { id:"015", section:"s3", titre:"Eczéma, acné, psoriasis : les pistes fonctionnelles", sous_titre:"Au-delà des traitements topiques", temps:"7 min", prev:"014", next:"016", points_cles:["Eczéma atopique et microbiome intestinal : la connexion Staphylococcus aureus","Acné hormonale vs acné inflammatoire : approches différentes","Psoriasis et intestin : les données sur la perméabilité intestinale","Pistes fonctionnelles : probiotiques, oméga-3, vitamine D, zinc","Ce que les dermatologues commencent à recommander en complément"], note_nara:"Ces pistes sont complémentaires aux traitements médicaux prescrits — jamais en remplacement. Toujours informer ton dermatologue des compléments pris.", alerte:true },
+  { id:"016", section:"s3", titre:"Microbiome cutané : ta peau a aussi sa flore", sous_titre:"L'écosystème invisible qui protège ta peau", temps:"6 min", prev:"015", next:"017", points_cles:["1 million de bactéries par cm² sur ta peau — la majorité bénéfiques","Le rôle protecteur du microbiome cutané contre les pathogènes","Ce qui perturbe le microbiome cutané : savons antibactériens, gels hydroalcooliques, cosmétiques agressifs","La connexion microbiome intestinal ↔ microbiome cutané"], note_nara:"Le surlavage détruit le microbiome cutané protecteur. Un nettoyage doux 1 à 2 fois par jour est souvent suffisant.", alerte:false },
+  { id:"017", section:"s3", titre:"Soleil, pollution, stress oxydatif et peau", sous_titre:"Les agressions extérieures et comment les contrer de l'intérieur", temps:"5 min", prev:"016", next:"018", points_cles:["Radicaux libres et stress oxydatif : le mécanisme du vieillissement cutané","UV, pollution, tabac : les 3 grandes sources de stress oxydatif externe","Les antioxydants alimentaires comme bouclier interne : vitamine C, E, polyphénols, astaxanthine","SPF interne vs externe : les deux sont nécessaires"], note_nara:"L'astaxanthine (pigment rouge des crustacés et microalgues) est l'antioxydant alimentaire le plus puissant connu — 6000x plus que la vitamine C.", alerte:false },
+  { id:"018", section:"s3", titre:"Soins topiques vs soins internes : que choisir ?", sous_titre:"L'approche intégrative inside-out", temps:"6 min", prev:"017", next:null, points_cles:["Les soins topiques agissent sur les symptômes, les soins internes sur les causes","Ce que la peau absorbe vraiment (et ce qu'elle n'absorbe pas)","La synergie optimale : soins internes + routine topique adaptée","Les ingrédients cosmétiques à éviter quand on a un microbiome cutané fragilisé","Le protocole Nara : inside d'abord, outside en soutien"], note_nara:"Il ne s'agit pas de choisir — mais de prioriser. Un soin topique sur une peau alimentée de l'intérieur aura un effet décuplé.", alerte:false },
+  { id:"019", section:"s4", titre:"Le stress chronique et l'intestin : l'axe cerveau-intestin", sous_titre:"Ton deuxième cerveau sous pression", temps:"6 min", prev:null, next:"020", points_cles:["Le système nerveux entérique : 500 millions de neurones dans l'intestin","L'axe cerveau-intestin : une autoroute bidirectionnelle via le nerf vague","Comment le stress cortisol modifie la motilité intestinale et la perméabilité","Pourquoi on a 'les intestins noués' sous stress — le mécanisme exact"], note_nara:"95% de la sérotonine est produite dans l'intestin — pas dans le cerveau. L'humeur et la digestion sont donc intimement liées.", alerte:false },
+  { id:"020", section:"s4", titre:"Cortisol : l'hormone qui dérègle tout", sous_titre:"Comprendre et réguler son cortisol", temps:"5 min", prev:"019", next:"021", points_cles:["Le cortisol : utile en burst, destructeur en chronique","Le cycle naturel du cortisol : pic le matin, baisse progressive, minimum la nuit","Ce qui perturbe le cycle : lumière bleue, café tardif, stress continu, mauvais sommeil","Les adaptogènes : ashwagandha, rhodiola, ginseng — ce que dit la recherche"], note_nara:"Un test de cortisol salivaire sur 4 points de la journée (prescriptible) peut cartographier ton profil — utile si fatigue chronique inexpliquée.", alerte:false },
+  { id:"021", section:"s4", titre:"Respiration et système nerveux autonome", sous_titre:"La cohérence cardiaque et ses effets prouvés", temps:"7 min", prev:"020", next:"022", points_cles:["Système nerveux sympathique (fight/flight) vs parasympathique (rest/digest)","La respiration : seul levier conscient sur le système nerveux autonome","Cohérence cardiaque 5-5-5 : le protocole, les preuves, les effets sur le cortisol","Respiration 4-7-8 pour l'endormissement : mécanisme et pratique","Box breathing (4-4-4-4) utilisé par les Navy SEALs"], note_nara:"5 minutes de cohérence cardiaque 3 fois par jour réduit le cortisol de 20-30% en 6 semaines dans plusieurs études randomisées.", alerte:false },
+  { id:"022", section:"s4", titre:"Yoga doux et régulation nerveuse", sous_titre:"Le mouvement comme outil de régulation du SNA", temps:"5 min", prev:"021", next:"023", points_cles:["Yoga restauratif vs yoga dynamique : effets opposés sur le système nerveux","Les postures d'inversion légère et le nerf vague","Yin yoga et fascias : la connexion tissu conjonctif / système nerveux","5 postures Nara pour activer le parasympathique en 10 minutes"], note_nara:"Le yoga doux n'est pas moins efficace que le yoga dynamique — il cible un système différent, aussi important pour la santé globale.", alerte:false },
+  { id:"023", section:"s4", titre:"Stress et alimentation : le cercle vicieux qu'on ne voit pas", sous_titre:"Pourquoi on mange mal sous stress — et comment sortir du cycle", temps:"6 min", prev:"022", next:"024", points_cles:["Le cortisol augmente les envies de sucre et de gras : le mécanisme neurologique","Manger sous stress = digestion perturbée = microbiome affaibli = plus de stress","L'alimentation anti-stress : magnésium, tryptophane, oméga-3, adaptogènes","Manger en pleine conscience : l'activation du parasympathique par la mastication"], note_nara:"Le magnésium est épuisé par le stress et la carence en magnésium amplifie la réponse au stress — un cercle vicieux réel et bien documenté.", alerte:false },
+  { id:"024", section:"s4", titre:"Construire sa résilience nerveuse : ce que ça veut dire vraiment", sous_titre:"Au-delà de la gestion du stress", temps:"8 min", prev:"023", next:null, points_cles:["Résilience nerveuse ≠ ne pas être stressé : c'est récupérer plus vite","La variabilité de la fréquence cardiaque (HRV) comme mesure de résilience","Les 4 piliers : sommeil, mouvement, nutrition, relations sociales","Le protocole Nara de régulation nerveuse sur 21 jours"], note_nara:"La résilience se construit comme un muscle — par des micro-expositions au stress suivies de récupération. Le but n'est pas d'éviter le stress mais de mieux rebondir.", alerte:false },
+  { id:"025", section:"s5", titre:"Pourquoi le sommeil est le pilier qu'on sacrifie en premier", sous_titre:"Ce qu'on perd vraiment quand on dort mal", temps:"6 min", prev:null, next:"026", points_cles:["Pendant le sommeil : nettoyage glymphatique du cerveau, réparation cellulaire, consolidation mémoire","La dette de sommeil : elle ne se rembourse pas avec un grasse matinée","Sommeil et microbiome : les bactéries intestinales ont aussi un rythme circadien","Sommeil et peau : le collagène se synthétise principalement la nuit"], note_nara:"Après 17h sans sommeil, les performances cognitives équivalent à 0,5g d'alcool dans le sang. Après 24h, à 1g.", alerte:false },
+  { id:"026", section:"s5", titre:"Rythme circadien : pourquoi l'heure compte autant que la durée", sous_titre:"L'horloge biologique et comment la respecter", temps:"7 min", prev:"025", next:"027", points_cles:["Le noyau suprachiasmatique : l'horloge maître du corps","Les zeitgebers (synchroniseurs) : lumière, repas, température, exercice","Chronotypes : lève-tôt, couche-tard — génétique et modifiable","Le jet lag social : décalage week-end/semaine et ses conséquences","Les 3 règles d'or pour respecter son rythme circadien"], note_nara:"S'exposer à la lumière naturelle dans les 30 minutes après le réveil est l'un des gestes les plus puissants pour réguler le rythme circadien.", alerte:false },
+  { id:"027", section:"s5", titre:"Sommeil et microbiome : la connexion nocturne", sous_titre:"Ce qui se passe dans ton intestin pendant que tu dors", temps:"5 min", prev:"026", next:"028", points_cles:["Les bactéries intestinales ont leur propre rythme circadien","Manque de sommeil = dysbiose : études sur la composition du microbiome selon la durée de sommeil","Le microbiome produit de la mélatonine : une production locale","Manger tard la nuit : impact sur le microbiome et le sommeil"], note_nara:"Des études sur des travailleurs de nuit montrent une dysbiose microbienne significative comparé aux personnes aux horaires réguliers — et une correction partielle en réajustant les horaires.", alerte:false },
+  { id:"028", section:"s5", titre:"Ce qui perturbe vraiment ton sommeil (au-delà des écrans)", sous_titre:"Les facteurs méconnus de la mauvaise nuit", temps:"6 min", prev:"027", next:"029", points_cles:["Température corporelle et endormissement : il faut descendre de 1°C","Repas tardifs et sommeil : la digestion retarde l'endormissement et réduit le sommeil profond","Alcool et sommeil : l'illusion du 'ça m'aide à m'endormir'","Café : la demi-vie de 5-7h et ses implications","Cortisol du soir : les activités qui le maintiennent élevé"], note_nara:"Un verre de vin le soir réduit le sommeil paradoxal (REM) de 24% en moyenne — le sommeil qui restaure la mémoire émotionnelle et la créativité.", alerte:false },
+  { id:"029", section:"s5", titre:"Construire une routine de sommeil qui fonctionne vraiment", sous_titre:"Le protocole Nara pour un sommeil profond et réparateur", temps:"8 min", prev:"028", next:"030", points_cles:["Le signal d'endormissement : comment l'entraîner","La fenêtre d'endormissement : pourquoi rater son train de sommeil coûte 90 minutes","Routine du soir : les 5 éléments clés dans le bon ordre","L'environnement sommeil : température (18-19°C), obscurité, silence ou bruit blanc","Gérer les réveils nocturnes : techniques et causes à investiguer"], note_nara:"Une routine de sommeil cohérente (même heure de coucher ET de lever, même le week-end) est le facteur numéro 1 de qualité du sommeil selon les études de chronobiologie.", alerte:false },
+  { id:"030", section:"s5", titre:"Récupération active : au-delà du sommeil", sous_titre:"Les autres outils de récupération physiologique", temps:"5 min", prev:"029", next:null, points_cles:["La sieste stratégique : 10-20 min vs 90 min — quand et comment","La marche après repas : impact glycémique et digestif","Bain chaud et endormissement : le mécanisme de refroidissement","Cryothérapie légère et système nerveux parasympathique","La récupération mentale : les états de repos par défaut (DMN)"], note_nara:"Une sieste de 20 minutes améliore la vigilance de 34% et les performances de 16% (NASA, 1995) — sans créer d'inertie de sommeil.", alerte:false },
+  { id:"031", section:"s6", titre:"Pourquoi observer ses symptômes change tout", sous_titre:"De l'intuition à la donnée : le premier pas", temps:"6 min", prev:null, next:"032", points_cles:["La différence entre ressentir et observer","Les biais cognitifs qui faussent nos souvenirs de symptômes","Pourquoi les journaux de symptômes changent le diagnostic médical","Ce que l'observation révèle qu'aucune prise de sang ne montre"], note_nara:"Les études montrent que les patients qui tiennent un journal de symptômes précis reçoivent un diagnostic correct 40% plus vite que ceux qui ne le font pas.", alerte:false },
+  { id:"032", section:"s6", titre:"Comment identifier un pattern : la méthode pas à pas", sous_titre:"La méthode Nara pour transformer des données en insights", temps:"7 min", prev:"031", next:"033", points_cles:["Étape 1 : collecter sans interpréter pendant 2 semaines minimum","Étape 2 : chercher les corrélations temporelles (immédiat, 6h, 24h, 48h)","Étape 3 : tester une hypothèse à la fois — le protocole d'élimination","Étape 4 : valider ou infirmer sur 3 à 4 semaines","Les erreurs classiques dans la recherche de patterns"], note_nara:"Un pattern n'est pas une certitude — c'est une hypothèse à tester. La rigueur dans la méthode est ce qui transforme une observation en connaissance utile.", alerte:false },
+  { id:"033", section:"s6", titre:"Journal de bord : ce qu'il faut vraiment noter", sous_titre:"Les 5 variables clés pour un suivi Nara efficace", temps:"5 min", prev:"032", next:"034", points_cles:["Les 5 variables fondamentales : alimentation, transit, peau, énergie, humeur","Le timing : noter dans les 2h après le repas, pas le soir pour toute la journée","La précision utile vs la précision inutile : ce qu'il faut vraiment capturer","Comment noter sans que ça devienne une obsession","Le journal comme outil de communication avec ton médecin"], note_nara:"Nara suggère un minimum viable : 3 notes par jour (matin, après déjeuner, soir) de 30 secondes chacune — soit 90 secondes par jour pour des données exploitables.", alerte:false },
+  { id:"034", section:"s6", titre:"Quand consulter un professionnel : les signaux d'alerte", sous_titre:"Les symptômes qui nécessitent un avis médical", temps:"6 min", prev:"033", next:"035", points_cles:["Signaux d'alerte digestifs : sang dans les selles, perte de poids inexpliquée, douleurs nocturnes","Signaux d'alerte cutanés : lésions qui ne cicatrisent pas, changement de grain de beauté","Quels spécialistes consulter selon les symptômes : gastro, dermato, endocrino, naturopathe","Comment préparer sa consultation avec ses données Nara","La collaboration idéale médecine conventionnelle + approche fonctionnelle"], note_nara:"Nara ne remplace jamais un avis médical. En cas de doute, consulte. Cette application est un outil de suivi et de prévention — pas de diagnostic.", alerte:true },
+  { id:"035", section:"s6", titre:"De l'observation à l'action : transformer ses données en habitudes", sous_titre:"La dernière étape — et la plus importante", temps:"8 min", prev:"034", next:null, points_cles:["Pourquoi savoir ne suffit pas : le gap intention-action","Concevoir une habitude à partir d'un pattern identifié","La règle du 1% : les micro-changements qui s'accumulent","Comment suivre l'impact d'un changement d'habitude avec Nara","Célébrer les données, pas les croyances : l'approche empirique de ta santé"], note_nara:"Le but de Nara n'est pas de te donner des réponses universelles — c'est de t'aider à trouver TES réponses. Les données que tu génères sont les plus précieuses qui existent pour ta santé.", alerte:false }
+];
+
+// ===== BIBLIOTHÈQUE STATE =====
+let currentLibSection = "s1";
+let currentArticle = null;
+
+// ===== BIBLIOTHÈQUE — LISTE =====
+function getLibSection(id) { return libSections.find(s => s.id === id); }
+
+function renderBibliotheque() {
+  renderLibTabs();
+  renderLibList();
+}
+
+function renderLibTabs() {
+  const container = document.getElementById('lib-tabs');
+  container.innerHTML = libSections.map(s => `
+    <div class="lib-tab${s.id === currentLibSection ? ' active' : ''}"
+      style="${s.id === currentLibSection ? `background:${s.couleur};` : ''}"
+      onclick="selectLibSection('${s.id}', this)">${s.label}</div>
+  `).join('');
+}
+
+function selectLibSection(id, el) {
+  currentLibSection = id;
+  document.querySelectorAll('.lib-tab').forEach(t => {
+    t.classList.remove('active');
+    t.style.background = '';
+  });
+  el.classList.add('active');
+  el.style.background = getLibSection(id).couleur;
+  renderLibList();
+}
+
+function renderLibList() {
+  const sec = getLibSection(currentLibSection);
+  const arts = libArticles.filter(a => a.section === currentLibSection);
+  const featured = arts[0];
+
+  // Featured card
+  document.getElementById('lib-featured-zone').innerHTML = featured ? `
+    <div class="lib-featured-dyn" style="background:${sec.gradient};color:${sec.text}" onclick="openArticle('${featured.id}')">
+      <div class="lib-feat-dyn-deco">${sec.label.split(' ')[0]}</div>
+      <div class="lib-feat-dyn-label" style="color:${sec.text}">✦ À lire en premier · Article 01</div>
+      <div class="lib-feat-dyn-title">${featured.titre}</div>
+      <div class="lib-feat-dyn-desc">${featured.sous_titre}</div>
+      <div class="lib-feat-dyn-btn" style="color:${sec.text}">Lire · ${featured.temps} →</div>
+    </div>
+  ` : '';
+
+  // Grid articles suivants
+  const rest = arts.slice(1);
+  document.getElementById('lib-grid').innerHTML = rest.length ? `
+    <div class="lib-section-label">Tous les articles · ${arts.length} dans cette section</div>
+    ${rest.map((a, i) => `
+      <div class="lib-art-card" style="border-left-color:${sec.couleur}" onclick="openArticle('${a.id}')">
+        <div class="lib-art-icon" style="background:${sec.gradient}">${sec.label.split(' ')[0]}</div>
+        <div>
+          <div class="lib-art-tag">${sec.label.replace(/^[^ ]+ /, '')} · ${String(i+2).padStart(2,'0')}</div>
+          <div class="lib-art-title">${a.titre}</div>
+          <div class="lib-art-meta">⏱ ${a.temps} de lecture</div>
+          ${a.alerte ? '<div class="lib-art-alert">⚠️ Consulter si symptômes</div>' : ''}
+        </div>
+      </div>
+    `).join('')}
+  ` : '';
+}
+
+// ===== ARTICLE DÉTAIL =====
+function openArticle(id) {
+  currentArticle = libArticles.find(a => a.id === id);
+  const a = currentArticle;
+  const sec = getLibSection(a.section);
+  const artIdx = libArticles.filter(x => x.section === a.section).findIndex(x => x.id === id) + 1;
+  const totalSec = libArticles.filter(x => x.section === a.section).length;
+
+  // Hero
+  const hero = document.getElementById('art-hero');
+  hero.style.background = sec.gradient;
+  hero.style.color = sec.text;
+  document.getElementById('art-hero-label').textContent = `${sec.label} · Article ${String(artIdx).padStart(2,'0')} sur ${totalSec}`;
+  document.getElementById('art-hero-titre').textContent = a.titre;
+  document.getElementById('art-hero-sous').textContent = a.sous_titre;
+  document.getElementById('art-hero-meta').textContent = `⏱ ${a.temps} de lecture`;
+
+  // Progress bar color
+  document.getElementById('art-progress-fill').style.background = sec.couleur;
+  document.getElementById('art-progress-fill').style.width = '0%';
+
+  // Corps
+  const alerteHtml = a.alerte ? `<div class="art-alerte-consult">⚠️ Les informations de cet article sont générales. En cas de symptômes persistants, consulte un professionnel de santé.</div>` : '';
+  const pointsHtml = a.points_cles.map(p => `
+    <div class="art-point-item">
+      <div class="art-point-dot" style="background:${sec.couleur}"></div>
+      <div class="art-point-text">${p}</div>
+    </div>
+  `).join('');
+  const noteHtml = `
+    <div class="art-note-nara" style="background:${sec.gradient};color:${sec.text}">
+      <div class="art-note-label">✦ Note Nara</div>
+      <div class="art-note-text">${a.note_nara}</div>
+    </div>
+  `;
+
+  document.getElementById('art-body-content').innerHTML = `
+    ${alerteHtml}
+    <div class="art-points-titre">Points clés</div>
+    ${pointsHtml}
+    ${noteHtml}
+  `;
+
+  // Navigation
+  const prevArt = a.prev ? libArticles.find(x => x.id === a.prev) : null;
+  const nextArt = a.next ? libArticles.find(x => x.id === a.next) : null;
+  let navHtml = '';
+  if (prevArt) {
+    navHtml += `<button class="art-nav-btn" onclick="openArticle('${prevArt.id}')">
+      <span class="art-nav-btn-label">← Précédent</span>
+      <span class="art-nav-btn-title">${prevArt.titre.substring(0,40)}…</span>
+    </button>`;
+  }
+  if (nextArt) {
+    navHtml += `<button class="art-nav-btn primary" style="background:${sec.couleur}" onclick="openArticle('${nextArt.id}')">
+      <span class="art-nav-btn-label">Suivant →</span>
+      <span class="art-nav-btn-title">${nextArt.titre.substring(0,40)}…</span>
+    </button>`;
+  }
+  document.getElementById('art-nav-btns').innerHTML = navHtml;
+
+  // Scroll listener pour progress bar
+  const scroll = document.getElementById('art-body-scroll');
+  scroll.scrollTop = 0;
+  scroll.onscroll = () => {
+    const pct = scroll.scrollTop / (scroll.scrollHeight - scroll.clientHeight) * 100;
+    document.getElementById('art-progress-fill').style.width = Math.min(100, pct) + '%';
+  };
+
+  showScreen('article-detail', null);
+}
+
+renderBibliotheque();
+
+// ===== ROUTINES DATA =====
+const routinesData = [
+  {
+    id:"archetype_1", titre:"Ventre & Peau", sous_titre:"Protocole intestin-peau · 3 semaines",
+    statut:"active", jour_actuel:9, duree_jours:21,
+    couleur:"#818263", gradient:"linear-gradient(135deg, #818263, #5a5e40)", emoji:"🌿",
+    description:"Un protocole holistique qui connecte la santé intestinale à l'état de la peau — alimentation, mouvement doux et observation.",
+    semaines:[
+      { numero:1, titre:"Observation & fondations", taches:[
+        { id:"t1-1", titre:"Journal alimentaire du matin", duree:"5 min", type:"habitude", description:"Note ce que tu as mangé hier soir et comment tu te sens ce matin — transit, énergie, peau.", modale:null },
+        { id:"t1-2", titre:"Bouillon digestif du soir", duree:"30 min", type:"recette", description:"Prépare et bois le bouillon lacto-fermenté au gingembre & curcuma 30 min avant le dîner.", modale:null },
+        { id:"t1-3", titre:"Massage abdominal", duree:"5 min", type:"pratique_guidee", description:"Massage en cercles dans le sens des aiguilles d'une montre pour stimuler le transit.", modale:"modal-massage" },
+        { id:"t1-4", titre:"Yoga digestif doux", duree:"10 min", type:"pratique_guidee", description:"Postures douces pour relâcher les tensions abdominales et stimuler la motilité.", modale:"modal-yoga" },
+        { id:"t1-5", titre:"Lecture du jour", duree:"6 min", type:"article", description:"L'axe intestin-peau : le lien que personne ne t'a expliqué.", modale:null }
+      ]},
+      { numero:2, titre:"Approfondissement", taches:[
+        { id:"t2-1", titre:"Élimination gluten — Jour 1", duree:"Toute la journée", type:"habitude", description:"Commence 14 jours sans gluten pour observer l'impact sur ton transit et ta peau.", modale:null },
+        { id:"t2-2", titre:"Cohérence cardiaque matin", duree:"5 min", type:"pratique_guidee", description:"5 cycles de respiration 5s inspiration / 5s expiration pour réguler le cortisol du matin.", modale:"modal-coherence" },
+        { id:"t2-3", titre:"Fermenté du jour", duree:"2 min", type:"habitude", description:"Intègre 1 aliment fermenté dans ton repas : kefir, choucroute crue, miso ou kimchi.", modale:null },
+        { id:"t2-4", titre:"Suivi peau — Photo + note", duree:"3 min", type:"suivi", description:"Photo de ta peau + note de 1 à 10 sur l'état général. Compare avec la semaine 1.", modale:null }
+      ]},
+      { numero:3, titre:"Ancrage", taches:[
+        { id:"t3-1", titre:"Bilan intestin-peau", duree:"10 min", type:"bilan", description:"Compare tes notes de la semaine 1, 2 et 3. Quels patterns as-tu observés ?", modale:null },
+        { id:"t3-2", titre:"Mes 3 habitudes à garder", duree:"5 min", type:"reflexion", description:"Identifie les 3 habitudes de ce programme qui ont eu le plus d'impact et planifie leur intégration durable.", modale:null },
+        { id:"t3-3", titre:"Massage abdominal — Version avancée", duree:"8 min", type:"pratique_guidee", description:"Version enrichie du massage avec travail sur les points de tension spécifiques.", modale:"modal-massage" }
+      ]}
+    ],
+    modales:[
+      { id:"modal-massage", titre:"Massage abdominal digestif", duree:"5 min", etapes:["Allonge-toi sur le dos, genoux fléchis. Pose les deux mains à plat sur le ventre.","Commence par des cercles larges dans le sens des aiguilles d'une montre — la direction du transit.","Réduis progressivement les cercles en remontant vers le nombril. Pression douce mais ferme.","Travaille les 4 quadrants : bas droit → haut droit → haut gauche → bas gauche.","Termine par 5 respirations profondes, mains posées sur le ventre en sentant le mouvement."] },
+      { id:"modal-yoga", titre:"Yoga digestif doux", duree:"10 min", etapes:["Pawanmuktasana (genou-poitrine) : allongé, ramène un genou vers la poitrine. 5 respirations. Répète de l'autre côté.","Apanasana (deux genoux-poitrine) : ramène les deux genoux. Berce doucement de droite à gauche. 8 respirations.","Torsion douce : allongé, laisse tomber les genoux d'un côté, tête de l'autre. 5 respirations. Change de côté.","Viparita Karani (jambes au mur) : jambes tendues contre le mur, repos 3 minutes. Active le parasympathique.","Savasana : 2 minutes de relâchement complet, attention portée sur les sensations abdominales."] },
+      { id:"modal-coherence", titre:"Cohérence cardiaque 5-5", duree:"5 min", etapes:["Assieds-toi confortablement, dos droit, pieds à plat. Ferme les yeux ou pose le regard.","Inspire lentement par le nez pendant 5 secondes — gonfle le ventre, puis la poitrine.","Expire lentement par la bouche pendant 5 secondes — vide la poitrine, puis le ventre.","Répète ce cycle 5 fois. Si ton esprit s'échappe, reviens doucement au souffle.","Pour 5 minutes complètes : 5 secondes IN / 5 secondes OUT × 30 cycles."] }
+    ]
+  },
+  {
+    id:"archetype_2", titre:"Stress & Corps", sous_titre:"Régulation nerveuse progressive · 3 semaines",
+    statut:"disponible", jour_actuel:0, duree_jours:21,
+    couleur:"#8a8ec4", gradient:"linear-gradient(135deg, #8a8ec4, #5a5e94)", emoji:"🌬️",
+    description:"Un programme de régulation du système nerveux autonome — des outils concrets pour passer du mode survie au mode récupération.",
+    semaines:[
+      { numero:1, titre:"Reconnexion corps", taches:[
+        { id:"t1-1", titre:"Étirements doux du matin", duree:"8 min", type:"pratique_guidee", description:"Séquence d'étirements pour sortir le corps du mode contracté du sommeil.", modale:"modal-etir-doux" },
+        { id:"t1-2", titre:"Cohérence cardiaque", duree:"5 min", type:"pratique_guidee", description:"Respiration 5-5 pour calibrer le système nerveux dès le matin.", modale:"modal-coherence2" },
+        { id:"t1-3", titre:"Scan corporel", duree:"7 min", type:"pratique_guidee", description:"Exploration consciente des tensions physiques pour les identifier et les relâcher.", modale:"modal-scan" },
+        { id:"t1-4", titre:"Note de stress du soir", duree:"2 min", type:"suivi", description:"Score ton niveau de stress de 1 à 10. Note le contexte : qu'est-ce qui a déclenché les pics ?", modale:null }
+      ]},
+      { numero:2, titre:"Régulation profonde", taches:[
+        { id:"t2-1", titre:"Respiration 4-7-8", duree:"5 min", type:"pratique_guidee", description:"Technique de Dr Andrew Weil pour calmer le système nerveux en quelques minutes.", modale:"modal-478" },
+        { id:"t2-2", titre:"Marche consciente", duree:"20 min", type:"pratique_guidee", description:"Marche sans téléphone avec attention aux 5 sens — activation du parasympathique.", modale:"modal-marche" },
+        { id:"t2-3", titre:"Relaxation de Jacobson", duree:"15 min", type:"pratique_guidee", description:"Relaxation musculaire progressive — contracter puis relâcher chaque groupe musculaire.", modale:"modal-jacobson" },
+        { id:"t2-4", titre:"Golden milk du soir", duree:"8 min", type:"recette", description:"Rituel du soir anti-inflammatoire pour préparer le système nerveux au repos.", modale:null }
+      ]},
+      { numero:3, titre:"Ancrage cognitif", taches:[
+        { id:"t3-1", titre:"Étirements enrichis", duree:"12 min", type:"pratique_guidee", description:"Version avancée de la séquence d'étirements avec travail sur le nerf vague.", modale:"modal-etir-enrichis" },
+        { id:"t3-2", titre:"Stimulation du nerf vague", duree:"5 min", type:"pratique_guidee", description:"Techniques de stimulation directe : gargarisme, humming, eau froide sur la nuque.", modale:"modal-nerf-vague" },
+        { id:"t3-3", titre:"Recadrage cognitif", duree:"10 min", type:"pratique_guidee", description:"Identifier une pensée stressante et la reformuler avec la méthode Byron Katie.", modale:"modal-recadrage" },
+        { id:"t3-4", titre:"Routine pré-sommeil", duree:"20 min", type:"pratique_guidee", description:"Séquence complète de déconnexion pour signaler au système nerveux que la journée est terminée.", modale:"modal-sommeil" }
+      ]}
+    ],
+    modales:[
+      { id:"modal-etir-doux", titre:"Étirements doux du matin", duree:"8 min", etapes:["Debout ou assis : rotation douce de la tête, 5 fois de chaque côté. Lent, sans forcer.","Étirement latéral : bras levé, penche-toi doucement sur le côté. 4 respirations. Change de côté.","Rotation du tronc : assis, tourne le buste en posant la main sur le genou opposé. 5 respirations. Change.","Flexion avant douce : jambes légèrement fléchies, laisse tomber le tronc vers le bas. 6 respirations.","Étirement du psoas : une jambe en avant en fente basse. Hanches vers l'avant. 5 respirations. Change."] },
+      { id:"modal-coherence2", titre:"Cohérence cardiaque", duree:"5 min", etapes:["Assieds-toi confortablement. Pose une main sur le cœur si tu veux.","Inspire par le nez pendant exactement 5 secondes.","Expire par la bouche pendant exactement 5 secondes.","Maintiens ce rythme pendant 5 minutes — soit 30 cycles complets.","Si possible, pratique 3 fois par jour : matin, midi, soir pour un effet maximal sur le cortisol."] },
+      { id:"modal-scan", titre:"Scan corporel progressif", duree:"7 min", etapes:["Allonge-toi confortablement. Ferme les yeux. Prends 3 grandes respirations.","Porte ton attention sur les pieds : qu'est-ce que tu ressens ? Chaleur, tension, contact ?","Remonte progressivement : mollets, genoux, cuisses, bassin. Note chaque sensation sans juger.","Continue : ventre, dos, poitrine, épaules. Remarque les zones de tension.","Termines par le cou, la mâchoire, le visage. À chaque zone tendue, expire et relâche consciemment."] },
+      { id:"modal-478", titre:"Respiration 4-7-8", duree:"5 min", etapes:["Assieds-toi dos droit. Place la langue sur le palais juste derrière les dents du haut.","Expire complètement par la bouche avec un son 'whoosh'.","Ferme la bouche. Inspire par le nez pendant 4 secondes.","Retiens ton souffle pendant 7 secondes.","Expire complètement par la bouche avec le son 'whoosh' pendant 8 secondes. C'est 1 cycle. Répète 4 fois."] },
+      { id:"modal-marche", titre:"Marche consciente", duree:"20 min", etapes:["Laisse le téléphone à la maison ou en mode avion. Pas d'écouteurs.","Les 5 premières minutes : observe 5 choses que tu vois, 4 que tu entends, 3 que tu peux toucher.","Synchronise ta respiration avec tes pas : inspire sur 4 pas, expire sur 4 pas.","Si une pensée stressante arrive, note-la mentalement 'pensée' et reviens aux sensations physiques.","Les 5 dernières minutes : ralentis progressivement. Arrive à destination comme si tu avais tout le temps du monde."] },
+      { id:"modal-jacobson", titre:"Relaxation de Jacobson", duree:"15 min", etapes:["Allonge-toi. Commence par les pieds : contracte tous les muscles du pied pendant 7 secondes, puis relâche totalement pendant 20 secondes.","Mollets : contracte 7s, relâche 20s. Remarque la différence entre tension et relâchement.","Cuisses, fessiers, abdominaux : même protocole. Contracte 7s, relâche 20s.","Mains, avant-bras, bras, épaules : poing serré 7s, relâche 20s. Puis haussement d'épaules 7s, relâche.","Visage : fronce les sourcils 7s, relâche. Serre les dents 7s, relâche. Termine en souriant 7s, relâche."] },
+      { id:"modal-etir-enrichis", titre:"Étirements enrichis — Semaine 3", duree:"12 min", etapes:["Séquence complète de la semaine 1 (8 min) avec maintien plus long de chaque posture.","Ajout : étirement du piriforme (figure en 4 assis) — 8 respirations de chaque côté.","Ajout : retournement sur le dos, genoux pliés, basculement lent gauche-droite 10 fois.","Intègre des sons à l'expiration (soupir, 'aaah') pour activer le nerf vague pendant les étirements.","Termine en position fœtale côté gauche pendant 2 minutes — position de récupération du système nerveux."] },
+      { id:"modal-nerf-vague", titre:"Stimulation du nerf vague", duree:"5 min", etapes:["Gargarisme : prends une gorgée d'eau et gargarise pendant 30 secondes jusqu'à avoir les yeux qui larmoient légèrement. Répète 3 fois.","Humming : ferme la bouche et produis un son grave continu 'mmmmm' pendant toute une expiration. Répète 10 fois.","Eau froide nuque : passe de l'eau froide sur la nuque et la base du crâne pendant 30 secondes.","Expiration prolongée : inspire 4s, expire lentement sur 8s. La longue expiration active directement le nerf vague.","Chant ou lecture à voix haute : 2 minutes. La vibration des cordes vocales stimule le nerf vague via le larynx."] },
+      { id:"modal-recadrage", titre:"Recadrage cognitif", duree:"10 min", etapes:["Identifie une pensée stressante précise. Écris-la noir sur blanc : 'Je suis [pensée]'.","Question 1 : Est-ce que c'est absolument vrai ? Peux-tu en être certain(e) à 100% ?","Question 2 : Comment te sens-tu quand tu crois cette pensée ? Qu'est-ce qu'elle te coûte ?","Question 3 : Qui serais-tu sans cette pensée ? Que ferais-tu différemment ?","Retournement : trouve 3 façons dont l'opposé de cette pensée peut être aussi vrai, voire plus vrai."] },
+      { id:"modal-sommeil", titre:"Routine pré-sommeil", duree:"20 min", etapes:["H-60 min : derniers écrans. Passe en lumière chaude tamisée. Température chambre à 18-19°C.","H-45 min : tisane adaptogène ou golden milk. Bois lentement, sans écran.","H-30 min : 5 min de cohérence cardiaque ou 4-7-8. Corps signale l'arrêt.","H-15 min : scan corporel léger allongé dans le lit. Relâche les tensions identifiées.","H-0 : si pensées envahissantes, note-les sur un carnet ('brain dump') pour les sortir de la tête."] }
+    ]
+  },
+  {
+    id:"archetype_3", titre:"Énergie & Sommeil", sous_titre:"Rythme circadien & vitalité · 3 semaines",
+    statut:"disponible", jour_actuel:0, duree_jours:21,
+    couleur:"#c8963c", gradient:"linear-gradient(135deg, #c8963c, #a07020)", emoji:"☀️",
+    description:"Un programme pour réaligner ton horloge biologique, stabiliser ton énergie dans la journée et améliorer profondément la qualité de ton sommeil.",
+    semaines:[
+      { numero:1, titre:"Comprendre son rythme", taches:[
+        { id:"t1-1", titre:"Douche froide progressive", duree:"3 min", type:"pratique_guidee", description:"Introduction progressive à l'eau froide le matin pour activer le cortisol naturel d'éveil.", modale:"modal-refroid" },
+        { id:"t1-2", titre:"Protocole hydratation matinale", duree:"5 min", type:"pratique_guidee", description:"500ml d'eau + électrolytes au réveil avant tout café — réhydrater les cellules.", modale:"modal-hydrat" },
+        { id:"t1-3", titre:"Assiette circadienne", duree:"10 min lecture", type:"pratique_guidee", description:"Comprendre quoi manger à quelle heure selon l'horloge biologique.", modale:"modal-assiette" },
+        { id:"t1-4", titre:"Journal énergie — 3 points", duree:"3 min", type:"suivi", description:"Note ton niveau d'énergie à 9h, 14h et 19h sur 10. Observe la courbe.", modale:null }
+      ]},
+      { numero:2, titre:"Stabiliser l'énergie", taches:[
+        { id:"t2-1", titre:"Rituel pré-sommeil", duree:"20 min", type:"pratique_guidee", description:"Séquence complète de déconnexion pour optimiser la qualité du sommeil profond.", modale:"modal-presommeil" },
+        { id:"t2-2", titre:"Rituel d'éveil", duree:"15 min", type:"pratique_guidee", description:"Exposition lumière naturelle + mouvement + protéines le matin pour ancrer le rythme circadien.", modale:"modal-eveil" },
+        { id:"t2-3", titre:"Jeûne intermittent doux 12:12", duree:"12h fenêtre", type:"pratique_guidee", description:"Fenêtre alimentaire de 12h pour laisser le microbiome se régénérer la nuit.", modale:"modal-jeune" },
+        { id:"t2-4", titre:"Overnight oats du soir", duree:"8 min", type:"recette", description:"Prépare les overnight oats cerise & lavande — mélatonine naturelle pour la nuit.", modale:null }
+      ]},
+      { numero:3, titre:"Ancrer le circadien", taches:[
+        { id:"t3-1", titre:"Sieste stratégique", duree:"20 min", type:"pratique_guidee", description:"Nap de 20 minutes entre 13h et 15h — améliore la vigilance de 34% sans inertie de sommeil.", modale:"modal-sieste" },
+        { id:"t3-2", titre:"Environnement sommeil optimal", duree:"30 min setup", type:"pratique_guidee", description:"Optimiser sa chambre : température, obscurité, sons — le setup qui améliore le sommeil profond.", modale:"modal-enviro" },
+        { id:"t3-3", titre:"Bilan énergie 3 semaines", duree:"10 min", type:"bilan", description:"Compare tes courbes d'énergie semaine 1 vs semaine 3. Qu'est-ce qui a changé ?", modale:null }
+      ]}
+    ],
+    modales:[
+      { id:"modal-refroid", titre:"Douche froide progressive", duree:"3 min", etapes:["Semaine 1 : termine ta douche chaude par 30 secondes d'eau froide sur les jambes seulement.","Semaine 2 : 45 secondes d'eau froide sur le dos et les épaules.","Semaine 3 : 60 secondes d'eau froide corps entier. Expire lentement pour ne pas paniquer.","Technique de Wim Hof : ne retiens pas ton souffle. Expire par la bouche, reste détendu.","Après la douche froide : 30 secondes de saut sur place ou de mouvement pour activer la thermogenèse."] },
+      { id:"modal-hydrat", titre:"Hydratation matinale", duree:"5 min", etapes:["Dès le réveil, avant le café : bois 500ml d'eau à température ambiante.","Option électrolytes : ajoute une pincée de sel marin + un filet de jus de citron.","Pourquoi : après 7-8h sans eau, les cellules sont déshydratées — le café avant l'eau aggrave la déshydratation.","Attends 20-30 minutes avant le premier café pour ne pas bloquer l'absorption.","Objectif semaine 3 : 500ml eau + exposition à la lumière naturelle dans les 30 minutes du réveil."] },
+      { id:"modal-assiette", titre:"Assiette circadienne", duree:"Guide", etapes:["Matin (6h-10h) : protéines + graisses + légumes. Évite les glucides raffinés qui créent un crash à 11h.","Midi (12h-14h) : repas le plus copieux de la journée. Glucides complexes acceptés — pic de cortisol naturel.","Goûter (15h-17h) : fruits, oléagineux, ou snack protéiné. La glycémie baisse naturellement à 15h.","Dîner (18h-20h) : léger, riche en tryptophane (volaille, œufs, légumineuses). Pas après 20h.","Après 20h : idéalement rien. Si besoin : tisane ou bouillon. Le microbiome a besoin de sa nuit."] },
+      { id:"modal-presommeil", titre:"Rituel pré-sommeil", duree:"20 min", etapes:["H-60 min : dernier écran. Lumière orange ou bougies. Température chambre 18°C.","H-45 min : dîner léger terminé. Si tisane : camomille, valériane ou golden milk.","H-30 min : 5 min de cohérence cardiaque. Note 3 choses positives de la journée (gratitude).","H-15 min : lecture (livre papier uniquement). Pas de news, pas de réseaux sociaux.","H-0 : chambre fraîche, obscurité totale ou masque. Même heure chaque soir — l'horloge se programme."] },
+      { id:"modal-eveil", titre:"Rituel d'éveil", duree:"15 min", etapes:["Réveil à heure fixe, même le week-end. L'horloge circadienne déteste l'irrégularité.","Dans les 5 premières minutes : lumière naturelle. Ouvre les volets, sors 5 min, ou utilise une lampe de luminothérapie.","Mouvement dans les 30 premières minutes : 10 minutes de marche, d'étirements ou de yoga léger.","Petit-déjeuner protéiné : œufs, sardines, légumineuses, noix. Évite les céréales sucrées.","Café : pas avant 90 minutes après le réveil (laisse l'adénosine se dissiper naturellement pour éviter le crash de 11h)."] },
+      { id:"modal-jeune", titre:"Jeûne intermittent doux 12:12", duree:"Guide", etapes:["Protocole doux : 12h sans manger. Ex : dernier repas à 20h, premier repas à 8h.","Pendant la fenêtre de jeûne : eau, tisanes sans sucre, café noir accepté après 90 min réveil.","Pourquoi 12:12 : le microbiome intestinal a besoin de 12h de repos pour effectuer ses cycles de nettoyage.","Effets attendus à 3 semaines : meilleure énergie le matin, transit plus régulier, sommeil plus profond.","Contre-indications : antécédents TCA, grossesse, hypoglycémie — consulter avant de commencer."] },
+      { id:"modal-sieste", titre:"Sieste stratégique", duree:"20 min", etapes:["Fenêtre optimale : entre 13h et 15h (creux circadien naturel). Jamais après 15h30.","Durée : 10-20 minutes maximum pour éviter l'inertie de sommeil (sensation de gueule de bois).","Technique NASA Nap : bois un café juste avant de t'allonger. La caféine agit dans 20 min — tu te réveilles naturellement boosté.","Environnement : obscurité ou masque, bouchons d'oreilles si bruit. Position allongée ou inclinée.","Réveil : ne te lève pas immédiatement. 2 minutes de transition, lumière progressive, mouvement léger."] },
+      { id:"modal-enviro", titre:"Environnement sommeil optimal", duree:"Setup", etapes:["Température : 18-19°C. C'est le facteur numéro 1 de qualité du sommeil profond — une chambre trop chaude réduit le sommeil N3.","Obscurité : blackout total si possible. Le moindre filet de lumière supprime la mélatonine. Masque de sommeil sinon.","Son : silence ou bruit blanc/rose à faible volume. Les bruits intermittents (voiture, voisins) fragmentent le sommeil.","Literie : matelas et oreiller adaptés à ta position de sommeil. Draps en matière naturelle (coton, lin).","Règle d'or : le lit = sommeil et intimité uniquement. Pas d'écrans, pas de travail, pas de repas au lit."] }
+    ]
+  }
+];
+
+const typeIcons = { habitude:"📝", recette:"🍽️", pratique_guidee:"✨", article:"📖", suivi:"📊", bilan:"🔍", reflexion:"💭" };
+const typeLabels = { habitude:"Habitude", recette:"Recette liée", pratique_guidee:"Pratique guidée", article:"Lecture", suivi:"Suivi", bilan:"Bilan", reflexion:"Réflexion" };
+let currentRoutine = null;
+let openSemaines = { 0: true };
+
+function renderRoutines() {
+  const active = routinesData.find(r => r.statut === "active");
+  const disponibles = routinesData.filter(r => r.statut !== "active");
+  let html = '';
+  if (active) {
+    const pct = Math.round((active.jour_actuel / active.duree_jours) * 100);
+    const daysHtml = Array.from({length: active.duree_jours}, (_,i) => {
+      const j = i+1, cls = j < active.jour_actuel ? 'done' : j === active.jour_actuel ? 'today' : 'future';
+      return `<div class="rout-hero-day ${cls}">${j <= 9 ? j : j === active.duree_jours ? j : '·'}</div>`;
+    }).join('');
+    html += `<div class="section-title">En cours</div>
+      <div class="rout-hero-card" style="background:${active.gradient}" onclick="openRoutineDetail('${active.id}')">
+        <div class="rout-hero-badge">✦ En cours · Jour ${active.jour_actuel}/${active.duree_jours}</div>
+        <span class="rout-hero-emoji">${active.emoji}</span>
+        <div class="rout-hero-titre">${active.titre}</div>
+        <div class="rout-hero-sous">${active.sous_titre}</div>
+        <div class="rout-hero-prog-row">
+          <div class="rout-hero-prog-bar"><div class="rout-hero-prog-fill" style="width:${pct}%"></div></div>
+          <div class="rout-hero-prog-label">${pct}% complété</div>
+        </div>
+        <div class="rout-hero-days">${daysHtml}</div>
+        <div class="rout-hero-cta">Continuer le programme →</div>
+      </div>`;
+  }
+  if (disponibles.length) {
+    html += `<div class="section-title" style="margin-top:4px">Programmes disponibles</div>`;
+    disponibles.forEach(r => {
+      html += `<div class="rout-dispo-card" onclick="openRoutineDetail('${r.id}')">
+        <div class="rout-dispo-inner" style="background:${r.gradient}">
+          <div class="rout-dispo-emoji">${r.emoji}</div>
+          <div class="rout-dispo-body">
+            <div class="rout-dispo-tag">${r.sous_titre}</div>
+            <div class="rout-dispo-titre">${r.titre}</div>
+            <div class="rout-dispo-desc">${r.description}</div>
+          </div>
+        </div>
+        <div class="rout-dispo-badge">Disponible · 21 jours</div>
+      </div>`;
+    });
+  }
+  document.getElementById('rout-list-scroll').innerHTML = html;
+}
+
+function openRoutineDetail(id) {
+  currentRoutine = routinesData.find(r => r.id === id);
+  const r = currentRoutine;
+  openSemaines = { 0: true };
+  document.getElementById('rout-detail-hero').style.background = r.gradient;
+  document.getElementById('rout-detail-emoji').textContent = r.emoji;
+  document.getElementById('rout-detail-titre').textContent = r.titre;
+  document.getElementById('rout-detail-sous').textContent = r.sous_titre;
+  document.getElementById('rout-detail-desc').textContent = r.description;
+  const pct = r.statut === 'active' ? Math.round((r.jour_actuel / r.duree_jours) * 100) : 0;
+  document.getElementById('rout-detail-prog-fill').style.width = pct + '%';
+  document.getElementById('rout-detail-prog-txt').textContent = r.statut === 'active' ? `Jour ${r.jour_actuel}/${r.duree_jours} · ${pct}%` : 'Programme disponible — 21 jours';
+  renderRoutineDetailBody();
+  showScreen('routine-detail', null);
+}
+
+function renderRoutineDetailBody() {
+  const r = currentRoutine;
+  let html = '';
+  r.semaines.forEach((sem, idx) => {
+    const isOpen = openSemaines[idx] !== false;
+    const bgLight = r.couleur + '18';
+    html += `<div class="rout-semaine-block">
+      <div class="rout-semaine-header" style="background:${bgLight}" onclick="toggleSemaine(${idx})">
+        <div class="rout-semaine-num" style="background:${r.couleur}">S${sem.numero}</div>
+        <div class="rout-semaine-titre">Semaine ${sem.numero} — ${sem.titre}</div>
+        <div class="rout-semaine-chevron ${isOpen?'open':''}">›</div>
+      </div>
+      ${isOpen ? `<div class="rout-semaine-tasks">
+        ${sem.taches.map(t => `<div class="rout-tache-item" style="border-left-color:${r.couleur}" ${t.modale?`onclick="openRoutModale('${t.modale}')"`:''}> 
+          <div class="rout-tache-ico" style="background:${r.couleur}22">${typeIcons[t.type]||'•'}</div>
+          <div class="rout-tache-body">
+            <div class="rout-tache-type">${typeLabels[t.type]||t.type}</div>
+            <div class="rout-tache-titre">${t.titre}</div>
+            <div class="rout-tache-desc">${t.description}</div>
+            <div class="rout-tache-duree">⏱ ${t.duree}</div>
+          </div>
+          ${t.modale?`<div class="rout-tache-arrow" style="color:${r.couleur}">›</div>`:''}
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  });
+  document.getElementById('rout-detail-scroll').innerHTML = html;
+}
+
+function toggleSemaine(idx) {
+  openSemaines[idx] = !openSemaines[idx];
+  renderRoutineDetailBody();
+}
+
+function openRoutModale(modalId) {
+  const m = currentRoutine.modales.find(x => x.id === modalId);
+  if (!m) return;
+  document.getElementById('rout-modale-card').style.background = currentRoutine.gradient;
+  document.getElementById('rout-modale-titre').textContent = m.titre;
+  document.getElementById('rout-modale-duree').textContent = `⏱ ${m.duree}`;
+  document.getElementById('rout-modale-etapes').innerHTML = m.etapes.map((e,i) => `
+    <div class="rout-modale-etape">
+      <div class="rout-modale-num">${i+1}</div>
+      <div class="rout-modale-etape-text">${e}</div>
+    </div>`).join('');
+  document.getElementById('rout-modale-overlay').classList.add('open');
+}
+
+function closeRoutModale() { document.getElementById('rout-modale-overlay').classList.remove('open'); }
+function handleRoutModaleClick(e) { if (e.target===document.getElementById('rout-modale-overlay')) closeRoutModale(); }
+
+// Init
+renderRoutines();
+</script>
+
+</body>
+</html>

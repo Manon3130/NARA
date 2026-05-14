@@ -239,7 +239,24 @@
   .insight-tag { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mid); margin-bottom: 6px; }
   .insight-text { font-size: 0.85rem; color: var(--text-dark); line-height: 1.5; }
   .insight-text strong { color: var(--sage); }
-  .bottom-nav { flex-shrink: 0; background: white; border-top: 1px solid var(--oat); display: flex; align-items: center; justify-content: space-around; padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); min-height: 58px; }
+  .bottom-nav {
+    flex-shrink: 0;
+    background: white;
+    border-top: 1px solid var(--oat);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 6px 4px 6px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+    min-height: 58px;
+    position: relative;
+  }
+  .bottom-nav::after {
+    content: '';
+    position: absolute;
+    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+    left: 0; right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: white;
+  }
   .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 5px 8px; border-radius: 10px; transition: background 0.2s; flex: 1; min-width: 0; }
   .nav-item.active { background: var(--honey); }
   .nav-icon { font-size: clamp(1.1rem, 4vw, 1.3rem); }
@@ -662,7 +679,18 @@
     flex-shrink: 0; background: white;
     border-top: 1px solid var(--oat);
     display: flex; align-items: center; justify-content: space-around;
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); min-height: 58px; z-index: 50;
+    padding: 6px 4px 6px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+    min-height: 58px; z-index: 50;
+    position: relative;
+  }
+  .bottom-nav-shared::after {
+    content: '';
+    position: absolute;
+    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+    left: 0; right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: white;
   }
   .bnav-item {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -706,6 +734,125 @@
     body { background: #d8d3c8; }
     #app { border-radius: 0; }
   }
+
+  /* ===== EMPTY STATE INSIGHTS ===== */
+  .insight-empty-state {
+    background: var(--honey);
+    border-radius: 20px;
+    padding: 28px 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .insight-empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .insight-empty-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; color: var(--text-dark);
+    margin-bottom: 8px;
+  }
+  .insight-empty-text {
+    font-size: 0.8rem; color: var(--text-mid);
+    line-height: 1.6;
+  }
+
+  /* ===== QUICK LOG MODALE ===== */
+  .quicklog-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 800;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .quicklog-overlay.open { display: flex; }
+  .quicklog-card {
+    background: white;
+    border-radius: 28px 28px 0 0;
+    padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .quicklog-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .quicklog-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; font-weight: 400;
+    color: var(--text-dark);
+  }
+  .quicklog-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--oat); border: none;
+    font-size: 0.9rem; cursor: pointer; color: var(--text-mid);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .quicklog-body { margin-bottom: 20px; }
+
+  /* Options de sélection dans la modale */
+  .ql-options { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .ql-option {
+    flex: 1; min-width: calc(33% - 8px);
+    padding: 14px 8px; border-radius: 14px;
+    border: 1.5px solid var(--oat);
+    background: white; text-align: center;
+    cursor: pointer; transition: all 0.18s;
+  }
+  .ql-option.selected { border-color: var(--sage); background: var(--honey); }
+  .ql-option .ql-emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+  .ql-option .ql-label { font-size: 0.7rem; color: var(--text-mid); }
+  .ql-option.selected .ql-label { color: var(--sage); font-weight: 500; }
+
+  .ql-section-label {
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 10px; margin-top: 16px;
+    display: block;
+  }
+  .ql-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .ql-chip {
+    padding: 8px 14px; border-radius: 20px;
+    border: 1.5px solid var(--oat); background: white;
+    font-size: 0.78rem; color: var(--text-mid); cursor: pointer;
+    transition: all 0.18s;
+  }
+  .ql-chip.selected { background: var(--avocado); border-color: var(--avocado); color: white; }
+
+  .ql-slider-wrap { background: var(--honey); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+  .ql-slider-label {
+    font-size: 0.8rem; color: var(--text-dark);
+    display: flex; justify-content: space-between; margin-bottom: 10px;
+  }
+  .ql-slider-label span { color: var(--sage); font-weight: 600; }
+  .ql-slider {
+    width: 100%; height: 4px; accent-color: var(--sage);
+    cursor: pointer;
+  }
+
+  .quicklog-save {
+    width: 100%; padding: 16px;
+    background: var(--sage); color: white;
+    border: none; border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+
+  /* Confirmation toast */
+  .ql-toast {
+    position: fixed; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translateX(-50%);
+    background: var(--sage); color: white;
+    padding: 12px 24px; border-radius: 20px;
+    font-size: 0.85rem; z-index: 900;
+    opacity: 0; transition: opacity 0.3s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .ql-toast.show { opacity: 1; }
+
 </style>
 
 </head>
@@ -816,39 +963,63 @@
     </div>
   </div>
   <div class="home-scroll">
-    <div class="score-card">
-      <div class="score-label">Équilibre intestinal</div>
-      <div class="score-value">74<span style="font-size:1.5rem;opacity:0.6">/100</span></div>
-      <div class="score-sub">+6 points cette semaine · Bonne progression 🌱</div>
-      <div class="score-bars">
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:55%"></div></div>
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:40%"></div></div>
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:65%"></div></div>
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:50%"></div></div>
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:70%"></div></div>
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:80%"></div></div>
-        <div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:74%"></div></div>
+
+    <!-- Score dynamique — vide au départ -->
+    <div class="score-card" id="score-card-empty" style="text-align:center;padding:28px 24px;">
+      <div class="score-label">Mon équilibre</div>
+      <div style="font-size:2.8rem;margin:12px 0;">🌱</div>
+      <div class="score-sub" style="opacity:1;font-size:0.88rem;line-height:1.5;">
+        Commence à noter ton quotidien.<br>Ton score apparaîtra ici.
       </div>
     </div>
+    <div class="score-card" id="score-card-data" style="display:none;">
+      <div class="score-label">Équilibre global</div>
+      <div class="score-value"><span id="score-num">—</span><span style="font-size:1.5rem;opacity:0.6">/100</span></div>
+      <div class="score-sub" id="score-sub">Complète ton journal pour suivre ta progression</div>
+      <div class="score-bars" id="score-bars"></div>
+    </div>
+
+    <!-- Quick log — boutons cliquables -->
     <div class="quick-log">
       <div class="quick-log-title">Comment tu te sens aujourd'hui ?</div>
       <div class="quick-row">
-        <div class="quick-btn"><span class="emoji">🫀</span><span class="label">Transit</span></div>
-        <div class="quick-btn"><span class="emoji">🥗</span><span class="label">Repas</span></div>
-        <div class="quick-btn"><span class="emoji">✨</span><span class="label">Peau</span></div>
-        <div class="quick-btn"><span class="emoji">😮‍💨</span><span class="label">Stress</span></div>
+        <div class="quick-btn" onclick="openQuickLog('transit')">
+          <span class="emoji">🫀</span><span class="label">Transit</span>
+        </div>
+        <div class="quick-btn" onclick="openQuickLog('repas')">
+          <span class="emoji">🥗</span><span class="label">Repas</span>
+        </div>
+        <div class="quick-btn" onclick="openQuickLog('peau')">
+          <span class="emoji">✨</span><span class="label">Peau</span>
+        </div>
+        <div class="quick-btn" onclick="openQuickLog('stress')">
+          <span class="emoji">😮‍💨</span><span class="label">Stress</span>
+        </div>
       </div>
     </div>
-    <div class="section-title">Insights du jour</div>
-    <div class="insight-card gut">
-      <div class="insight-icon">🔬</div>
-      <div class="insight-tag">Pattern détecté · Intestin</div>
-      <div class="insight-text">Ton transit ralentit <strong>4 jours après</strong> les repas riches en gluten. C'est la 3ème fois qu'on observe ce schéma.</div>
+
+    <!-- Insights — vides au départ, remplis après 7 jours de données -->
+    <div id="insights-zone">
+      <div class="section-title">Insights</div>
+      <div id="insights-empty" class="insight-empty-state">
+        <div class="insight-empty-icon">🔍</div>
+        <div class="insight-empty-title">Pas encore d'insights</div>
+        <div class="insight-empty-text">Note ton état pendant quelques jours. Nara détectera alors tes patterns et te donnera des insights personnalisés.</div>
+      </div>
+      <div id="insights-list"></div>
     </div>
-    <div class="insight-card skin">
-      <div class="insight-icon">🌸</div>
-      <div class="insight-tag">Observation · Peau</div>
-      <div class="insight-text">Tes plaques semblent <strong>moins intenses</strong> cette semaine. Corrélé avec ta routine anti-inflammatoire.</div>
+
+  </div>
+
+  <!-- Modale quick log -->
+  <div class="quicklog-overlay" id="quicklog-overlay" onclick="closeQuickLog(event)">
+    <div class="quicklog-card" id="quicklog-card">
+      <div class="quicklog-header">
+        <div class="quicklog-title" id="quicklog-title">Transit</div>
+        <button class="quicklog-close" onclick="closeQuickLogBtn()">✕</button>
+      </div>
+      <div class="quicklog-body" id="quicklog-body"></div>
+      <button class="quicklog-save" onclick="saveQuickLog()">Enregistrer ✓</button>
     </div>
   </div>
   <div class="bottom-nav" id="bottom-nav-home">
@@ -1452,6 +1623,7 @@ function showScreen(id, btn) {
   if (id === 'recipes') renderRecettes();
   if (id === 'library') renderBibliotheque();
   if (id === 'routines') renderRoutines();
+  if (id === 'home') updateHomeScore();
   updateBottomNav(id);
   // Scroll to top on screen change
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
@@ -2080,6 +2252,301 @@ function handleRoutModaleClick(e) { if (e.target===document.getElementById('rout
 
 // Init
 renderRoutines();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// QUICK LOG — formulaires Transit / Repas / Peau / Stress
+// ══════════════════════════════════════════════════════════════════════════════
+const QL_CONFIGS = {
+  transit: {
+    title: '🫀 Transit',
+    sections: [
+      { type: 'options', label: 'Comment est ton transit ?', key: 'transit_etat', items: [
+        { emoji:'🐢', label:'Lent' },
+        { emoji:'👍', label:'Normal' },
+        { emoji:'💨', label:'Rapide' },
+      ]},
+      { type: 'slider', label: 'Ballonnements', key: 'ballonnements', min:0, max:5 },
+      { type: 'options', label: 'Douleurs abdominales ?', key: 'douleurs', items: [
+        { emoji:'😌', label:'Aucune' },
+        { emoji:'😐', label:'Légères' },
+        { emoji:'😣', label:'Intenses' },
+      ]},
+    ]
+  },
+  repas: {
+    title: '🥗 Repas',
+    sections: [
+      { type: 'chips', label: "Ce que j'ai mangé aujourd'hui", key: 'aliments', items: [
+        '🥑 Avocat','🥦 Légumes verts','🍞 Gluten','🥛 Produits laitiers',
+        '🫙 Fermentés','🍬 Sucre raffiné','🥩 Viande','🐟 Poisson',
+        '🥚 Œufs','🍎 Fruits','🌾 Céréales','☕ Café',
+      ]},
+      { type: 'options', label: 'Hydratation', key: 'hydratation', items: [
+        { emoji:'💧', label:'< 1L' },
+        { emoji:'🚰', label:'1-2L' },
+        { emoji:'🌊', label:'> 2L' },
+      ]},
+    ]
+  },
+  peau: {
+    title: '✨ Peau',
+    sections: [
+      { type: 'options', label: 'État de ta peau aujourd\'hui', key: 'peau_etat', items: [
+        { emoji:'🔴', label:'Poussée' },
+        { emoji:'🟡', label:'Stable' },
+        { emoji:'🟢', label:'Calme' },
+      ]},
+      { type: 'slider', label: 'Rougeurs / inflammations', key: 'rougeurs', min:0, max:5 },
+      { type: 'chips', label: 'Zone concernée', key: 'zone', items: [
+        'Visage','Nuque','Dos','Ventre','Bras','Jambes','Cuir chevelu'
+      ]},
+    ]
+  },
+  stress: {
+    title: '😮‍💨 Stress & énergie',
+    sections: [
+      { type: 'slider', label: 'Niveau de stress', key: 'stress', min:0, max:5 },
+      { type: 'slider', label: 'Niveau d\'énergie', key: 'energie', min:0, max:5 },
+      { type: 'slider', label: 'Qualité du sommeil (nuit passée)', key: 'sommeil', min:0, max:5 },
+      { type: 'options', label: 'Humeur générale', key: 'humeur', items: [
+        { emoji:'😊', label:'Bonne' },
+        { emoji:'😐', label:'Neutre' },
+        { emoji:'😔', label:'Basse' },
+      ]},
+    ]
+  }
+};
+
+let currentQLType = null;
+let qlValues = {};
+
+function openQuickLog(type) {
+  currentQLType = type;
+  qlValues = {};
+  const cfg = QL_CONFIGS[type];
+  document.getElementById('quicklog-title').textContent = cfg.title;
+  document.getElementById('quicklog-body').innerHTML = renderQLBody(cfg);
+  document.getElementById('quicklog-overlay').classList.add('open');
+  // Prevent body scroll
+  document.body.style.overflow = 'hidden';
+}
+
+function renderQLBody(cfg) {
+  return cfg.sections.map(sec => {
+    let html = `<span class="ql-section-label">${sec.label}</span>`;
+    if (sec.type === 'options') {
+      html += `<div class="ql-options">`;
+      sec.items.forEach((item, i) => {
+        html += `<div class="ql-option" onclick="selectQLOption('${sec.key}',${i},this)">
+          <span class="ql-emoji">${item.emoji}</span>
+          <span class="ql-label">${item.label}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    } else if (sec.type === 'chips') {
+      html += `<div class="ql-chips">`;
+      sec.items.forEach((item, i) => {
+        html += `<div class="ql-chip" onclick="toggleQLChip('${sec.key}',${i},this)">${item}</div>`;
+      });
+      html += `</div>`;
+    } else if (sec.type === 'slider') {
+      const mid = Math.round((sec.max - sec.min) / 2);
+      html += `<div class="ql-slider-wrap">
+        <div class="ql-slider-label">${sec.label} <span id="slider-val-${sec.key}">${mid}/${sec.max}</span></div>
+        <input type="range" class="ql-slider" min="${sec.min}" max="${sec.max}" value="${mid}"
+          oninput="updateQLSlider('${sec.key}', this.value, ${sec.max})">
+      </div>`;
+      qlValues[sec.key] = mid;
+    }
+    return html;
+  }).join('');
+}
+
+function selectQLOption(key, idx, el) {
+  el.closest('.ql-options').querySelectorAll('.ql-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  qlValues[key] = idx;
+}
+
+function toggleQLChip(key, idx, el) {
+  if (!qlValues[key]) qlValues[key] = [];
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    qlValues[key].push(idx);
+  } else {
+    qlValues[key] = qlValues[key].filter(i => i !== idx);
+  }
+}
+
+function updateQLSlider(key, val, max) {
+  qlValues[key] = parseInt(val);
+  const el = document.getElementById('slider-val-' + key);
+  if (el) el.textContent = val + '/' + max;
+}
+
+function closeQuickLog(e) {
+  if (e.target === document.getElementById('quicklog-overlay')) closeQuickLogBtn();
+}
+function closeQuickLogBtn() {
+  document.getElementById('quicklog-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function saveQuickLog() {
+  // Sauvegarder dans localStorage (persistance locale)
+  const today = new Date().toISOString().split('T')[0];
+  const key = `nara_log_${today}_${currentQLType}`;
+  const entry = { type: currentQLType, date: today, values: qlValues, ts: Date.now() };
+  localStorage.setItem(key, JSON.stringify(entry));
+
+  // Mettre à jour le score
+  closeQuickLogBtn();
+  showToast('✓ Enregistré !');
+  updateHomeScore();
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('ql-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'ql-toast';
+    toast.className = 'ql-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SCORE — calculé à partir des entrées localStorage
+// ══════════════════════════════════════════════════════════════════════════════
+function updateHomeScore() {
+  // Compter les entrées des 7 derniers jours
+  const entries = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    ['transit','repas','peau','stress'].forEach(type => {
+      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
+      if (raw) entries.push(JSON.parse(raw));
+    });
+  }
+
+  if (entries.length < 3) {
+    // Pas assez de données — garder l'état vide
+    document.getElementById('score-card-empty').style.display = '';
+    document.getElementById('score-card-data').style.display = 'none';
+    document.getElementById('insights-empty').style.display = '';
+    document.getElementById('insights-list').innerHTML = '';
+    return;
+  }
+
+  // Calculer un score simple basé sur les entrées
+  let scoreTotal = 0, scoreCount = 0;
+  const barsData = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    let dayScore = 0, dayCount = 0;
+
+    ['transit','repas','peau','stress'].forEach(type => {
+      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
+      if (!raw) return;
+      const entry = JSON.parse(raw);
+      const v = entry.values;
+      if (type === 'transit' && v.transit_etat !== undefined) {
+        dayScore += v.transit_etat === 1 ? 100 : v.transit_etat === 0 ? 40 : 70;
+        dayCount++;
+        if (v.ballonnements !== undefined) {
+          dayScore += Math.round((1 - v.ballonnements/5) * 100);
+          dayCount++;
+        }
+      }
+      if (type === 'peau' && v.peau_etat !== undefined) {
+        dayScore += v.peau_etat === 2 ? 100 : v.peau_etat === 1 ? 60 : 20;
+        dayCount++;
+      }
+      if (type === 'stress' && v.stress !== undefined) {
+        dayScore += Math.round((1 - v.stress/5) * 100);
+        dayCount++;
+        if (v.energie !== undefined) { dayScore += Math.round(v.energie/5 * 100); dayCount++; }
+        if (v.sommeil !== undefined) { dayScore += Math.round(v.sommeil/5 * 100); dayCount++; }
+      }
+    });
+
+    const dScore = dayCount > 0 ? Math.round(dayScore / dayCount) : null;
+    barsData.push(dScore);
+    if (dScore !== null) { scoreTotal += dScore; scoreCount++; }
+  }
+
+  const avgScore = scoreCount > 0 ? Math.round(scoreTotal / scoreCount) : null;
+
+  if (avgScore !== null) {
+    document.getElementById('score-card-empty').style.display = 'none';
+    document.getElementById('score-card-data').style.display = '';
+    document.getElementById('score-num').textContent = avgScore;
+    document.getElementById('score-sub').textContent =
+      entries.length >= 14 ? `Basé sur ${entries.length} entrées · Continue comme ça 🌱` :
+      `${entries.length} entrées · Continue à noter pour affiner`;
+
+    // Barres
+    const maxBar = Math.max(...barsData.filter(Boolean), 1);
+    document.getElementById('score-bars').innerHTML = barsData.map(v =>
+      `<div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
+    ).join('');
+  }
+
+  // Insights — seulement après 7 entrées
+  if (entries.length >= 7) {
+    document.getElementById('insights-empty').style.display = 'none';
+    const insights = generateInsights(entries);
+    document.getElementById('insights-list').innerHTML = insights.map(ins =>
+      `<div class="insight-card ${ins.type}">
+        <div class="insight-icon">${ins.icon}</div>
+        <div class="insight-tag">${ins.tag}</div>
+        <div class="insight-text">${ins.text}</div>
+      </div>`
+    ).join('');
+  }
+}
+
+function generateInsights(entries) {
+  const insights = [];
+  const stressEntries = entries.filter(e => e.type === 'stress' && e.values.stress !== undefined);
+  const peauEntries = entries.filter(e => e.type === 'peau' && e.values.peau_etat !== undefined);
+  const transitEntries = entries.filter(e => e.type === 'transit' && e.values.transit_etat !== undefined);
+
+  if (stressEntries.length >= 3) {
+    const avgStress = stressEntries.reduce((s,e) => s + e.values.stress, 0) / stressEntries.length;
+    if (avgStress >= 3) {
+      insights.push({ type:'gut', icon:'🧠', tag:'Stress · Observation',
+        text: `Ton niveau de stress moyen est de <strong>${avgStress.toFixed(1)}/5</strong> cette semaine. Le stress impacte directement la digestion.` });
+    }
+  }
+  if (peauEntries.length >= 3) {
+    const calm = peauEntries.filter(e => e.values.peau_etat === 2).length;
+    const pct = Math.round(calm / peauEntries.length * 100);
+    insights.push({ type:'skin', icon:'✨', tag:'Peau · Suivi',
+      text: `Ta peau est <strong>calme ${pct}% du temps</strong> sur les derniers jours. Continue à noter pour détecter des patterns.` });
+  }
+  if (transitEntries.length >= 3) {
+    const normal = transitEntries.filter(e => e.values.transit_etat === 1).length;
+    if (normal / transitEntries.length > 0.6) {
+      insights.push({ type:'gut', icon:'🫀', tag:'Transit · Positif',
+        text: `Ton transit est <strong>normal la majorité du temps</strong>. Bonne base — continue le suivi pour identifier les variations.` });
+    }
+  }
+  if (insights.length === 0) {
+    insights.push({ type:'gut', icon:'📈', tag:'En cours d\'analyse',
+      text: `Nara analyse tes données. <strong>Continue à noter</strong> chaque jour pour des insights plus précis.` });
+  }
+  return insights;
+}
+
+// Charger le score au démarrage de l'app
+updateHomeScore();
 </script>
 
 </div><!-- /app -->

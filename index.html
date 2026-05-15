@@ -1286,6 +1286,42 @@ const SUPABASE_ANON_KEY = 'sb_publishable_NGK_ChSW3ts5xWky6RH4SA_gI9Qy84F';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ══════════════════════════════════════════════════════════════════════
+   TABLES SUPABASE À CRÉER (SQL à exécuter dans Supabase > SQL Editor)
+   ══════════════════════════════════════════════════════════════════════
+
+   -- Table des entrées journal
+   CREATE TABLE IF NOT EXISTS nara_logs (
+     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+     date date NOT NULL,
+     type text NOT NULL,          -- 'transit' | 'repas' | 'peau' | 'stress'
+     values jsonb NOT NULL DEFAULT '{}',
+     created_at timestamptz DEFAULT now(),
+     UNIQUE(user_id, date, type)  -- une entrée par type par jour
+   );
+   ALTER TABLE nara_logs ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "Users see own logs" ON nara_logs
+     FOR ALL USING (auth.uid() = user_id);
+
+   -- Table des routines actives
+   CREATE TABLE IF NOT EXISTS nara_routines (
+     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+     routine_id text NOT NULL,    -- 'archetype_1' | 'archetype_2' | 'archetype_3'
+     statut text NOT NULL DEFAULT 'disponible',
+     jour_actuel integer NOT NULL DEFAULT 0,
+     started_at timestamptz DEFAULT now(),
+     updated_at timestamptz DEFAULT now(),
+     UNIQUE(user_id, routine_id)
+   );
+   ALTER TABLE nara_routines ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "Users see own routines" ON nara_routines
+     FOR ALL USING (auth.uid() = user_id);
+
+   ══════════════════════════════════════════════════════════════════════ */
+
+
 // Session active
 let currentUser = null;
 
@@ -1362,9 +1398,9 @@ async function handleSignup() {
     } else if (data.session) {
       // Auto-confirmed
       currentUser = data.user;
-      updateAuthBadge(currentUser);
       updateHomeUser(currentUser);
       showAuthMsg('success', 'signup', `🎉 Bienvenue ${prenom} ! Redirection…`);
+      await loadUserData(currentUser.id);
       setTimeout(() => go('home'), 1200);
     }
   } catch (err) {
@@ -1392,11 +1428,11 @@ async function handleLogin() {
     if (error) throw error;
 
     currentUser = data.user;
-    updateAuthBadge(currentUser);
     updateHomeUser(currentUser);
 
     const prenom = currentUser.user_metadata?.prenom || email.split('@')[0];
     showAuthMsg('success', 'login', `Bienvenue ${prenom} ! 🌿`);
+    await loadUserData(currentUser.id);
     setTimeout(() => go('home'), 900);
   } catch (err) {
     const msg = err.message.includes('Invalid login')
@@ -1415,10 +1451,9 @@ async function handleLogout() {
   document.getElementById('user-dropdown').classList.remove('open');
   await sb.auth.signOut();
   currentUser = null;
-  updateAuthBadge(null);
-  document.getElementById('home-user-name').textContent = 'Manon';
-  document.getElementById('dropdown-name').textContent = 'Manon';
-  document.getElementById('dropdown-email').textContent = 'manon@exemple.fr';
+  document.getElementById('home-user-name').textContent = '—';
+  document.getElementById('dropdown-name').textContent = '—';
+  document.getElementById('dropdown-email').textContent = '';
   go('onboarding');
 }
 
@@ -1434,31 +1469,138 @@ async function handleForgotPassword() {
 }
 
 // ===== RESTAURER SESSION AU CHARGEMENT =====
+// ══════════════════════════════════════════════════════════════════════════════
+// SESSION PERSISTANTE + SYNC SUPABASE
+// Supabase SDK gère déjà la persistence de session via localStorage natif.
+// On s'assure juste de restaurer l'UI et les données au chargement.
+// ══════════════════════════════════════════════════════════════════════════════
+
 async function initSession() {
+  // Supabase restaure automatiquement la session depuis son propre localStorage.
+  // getSession() retourne la session active si elle existe encore (token valide).
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     currentUser = session.user;
-    updateAuthBadge(currentUser);
     updateHomeUser(currentUser);
+    // Utilisateur déjà connecté → aller directement au dashboard
+    go('home');
+    // Charger ses données depuis Supabase
+    await loadUserData(session.user.id);
   }
+  // Sinon, rester sur l'écran onboarding (déjà actif par défaut)
 }
 
-// Écoute les changements de session (confirm email, token refresh…)
-sb.auth.onAuthStateChange((event, session) => {
+// Écoute tous les événements auth en temps réel
+sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
     currentUser = session.user;
-    updateAuthBadge(currentUser);
     updateHomeUser(currentUser);
+
     if (event === 'SIGNED_IN') {
-      // Nettoyage champs
+      // Nettoyage champs de formulaire
       ['signup-email','signup-password','signup-prenom','login-email','login-password']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      // Charger les données de l'utilisateur
+      await loadUserData(session.user.id);
+    }
+
+    if (event === 'TOKEN_REFRESHED') {
+      // Token rafraîchi silencieusement — rien à faire, session toujours active
+      console.log('[Nara] Token rafraîchi automatiquement');
     }
   } else {
     currentUser = null;
-    updateAuthBadge(null);
+    // Nettoyer le cache local si déconnexion
+    if (event === 'SIGNED_OUT') {
+      clearLocalCache();
+    }
   }
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TABLE SUPABASE : nara_logs
+// Structure : id, user_id, date, type, values (jsonb), created_at
+// On crée la table automatiquement via l'API si elle n'existe pas encore.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Clé de cache local par user
+function cacheKey(userId, date, type) {
+  return `nara_${userId}_log_${date}_${type}`;
+}
+function routineCacheKey(userId, routineId) {
+  return `nara_${userId}_routine_${routineId}`;
+}
+
+// Charger toutes les données de l'utilisateur depuis Supabase
+async function loadUserData(userId) {
+  if (!userId) return;
+
+  try {
+    // Charger les logs des 30 derniers jours
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+    const sinceStr = since.toISOString().split('T')[0];
+
+    const { data: logs, error } = await sb
+      .from('nara_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', sinceStr)
+      .order('date', { ascending: false });
+
+    if (error) {
+      // Table n'existe pas encore ou erreur réseau — on continue avec le cache local
+      console.warn('[Nara] Impossible de charger les logs:', error.message);
+      return;
+    }
+
+    // Mettre en cache local tous les logs récupérés
+    if (logs && logs.length > 0) {
+      logs.forEach(log => {
+        const key = cacheKey(userId, log.date, log.type);
+        const entry = { type: log.type, date: log.date, values: log.values, ts: log.created_at };
+        localStorage.setItem(key, JSON.stringify(entry));
+        // Compatibilité avec l'ancien format (sans userId)
+        localStorage.setItem(`nara_log_${log.date}_${log.type}`, JSON.stringify(entry));
+      });
+      console.log(`[Nara] ${logs.length} entrées chargées depuis Supabase`);
+    }
+
+    // Charger les routines actives
+    const { data: routines } = await sb
+      .from('nara_routines')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (routines && routines.length > 0) {
+      routines.forEach(r => {
+        const key = routineCacheKey(userId, r.routine_id);
+        localStorage.setItem(key, JSON.stringify({ statut: r.statut, jour_actuel: r.jour_actuel }));
+        // Compatibilité ancien format
+        localStorage.setItem('nara_routine_' + r.routine_id, JSON.stringify({ statut: r.statut, jour_actuel: r.jour_actuel }));
+      });
+    }
+
+    // Mettre à jour l'UI
+    updateHomeScore();
+
+  } catch (err) {
+    console.warn('[Nara] Erreur chargement données:', err);
+  }
+}
+
+// Nettoyer le cache local à la déconnexion
+function clearLocalCache() {
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('nara_') || key.startsWith('sb-'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  console.log('[Nara] Cache local nettoyé');
+}
 
 initSession();
 // Sync couleur initiale (onboarding = honey)
@@ -2287,22 +2429,40 @@ function openRoutModale(modalId) {
 function closeRoutModale() { document.getElementById('rout-modale-overlay').classList.remove('open'); }
 function handleRoutModaleClick(e) { if (e.target===document.getElementById('rout-modale-overlay')) closeRoutModale(); }
 
-function startRoutine(id) {
+async function startRoutine(id) {
   // Désactiver toute routine précédemment active
   routinesData.forEach(r => {
     if (r.statut === 'active') {
       r.statut = 'disponible';
       r.jour_actuel = 0;
       localStorage.removeItem('nara_routine_' + r.id);
+      if (currentUser) localStorage.removeItem(routineCacheKey(currentUser.id, r.id));
     }
   });
+
   // Démarrer la nouvelle
   const r = routinesData.find(x => x.id === id);
   if (!r) return;
   r.statut = 'active';
   r.jour_actuel = 1;
+
+  // Sauvegarde locale immédiate
   localStorage.setItem('nara_routine_' + id, JSON.stringify({ statut:'active', jour_actuel:1 }));
-  // Retourner à la liste avec la routine active
+
+  // Sync Supabase
+  if (currentUser) {
+    localStorage.setItem(routineCacheKey(currentUser.id, id), JSON.stringify({ statut:'active', jour_actuel:1 }));
+    sb.from('nara_routines').upsert({
+      user_id: currentUser.id,
+      routine_id: id,
+      statut: 'active',
+      jour_actuel: 1,
+    }, { onConflict: 'user_id,routine_id' }).then(({ error }) => {
+      if (error) console.warn('[Nara] Sync routine échouée:', error.message);
+      else console.log('[Nara] Routine synchronisée dans Supabase');
+    });
+  }
+
   go('routines');
   showToast('✓ Programme démarré · Jour 1 !');
 }
@@ -2449,14 +2609,37 @@ function closeQuickLogBtn() {
   document.body.style.overflow = '';
 }
 
-function saveQuickLog() {
-  // Sauvegarder dans localStorage (persistance locale)
+async function saveQuickLog() {
   const today = new Date().toISOString().split('T')[0];
-  const key = `nara_log_${today}_${currentQLType}`;
   const entry = { type: currentQLType, date: today, values: qlValues, ts: Date.now() };
-  localStorage.setItem(key, JSON.stringify(entry));
 
-  // Mettre à jour le score
+  // 1. Sauvegarde locale immédiate (UX fluide, fonctionne offline)
+  const localKey = `nara_log_${today}_${currentQLType}`;
+  localStorage.setItem(localKey, JSON.stringify(entry));
+
+  // 2. Sync Supabase en arrière-plan si connecté
+  if (currentUser) {
+    const userId = currentUser.id;
+    // Cache avec userId pour isolation multi-compte
+    localStorage.setItem(cacheKey(userId, today, currentQLType), JSON.stringify(entry));
+
+    // Upsert dans Supabase (insert ou update si même date+type+user)
+    sb.from('nara_logs').upsert({
+      user_id: userId,
+      date: today,
+      type: currentQLType,
+      values: qlValues,
+    }, {
+      onConflict: 'user_id,date,type'
+    }).then(({ error }) => {
+      if (error) {
+        console.warn('[Nara] Sync Supabase échouée (sauvegardé localement) :', error.message);
+      } else {
+        console.log('[Nara] Entrée synchronisée dans Supabase');
+      }
+    });
+  }
+
   closeQuickLogBtn();
   showToast('✓ Enregistré !');
   updateHomeScore();

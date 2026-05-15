@@ -44,7 +44,7 @@
     width: 100%; height: 100%; height: 100dvh;
     min-height: 100dvh;
     overflow: hidden;
-    background: #F6EAD4; /* honey fallback pour onboarding */
+    background: white; /* blanc = fond nav visible si débordement */
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -244,18 +244,9 @@
     background: white;
     border-top: 1px solid var(--oat);
     display: flex; align-items: center; justify-content: space-around;
-    padding: 6px 4px 6px;
-    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
-    min-height: 58px;
-    position: relative;
-  }
-  .bottom-nav::after {
-    content: '';
-    position: absolute;
-    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-    left: 0; right: 0;
-    height: env(safe-area-inset-bottom, 0px);
-    background: white;
+    padding: 6px 4px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    min-height: calc(58px + env(safe-area-inset-bottom, 0px));
   }
   .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 5px 8px; border-radius: 10px; transition: background 0.2s; flex: 1; min-width: 0; }
   .nav-item.active { background: var(--honey); }
@@ -679,18 +670,10 @@
     flex-shrink: 0; background: white;
     border-top: 1px solid var(--oat);
     display: flex; align-items: center; justify-content: space-around;
-    padding: 6px 4px 6px;
-    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
-    min-height: 58px; z-index: 50;
-    position: relative;
-  }
-  .bottom-nav-shared::after {
-    content: '';
-    position: absolute;
-    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-    left: 0; right: 0;
-    height: env(safe-area-inset-bottom, 0px);
-    background: white;
+    padding: 6px 4px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    min-height: calc(58px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
   }
   .bnav-item {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -1214,6 +1197,9 @@
       </div>
     </div>
     <div class="rout-detail-scroll" id="rout-detail-scroll"></div>
+    <div style="padding: 0 clamp(16px,6vw,28px) calc(16px + env(safe-area-inset-bottom, 0px)); flex-shrink:0; background:var(--cream);">
+      <button id="rout-start-btn" class="save-btn" style="margin-top:0; background:var(--sage);">Démarrer ce programme →</button>
+    </div>
   </div>
   <!-- Modale guidée -->
   <div class="rout-modale-overlay" id="rout-modale-overlay" onclick="handleRoutModaleClick(event)">
@@ -2031,7 +2017,7 @@ renderBibliotheque();
 const routinesData = [
   {
     id:"archetype_1", titre:"Ventre & Peau", sous_titre:"Protocole intestin-peau · 3 semaines",
-    statut:"active", jour_actuel:9, duree_jours:21,
+    statut:"disponible", jour_actuel:0, duree_jours:21,
     couleur:"#818263", gradient:"linear-gradient(135deg, #818263, #5a5e40)", emoji:"🌿",
     description:"Un protocole holistique qui connecte la santé intestinale à l'état de la peau — alimentation, mouvement doux et observation.",
     semaines:[
@@ -2141,9 +2127,21 @@ let currentRoutine = null;
 let openSemaines = { 0: true };
 
 function renderRoutines() {
-  const active = routinesData.find(r => r.statut === "active");
-  const disponibles = routinesData.filter(r => r.statut !== "active");
+  // Lire l'état des routines depuis localStorage (persistance réelle)
+  routinesData.forEach(r => {
+    const saved = localStorage.getItem('nara_routine_' + r.id);
+    if (saved) {
+      const s = JSON.parse(saved);
+      r.statut = s.statut;
+      r.jour_actuel = s.jour_actuel;
+    }
+  });
+
+  const active = routinesData.find(r => r.statut === 'active');
+  const disponibles = routinesData.filter(r => r.statut !== 'active');
   let html = '';
+
+  // Section "En cours" — uniquement si l'utilisateur a vraiment démarré
   if (active) {
     const pct = Math.round((active.jour_actuel / active.duree_jours) * 100);
     const daysHtml = Array.from({length: active.duree_jours}, (_,i) => {
@@ -2164,8 +2162,10 @@ function renderRoutines() {
         <div class="rout-hero-cta">Continuer le programme →</div>
       </div>`;
   }
+
+  // Section "Programmes disponibles"
   if (disponibles.length) {
-    html += `<div class="section-title" style="margin-top:4px">Programmes disponibles</div>`;
+    html += `<div class="section-title" style="margin-top:${active ? '8px' : '0'}">Programmes disponibles</div>`;
     disponibles.forEach(r => {
       html += `<div class="rout-dispo-card" onclick="openRoutineDetail('${r.id}')">
         <div class="rout-dispo-inner" style="background:${r.gradient}">
@@ -2176,10 +2176,11 @@ function renderRoutines() {
             <div class="rout-dispo-desc">${r.description}</div>
           </div>
         </div>
-        <div class="rout-dispo-badge">Disponible · 21 jours</div>
+        <div class="rout-dispo-badge">Disponible · ${r.duree_jours} jours</div>
       </div>`;
     });
   }
+
   document.getElementById('rout-list-scroll').innerHTML = html;
 }
 
@@ -2194,7 +2195,21 @@ function openRoutineDetail(id) {
   document.getElementById('rout-detail-desc').textContent = r.description;
   const pct = r.statut === 'active' ? Math.round((r.jour_actuel / r.duree_jours) * 100) : 0;
   document.getElementById('rout-detail-prog-fill').style.width = pct + '%';
-  document.getElementById('rout-detail-prog-txt').textContent = r.statut === 'active' ? `Jour ${r.jour_actuel}/${r.duree_jours} · ${pct}%` : 'Programme disponible — 21 jours';
+  document.getElementById('rout-detail-prog-txt').textContent = r.statut === 'active'
+    ? `Jour ${r.jour_actuel}/${r.duree_jours} · ${pct}%`
+    : 'Pas encore démarré';
+  // Bouton démarrer/continuer
+  const startBtn = document.getElementById('rout-start-btn');
+  if (startBtn) {
+    if (r.statut === 'active') {
+      startBtn.textContent = 'Continuer le programme →';
+      startBtn.style.display = '';
+    } else {
+      startBtn.textContent = 'Démarrer ce programme →';
+      startBtn.style.display = '';
+    }
+    startBtn.onclick = () => startRoutine(r.id);
+  }
   renderRoutineDetailBody();
   showScreen('routine-detail', null);
 }
@@ -2249,6 +2264,26 @@ function openRoutModale(modalId) {
 
 function closeRoutModale() { document.getElementById('rout-modale-overlay').classList.remove('open'); }
 function handleRoutModaleClick(e) { if (e.target===document.getElementById('rout-modale-overlay')) closeRoutModale(); }
+
+function startRoutine(id) {
+  // Désactiver toute routine précédemment active
+  routinesData.forEach(r => {
+    if (r.statut === 'active') {
+      r.statut = 'disponible';
+      r.jour_actuel = 0;
+      localStorage.removeItem('nara_routine_' + r.id);
+    }
+  });
+  // Démarrer la nouvelle
+  const r = routinesData.find(x => x.id === id);
+  if (!r) return;
+  r.statut = 'active';
+  r.jour_actuel = 1;
+  localStorage.setItem('nara_routine_' + id, JSON.stringify({ statut:'active', jour_actuel:1 }));
+  // Retourner à la liste avec la routine active
+  go('routines');
+  showToast('✓ Programme démarré · Jour 1 !');
+}
 
 // Init
 renderRoutines();

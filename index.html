@@ -727,6 +727,90 @@
   /* PDF button désactivé */
   .pdf-btn[disabled], .pdf-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 
+  /* ===== JOURNAL DYNAMIQUE ===== */
+  .jrn-date-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--honey); border-radius: 20px;
+    padding: 6px 14px; font-size: 0.75rem;
+    color: var(--text-mid); margin-bottom: 20px;
+  }
+  .jrn-section { margin-bottom: 22px; }
+  .jrn-section-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .jrn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .jrn-section-name {
+    font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-mid);
+  }
+  .jrn-question {
+    font-size: 0.78rem; color: var(--text-mid); margin-bottom: 10px;
+  }
+  /* Options emoji */
+  .jrn-emoji-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .jrn-option {
+    flex: 1; padding: 12px 6px; border-radius: 14px;
+    border: 1.5px solid var(--oat); background: white;
+    text-align: center; cursor: pointer; transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .jrn-option.selected { border-color: var(--sage); background: var(--honey); }
+  .jrn-option .e { font-size: 1.3rem; display: block; }
+  .jrn-option .t { font-size: 0.62rem; color: var(--text-light); margin-top: 3px; }
+  .jrn-option.selected .t { color: var(--sage); }
+  /* Slider réel */
+  .jrn-slider-wrap {
+    background: white; border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 10px;
+    border: 1.5px solid var(--oat);
+  }
+  .jrn-slider-label {
+    font-size: 0.8rem; color: var(--text-dark);
+    margin-bottom: 10px; display: flex; justify-content: space-between;
+  }
+  .jrn-slider-val { color: var(--sage); font-weight: 600; }
+  .jrn-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px; border-radius: 4px;
+    background: var(--oat); outline: none; cursor: pointer;
+  }
+  .jrn-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--sage); cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(129,130,99,0.4);
+  }
+  .jrn-slider::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--sage); cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(129,130,99,0.4);
+  }
+  /* Food chips */
+  .jrn-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .jrn-chip {
+    padding: 8px 14px; border-radius: 20px; font-size: 0.78rem;
+    border: 1.5px solid var(--oat); background: white;
+    color: var(--text-mid); cursor: pointer; transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .jrn-chip.selected {
+    background: var(--avocado); border-color: var(--avocado); color: white;
+  }
+  /* Déjà rempli aujourd'hui */
+  .jrn-already-done {
+    background: var(--honey); border-radius: 16px; padding: 16px;
+    text-align: center; margin-bottom: 16px;
+    font-size: 0.85rem; color: var(--text-mid); line-height: 1.5;
+  }
+  .jrn-already-done strong { color: var(--sage); }
+  .jrn-edit-btn {
+    display: inline-block; margin-top: 8px; padding: 8px 18px;
+    border-radius: 20px; background: var(--sage); color: white;
+    font-size: 0.78rem; cursor: pointer; border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
   /* ===== SHARED BOTTOM NAV ===== */
   .bottom-nav-shared {
     position: fixed;
@@ -1082,58 +1166,13 @@
 
 <!-- SCREEN 3 — JOURNAL -->
 <div class="screen" id="screen-journal">
-  <div class="screen-header"><div class="back-btn" onclick="go('home')">←</div><div class="screen-title">Mon journal</div></div>
-  <div class="journal-scroll">
-    <div class="date-chip">📅 Aujourd'hui · Mardi 28 avril</div>
-    <div class="journal-section">
-      <div class="journal-section-header"><div class="journal-section-dot dot-gut"></div><div class="journal-section-name">Intestin & Transit</div></div>
-      <div style="font-size:0.78rem;color:var(--text-mid);margin-bottom:8px;">Comment est ton transit ?</div>
-      <div class="emoji-row">
-        <div class="emoji-option"><div class="e">🐢</div><div class="t">Lent</div></div>
-        <div class="emoji-option selected"><div class="e">👍</div><div class="t">Normal</div></div>
-        <div class="emoji-option"><div class="e">💨</div><div class="t">Rapide</div></div>
-      </div>
-      <div class="slider-row">
-        <div class="slider-label">Ballonnements <span>3/5</span></div>
-        <div class="fake-slider"><div class="fake-slider-fill"></div><div class="fake-slider-thumb"></div></div>
-      </div>
-      <div style="font-size:0.78rem;color:var(--text-mid);margin-bottom:8px;">Qu'as-tu mangé ?</div>
-      <div class="food-chips">
-        <div class="food-chip selected">🥑 Avocat</div>
-        <div class="food-chip selected">🥦 Légumes verts</div>
-        <div class="food-chip">🍞 Gluten</div>
-        <div class="food-chip">🥛 Produits laitiers</div>
-        <div class="food-chip selected">🫙 Fermentés</div>
-        <div class="food-chip">🍬 Sucre raffiné</div>
-        <div class="food-chip">+ Ajouter</div>
-      </div>
-    </div>
-    <div class="journal-section">
-      <div class="journal-section-header"><div class="journal-section-dot dot-skin"></div><div class="journal-section-name">Peau</div></div>
-      <div class="emoji-row">
-        <div class="emoji-option"><div class="e">🔴</div><div class="t">Poussée</div></div>
-        <div class="emoji-option selected"><div class="e">🟡</div><div class="t">Stable</div></div>
-        <div class="emoji-option"><div class="e">🟢</div><div class="t">Calme</div></div>
-      </div>
-      <div class="photo-zone">
-        <div class="ph-icon">📷</div>
-        <div class="ph-text">Ajouter une photo de suivi<br><span style="font-size:0.65rem;opacity:0.6">Confidentiel · Jamais partagé</span></div>
-      </div>
-    </div>
-    <div class="journal-section">
-      <div class="journal-section-header"><div class="journal-section-dot dot-life"></div><div class="journal-section-name">Mode de vie</div></div>
-      <div class="slider-row">
-        <div class="slider-label">Stress du jour <span>2/5</span></div>
-        <div class="fake-slider"><div class="fake-slider-fill" style="width:35%"></div><div class="fake-slider-thumb" style="left:35%"></div></div>
-      </div>
-      <div class="slider-row">
-        <div class="slider-label">Qualité du sommeil <span>4/5</span></div>
-        <div class="fake-slider"><div class="fake-slider-fill" style="width:80%"></div><div class="fake-slider-thumb" style="left:80%"></div></div>
-      </div>
-    </div>
-    <button class="save-btn">Enregistrer mon journal ✓</button>
+  <div class="screen-header">
+    <div class="back-btn" onclick="go('home')">←</div>
+    <div class="screen-title">Mon journal</div>
   </div>
-
+  <div class="journal-scroll" id="journal-scroll">
+    <!-- Tout est rendu dynamiquement par renderJournal() -->
+  </div>
   <!-- shared bottom nav -->
   <div class="bottom-nav-shared">
     <div class="bnav-item" id="jrn-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
@@ -1829,6 +1868,7 @@ function showScreen(id, btn) {
   if (id === 'routines') renderRoutines();
   if (id === 'home') updateHomeScore();
   if (id === 'insights') renderInsightsPage();
+  if (id === 'journal') renderJournal();
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
 }
@@ -2713,8 +2753,335 @@ function showToast(msg) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PAGE INSIGHTS — dynamique, basée sur les vraies données de l'utilisateur
+// JOURNAL — formulaire dynamique, vierge par défaut, sauvegarde Supabase
 // ══════════════════════════════════════════════════════════════════════════════
+
+// État interne du journal du jour
+let jrnValues = {};
+let jrnEditMode = false;
+
+const ALIMENTS = [
+  '🥑 Avocat','🥦 Légumes verts','🍞 Gluten','🥛 Produits laitiers',
+  '🫙 Fermentés','🍬 Sucre raffiné','🥩 Viande rouge','🐟 Poisson',
+  '🥚 Œufs','🍎 Fruits','🌾 Céréales complètes','☕ Café / thé',
+  '🍷 Alcool','🥜 Oléagineux',
+];
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getTodayLabel() {
+  const d = new Date();
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin',
+                 'juillet','août','septembre','octobre','novembre','décembre'];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+}
+
+function loadTodayJournal() {
+  // Charger les données du jour depuis localStorage (ou Supabase si disponible)
+  const today = getTodayStr();
+  const raw = localStorage.getItem(`nara_journal_${today}`);
+  if (raw) {
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+  return null;
+}
+
+function renderJournal() {
+  const scroll = document.getElementById('journal-scroll');
+  if (!scroll) return;
+
+  const today = getTodayStr();
+  const todayLabel = getTodayLabel();
+  const existing = loadTodayJournal();
+
+  // Si déjà rempli aujourd'hui et pas en mode édition → afficher résumé
+  if (existing && !jrnEditMode) {
+    scroll.innerHTML = renderJournalDone(todayLabel, existing);
+    return;
+  }
+
+  // Initialiser les valeurs : si édition, reprendre les valeurs existantes ; sinon tout à zéro
+  jrnValues = existing && jrnEditMode ? { ...existing } : {
+    transit: null,       // index 0-2
+    ballonnements: 0,
+    aliments: [],
+    peau: null,          // index 0-2
+    stress: 0,
+    sommeil: 0,
+    energie: 0,
+    notes: '',
+  };
+
+  scroll.innerHTML = renderJournalForm(todayLabel);
+  // Brancher les sliders après rendu DOM
+  bindJournalSliders();
+}
+
+function renderJournalForm(todayLabel) {
+  const v = jrnValues;
+
+  // Transit options
+  const transitOpts = [
+    { e: '🐢', t: 'Lent' },
+    { e: '👍', t: 'Normal' },
+    { e: '💨', t: 'Rapide' },
+  ];
+  const transitHtml = transitOpts.map((o, i) => `
+    <div class="jrn-option${v.transit === i ? ' selected' : ''}"
+         onclick="jrnSelectOption('transit', ${i}, this)">
+      <span class="e">${o.e}</span><span class="t">${o.t}</span>
+    </div>`).join('');
+
+  // Peau options
+  const peauOpts = [
+    { e: '🔴', t: 'Poussée' },
+    { e: '🟡', t: 'Stable' },
+    { e: '🟢', t: 'Calme' },
+  ];
+  const peauHtml = peauOpts.map((o, i) => `
+    <div class="jrn-option${v.peau === i ? ' selected' : ''}"
+         onclick="jrnSelectOption('peau', ${i}, this)">
+      <span class="e">${o.e}</span><span class="t">${o.t}</span>
+    </div>`).join('');
+
+  // Aliments chips
+  const alimentsHtml = ALIMENTS.map((a, i) => `
+    <div class="jrn-chip${v.aliments.includes(i) ? ' selected' : ''}"
+         onclick="jrnToggleChip(${i}, this)">${a}</div>`).join('');
+
+  return `
+    <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
+
+    <!-- INTESTIN & TRANSIT -->
+    <div class="jrn-section">
+      <div class="jrn-section-header">
+        <div class="jrn-dot" style="background:var(--avocado)"></div>
+        <div class="jrn-section-name">Intestin & Transit</div>
+      </div>
+      <div class="jrn-question">Comment est ton transit ?</div>
+      <div class="jrn-emoji-row">${transitHtml}</div>
+      <div class="jrn-slider-wrap">
+        <div class="jrn-slider-label">
+          Ballonnements
+          <span class="jrn-slider-val" id="jrn-val-ballonnements">${v.ballonnements}/5</span>
+        </div>
+        <input type="range" class="jrn-slider" id="jrn-slider-ballonnements"
+               min="0" max="5" value="${v.ballonnements}"
+               oninput="jrnUpdateSlider('ballonnements', this.value, 5)">
+      </div>
+      <div class="jrn-question">Qu'as-tu mangé aujourd'hui ?</div>
+      <div class="jrn-chips" id="jrn-chips-aliments">${alimentsHtml}</div>
+    </div>
+
+    <!-- PEAU -->
+    <div class="jrn-section">
+      <div class="jrn-section-header">
+        <div class="jrn-dot" style="background:var(--blush)"></div>
+        <div class="jrn-section-name">Peau</div>
+      </div>
+      <div class="jrn-question">Comment est ta peau aujourd'hui ?</div>
+      <div class="jrn-emoji-row">${peauHtml}</div>
+      <div class="photo-zone">
+        <div class="ph-icon">📷</div>
+        <div class="ph-text">Ajouter une photo de suivi<br>
+          <span style="font-size:0.65rem;opacity:0.6">Confidentiel · Jamais partagé</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE DE VIE -->
+    <div class="jrn-section">
+      <div class="jrn-section-header">
+        <div class="jrn-dot" style="background:var(--oat)"></div>
+        <div class="jrn-section-name">Mode de vie</div>
+      </div>
+      <div class="jrn-slider-wrap">
+        <div class="jrn-slider-label">
+          Stress du jour
+          <span class="jrn-slider-val" id="jrn-val-stress">${v.stress}/5</span>
+        </div>
+        <input type="range" class="jrn-slider" id="jrn-slider-stress"
+               min="0" max="5" value="${v.stress}"
+               oninput="jrnUpdateSlider('stress', this.value, 5)">
+      </div>
+      <div class="jrn-slider-wrap">
+        <div class="jrn-slider-label">
+          Qualité du sommeil
+          <span class="jrn-slider-val" id="jrn-val-sommeil">${v.sommeil}/5</span>
+        </div>
+        <input type="range" class="jrn-slider" id="jrn-slider-sommeil"
+               min="0" max="5" value="${v.sommeil}"
+               oninput="jrnUpdateSlider('sommeil', this.value, 5)">
+      </div>
+      <div class="jrn-slider-wrap">
+        <div class="jrn-slider-label">
+          Niveau d'énergie
+          <span class="jrn-slider-val" id="jrn-val-energie">${v.energie}/5</span>
+        </div>
+        <input type="range" class="jrn-slider" id="jrn-slider-energie"
+               min="0" max="5" value="${v.energie}"
+               oninput="jrnUpdateSlider('energie', this.value, 5)">
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="saveJournal()">Enregistrer mon journal ✓</button>
+  `;
+}
+
+function renderJournalDone(todayLabel, data) {
+  const transitLabels = ['Lent 🐢', 'Normal 👍', 'Rapide 💨'];
+  const peauLabels = ['Poussée 🔴', 'Stable 🟡', 'Calme 🟢'];
+  const alimentsStr = (data.aliments || []).map(i => ALIMENTS[i]).filter(Boolean).join(', ') || 'Aucun noté';
+
+  return `
+    <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
+    <div class="jrn-already-done">
+      <div style="font-size:1.8rem;margin-bottom:8px;">✅</div>
+      <strong>Journal du jour rempli !</strong><br>
+      Tu as déjà enregistré ton journal aujourd'hui.
+      <br><br>
+      <div style="text-align:left;font-size:0.78rem;color:var(--text-mid);line-height:2">
+        🫀 Transit : ${data.transit !== null ? transitLabels[data.transit] : '—'}<br>
+        💨 Ballonnements : ${data.ballonnements}/5<br>
+        🥗 Aliments : ${alimentsStr}<br>
+        ✨ Peau : ${data.peau !== null ? peauLabels[data.peau] : '—'}<br>
+        😮‍💨 Stress : ${data.stress}/5 · 😴 Sommeil : ${data.sommeil}/5 · ⚡ Énergie : ${data.energie}/5
+      </div>
+      <button class="jrn-edit-btn" onclick="jrnStartEdit()">Modifier mes données</button>
+    </div>
+  `;
+}
+
+function bindJournalSliders() {
+  // Les sliders sont déjà branchés via oninput inline, mais on s'assure
+  // que la couleur de fond du slider reflète la valeur initiale
+  ['ballonnements','stress','sommeil','energie'].forEach(key => {
+    const slider = document.getElementById(`jrn-slider-${key}`);
+    if (slider) jrnUpdateSlider(key, slider.value, 5);
+  });
+}
+
+function jrnSelectOption(key, idx, el) {
+  el.closest('.jrn-emoji-row').querySelectorAll('.jrn-option')
+    .forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  jrnValues[key] = idx;
+}
+
+function jrnToggleChip(idx, el) {
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!jrnValues.aliments.includes(idx)) jrnValues.aliments.push(idx);
+  } else {
+    jrnValues.aliments = jrnValues.aliments.filter(i => i !== idx);
+  }
+}
+
+function jrnUpdateSlider(key, val, max) {
+  jrnValues[key] = parseInt(val);
+  const labelEl = document.getElementById(`jrn-val-${key}`);
+  if (labelEl) labelEl.textContent = `${val}/${max}`;
+  // Couleur dynamique du slider
+  const slider = document.getElementById(`jrn-slider-${key}`);
+  if (slider) {
+    const pct = (parseInt(val) / max) * 100;
+    slider.style.background = `linear-gradient(to right, var(--sage) ${pct}%, var(--oat) ${pct}%)`;
+  }
+}
+
+function jrnStartEdit() {
+  jrnEditMode = true;
+  renderJournal();
+}
+
+async function saveJournal() {
+  const today = getTodayStr();
+
+  // Vérifier qu'au moins un champ est rempli
+  const hasData = jrnValues.transit !== null || jrnValues.peau !== null ||
+    jrnValues.aliments.length > 0 || jrnValues.stress > 0 ||
+    jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.ballonnements > 0;
+
+  if (!hasData) {
+    showToast('Remplis au moins un champ avant d\'enregistrer');
+    return;
+  }
+
+  const entry = { ...jrnValues, date: today, ts: Date.now() };
+
+  // 1. Sauvegarde locale immédiate
+  localStorage.setItem(`nara_journal_${today}`, JSON.stringify(entry));
+
+  // 2. Aussi sauvegarder dans les clés compatibles quick-log pour les insights/score
+  if (jrnValues.transit !== null || jrnValues.ballonnements > 0) {
+    const transitEntry = { type:'transit', date:today, values:{
+      transit_etat: jrnValues.transit,
+      ballonnements: jrnValues.ballonnements,
+      aliments: jrnValues.aliments,
+    }, ts: Date.now() };
+    localStorage.setItem(`nara_log_${today}_transit`, JSON.stringify(transitEntry));
+  }
+  if (jrnValues.peau !== null) {
+    const peauEntry = { type:'peau', date:today, values:{
+      peau_etat: jrnValues.peau,
+    }, ts: Date.now() };
+    localStorage.setItem(`nara_log_${today}_peau`, JSON.stringify(peauEntry));
+  }
+  if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) {
+    const stressEntry = { type:'stress', date:today, values:{
+      stress: jrnValues.stress,
+      sommeil: jrnValues.sommeil,
+      energie: jrnValues.energie,
+    }, ts: Date.now() };
+    localStorage.setItem(`nara_log_${today}_stress`, JSON.stringify(stressEntry));
+  }
+
+  // 3. Sync Supabase en arrière-plan si connecté
+  if (currentUser) {
+    const userId = currentUser.id;
+    // Journal complet du jour
+    sb.from('nara_logs').upsert({
+      user_id: userId,
+      date: today,
+      type: 'journal',
+      values: jrnValues,
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] Sync journal échouée:', error.message);
+      else console.log('[Nara] Journal synchronisé dans Supabase');
+    });
+
+    // Entrées par type pour les insights
+    const logsToSync = [];
+    if (jrnValues.transit !== null) logsToSync.push({
+      user_id: userId, date: today, type: 'transit',
+      values: { transit_etat: jrnValues.transit, ballonnements: jrnValues.ballonnements, aliments: jrnValues.aliments }
+    });
+    if (jrnValues.peau !== null) logsToSync.push({
+      user_id: userId, date: today, type: 'peau',
+      values: { peau_etat: jrnValues.peau }
+    });
+    if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) logsToSync.push({
+      user_id: userId, date: today, type: 'stress',
+      values: { stress: jrnValues.stress, sommeil: jrnValues.sommeil, energie: jrnValues.energie }
+    });
+
+    if (logsToSync.length > 0) {
+      sb.from('nara_logs').upsert(logsToSync, { onConflict: 'user_id,date,type' })
+        .then(({ error }) => { if (error) console.warn('[Nara] Sync types:', error.message); });
+    }
+  }
+
+  jrnEditMode = false;
+  showToast('✓ Journal enregistré !');
+  updateHomeScore();
+  // Réafficher la vue résumé
+  setTimeout(() => renderJournal(), 400);
+}
+
+
 function renderInsightsPage() {
   const content = document.getElementById('insights-page-content');
   if (!content) return;

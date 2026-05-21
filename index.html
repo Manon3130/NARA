@@ -21,49 +21,20 @@
 <!-- Manifest PWA inline -->
 <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Nara%22%2C%22short_name%22%3A%22Nara%22%2C%22description%22%3A%22Ta%20sant%C3%A9%20holistique%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23FFFAF2%22%2C%22theme_color%22%3A%22%23818263%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520fill%3D'%23818263'%2520rx%3D'20'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'80'%2520x%3D'10'%253E%F0%9F%8C%BF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <title>Nara</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-// ── Chargement Supabase avec fallback garanti ──
-window._sbReady = false;
-window._sbCallbacks = [];
-window._onSbReady = function(cb) {
-  if (window._sbReady) cb();
-  else window._sbCallbacks.push(cb);
-};
-
-(function() {
-var s = document.createElement(‘script’);
-s.src = ‘https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js’;
-s.onload = function() {
-window._sbReady = true;
-window._sbCallbacks.forEach(function(cb){ try{cb();}catch(e){} });
-};
-s.onerror = function() {
-// Fallback : sb vide mais fonctionnel — app marche en mode offline
-window.supabase = { createClient: function() { return window._sbFallback(); } };
-window._sbReady = true;
-window._sbCallbacks.forEach(function(cb){ try{cb();}catch(e){} });
-};
-document.head.appendChild(s);
-})();
-
-window._sbFallback = function() {
-var noOp = function(){ return Promise.resolve({data:null,error:{message:‘Offline’}}); };
-var chain = function(v){ return { eq:function(){return chain(v)}, gte:function(){return chain(v)}, order:function(){return chain(v)}, limit:function(){return Promise.resolve({data:null,error:null})}, data:null, error:null, then:function(){}  }; };
-return {
-auth: {
-getSession: async function(){ return {data:{session:null}}; },
-onAuthStateChange: function(){},
-signUp: async function(){ return {data:{},error:{message:‘Service indisponible’}}; },
-signInWithPassword: async function(){ return {data:{},error:{message:‘Service indisponible’}}; },
-signOut: async function(){},
-resetPasswordForEmail: async function(){ return {error:null}; }
-},
-from: function(){ return { select:function(){return chain(null);}, upsert:function(){return{then:function(){}};}, delete:function(){return chain(null);} }; },
-storage: { from: function(){ return { upload: async function(){return{data:{},error:{message:‘Offline’}};}, getPublicUrl:function(){return{data:{publicUrl:’’}};}, remove:async function(){return{};} }; } }
-};
-};
+// Fallback si CDN échoue
+if (typeof supabase === 'undefined') {
+  window.supabase = { createClient: function() {
+    var c=function(){return{eq:function(){return c()},gte:function(){return c()},order:function(){return c()},limit:function(){return Promise.resolve({data:null,error:null})},then:function(){},data:null,error:null};};
+    return {
+      auth:{getSession:async function(){return{data:{session:null}};},onAuthStateChange:function(){},signUp:async function(){return{data:{},error:{message:'Service indisponible'}};},signInWithPassword:async function(){return{data:{},error:{message:'Service indisponible'}};},signOut:async function(){},resetPasswordForEmail:async function(){return{error:null};}},
+      from:function(){return{select:function(){return c();},upsert:function(){return{then:function(){}};},delete:function(){return c();}};},
+      storage:{from:function(){return{upload:async function(){return{data:{},error:{message:'Offline'}};},getPublicUrl:function(){return{data:{publicUrl:''}};},remove:async function(){return{};}};}
+    }};
+  }};
+}
 </script>
-
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   /* ===== VARIABLES + RESET — doit être en premier ===== */
@@ -1499,9 +1470,7 @@ storage: { from: function(){ return { upload: async function(){return{data:{},er
 // ===== SUPABASE INIT =====
 const SUPABASE_URL = 'https://efpdmamvpfjcupffwdlz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_NGK_ChSW3ts5xWky6RH4SA_gI9Qy84F';
-
-// sb est initialisé dès que le SDK est prêt (ou immédiatement si déjà chargé)
-let sb = window._sbFallback ? window._sbFallback() : null;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ══════════════════════════════════════════════════════════════════════
    TABLES SUPABASE À CRÉER (SQL à exécuter dans Supabase > SQL Editor)
@@ -3662,14 +3631,8 @@ async function loadUserData(userId) {
   }
 }
 
-// ── Init finale — toutes les fonctions sont définies ici ──
-window._onSbReady(function() {
-  try {
-    var client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    Object.assign(sb, client);
-  } catch(e) { console.warn('[Nara] Supabase createClient:', e); }
-  try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); }
-});
+// ── Init finale ──
+try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); }
 
 try { renderRecettes(); } catch(e) {}
 try { renderBibliotheque(); } catch(e) {}

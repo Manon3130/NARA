@@ -21,7 +21,49 @@
 <!-- Manifest PWA inline -->
 <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Nara%22%2C%22short_name%22%3A%22Nara%22%2C%22description%22%3A%22Ta%20sant%C3%A9%20holistique%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23FFFAF2%22%2C%22theme_color%22%3A%22%23818263%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520fill%3D'%23818263'%2520rx%3D'20'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'80'%2520x%3D'10'%253E%F0%9F%8C%BF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <title>Nara</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── Chargement Supabase avec fallback garanti ──
+window._sbReady = false;
+window._sbCallbacks = [];
+window._onSbReady = function(cb) {
+  if (window._sbReady) cb();
+  else window._sbCallbacks.push(cb);
+};
+
+(function() {
+var s = document.createElement(‘script’);
+s.src = ‘https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js’;
+s.onload = function() {
+window._sbReady = true;
+window._sbCallbacks.forEach(function(cb){ try{cb();}catch(e){} });
+};
+s.onerror = function() {
+// Fallback : sb vide mais fonctionnel — app marche en mode offline
+window.supabase = { createClient: function() { return window._sbFallback(); } };
+window._sbReady = true;
+window._sbCallbacks.forEach(function(cb){ try{cb();}catch(e){} });
+};
+document.head.appendChild(s);
+})();
+
+window._sbFallback = function() {
+var noOp = function(){ return Promise.resolve({data:null,error:{message:‘Offline’}}); };
+var chain = function(v){ return { eq:function(){return chain(v)}, gte:function(){return chain(v)}, order:function(){return chain(v)}, limit:function(){return Promise.resolve({data:null,error:null})}, data:null, error:null, then:function(){}  }; };
+return {
+auth: {
+getSession: async function(){ return {data:{session:null}}; },
+onAuthStateChange: function(){},
+signUp: async function(){ return {data:{},error:{message:‘Service indisponible’}}; },
+signInWithPassword: async function(){ return {data:{},error:{message:‘Service indisponible’}}; },
+signOut: async function(){},
+resetPasswordForEmail: async function(){ return {error:null}; }
+},
+from: function(){ return { select:function(){return chain(null);}, upsert:function(){return{then:function(){}};}, delete:function(){return chain(null);} }; },
+storage: { from: function(){ return { upload: async function(){return{data:{},error:{message:‘Offline’}};}, getPublicUrl:function(){return{data:{publicUrl:’’}};}, remove:async function(){return{};} }; } }
+};
+};
+</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   /* ===== VARIABLES + RESET — doit être en premier ===== */
@@ -811,6 +853,88 @@
     font-size: 0.78rem; cursor: pointer; border: none;
     font-family: 'DM Sans', sans-serif;
   }
+  /* ===== PHOTO SUIVI PEAU ===== */
+  .photo-zone {
+    border: 1.5px dashed var(--oat); border-radius: 16px;
+    padding: 20px; text-align: center; background: white;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .photo-zone:active { background: var(--honey); border-color: var(--sage); }
+  .photo-zone .ph-icon { font-size: 2rem; margin-bottom: 8px; }
+  .photo-zone .ph-text { font-size: 0.78rem; color: var(--text-light); }
+
+  /* Zone avec photo affichée */
+  .photo-preview-wrap {
+    position: relative; border-radius: 16px; overflow: hidden;
+    background: #000; margin-bottom: 0;
+  }
+  .photo-preview-img {
+    width: 100%; max-height: 220px; object-fit: cover;
+    display: block; border-radius: 16px;
+  }
+  .photo-preview-overlay {
+    position: absolute; inset: 0; display: flex;
+    flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 12px;
+    background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%);
+  }
+  .photo-preview-actions { display: flex; gap: 8px; }
+  .photo-action-btn {
+    padding: 7px 14px; border-radius: 20px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 0.72rem;
+    cursor: pointer; font-weight: 500; letter-spacing: 0.03em;
+  }
+  .photo-action-btn.change { background: white; color: var(--text-dark); }
+  .photo-action-btn.delete { background: rgba(220,38,38,0.85); color: white; }
+  .photo-uploading {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--honey); border-radius: 16px;
+    padding: 14px 16px; font-size: 0.82rem; color: var(--text-mid);
+  }
+  .photo-upload-spinner {
+    width: 18px; height: 18px; border: 2px solid var(--oat);
+    border-top-color: var(--sage); border-radius: 50%;
+    animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+
+  /* Galerie historique peau */
+  .skin-history-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 6px; margin-top: 8px;
+  }
+  .skin-history-thumb {
+    aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+    position: relative; cursor: pointer; background: var(--oat);
+  }
+  .skin-history-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .skin-history-date {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.5); color: white;
+    font-size: 0.5rem; padding: 3px 4px; text-align: center;
+  }
+
+  /* Modale plein écran photo */
+  .photo-fullscreen {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+    z-index: 2000; display: none; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .photo-fullscreen.open { display: flex; }
+  .photo-fullscreen img {
+    max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 8px;
+  }
+  .photo-fullscreen-close {
+    position: absolute; top: calc(env(safe-area-inset-top, 16px) + 12px); right: 20px;
+    color: white; font-size: 1.6rem; cursor: pointer; background: none; border: none;
+    width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  }
+  .photo-fullscreen-date {
+    color: rgba(255,255,255,0.7); font-size: 0.78rem; margin-top: 12px;
+  }
+
   /* ===== SHARED BOTTOM NAV ===== */
   .bottom-nav-shared {
     position: fixed;
@@ -1375,8 +1499,9 @@
 // ===== SUPABASE INIT =====
 const SUPABASE_URL = 'https://efpdmamvpfjcupffwdlz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_NGK_ChSW3ts5xWky6RH4SA_gI9Qy84F';
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// sb est initialisé dès que le SDK est prêt (ou immédiatement si déjà chargé)
+let sb = window._sbFallback ? window._sbFallback() : null;
 
 /* ══════════════════════════════════════════════════════════════════════
    TABLES SUPABASE À CRÉER (SQL à exécuter dans Supabase > SQL Editor)
@@ -1416,6 +1541,12 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Session active
 let currentUser = null;
+
+// ── Variables globales photo et journal ──
+let currentPhotoDataUrl = null;
+let currentPhotoPublicUrl = null;
+let jrnValues = {};
+let jrnEditMode = false;
 
 // ===== HELPERS UI =====
 function setAuthLoading(screen, loading) {
@@ -1673,8 +1804,99 @@ async function loadUserData(userId) {
       });
     }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// SCORE — calculé à partir des entrées localStorage
+// ══════════════════════════════════════════════════════════════════════════════
+function updateHomeScore() {
+  const entries = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    ['transit','repas','peau','stress'].forEach(type => {
+      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
+      if (raw) try { entries.push(JSON.parse(raw)); } catch {}
+    });
+  }
+
+  const emptyEl = document.getElementById('score-card-empty');
+  const dataEl  = document.getElementById('score-card-data');
+  const insEmpty = document.getElementById('insights-empty');
+  const insList  = document.getElementById('insights-list');
+
+  if (entries.length < 3) {
+    if (emptyEl) emptyEl.style.display = '';
+    if (dataEl)  dataEl.style.display  = 'none';
+    if (insEmpty) insEmpty.style.display = '';
+    if (insList)  insList.innerHTML = '';
+    return;
+  }
+
+  // Calculer score sur 7 jours
+  let scoreTotal = 0, scoreCount = 0;
+  const barsData = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    let dayScore = 0, dayCount = 0;
+    ['transit','repas','peau','stress'].forEach(type => {
+      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
+      if (!raw) return;
+      let entry; try { entry = JSON.parse(raw); } catch { return; }
+      const v = entry.values || {};
+      if (type === 'transit') {
+        if (v.transit_etat !== undefined) { dayScore += v.transit_etat === 1 ? 100 : v.transit_etat === 0 ? 40 : 70; dayCount++; }
+        if (v.ballonnements !== undefined) { dayScore += Math.round((1 - v.ballonnements/5) * 100); dayCount++; }
+      }
+      if (type === 'peau' && v.peau_etat !== undefined) { dayScore += v.peau_etat === 2 ? 100 : v.peau_etat === 1 ? 60 : 20; dayCount++; }
+      if (type === 'stress') {
+        if (v.stress !== undefined) { dayScore += Math.round((1 - v.stress/5) * 100); dayCount++; }
+        if (v.energie !== undefined) { dayScore += Math.round(v.energie/5 * 100); dayCount++; }
+        if (v.sommeil !== undefined) { dayScore += Math.round(v.sommeil/5 * 100); dayCount++; }
+      }
+    });
+    const dScore = dayCount > 0 ? Math.round(dayScore / dayCount) : null;
+    barsData.push(dScore);
+    if (dScore !== null) { scoreTotal += dScore; scoreCount++; }
+  }
+
+  const avgScore = scoreCount > 0 ? Math.round(scoreTotal / scoreCount) : null;
+  if (avgScore !== null && emptyEl && dataEl) {
+    emptyEl.style.display = 'none';
+    dataEl.style.display  = '';
+    const numEl = document.getElementById('score-num');
+    const subEl = document.getElementById('score-sub');
+    const barsEl = document.getElementById('score-bars');
+    if (numEl) numEl.textContent = avgScore;
+    if (subEl) subEl.textContent = entries.length >= 14
+      ? `Basé sur ${entries.length} entrées · Continue comme ça 🌱`
+      : `${entries.length} entrées · Continue à noter pour affiner`;
+    const maxBar = Math.max(...barsData.filter(Boolean), 1);
+    if (barsEl) barsEl.innerHTML = barsData.map(v =>
+      `<div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
+    ).join('');
+  }
+
+  // Insights home
+  if (insEmpty && insList) {
+    if (entries.length >= 7) {
+      insEmpty.style.display = 'none';
+      insList.innerHTML = generateInsights(entries).map(ins =>
+        `<div class="insight-card ${ins.type}"><div class="insight-icon">${ins.icon}</div><div class="insight-tag">${ins.tag}</div><div class="insight-text">${ins.text}</div></div>`
+      ).join('');
+    } else {
+      insEmpty.style.display = '';
+      insList.innerHTML = '';
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+
+    // Charger l'historique photos
+    await loadPhotoHistory(userId);
+
     // Mettre à jour l'UI
-    updateHomeScore();
+    try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
 
   } catch (err) {
     console.warn('[Nara] Erreur chargement données:', err);
@@ -1694,10 +1916,6 @@ function clearLocalCache() {
   console.log('[Nara] Cache local nettoyé');
 }
 
-initSession();
-// Sync couleur initiale (onboarding = honey)
-document.documentElement.style.setProperty('--current-screen-bg', '#F6EAD4');
-document.body.style.background = '#F6EAD4';
 // ===== DATA =====
 const onglets = [
   { id: "dig",      label: "🫃 Digestion",  couleur: "#818263" },
@@ -1864,11 +2082,19 @@ function showScreen(id, btn) {
   document.body.style.background = bg;
   if (document.getElementById('app')) document.getElementById('app').style.background = bg;
   if (id === 'recipes') renderRecettes();
-  if (id === 'library') renderBibliotheque();
+  if (id === 'library') try { renderBibliotheque(); } catch(e) { console.warn("[Nara] renderBiblio:", e); }
   if (id === 'routines') renderRoutines();
-  if (id === 'home') updateHomeScore();
+  if (id === 'home') try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   if (id === 'insights') renderInsightsPage();
-  if (id === 'journal') renderJournal();
+  if (id === 'journal') {
+    // Réinitialiser l'état photo à chaque ouverture (sauf si déjà en cours d'upload)
+    if (!currentPhotoDataUrl && !currentPhotoPublicUrl) {
+      const today = getTodayStr();
+      const stored = localStorage.getItem(`nara_photo_${today}`);
+      if (stored) currentPhotoPublicUrl = stored;
+    }
+    renderJournal();
+  }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
 }
@@ -2081,7 +2307,6 @@ function stepPrev() {
 }
 
 // Init
-renderRecettes();
 
 // ===== BIBLIOTHÈQUE DATA =====
 const libSections = [
@@ -2269,7 +2494,6 @@ function openArticle(id) {
   showScreen('article-detail', null);
 }
 
-renderBibliotheque();
 
 // ===== ROUTINES DATA =====
 const routinesData = [
@@ -2562,7 +2786,6 @@ async function startRoutine(id) {
 }
 
 // Init
-renderRoutines();
 
 // ══════════════════════════════════════════════════════════════════════════════
 // QUICK LOG — formulaires Transit / Repas / Peau / Stress
@@ -2736,7 +2959,7 @@ async function saveQuickLog() {
 
   closeQuickLogBtn();
   showToast('✓ Enregistré !');
-  updateHomeScore();
+  try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
 }
 
 function showToast(msg) {
@@ -2756,9 +2979,7 @@ function showToast(msg) {
 // JOURNAL — formulaire dynamique, vierge par défaut, sauvegarde Supabase
 // ══════════════════════════════════════════════════════════════════════════════
 
-// État interne du journal du jour
-let jrnValues = {};
-let jrnEditMode = false;
+// (jrnValues et jrnEditMode déclarés globalement en haut du script)
 
 const ALIMENTS = [
   '🥑 Avocat','🥦 Légumes verts','🍞 Gluten','🥛 Produits laitiers',
@@ -2884,12 +3105,11 @@ function renderJournalForm(todayLabel) {
       </div>
       <div class="jrn-question">Comment est ta peau aujourd'hui ?</div>
       <div class="jrn-emoji-row">${peauHtml}</div>
-      <div class="photo-zone">
-        <div class="ph-icon">📷</div>
-        <div class="ph-text">Ajouter une photo de suivi<br>
-          <span style="font-size:0.65rem;opacity:0.6">Confidentiel · Jamais partagé</span>
-        </div>
+      <div id="jrn-photo-zone" onclick="triggerPhotoInput()">
+        ${renderPhotoZone()}
       </div>
+      <input type="file" id="jrn-photo-input" accept="image/*" capture="environment"
+             style="display:none" onchange="handlePhotoSelected(this)">
     </div>
 
     <!-- MODE DE VIE -->
@@ -2936,6 +3156,22 @@ function renderJournalDone(todayLabel, data) {
   const peauLabels = ['Poussée 🔴', 'Stable 🟡', 'Calme 🟢'];
   const alimentsStr = (data.aliments || []).map(i => ALIMENTS[i]).filter(Boolean).join(', ') || 'Aucun noté';
 
+  // Historique photos peau
+  const skinPhotos = loadSkinPhotoHistory();
+  const historyHtml = skinPhotos.length > 0 ? `
+    <div style="margin-top:16px;text-align:left">
+      <div style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-light);margin-bottom:10px">
+        📸 Suivi photo peau
+      </div>
+      <div class="skin-history-grid">
+        ${skinPhotos.slice(0, 9).map(p => `
+          <div class="skin-history-thumb" onclick="openPhotoFullscreen('${p.url}','${p.date}')">
+            <img src="${p.url}" alt="Peau ${p.date}" loading="lazy">
+            <div class="skin-history-date">${p.dateLabel}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
   return `
     <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
     <div class="jrn-already-done">
@@ -2950,6 +3186,7 @@ function renderJournalDone(todayLabel, data) {
         ✨ Peau : ${data.peau !== null ? peauLabels[data.peau] : '—'}<br>
         😮‍💨 Stress : ${data.stress}/5 · 😴 Sommeil : ${data.sommeil}/5 · ⚡ Énergie : ${data.energie}/5
       </div>
+      ${historyHtml}
       <button class="jrn-edit-btn" onclick="jrnStartEdit()">Modifier mes données</button>
     </div>
   `;
@@ -2997,99 +3234,329 @@ function jrnStartEdit() {
   renderJournal();
 }
 
-async function saveJournal() {
+// ══════════════════════════════════════════════════════════════════════════════
+// PHOTO SUIVI PEAU — appareil photo / galerie + Supabase Storage
+// ══════════════════════════════════════════════════════════════════════════════
+
+// URL de la photo du jour (en mémoire pendant la session)
+// (variables déclarées globalement en haut du script)
+
+function renderPhotoZone() {
   const today = getTodayStr();
+  // Vérifier si une photo existe déjà pour aujourd'hui
+  const stored = localStorage.getItem(`nara_photo_${today}`);
+  if (stored || currentPhotoPublicUrl || currentPhotoDataUrl) {
+    const url = currentPhotoDataUrl || currentPhotoPublicUrl || stored;
+    return `
+      <div class="photo-preview-wrap">
+        <img class="photo-preview-img" src="${url}" alt="Photo peau du jour">
+        <div class="photo-preview-overlay">
+          <div class="photo-preview-actions">
+            <button class="photo-action-btn change" onclick="event.stopPropagation(); triggerPhotoInput()">
+              🔄 Changer
+            </button>
+            <button class="photo-action-btn delete" onclick="event.stopPropagation(); deletePhoto()">
+              🗑 Supprimer
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="photo-zone">
+      <div class="ph-icon">📷</div>
+      <div class="ph-text">Ajouter une photo de suivi<br>
+        <span style="font-size:0.65rem;opacity:0.6">Confidentiel · Jamais partagé</span>
+      </div>
+    </div>`;
+}
 
-  // Vérifier qu'au moins un champ est rempli
-  const hasData = jrnValues.transit !== null || jrnValues.peau !== null ||
-    jrnValues.aliments.length > 0 || jrnValues.stress > 0 ||
-    jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.ballonnements > 0;
+function triggerPhotoInput() {
+  const input = document.getElementById('jrn-photo-input');
+  if (input) input.click();
+}
 
-  if (!hasData) {
-    showToast('Remplis au moins un champ avant d\'enregistrer');
+async function handlePhotoSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Vérif taille (max 10 Mo)
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('Photo trop lourde (max 10 Mo)');
     return;
   }
 
-  const entry = { ...jrnValues, date: today, ts: Date.now() };
+  // 1. Afficher un aperçu local immédiat (base64)
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    currentPhotoDataUrl = e.target.result;
+    refreshPhotoZone();
 
-  // 1. Sauvegarde locale immédiate
-  localStorage.setItem(`nara_journal_${today}`, JSON.stringify(entry));
+    // 2. Upload vers Supabase Storage en arrière-plan
+    await uploadPhotoToSupabase(file);
+  };
+  reader.readAsDataURL(file);
 
-  // 2. Aussi sauvegarder dans les clés compatibles quick-log pour les insights/score
-  if (jrnValues.transit !== null || jrnValues.ballonnements > 0) {
-    const transitEntry = { type:'transit', date:today, values:{
-      transit_etat: jrnValues.transit,
-      ballonnements: jrnValues.ballonnements,
-      aliments: jrnValues.aliments,
-    }, ts: Date.now() };
-    localStorage.setItem(`nara_log_${today}_transit`, JSON.stringify(transitEntry));
-  }
-  if (jrnValues.peau !== null) {
-    const peauEntry = { type:'peau', date:today, values:{
-      peau_etat: jrnValues.peau,
-    }, ts: Date.now() };
-    localStorage.setItem(`nara_log_${today}_peau`, JSON.stringify(peauEntry));
-  }
-  if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) {
-    const stressEntry = { type:'stress', date:today, values:{
-      stress: jrnValues.stress,
-      sommeil: jrnValues.sommeil,
-      energie: jrnValues.energie,
-    }, ts: Date.now() };
-    localStorage.setItem(`nara_log_${today}_stress`, JSON.stringify(stressEntry));
+  // Reset input pour permettre de re-sélectionner le même fichier
+  input.value = '';
+}
+
+function refreshPhotoZone() {
+  const zone = document.getElementById('jrn-photo-zone');
+  if (zone) zone.innerHTML = renderPhotoZone();
+}
+
+function showUploadingState() {
+  const zone = document.getElementById('jrn-photo-zone');
+  if (zone) zone.innerHTML = `
+    <div class="photo-uploading">
+      <div class="photo-upload-spinner"></div>
+      Envoi en cours…
+    </div>`;
+}
+
+async function uploadPhotoToSupabase(file) {
+  if (!currentUser) {
+    // Pas connecté — garder seulement en local (base64 dans localStorage)
+    const today = getTodayStr();
+    localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
+    showToast('📷 Photo ajoutée (connexion requise pour la sync)');
+    return;
   }
 
-  // 3. Sync Supabase en arrière-plan si connecté
+  showUploadingState();
+
+  const today = getTodayStr();
+  const userId = currentUser.id;
+  const ext = file.type.includes('png') ? 'png' : 'jpg';
+  const path = `${userId}/${today}.${ext}`;
+
+  try {
+    // Upload dans le bucket 'skin-photos' (à créer dans Supabase Storage)
+    const { data, error } = await sb.storage
+      .from('skin-photos')
+      .upload(path, file, {
+        upsert: true,           // remplace si déjà existant (même jour)
+        contentType: file.type,
+        cacheControl: '3600',
+      });
+
+    if (error) throw error;
+
+    // Récupérer l'URL publique signée (valable 10 ans)
+    const { data: urlData } = sb.storage
+      .from('skin-photos')
+      .getPublicUrl(path);
+
+    currentPhotoPublicUrl = urlData.publicUrl;
+
+    // Sauvegarder l'URL Supabase en local pour l'historique
+    saveSkinPhotoToHistory(today, currentPhotoPublicUrl);
+    // Aussi sauvegarder en local comme fallback
+    localStorage.setItem(`nara_photo_${today}`, currentPhotoPublicUrl);
+
+    // Mettre à jour le log Supabase avec la référence photo
+    if (currentUser) {
+      sb.from('nara_logs').upsert({
+        user_id: userId,
+        date: today,
+        type: 'photo',
+        values: { url: currentPhotoPublicUrl, path },
+      }, { onConflict: 'user_id,date,type' });
+    }
+
+    currentPhotoDataUrl = null; // on utilise maintenant l'URL Supabase
+    refreshPhotoZone();
+    showToast('📷 Photo synchronisée !');
+
+  } catch (err) {
+    console.warn('[Nara] Upload photo échoué:', err.message);
+    // Fallback : garder la base64 en local
+    localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
+    refreshPhotoZone();
+    showToast('📷 Photo sauvegardée localement');
+  }
+}
+
+async function deletePhoto() {
+  const today = getTodayStr();
+  currentPhotoDataUrl = null;
+  currentPhotoPublicUrl = null;
+  localStorage.removeItem(`nara_photo_${today}`);
+
+  // Supprimer dans Supabase Storage si connecté
   if (currentUser) {
     const userId = currentUser.id;
-    // Journal complet du jour
-    sb.from('nara_logs').upsert({
-      user_id: userId,
-      date: today,
-      type: 'journal',
-      values: jrnValues,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Sync journal échouée:', error.message);
-      else console.log('[Nara] Journal synchronisé dans Supabase');
-    });
-
-    // Entrées par type pour les insights
-    const logsToSync = [];
-    if (jrnValues.transit !== null) logsToSync.push({
-      user_id: userId, date: today, type: 'transit',
-      values: { transit_etat: jrnValues.transit, ballonnements: jrnValues.ballonnements, aliments: jrnValues.aliments }
-    });
-    if (jrnValues.peau !== null) logsToSync.push({
-      user_id: userId, date: today, type: 'peau',
-      values: { peau_etat: jrnValues.peau }
-    });
-    if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) logsToSync.push({
-      user_id: userId, date: today, type: 'stress',
-      values: { stress: jrnValues.stress, sommeil: jrnValues.sommeil, energie: jrnValues.energie }
-    });
-
-    if (logsToSync.length > 0) {
-      sb.from('nara_logs').upsert(logsToSync, { onConflict: 'user_id,date,type' })
-        .then(({ error }) => { if (error) console.warn('[Nara] Sync types:', error.message); });
+    // Essayer les deux extensions
+    for (const ext of ['jpg','png']) {
+      await sb.storage.from('skin-photos').remove([`${userId}/${today}.${ext}`]);
     }
+    sb.from('nara_logs').delete()
+      .eq('user_id', userId).eq('date', today).eq('type', 'photo');
+    removeSkinPhotoFromHistory(today);
   }
 
+  refreshPhotoZone();
+  showToast('Photo supprimée');
+}
+
+// ── Historique photos peau ──────────────────────────────────────────────────
+
+function loadSkinPhotoHistory() {
+  try {
+    const raw = localStorage.getItem('nara_skin_photos');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveSkinPhotoToHistory(dateStr, url) {
+  const history = loadSkinPhotoHistory();
+  const d = new Date(dateStr + 'T12:00:00');
+  const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const mois = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+  const dateLabel = `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+
+  // Remplacer si même date, sinon ajouter
+  const idx = history.findIndex(p => p.date === dateStr);
+  const entry = { date: dateStr, dateLabel, url };
+  if (idx >= 0) history[idx] = entry;
+  else history.unshift(entry);
+
+  // Garder les 90 dernières entrées
+  localStorage.setItem('nara_skin_photos', JSON.stringify(history.slice(0, 90)));
+}
+
+function removeSkinPhotoFromHistory(dateStr) {
+  const history = loadSkinPhotoHistory().filter(p => p.date !== dateStr);
+  localStorage.setItem('nara_skin_photos', JSON.stringify(history));
+}
+
+// Charger l'historique photos depuis Supabase au login
+async function loadPhotoHistory(userId) {
+  try {
+    const { data: logs } = await sb.from('nara_logs')
+      .select('date, values')
+      .eq('user_id', userId)
+      .eq('type', 'photo')
+      .order('date', { ascending: false })
+      .limit(90);
+
+    if (logs && logs.length > 0) {
+      const history = loadSkinPhotoHistory();
+      const existing = new Set(history.map(p => p.date));
+      logs.forEach(log => {
+        if (!existing.has(log.date)) {
+          const d = new Date(log.date + 'T12:00:00');
+          const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+          const mois = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+          history.push({
+            date: log.date,
+            dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`,
+            url: log.values.url,
+          });
+        }
+      });
+      history.sort((a, b) => b.date.localeCompare(a.date));
+      localStorage.setItem('nara_skin_photos', JSON.stringify(history.slice(0, 90)));
+    }
+  } catch (err) {
+    console.warn('[Nara] Chargement historique photos:', err.message);
+  }
+}
+
+// Plein écran photo
+function openPhotoFullscreen(url, dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin',
+                 'juillet','août','septembre','octobre','novembre','décembre'];
+  const label = `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}`;
+
+  let modal = document.getElementById('photo-fullscreen-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'photo-fullscreen-modal';
+    modal.className = 'photo-fullscreen';
+    modal.innerHTML = `
+      <button class="photo-fullscreen-close" onclick="closePhotoFullscreen()">✕</button>
+      <img id="photo-fs-img" src="" alt="">
+      <div class="photo-fullscreen-date" id="photo-fs-date"></div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) closePhotoFullscreen(); });
+    document.body.appendChild(modal);
+  }
+  document.getElementById('photo-fs-img').src = url;
+  document.getElementById('photo-fs-date').textContent = label;
+  modal.classList.add('open');
+}
+
+function closePhotoFullscreen() {
+  const modal = document.getElementById('photo-fullscreen-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+
+async function saveJournal() {
+  const today = getTodayStr();
+  const hasData = jrnValues.transit !== null || jrnValues.peau !== null ||
+    jrnValues.aliments.length > 0 || jrnValues.stress > 0 ||
+    jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.ballonnements > 0;
+  if (!hasData) { showToast("Remplis au moins un champ avant d'enregistrer"); return; }
+
+  const entry = { ...jrnValues, date: today, ts: Date.now() };
+  localStorage.setItem(`nara_journal_${today}`, JSON.stringify(entry));
+
+  if (jrnValues.transit !== null || jrnValues.ballonnements > 0) {
+    localStorage.setItem(`nara_log_${today}_transit`, JSON.stringify({
+      type:'transit', date:today, ts:Date.now(),
+      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:jrnValues.aliments }
+    }));
+  }
+  if (jrnValues.peau !== null) {
+    localStorage.setItem(`nara_log_${today}_peau`, JSON.stringify({
+      type:'peau', date:today, ts:Date.now(), values:{ peau_etat:jrnValues.peau }
+    }));
+  }
+  if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) {
+    localStorage.setItem(`nara_log_${today}_stress`, JSON.stringify({
+      type:'stress', date:today, ts:Date.now(),
+      values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }
+    }));
+  }
+  if (currentUser) {
+    const userId = currentUser.id;
+    sb.from('nara_logs').upsert({ user_id:userId, date:today, type:'journal', values:jrnValues },
+      { onConflict:'user_id,date,type' }).then(({error}) => { if(error) console.warn('[Nara]',error.message); });
+    const logs = [];
+    if (jrnValues.transit !== null) logs.push({ user_id:userId, date:today, type:'transit',
+      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:jrnValues.aliments }});
+    if (jrnValues.peau !== null) logs.push({ user_id:userId, date:today, type:'peau',
+      values:{ peau_etat:jrnValues.peau }});
+    if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) logs.push({
+      user_id:userId, date:today, type:'stress',
+      values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }});
+    if (logs.length > 0) sb.from('nara_logs').upsert(logs, { onConflict:'user_id,date,type' })
+      .then(({error}) => { if(error) console.warn('[Nara]', error.message); });
+  }
   jrnEditMode = false;
-  showToast('✓ Journal enregistré !');
-  updateHomeScore();
-  // Réafficher la vue résumé
+  showToast('\u2713 Journal enregistr\u00e9 !');
+  try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   setTimeout(() => renderJournal(), 400);
 }
 
+function handlePdfReport() {
+  const pdfBtn = document.getElementById('pdf-btn-insights');
+  if (pdfBtn && pdfBtn.getAttribute('aria-disabled') === 'true') {
+    showToast('Continue ton journal pour d\u00e9bloquer le rapport \uD83C\uDF3F');
+    return;
+  }
+  showToast('Rapport PDF en pr\u00e9paration\u2026 \uD83D\uDCC4');
+}
 
 function renderInsightsPage() {
   const content = document.getElementById('insights-page-content');
   if (!content) return;
-
-  // Collecter les entrées des 30 derniers jours
   const entries = [];
-  const DAYS = 30;
-  for (let i = 0; i < DAYS; i++) {
+  for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     ['transit','repas','peau','stress'].forEach(type => {
@@ -3097,276 +3564,121 @@ function renderInsightsPage() {
       if (raw) entries.push({ ...JSON.parse(raw), dateStr });
     });
   }
-
   const totalEntries = entries.length;
-  const SEUIL_INSIGHTS = 7;   // entrées minimales pour les insights
-  const SEUIL_PDF = 14;       // entrées minimales pour le PDF
-
-  // Mettre à jour le bouton PDF
+  const SEUIL_INSIGHTS = 7;
+  const SEUIL_PDF = 14;
   const pdfBtn = document.getElementById('pdf-btn-insights');
   const pdfSub = document.getElementById('pdf-btn-sub');
   if (pdfBtn) {
     if (totalEntries >= SEUIL_PDF) {
-      pdfBtn.style.opacity = '1';
-      pdfBtn.style.cursor = 'pointer';
+      pdfBtn.style.opacity = '1'; pdfBtn.style.cursor = 'pointer';
       pdfBtn.setAttribute('aria-disabled', 'false');
-      if (pdfSub) pdfSub.textContent = 'À partager avec ton dermatologue ou gastroentérologue';
+      if (pdfSub) pdfSub.textContent = '\u00c0 partager avec ton dermatologue ou gastro-ent\u00e9rologue';
     } else {
-      pdfBtn.style.opacity = '0.45';
-      pdfBtn.style.cursor = 'not-allowed';
+      pdfBtn.style.opacity = '0.45'; pdfBtn.style.cursor = 'not-allowed';
       pdfBtn.setAttribute('aria-disabled', 'true');
       const remaining = SEUIL_PDF - totalEntries;
-      if (pdfSub) pdfSub.textContent = `Disponible dans ${remaining} entrée${remaining > 1 ? 's' : ''} de plus`;
+      if (pdfSub) pdfSub.textContent = `Disponible dans ${remaining} entr\u00e9e${remaining > 1 ? 's' : ''} de plus`;
     }
   }
-
-  // ── ÉTAT VIDE — pas assez de données ────────────────────────────────────
   if (totalEntries < SEUIL_INSIGHTS) {
-    const types = { transit: false, repas: false, peau: false, stress: false };
+    const types = { transit:false, repas:false, peau:false, stress:false };
     entries.forEach(e => { if (types[e.type] !== undefined) types[e.type] = true; });
-    const doneCount = Object.values(types).filter(Boolean).length;
-
-    const pills = Object.entries({
-      transit: '🫀 Transit', repas: '🥗 Repas',
-      peau: '✨ Peau', stress: '😮‍💨 Stress'
-    }).map(([key, label]) =>
-      `<div class="ipp${types[key] ? ' done' : ''}">
-        <div class="ipp-dot"></div>${label}
-      </div>`
-    ).join('');
-
+    const pills = Object.entries({ transit:'\uD83E\uDEB4 Transit', repas:'\uD83E\uDD57 Repas', peau:'\u2728 Peau', stress:'\uD83D\uDE2E\u200D\uD83D\uDCA8 Stress' })
+      .map(([key, label]) => `<div class="ipp${types[key] ? ' done' : ''}"><div class="ipp-dot"></div>${label}</div>`).join('');
     content.innerHTML = `
       <div class="insights-empty-page">
-        <div class="iep-icon">🌿</div>
-        <div class="iep-title">Tes insights arrivent bientôt</div>
-        <div class="iep-text">
-          Tes insights apparaîtront ici au fur et à mesure que tu remplis ton journal. Continue comme ça !<br><br>
-          <span style="font-size:0.78rem;color:var(--text-light);">${totalEntries} entrée${totalEntries > 1 ? 's' : ''} · ${SEUIL_INSIGHTS - totalEntries} de plus pour tes premiers insights</span>
+        <div class="iep-icon">\uD83C\uDF3F</div>
+        <div class="iep-title">Tes insights arrivent bient\u00f4t</div>
+        <div class="iep-text">Tes insights appara\u00eetront ici au fur et \u00e0 mesure que tu remplis ton journal. Continue comme \u00e7a !<br><br>
+          <span style="font-size:0.78rem;color:var(--text-light);">${totalEntries} entr\u00e9e${totalEntries > 1 ? 's' : ''} \u00b7 ${SEUIL_INSIGHTS - totalEntries} de plus pour tes premiers insights</span>
         </div>
-        <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px;">Ce que tu as déjà noté</div>
+        <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px;">Ce que tu as d\u00e9j\u00e0 not\u00e9</div>
         <div class="insights-progress-pills">${pills}</div>
       </div>`;
     return;
   }
-
-  // ── DONNÉES SUFFISANTES — afficher de vrais insights ────────────────────
-  let html = '';
-
-  // Graphique réel sur 7 jours
   const jours = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const barsHtml = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+  const barsHtml = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6-i));
     const dateStr = d.toISOString().split('T')[0];
-    const dayName = jours[d.getDay() === 0 ? 6 : d.getDay() - 1];
-    // Score transit ce jour
-    const transitRaw = localStorage.getItem(`nara_log_${dateStr}_transit`);
-    const peauRaw = localStorage.getItem(`nara_log_${dateStr}_peau`);
+    const dayName = jours[d.getDay() === 0 ? 6 : d.getDay()-1];
+    const tR = localStorage.getItem(`nara_log_${dateStr}_transit`);
+    const pR = localStorage.getItem(`nara_log_${dateStr}_peau`);
     let tH = 0, pH = 0;
-    if (transitRaw) {
-      const v = JSON.parse(transitRaw).values;
-      tH = v.transit_etat === 1 ? 70 : v.transit_etat === 0 ? 30 : 50;
-    }
-    if (peauRaw) {
-      const v = JSON.parse(peauRaw).values;
-      pH = v.peau_etat === 2 ? 70 : v.peau_etat === 1 ? 45 : 20;
-    }
+    if (tR) { const v = JSON.parse(tR).values; tH = v.transit_etat===1?70:v.transit_etat===0?30:50; }
+    if (pR) { const v = JSON.parse(pR).values; pH = v.peau_etat===2?70:v.peau_etat===1?45:20; }
     return `<div class="icr-col">
-      ${tH > 0 ? `<div class="icr-bar bar-gut" style="height:${tH}%;width:100%"></div>` : '<div style="flex:1"></div>'}
-      ${pH > 0 ? `<div class="icr-bar bar-skin" style="height:${pH}%;width:100%"></div>` : '<div style="height:3px"></div>'}
-      <div class="icr-label">${dayName}</div>
-    </div>`;
+      ${tH>0?`<div class="icr-bar bar-gut" style="height:${tH}%;width:100%"></div>`:'<div style="flex:1"></div>'}
+      ${pH>0?`<div class="icr-bar bar-skin" style="height:${pH}%;width:100%"></div>`:'<div style="height:3px"></div>'}
+      <div class="icr-label">${dayName}</div></div>`;
   }).join('');
-
-  html += `
-    <div class="insights-chart-real">
-      <div class="icr-title">Évolution sur 7 jours</div>
-      <div class="icr-sub">Transit <span style="color:var(--avocado)">●</span> · Peau <span style="color:var(--blush)">●</span></div>
-      <div class="icr-bars">${barsHtml}</div>
-    </div>`;
-
-  // Insights textuels basés sur les vraies données
-  const transitEntries = entries.filter(e => e.type === 'transit' && e.values?.transit_etat !== undefined);
-  const peauEntries = entries.filter(e => e.type === 'peau' && e.values?.peau_etat !== undefined);
-  const stressEntries = entries.filter(e => e.type === 'stress' && e.values?.stress !== undefined);
-
-  html += `<div class="section-title">Observations</div>`;
-
-  if (transitEntries.length >= 3) {
-    const lent = transitEntries.filter(e => e.values.transit_etat === 0).length;
-    const normal = transitEntries.filter(e => e.values.transit_etat === 1).length;
-    const pctNormal = Math.round(normal / transitEntries.length * 100);
-    html += `<div class="insight-real-card">
-      <div class="irc-tag">🫀 Transit · ${transitEntries.length} entrées</div>
-      <div class="irc-text">Ton transit est <strong>normal ${pctNormal}% du temps</strong> sur la période.${lent > 0 ? ` Tu as noté un transit lent ${lent} fois.` : ''}</div>
-    </div>`;
+  let html = `<div class="insights-chart-real">
+    <div class="icr-title">\u00c9volution sur 7 jours</div>
+    <div class="icr-sub">Transit <span style="color:var(--avocado)">&#9679;</span> \u00b7 Peau <span style="color:var(--blush)">&#9679;</span></div>
+    <div class="icr-bars">${barsHtml}</div></div>`;
+  const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
+  const pE = entries.filter(e => e.type==='peau' && e.values?.peau_etat !== undefined);
+  const sE = entries.filter(e => e.type==='stress' && e.values?.stress !== undefined);
+  html += '<div class="section-title">Observations</div>';
+  if (tE.length >= 3) {
+    const normal = tE.filter(e => e.values.transit_etat===1).length;
+    const pct = Math.round(normal/tE.length*100);
+    html += `<div class="insight-real-card"><div class="irc-tag">\uD83E\uDEB4 Transit \u00b7 ${tE.length} entr\u00e9es</div><div class="irc-text">Ton transit est <strong>normal ${pct}% du temps</strong>.</div></div>`;
   }
-
-  if (peauEntries.length >= 3) {
-    const calme = peauEntries.filter(e => e.values.peau_etat === 2).length;
-    const poussee = peauEntries.filter(e => e.values.peau_etat === 0).length;
-    const pctCalme = Math.round(calme / peauEntries.length * 100);
-    html += `<div class="insight-real-card" style="border-left-color:var(--blush)">
-      <div class="irc-tag">✨ Peau · ${peauEntries.length} entrées</div>
-      <div class="irc-text">Ta peau est <strong>calme ${pctCalme}% du temps</strong>.${poussee > 0 ? ` ${poussee} poussée${poussee > 1 ? 's' : ''} notée${poussee > 1 ? 's' : ''} sur la période.` : ' Bonne stabilité !'}</div>
-    </div>`;
+  if (pE.length >= 3) {
+    const calme = pE.filter(e => e.values.peau_etat===2).length;
+    const pct = Math.round(calme/pE.length*100);
+    html += `<div class="insight-real-card" style="border-left-color:var(--blush)"><div class="irc-tag">\u2728 Peau \u00b7 ${pE.length} entr\u00e9es</div><div class="irc-text">Ta peau est <strong>calme ${pct}% du temps</strong>.</div></div>`;
   }
-
-  if (stressEntries.length >= 3) {
-    const avgStress = stressEntries.reduce((s, e) => s + (e.values.stress || 0), 0) / stressEntries.length;
-    const avgEnergie = stressEntries.filter(e => e.values.energie !== undefined).reduce((s, e) => s + e.values.energie, 0) / (stressEntries.filter(e => e.values.energie !== undefined).length || 1);
-    html += `<div class="insight-real-card" style="border-left-color:#8a8ec4">
-      <div class="irc-tag">😮‍💨 Stress & énergie · ${stressEntries.length} entrées</div>
-      <div class="irc-text">Stress moyen : <strong>${avgStress.toFixed(1)}/5</strong>. Énergie moyenne : <strong>${avgEnergie.toFixed(1)}/5</strong>.${avgStress >= 3 ? ' Le stress élevé peut impacter ta digestion et ta peau.' : ' Bon équilibre général.'}</div>
-    </div>`;
+  if (sE.length >= 3) {
+    const avg = (sE.reduce((s,e) => s+e.values.stress,0)/sE.length).toFixed(1);
+    html += `<div class="insight-real-card" style="border-left-color:#8a8ec4"><div class="irc-tag">\uD83D\uDE2E\u200D\uD83D\uDCA8 Stress \u00b7 ${sE.length} entr\u00e9es</div><div class="irc-text">Stress moyen : <strong>${avg}/5</strong>.</div></div>`;
   }
-
-  if (totalEntries >= SEUIL_INSIGHTS && totalEntries < 20) {
-    html += `<div class="insight-real-card" style="border-left-color:var(--honey);background:var(--honey)">
-      <div class="irc-tag">🔍 Patterns · En cours d'analyse</div>
-      <div class="irc-text">Continue à noter chaque jour — les <strong>patterns entre tes symptômes et tes habitudes</strong> apparaîtront après 3 semaines de données continues.</div>
-    </div>`;
-  }
-
   content.innerHTML = html;
-}
-
-function handlePdfReport() {
-  const pdfBtn = document.getElementById('pdf-btn-insights');
-  if (pdfBtn && pdfBtn.getAttribute('aria-disabled') === 'true') {
-    showToast('Continue ton journal pour débloquer le rapport 🌿');
-    return;
-  }
-  showToast('Rapport PDF en préparation… 📄');
-  // Future : générer le PDF réel avec les données Supabase
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-function updateHomeScore() {
-  // Compter les entrées des 7 derniers jours
-  const entries = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    ['transit','repas','peau','stress'].forEach(type => {
-      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
-      if (raw) entries.push(JSON.parse(raw));
-    });
-  }
-
-  if (entries.length < 3) {
-    // Pas assez de données — garder l'état vide
-    document.getElementById('score-card-empty').style.display = '';
-    document.getElementById('score-card-data').style.display = 'none';
-    document.getElementById('insights-empty').style.display = '';
-    document.getElementById('insights-list').innerHTML = '';
-    return;
-  }
-
-  // Calculer un score simple basé sur les entrées
-  let scoreTotal = 0, scoreCount = 0;
-  const barsData = [];
-
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    let dayScore = 0, dayCount = 0;
-
-    ['transit','repas','peau','stress'].forEach(type => {
-      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
-      if (!raw) return;
-      const entry = JSON.parse(raw);
-      const v = entry.values;
-      if (type === 'transit' && v.transit_etat !== undefined) {
-        dayScore += v.transit_etat === 1 ? 100 : v.transit_etat === 0 ? 40 : 70;
-        dayCount++;
-        if (v.ballonnements !== undefined) {
-          dayScore += Math.round((1 - v.ballonnements/5) * 100);
-          dayCount++;
-        }
-      }
-      if (type === 'peau' && v.peau_etat !== undefined) {
-        dayScore += v.peau_etat === 2 ? 100 : v.peau_etat === 1 ? 60 : 20;
-        dayCount++;
-      }
-      if (type === 'stress' && v.stress !== undefined) {
-        dayScore += Math.round((1 - v.stress/5) * 100);
-        dayCount++;
-        if (v.energie !== undefined) { dayScore += Math.round(v.energie/5 * 100); dayCount++; }
-        if (v.sommeil !== undefined) { dayScore += Math.round(v.sommeil/5 * 100); dayCount++; }
-      }
-    });
-
-    const dScore = dayCount > 0 ? Math.round(dayScore / dayCount) : null;
-    barsData.push(dScore);
-    if (dScore !== null) { scoreTotal += dScore; scoreCount++; }
-  }
-
-  const avgScore = scoreCount > 0 ? Math.round(scoreTotal / scoreCount) : null;
-
-  if (avgScore !== null) {
-    document.getElementById('score-card-empty').style.display = 'none';
-    document.getElementById('score-card-data').style.display = '';
-    document.getElementById('score-num').textContent = avgScore;
-    document.getElementById('score-sub').textContent =
-      entries.length >= 14 ? `Basé sur ${entries.length} entrées · Continue comme ça 🌱` :
-      `${entries.length} entrées · Continue à noter pour affiner`;
-
-    // Barres
-    const maxBar = Math.max(...barsData.filter(Boolean), 1);
-    document.getElementById('score-bars').innerHTML = barsData.map(v =>
-      `<div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
-    ).join('');
-  }
-
-  // Insights — seulement après 7 entrées
-  if (entries.length >= 7) {
-    document.getElementById('insights-empty').style.display = 'none';
-    const insights = generateInsights(entries);
-    document.getElementById('insights-list').innerHTML = insights.map(ins =>
-      `<div class="insight-card ${ins.type}">
-        <div class="insight-icon">${ins.icon}</div>
-        <div class="insight-tag">${ins.tag}</div>
-        <div class="insight-text">${ins.text}</div>
-      </div>`
-    ).join('');
-  }
 }
 
 function generateInsights(entries) {
   const insights = [];
-  const stressEntries = entries.filter(e => e.type === 'stress' && e.values.stress !== undefined);
-  const peauEntries = entries.filter(e => e.type === 'peau' && e.values.peau_etat !== undefined);
-  const transitEntries = entries.filter(e => e.type === 'transit' && e.values.transit_etat !== undefined);
-
-  if (stressEntries.length >= 3) {
-    const avgStress = stressEntries.reduce((s,e) => s + e.values.stress, 0) / stressEntries.length;
-    if (avgStress >= 3) {
-      insights.push({ type:'gut', icon:'🧠', tag:'Stress · Observation',
-        text: `Ton niveau de stress moyen est de <strong>${avgStress.toFixed(1)}/5</strong> cette semaine. Le stress impacte directement la digestion.` });
-    }
+  const sE = entries.filter(e => e.type==='stress' && e.values?.stress !== undefined);
+  const pE = entries.filter(e => e.type==='peau' && e.values?.peau_etat !== undefined);
+  const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
+  if (sE.length >= 3) {
+    const avg = sE.reduce((s,e) => s+e.values.stress,0)/sE.length;
+    if (avg >= 3) insights.push({ type:'gut', icon:'\uD83E\uDDE0', tag:'Stress',
+      text: `Ton stress moyen est de <strong>${avg.toFixed(1)}/5</strong>. Le stress impacte directement la digestion.` });
   }
-  if (peauEntries.length >= 3) {
-    const calm = peauEntries.filter(e => e.values.peau_etat === 2).length;
-    const pct = Math.round(calm / peauEntries.length * 100);
-    insights.push({ type:'skin', icon:'✨', tag:'Peau · Suivi',
-      text: `Ta peau est <strong>calme ${pct}% du temps</strong> sur les derniers jours. Continue à noter pour détecter des patterns.` });
+  if (pE.length >= 3) {
+    const calme = pE.filter(e => e.values.peau_etat===2).length;
+    const pct = Math.round(calme/pE.length*100);
+    insights.push({ type:'skin', icon:'\u2728', tag:'Peau',
+      text: `Ta peau est <strong>calme ${pct}% du temps</strong>.` });
   }
-  if (transitEntries.length >= 3) {
-    const normal = transitEntries.filter(e => e.values.transit_etat === 1).length;
-    if (normal / transitEntries.length > 0.6) {
-      insights.push({ type:'gut', icon:'🫀', tag:'Transit · Positif',
-        text: `Ton transit est <strong>normal la majorité du temps</strong>. Bonne base — continue le suivi pour identifier les variations.` });
-    }
+  if (tE.length >= 3) {
+    const normal = tE.filter(e => e.values.transit_etat===1).length;
+    if (normal/tE.length > 0.6) insights.push({ type:'gut', icon:'\uD83E\uDEB4', tag:'Transit',
+      text: `Ton transit est <strong>normal la majorit\u00e9 du temps</strong>.` });
   }
-  if (insights.length === 0) {
-    insights.push({ type:'gut', icon:'📈', tag:'En cours d\'analyse',
-      text: `Nara analyse tes données. <strong>Continue à noter</strong> chaque jour pour des insights plus précis.` });
-  }
+  if (insights.length === 0) insights.push({ type:'gut', icon:'\uD83D\uDCC8', tag:"En cours d'analyse",
+    text: "Nara analyse tes donn\u00e9es. Continue \u00e0 noter chaque jour pour des insights plus pr\u00e9cis." });
   return insights;
 }
 
-// Charger le score au démarrage de l'app
-updateHomeScore();
+// Charger le score au d\u00e9marrage de l'app
+// ── Init finale — toutes les fonctions sont définies ici ──
+window._onSbReady(function() {
+  try {
+    var client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    Object.assign(sb, client);
+  } catch(e) { console.warn('[Nara] Supabase createClient:', e); }
+  try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); }
+});
+
+try { renderRecettes(); } catch(e) { console.warn("[Nara] renderRecettes:", e); }
+try { renderBibliotheque(); } catch(e) { console.warn("[Nara] renderBiblio:", e); }
+try { renderRoutines(); } catch(e) { console.warn("[Nara] renderRoutines:", e); }
+try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
+try { document.documentElement.style.setProperty('--current-screen-bg', '#F6EAD4'); document.body.style.background = '#F6EAD4'; } catch(e) {}
 </script>
 
 </div><!-- /app -->

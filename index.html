@@ -56,8 +56,8 @@ if (typeof supabase === 'undefined') {
     width: 100%; height: 100%; height: 100dvh;
     min-height: 100dvh;
     overflow: hidden;
-    /* background suit la couleur de l'écran actif — mis à jour par JS */
-    background: var(--current-screen-bg, #F6EAD4);
+    /* blanc = fond de la nav toujours correct, screens ont leur propre fond */
+    background: white;
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -262,6 +262,18 @@ if (typeof supabase === 'undefined') {
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-sizing: content-box;
     z-index: 100;
+    /* Fond blanc étendu sous la safe-area */
+    -webkit-backdrop-filter: none;
+  }
+  /* Prolonge le fond blanc jusqu'au bas de l'écran physique */
+  .bottom-nav::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: white;
+    z-index: 99;
+    pointer-events: none;
   }
   .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.2s; flex: 1; min-width: 0; height: 100%; justify-content: center; }
   .nav-item.active { background: var(--honey); }
@@ -916,6 +928,15 @@ if (typeof supabase === 'undefined') {
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-sizing: content-box;
     z-index: 100;
+  }
+  .bottom-nav-shared::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: white;
+    z-index: 99;
+    pointer-events: none;
   }
   .bnav-item {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -1981,10 +2002,8 @@ function showScreen(id, btn) {
   if (el) el.classList.add('active');
   if (btn) btn.classList.add('active');
   // Sync body/app background with screen color — fixes safe-area zone
-  const bg = SCREEN_BG[id] || '#FFFAF2';
-  document.documentElement.style.setProperty('--current-screen-bg', bg);
-  document.body.style.background = bg;
-  if (document.getElementById('app')) document.getElementById('app').style.background = bg;
+  // Le fond de chaque screen est géré par son propre CSS background
+  // La barre nav est toujours blanche — pas besoin de sync body background
   if (id === 'recipes') renderRecettes();
   if (id === 'library') try { renderBibliotheque(); } catch(e) { console.warn("[Nara] renderBiblio:", e); }
   if (id === 'routines') renderRoutines();
@@ -3636,7 +3655,7 @@ try { renderRecettes(); } catch(e) {}
 try { renderBibliotheque(); } catch(e) {}
 try { renderRoutines(); } catch(e) {}
 try { updateHomeScore(); } catch(e) {}
-try { document.documentElement.style.setProperty('--current-screen-bg','#F6EAD4'); document.body.style.background='#F6EAD4'; } catch(e) {}
+// fond géré par CSS uniquement
 </script>
 </div><!-- /app -->
 </body>

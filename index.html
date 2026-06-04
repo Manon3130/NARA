@@ -227,7 +227,7 @@ if (typeof supabase === 'undefined') {
   .home-greeting { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 400; color: var(--text-dark); line-height: 1.2; }
   .home-greeting span { color: var(--sage); }
   .avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--blush), var(--peach)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-  .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + env(safe-area-inset-bottom) + 8px); scrollbar-width: none; }
+  .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
   .home-scroll::-webkit-scrollbar { display: none; }
   .score-card { background: linear-gradient(135deg, var(--sage) 0%, #6b6e52 100%); border-radius: clamp(16px, 5vw, 24px); padding: clamp(16px, 5vw, 24px); margin-bottom: 20px; color: white; position: relative; overflow: hidden; }
   .score-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: rgba(255,255,255,0.08); border-radius: 50%; }
@@ -254,31 +254,43 @@ if (typeof supabase === 'undefined') {
   .bottom-nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: calc(60px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+    height: 60px;
+    padding: 8px 4px;
     background: white;
     border-top: 1px solid var(--oat);
     display: flex; align-items: center; justify-content: space-around;
-    padding-left: 4px; padding-right: 4px;
     box-sizing: border-box;
     z-index: 100;
+    overflow: hidden;
   }
-  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.2s; flex: 1; min-width: 0; height: 60px; justify-content: center; align-self: flex-start; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 0 4px; border-radius: 8px; transition: background 0.2s; flex: 1; min-width: 0; justify-content: center; }
   .nav-item.active { background: var(--honey); }
-  .nav-icon { font-size: 1.1rem; line-height: 1; }
-  .nav-label { font-size: 0.55rem; color: var(--text-light); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1; }
+  .nav-icon { font-size: 1.5rem; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .nav-label { font-size: 10px; color: var(--text-light); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1; }
   .nav-item.active .nav-label { color: var(--sage); }
-  .nav-add { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.2s; flex: 1; min-width: 0; height: 60px; justify-content: center; align-self: flex-start; }
-  .nav-add .nav-icon { font-size: 1.1rem; line-height: 1; }
-  .nav-add .nav-label { font-size: 0.55rem; color: var(--text-light); letter-spacing: 0.02em; line-height: 1; }
-  .nav-add.active { background: var(--honey); }
+  .nav-add {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2px;
+    cursor: pointer; flex: 1; min-width: 0;
+  }
+  .nav-add-inner {
+    width: 48px; height: 48px; border-radius: 24px;
+    background: var(--sage);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1px;
+    box-shadow: 0 2px 8px rgba(129,130,99,0.3);
+    transition: background 0.2s;
+  }
+  .nav-add-inner .nav-icon { font-size: 1.1rem; width: auto; height: auto; color: white; }
+  .nav-add-inner .nav-label { font-size: 9px; color: rgba(255,255,255,0.85); letter-spacing: 0.02em; line-height: 1; }
+  .nav-add.active .nav-add-inner { background: var(--avocado); }
 
   /* ===== JOURNAL ===== */
   #screen-journal { background: var(--cream); }
   .screen-header { padding: calc(env(safe-area-inset-top, 0px) + 16px) clamp(16px, 6vw, 28px) 20px; display: flex; align-items: center; gap: 12px; }
   .back-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--honey); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; cursor: pointer; }
   .screen-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.6rem); font-weight: 400; color: var(--text-dark); }
-  .journal-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + env(safe-area-inset-bottom) + 8px); scrollbar-width: none; }
+  .journal-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
   .journal-scroll::-webkit-scrollbar { display: none; }
   .date-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--honey); border-radius: 20px; padding: 6px 14px; font-size: 0.75rem; color: var(--text-mid); margin-bottom: 24px; }
   .journal-section { margin-bottom: 24px; }
@@ -306,7 +318,7 @@ if (typeof supabase === 'undefined') {
 
   /* ===== INSIGHTS ===== */
   #screen-insights { background: var(--cream); }
-  .insights-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + env(safe-area-inset-bottom) + 8px); scrollbar-width: none; }
+  .insights-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
   .insights-scroll::-webkit-scrollbar { display: none; }
   .insight-big-card { background: linear-gradient(135deg, var(--sage), #5a5e40); border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; }
   .ibc-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 10px; }
@@ -359,7 +371,7 @@ if (typeof supabase === 'undefined') {
   /* ===== ROUTINES — LISTE ===== */
   #screen-routines { background: var(--cream); }
   .rout-list-header { padding: calc(env(safe-area-inset-top) + 16px) 24px 16px; }
-  .rout-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + env(safe-area-inset-bottom) + 8px); scrollbar-width: none; }
+  .rout-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
   .rout-scroll::-webkit-scrollbar { display: none; }
   .rout-hero-card { border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; cursor: pointer; }
   .rout-hero-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:rgba(255,255,255,0.07); border-radius:50%; }
@@ -436,7 +448,7 @@ if (typeof supabase === 'undefined') {
     padding: 52px 24px 0;
     display: flex; align-items: center; gap: 12px;
   }
-  .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + env(safe-area-inset-bottom) + 8px); scrollbar-width: none; }
+  .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
   .rec-scroll::-webkit-scrollbar { display: none; }
   .rec-tabs-wrap { padding: 16px 24px 0; }
   .rec-tabs {
@@ -586,7 +598,7 @@ if (typeof supabase === 'undefined') {
     color: var(--text-mid); background: white; flex-shrink: 0; transition: all 0.2s;
   }
   .lib-tab.active { color: white; border-color: transparent; }
-  .lib-scroll-dyn { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px clamp(16px, 6vw, 28px) calc(60px + env(safe-area-inset-bottom) + 8px); scrollbar-width: none; }
+  .lib-scroll-dyn { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
   .lib-scroll-dyn::-webkit-scrollbar { display: none; }
 
   /* Card à la une */
@@ -911,28 +923,40 @@ if (typeof supabase === 'undefined') {
   .bottom-nav-shared {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: calc(60px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+    height: 60px;
+    padding: 8px 4px;
     background: white;
     border-top: 1px solid var(--oat);
     display: flex; align-items: center; justify-content: space-around;
-    padding-left: 4px; padding-right: 4px;
     box-sizing: border-box;
     z-index: 100;
+    overflow: hidden;
   }
   .bnav-item {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.2s;
-    flex: 1; min-width: 0; height: 60px; justify-content: center; align-self: flex-start;
+    cursor: pointer; padding: 0 4px; border-radius: 8px; transition: background 0.2s;
+    flex: 1; min-width: 0; justify-content: center;
   }
   .bnav-item.active { background: var(--honey); }
-  .bnav-icon { font-size: 1.1rem; line-height: 1; }
-  .bnav-label { font-size: 0.55rem; color: var(--text-light); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1; }
+  .bnav-icon { font-size: 1.5rem; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .bnav-label { font-size: 10px; color: var(--text-light); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1; }
   .bnav-item.active .bnav-label { color: var(--sage); }
-  .bnav-add { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.2s; flex: 1; min-width: 0; height: 60px; justify-content: center; align-self: flex-start; }
-  .bnav-add .bnav-icon { font-size: 1.1rem; line-height: 1; }
-  .bnav-add .bnav-label { font-size: 0.55rem; color: var(--text-light); letter-spacing: 0.02em; line-height: 1; }
-  .bnav-add.active { background: var(--honey); }
+  .bnav-add {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2px;
+    cursor: pointer; flex: 1; min-width: 0;
+  }
+  .bnav-add-inner {
+    width: 48px; height: 48px; border-radius: 24px;
+    background: var(--sage);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1px;
+    box-shadow: 0 2px 8px rgba(129,130,99,0.3);
+    transition: background 0.2s;
+  }
+  .bnav-add-inner .bnav-icon { font-size: 1.1rem; width: auto; height: auto; color: white; }
+  .bnav-add-inner .bnav-label { font-size: 9px; color: rgba(255,255,255,0.85); letter-spacing: 0.02em; line-height: 1; }
+  .bnav-add.active .bnav-add-inner { background: var(--avocado); }
 
   /* ===== RESPONSIVE TABLETTE / DESKTOP ===== */
   @media (min-width: 480px) {
@@ -1068,7 +1092,7 @@ if (typeof supabase === 'undefined') {
 
   /* Confirmation toast */
   .ql-toast {
-    position: fixed; bottom: calc(60px + env(safe-area-inset-bottom) + 8px);
+    position: fixed; bottom: calc(60px + 12px);
     left: 50%; transform: translateX(-50%);
     background: var(--sage); color: white;
     padding: 12px 24px; border-radius: 20px;
@@ -1250,7 +1274,7 @@ if (typeof supabase === 'undefined') {
       <div class="bottom-nav" id="bottom-nav-home">
         <div class="nav-item active" id="bnav-home" onclick="go('home')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
         <div class="nav-item" id="bnav-insights" onclick="go('insights')"><span class="nav-icon">📊</span><span class="nav-label">Insights</span></div>
-        <div class="nav-add" id="bnav-journal" onclick="go('journal')"><span class="nav-icon">📓</span><span class="nav-label">Journal</span></div>
+        <div class="nav-add" id="bnav-journal" onclick="go('journal')"><div class="nav-add-inner"><span class="nav-icon">📓</span><span class="nav-label">Journal</span></div></div>
         <div class="nav-item" id="bnav-routines" onclick="go('routines')"><span class="nav-icon">🌿</span><span class="nav-label">Routines</span></div>
         <div class="nav-item" id="bnav-library" onclick="go('library')"><span class="nav-icon">📚</span><span class="nav-label">Apprendre</span></div>
         <div class="nav-item" id="bnav-recipes" onclick="go('recipes')"><span class="nav-icon">🍽️</span><span class="nav-label">Recettes</span></div>
@@ -1270,7 +1294,7 @@ if (typeof supabase === 'undefined') {
       <div class="bottom-nav-shared">
         <div class="bnav-item" id="jrn-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
         <div class="bnav-item" id="jrn-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="jrn-bnav-journal" onclick="go('journal')"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div>
+        <div class="bnav-add" id="jrn-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
         <div class="bnav-item" id="jrn-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="jrn-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="jrn-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
@@ -1307,7 +1331,7 @@ if (typeof supabase === 'undefined') {
       <div class="bottom-nav-shared">
         <div class="bnav-item" id="ins-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
         <div class="bnav-item" id="ins-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="ins-bnav-journal" onclick="go('journal')"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div>
+        <div class="bnav-add" id="ins-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
         <div class="bnav-item" id="ins-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="ins-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="ins-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
@@ -1331,7 +1355,7 @@ if (typeof supabase === 'undefined') {
       <div class="bottom-nav-shared">
         <div class="bnav-item" id="lib-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
         <div class="bnav-item" id="lib-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="lib-bnav-journal" onclick="go('journal')"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div>
+        <div class="bnav-add" id="lib-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
         <div class="bnav-item" id="lib-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="lib-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="lib-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
@@ -1367,7 +1391,7 @@ if (typeof supabase === 'undefined') {
       <div class="bottom-nav-shared">
         <div class="bnav-item" id="rout-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
         <div class="bnav-item" id="rout-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="rout-bnav-journal" onclick="go('journal')"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div>
+        <div class="bnav-add" id="rout-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
         <div class="bnav-item" id="rout-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="rout-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="rout-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
@@ -1420,7 +1444,7 @@ if (typeof supabase === 'undefined') {
       <div class="bottom-nav-shared">
         <div class="bnav-item" id="rec-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
         <div class="bnav-item" id="rec-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="rec-bnav-journal" onclick="go('journal')"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div>
+        <div class="bnav-add" id="rec-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
         <div class="bnav-item" id="rec-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="rec-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="rec-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>

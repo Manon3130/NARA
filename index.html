@@ -56,8 +56,8 @@ if (typeof supabase === 'undefined') {
     width: 100%; height: 100%; height: 100dvh;
     min-height: 100dvh;
     overflow: hidden;
-    /* blanc = fond de la nav toujours correct, screens ont leur propre fond */
-    background: white;
+    /* honey = couleur de l'écran d'accueil/onboarding, visible par défaut */
+    background: #F6EAD4;
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -71,6 +71,7 @@ if (typeof supabase === 'undefined') {
     top: 0; left: 0; right: 0; bottom: 0;
     width: 100vw;
     height: 100dvh;
+    min-height: 100dvh;
     overflow: hidden;
     background: var(--current-screen-bg, #F6EAD4);
   }
@@ -1493,7 +1494,15 @@ if (typeof supabase === 'undefined') {
 // ===== SUPABASE INIT =====
 const SUPABASE_URL = 'https://efpdmamvpfjcupffwdlz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_NGK_ChSW3ts5xWky6RH4SA_gI9Qy84F';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    storage: window.localStorage,
+    storageKey: 'nara-auth-session',
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  }
+});
 
 /* ══════════════════════════════════════════════════════════════════════
    TABLES SUPABASE À CRÉER (SQL à exécuter dans Supabase > SQL Editor)
@@ -2005,9 +2014,10 @@ function showScreen(id, btn) {
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
   if (btn) btn.classList.add('active');
-  // Sync body/app background with screen color — fixes safe-area zone
-  // Le fond de chaque screen est géré par son propre CSS background
-  // La barre nav est toujours blanche — pas besoin de sync body background
+  // Sync body background avec l'écran actif — empêche toute bande blanche/parasite
+  const bg = SCREEN_BG[id] || '#FFFAF2';
+  document.documentElement.style.setProperty('--current-screen-bg', bg);
+  document.body.style.background = bg;
   if (id === 'recipes') renderRecettes();
   if (id === 'library') try { renderBibliotheque(); } catch(e) { console.warn("[Nara] renderBiblio:", e); }
   if (id === 'routines') renderRoutines();

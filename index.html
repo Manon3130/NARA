@@ -920,6 +920,34 @@ if (typeof supabase === 'undefined') {
     color: rgba(255,255,255,0.7); font-size: 0.78rem; margin-top: 12px;
   }
 
+  /* ===== MOT DE PASSE OUBLIÉ — MODALE ===== */
+  .fp-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 600; display: none; align-items: center; justify-content: center;
+    padding: clamp(16px, 6vw, 28px);
+  }
+  .fp-overlay.open { display: flex; }
+  .fp-card {
+    background: white; border-radius: 24px; padding: 28px 24px;
+    width: 100%; max-width: 360px; position: relative; text-align: center;
+  }
+  .fp-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--oat); border: none; color: var(--text-mid);
+    font-size: 0.85rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fp-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .fp-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.3rem;
+    color: var(--text-dark); margin-bottom: 8px;
+  }
+  .fp-text {
+    font-size: 0.82rem; color: var(--text-mid); line-height: 1.5;
+    margin-bottom: 18px;
+  }
+
   /* ===== SHARED BOTTOM NAV ===== */
   .bottom-nav-shared {
     position: fixed;
@@ -1187,11 +1215,31 @@ if (typeof supabase === 'undefined') {
           </button>
           <div class="auth-divider"></div>
           <div class="auth-switch" style="font-size:0.72rem">
-            <span onclick="handleForgotPassword()" style="font-weight:400;text-decoration:none;color:var(--text-light)">Mot de passe oublié ?</span>
+            <span onclick="openForgotPasswordModal()" style="font-weight:400;text-decoration:none;color:var(--text-light)">Mot de passe oublié ?</span>
           </div>
         </div>
         <div class="auth-switch">
           Pas encore de compte ? <span onclick="go('signup')">S'inscrire</span>
+        </div>
+      </div>
+
+      <!-- Modale Mot de passe oublié -->
+      <div class="fp-overlay" id="fp-overlay" onclick="handleFpOverlayClick(event)">
+        <div class="fp-card">
+          <button class="fp-close" onclick="closeForgotPasswordModal()">✕</button>
+          <div class="fp-icon">🔑</div>
+          <div class="fp-title">Mot de passe oublié ?</div>
+          <div class="fp-text">Entre ton email, on t'envoie un lien pour en choisir un nouveau.</div>
+          <div class="auth-error" id="fp-error"></div>
+          <div class="auth-success" id="fp-success"></div>
+          <div class="auth-field" style="text-align:left">
+            <label>Email</label>
+            <input class="auth-input" type="email" id="fp-email" placeholder="manon@exemple.fr" autocomplete="email">
+          </div>
+          <button class="auth-btn-primary" id="fp-btn" onclick="handleForgotPassword()">
+            <span id="fp-btn-text">Envoyer le lien →</span>
+            <div class="auth-spinner" id="fp-spinner"></div>
+          </button>
         </div>
       </div>
     </div>
@@ -1498,7 +1546,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     storage: window.localStorage,
-    storageKey: 'nara-auth-session',
     autoRefreshToken: true,
     detectSessionInUrl: false,
   }
@@ -1659,11 +1706,14 @@ async function handleLogin() {
     await loadUserData(currentUser.id);
     setTimeout(() => go('home'), 900);
   } catch (err) {
-    const msg = err.message.includes('Invalid login')
+    const raw = err.message || '';
+    const msg = raw.includes('Invalid login')
       ? 'Email ou mot de passe incorrect.'
-      : err.message.includes('Email not confirmed')
+      : raw.includes('Email not confirmed')
       ? 'Confirme ton email avant de te connecter.'
-      : err.message;
+      : raw.includes('fetch') || raw.includes('network') || raw.includes('Failed to fetch')
+      ? 'Connexion au serveur impossible. Vérifie ta connexion internet.'
+      : raw || 'Une erreur est survenue. Réessaie.';
     showAuthMsg('error', 'login', msg);
   } finally {
     setAuthLoading('login', false);
@@ -1681,15 +1731,53 @@ async function handleLogout() {
   go('onboarding');
 }
 
-// ===== MOT DE PASSE OUBLIÉ =====
+// ===== MOT DE PASSE OUBLIÉ — MODALE DÉDIÉE =====
+function openForgotPasswordModal() {
+  const overlay = document.getElementById('fp-overlay');
+  const emailField = document.getElementById('fp-email');
+  // Pré-remplir avec l'email du formulaire de connexion si déjà saisi
+  const loginEmail = document.getElementById('login-email').value.trim();
+  if (loginEmail) emailField.value = loginEmail;
+  document.getElementById('fp-error').style.display = 'none';
+  document.getElementById('fp-success').style.display = 'none';
+  overlay.classList.add('open');
+  setTimeout(() => emailField.focus(), 100);
+}
+
+function closeForgotPasswordModal() {
+  document.getElementById('fp-overlay').classList.remove('open');
+}
+
+function handleFpOverlayClick(e) {
+  if (e.target === document.getElementById('fp-overlay')) closeForgotPasswordModal();
+}
+
 async function handleForgotPassword() {
-  const email = document.getElementById('login-email').value.trim();
-  if (!email) return showAuthMsg('error', 'login', 'Entre ton email d\'abord.');
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.href
-  });
-  if (error) showAuthMsg('error', 'login', error.message);
-  else showAuthMsg('success', 'login', `Email de réinitialisation envoyé à ${email}.`);
+  const email = document.getElementById('fp-email').value.trim();
+  document.getElementById('fp-error').style.display = 'none';
+  document.getElementById('fp-success').style.display = 'none';
+
+  if (!email) {
+    showAuthMsg('error', 'fp', 'Entre ton adresse email.');
+    return;
+  }
+  if (!email.includes('@')) {
+    showAuthMsg('error', 'fp', 'Cette adresse email ne semble pas valide.');
+    return;
+  }
+
+  setAuthLoading('fp', true);
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) throw error;
+    showAuthMsg('success', 'fp', `📩 Email envoyé à ${email}. Vérifie ta boîte de réception (et tes spams).`);
+  } catch (err) {
+    showAuthMsg('error', 'fp', err.message || 'Une erreur est survenue. Réessaie.');
+  } finally {
+    setAuthLoading('fp', false);
+  }
 }
 
 // ===== RESTAURER SESSION AU CHARGEMENT =====

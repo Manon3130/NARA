@@ -20,17 +20,28 @@
 <!-- Manifest PWA inline -->
 <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Nara%22%2C%22short_name%22%3A%22Nara%22%2C%22description%22%3A%22Ta%20sant%C3%A9%20holistique%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23FFFAF2%22%2C%22theme_color%22%3A%22%23818263%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520fill%3D'%23818263'%2520rx%3D'20'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'80'%2520x%3D'10'%253E%F0%9F%8C%BF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <title>Nara</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
 <script>
-// Fallback si CDN échoue
+// Fallback robuste si le CDN Supabase échoue à charger.
+// Comme <script src> est bloquant et synchrone, à ce stade `supabase`
+// est déjà défini si le chargement a réussi. S'il échoue (réseau coupé,
+// CDN down), on fournit un client de secours qui ne plante jamais l'app.
 if (typeof supabase === 'undefined') {
+  console.warn('[Nara] CDN Supabase indisponible — mode local activé.');
   window.supabase = { createClient: function() {
     var c=function(){return{eq:function(){return c()},gte:function(){return c()},order:function(){return c()},limit:function(){return Promise.resolve({data:null,error:null})},then:function(){},data:null,error:null};};
     return {
-      auth:{getSession:async function(){return{data:{session:null}};},onAuthStateChange:function(){},signUp:async function(){return{data:{},error:{message:'Service indisponible'}};},signInWithPassword:async function(){return{data:{},error:{message:'Service indisponible'}};},signOut:async function(){},resetPasswordForEmail:async function(){return{error:null};}},
+      auth:{
+        getSession:async function(){return{data:{session:null}};},
+        onAuthStateChange:function(){ return { data: { subscription: { unsubscribe: function(){} } } }; },
+        signUp:async function(){return{data:{},error:{message:'Service indisponible — vérifie ta connexion internet.'}};},
+        signInWithPassword:async function(){return{data:{},error:{message:'Service indisponible — vérifie ta connexion internet.'}};},
+        signOut:async function(){},
+        resetPasswordForEmail:async function(){return{error:{message:'Service indisponible.'}};}
+      },
       from:function(){return{select:function(){return c();},upsert:function(){return{then:function(){}};},delete:function(){return c();}};},
-      storage:{from:function(){return{upload:async function(){return{data:{},error:{message:'Offline'}};},getPublicUrl:function(){return{data:{publicUrl:''}};},remove:async function(){return{};}};}
-    }};
+      storage:{from:function(){return{upload:async function(){return{data:{},error:{message:'Offline'}};},getPublicUrl:function(){return{data:{publicUrl:''}};},remove:async function(){return{};}};}}
+    };
   }};
 }
 </script>
@@ -86,6 +97,21 @@ if (typeof supabase === 'undefined') {
     background: #FFFAF2; /* cream */
   }
   .screen.active { display: flex; }
+
+  /* Loader de démarrage — masqué automatiquement par hideBootLoader() */
+  #boot-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #F6EAD4;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .boot-loader-leaf {
+    font-size: 2.6rem;
+    animation: bootPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes bootPulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.92); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
 
   /* Fonds couleur par screen — valeurs hardcodées comme fallback */
   #screen-onboarding  { background: #F6EAD4; }
@@ -1138,6 +1164,9 @@ if (typeof supabase === 'undefined') {
 
 
 <div id="app">
+  <div id="boot-loader">
+    <span class="boot-loader-leaf">🌿</span>
+  </div>
     <!-- SCREEN 1 — ONBOARDING -->
     <div class="screen active" id="screen-onboarding">
       <div class="onboarding-bg">
@@ -1551,6 +1580,21 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   }
 });
 
+// ── Garde-fou réseau : aucun appel Supabase ne doit bloquer l'app indéfiniment ──
+// Si le serveur ne répond pas dans le délai imparti, on échoue proprement
+// au lieu de laisser l'UI tourner en chargement à l'infini.
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout (${label || 'requête'}) — le serveur ne répond pas. Réessaie.`));
+    }, ms);
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    TABLES SUPABASE À CRÉER (SQL à exécuter dans Supabase > SQL Editor)
    ══════════════════════════════════════════════════════════════════════
@@ -1695,7 +1739,10 @@ async function handleLogin() {
 
   setAuthLoading('login', true);
   try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    const { data, error } = await withTimeout(
+      sb.auth.signInWithPassword({ email, password }),
+      12000, 'connexion'
+    );
     if (error) throw error;
 
     currentUser = data.user;
@@ -1703,16 +1750,21 @@ async function handleLogin() {
 
     const prenom = currentUser.user_metadata?.prenom || email.split('@')[0];
     showAuthMsg('success', 'login', `Bienvenue ${prenom} ! 🌿`);
-    await loadUserData(currentUser.id);
-    setTimeout(() => go('home'), 900);
+
+    // Le chargement des données ne doit jamais bloquer la redirection :
+    // on entre dans l'app immédiatement, les données arrivent en arrière-plan.
+    go('home');
+    loadUserData(currentUser.id).catch(e => console.warn('[Nara] loadUserData:', e));
   } catch (err) {
     const raw = err.message || '';
     const msg = raw.includes('Invalid login')
       ? 'Email ou mot de passe incorrect.'
       : raw.includes('Email not confirmed')
       ? 'Confirme ton email avant de te connecter.'
-      : raw.includes('fetch') || raw.includes('network') || raw.includes('Failed to fetch')
-      ? 'Connexion au serveur impossible. Vérifie ta connexion internet.'
+      : raw.includes('Timeout')
+      ? raw
+      : raw.includes('fetch') || raw.includes('network') || raw.includes('Failed to fetch') || raw.includes('Load failed')
+      ? 'Connexion au serveur impossible. Vérifie ta connexion internet et réessaie.'
       : raw || 'Une erreur est survenue. Réessaie.';
     showAuthMsg('error', 'login', msg);
   } finally {
@@ -1789,17 +1841,35 @@ async function handleForgotPassword() {
 
 async function initSession() {
   // Supabase restaure automatiquement la session depuis son propre localStorage.
-  // getSession() retourne la session active si elle existe encore (token valide).
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    updateHomeUser(currentUser);
-    // Utilisateur déjà connecté → aller directement au dashboard
-    go('home');
-    // Charger ses données depuis Supabase
-    await loadUserData(session.user.id);
+  // getSession() lit le storage local en priorité — protégé par timeout
+  // pour ne jamais bloquer l'app si le réseau est lent au démarrage.
+  try {
+    const { data: { session } } = await withTimeout(
+      sb.auth.getSession(),
+      8000, 'restauration de session'
+    );
+    if (session?.user) {
+      currentUser = session.user;
+      updateHomeUser(currentUser);
+      // Utilisateur déjà connecté → aller directement au dashboard, sans attendre les données
+      go('home');
+      // Charger ses données en arrière-plan — ne bloque jamais l'affichage
+      loadUserData(session.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
+    }
+    // Sinon, rester sur l'écran onboarding (déjà actif par défaut)
+  } catch (e) {
+    // Le getSession a échoué ou timeout — on reste sur onboarding,
+    // l'utilisateur peut toujours se connecter manuellement.
+    console.warn('[Nara] initSession:', e.message);
+  } finally {
+    // Quoi qu'il arrive, on retire l'écran de chargement initial s'il existe
+    hideBootLoader();
   }
-  // Sinon, rester sur l'écran onboarding (déjà actif par défaut)
+}
+
+function hideBootLoader() {
+  const loader = document.getElementById('boot-loader');
+  if (loader) loader.style.display = 'none';
 }
 
 // Écoute tous les événements auth en temps réel
@@ -1812,8 +1882,8 @@ sb.auth.onAuthStateChange(async (event, session) => {
       // Nettoyage champs de formulaire
       ['signup-email','signup-password','signup-prenom','login-email','login-password']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-      // Charger les données de l'utilisateur
-      await loadUserData(session.user.id);
+      // Charger les données en arrière-plan — ne bloque jamais l'event auth
+      loadUserData(session.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
     }
 
     if (event === 'TOKEN_REFRESHED') {
@@ -3752,6 +3822,58 @@ async function loadUserData(userId) {
 
 // ── Init finale ──
 try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); }
+// Filet de sécurité : si jamais initSession ne termine pas dans les 10s
+// (cas extrême, ex. Supabase totalement injoignable), on masque quand même
+// le loader pour que l'utilisateur puisse interagir avec l'app.
+setTimeout(hideBootLoader, 10000);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CYCLE DE VIE PWA — revalider la session quand l'app revient au premier plan
+// Sur iOS, une PWA "endormie" en arrière-plan peut perdre la fraîcheur de son
+// token. On revérifie systématiquement au retour, sans jamais bloquer l'UI.
+// ══════════════════════════════════════════════════════════════════════════════
+let lastVisibilityCheck = Date.now();
+
+async function revalidateSessionOnResume() {
+  // Évite les vérifications trop fréquentes (debounce 3s)
+  const now = Date.now();
+  if (now - lastVisibilityCheck < 3000) return;
+  lastVisibilityCheck = now;
+
+  try {
+    const { data: { session } } = await withTimeout(
+      sb.auth.getSession(), 8000, 'revalidation session'
+    );
+
+    if (session?.user) {
+      // Session toujours valide — mettre à jour l'utilisateur si besoin
+      if (!currentUser || currentUser.id !== session.user.id) {
+        currentUser = session.user;
+        updateHomeUser(currentUser);
+      }
+    } else if (currentUser) {
+      // La session a expiré pendant que l'app était en arrière-plan
+      // → on ne force PAS de déconnexion brutale, Supabase tentera
+      //   un refresh automatique via autoRefreshToken. On log seulement.
+      console.warn('[Nara] Session absente au retour — autoRefreshToken devrait la restaurer.');
+    }
+  } catch (e) {
+    // Échec réseau temporaire au retour — on n'interrompt jamais l'usage en cours
+    console.warn('[Nara] revalidateSessionOnResume:', e.message);
+  }
+}
+
+// Quand l'app/onglet redevient visible (retour depuis l'arrière-plan)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    revalidateSessionOnResume();
+  }
+});
+
+// Sur iOS Safari/PWA, 'pageshow' se déclenche aussi en sortie du cache mémoire
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) revalidateSessionOnResume();
+});
 
 try { renderRecettes(); } catch(e) {}
 try { renderBibliotheque(); } catch(e) {}

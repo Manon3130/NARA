@@ -974,6 +974,94 @@ if (typeof supabase === 'undefined') {
     margin-bottom: 18px;
   }
 
+
+  /* ===== REPAS PAR TEMPS DE REPAS ===== */
+  .jrn-meal-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .jrn-meal-tabs::-webkit-scrollbar { display: none; }
+  .jrn-meal-tab {
+    flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+    border: 1.5px solid var(--oat); background: white;
+    font-size: 0.78rem; color: var(--text-mid);
+    cursor: pointer; transition: all 0.18s; font-family: 'DM Sans', sans-serif;
+  }
+  .jrn-meal-tab.active {
+    background: var(--sage); border-color: var(--sage); color: white;
+  }
+  .jrn-meal-panel { display: none; }
+  .jrn-meal-panel.active { display: block; }
+
+  /* Saisie manuelle + historique */
+  .jrn-food-input-row {
+    display: flex; gap: 8px; margin-bottom: 10px; align-items: center;
+  }
+  .jrn-food-input {
+    flex: 1; padding: 11px 14px; border: 1.5px solid var(--oat);
+    border-radius: 12px; font-size: 0.85rem; color: var(--text-dark);
+    background: white; font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  .jrn-food-input:focus { border-color: var(--sage); }
+  .jrn-food-add-btn {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--sage); border: none; color: white;
+    font-size: 1.3rem; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .jrn-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 24px; }
+  .jrn-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--avocado); color: white;
+    padding: 5px 10px; border-radius: 16px; font-size: 0.76rem;
+  }
+  .jrn-tag-del {
+    background: none; border: none; color: rgba(255,255,255,0.8);
+    cursor: pointer; font-size: 0.9rem; padding: 0; line-height: 1;
+  }
+
+  /* Suggestions historique */
+  .jrn-suggestions {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+  }
+  .jrn-suggestion {
+    padding: 5px 12px; border-radius: 16px; font-size: 0.74rem;
+    background: var(--honey); color: var(--text-mid);
+    border: 1px solid var(--oat); cursor: pointer; transition: background 0.15s;
+  }
+  .jrn-suggestion:hover { background: var(--oat); }
+
+  /* Épices */
+  .jrn-spice-row {
+    display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+  }
+  .jrn-spice-input {
+    flex: 1; padding: 9px 12px; border: 1.5px solid var(--oat);
+    border-radius: 10px; font-size: 0.82rem; color: var(--text-dark);
+    background: white; font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  .jrn-spice-input:focus { border-color: var(--sage); }
+  .jrn-spice-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .jrn-spice-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f0e8ff; color: #6b4fa0;
+    padding: 4px 10px; border-radius: 14px; font-size: 0.72rem;
+  }
+
+  /* Portions */
+  .jrn-portions {
+    display: flex; gap: 8px; margin-bottom: 4px;
+  }
+  .jrn-portion {
+    flex: 1; padding: 10px 6px; border-radius: 12px;
+    border: 1.5px solid var(--oat); background: white;
+    text-align: center; cursor: pointer; transition: all 0.18s;
+  }
+  .jrn-portion.selected { border-color: var(--sage); background: var(--honey); }
+  .jrn-portion .por-icon { font-size: 1.2rem; display: block; }
+  .jrn-portion .por-label { font-size: 0.62rem; color: var(--text-light); margin-top: 3px; display: block; }
+  .jrn-portion.selected .por-label { color: var(--sage); }
+
   /* ===== SHARED BOTTOM NAV ===== */
   .bottom-nav-shared {
     position: fixed;
@@ -1639,6 +1727,7 @@ let currentPhotoDataUrl = null;
 let currentPhotoPublicUrl = null;
 let jrnValues = {};
 let jrnEditMode = false;
+let jrnCurrentMeal = 'matin'; // moment de repas actif
 
 // ===== HELPERS UI =====
 function setAuthLoading(screen, loading) {
@@ -3121,15 +3210,24 @@ function renderJournal() {
 
   // Initialiser les valeurs : si édition, reprendre les valeurs existantes ; sinon tout à zéro
   jrnValues = existing && jrnEditMode ? { ...existing } : {
-    transit: null,       // index 0-2
+    transit: null,
     ballonnements: 0,
-    aliments: [],
-    peau: null,          // index 0-2
+    // Repas structurés par moment
+    repas: {
+      matin:   { aliments: [], epices: [], portion: null },
+      midi:    { aliments: [], epices: [], portion: null },
+      soir:    { aliments: [], epices: [], portion: null },
+      encas:   { aliments: [], epices: [], portion: null },
+    },
+    peau: null,
     stress: 0,
     sommeil: 0,
     energie: 0,
     notes: '',
   };
+  // Moment de repas sélectionné par défaut selon l'heure
+  const heure = new Date().getHours();
+  jrnCurrentMeal = heure < 11 ? 'matin' : heure < 14 ? 'midi' : heure < 18 ? 'encas' : 'soir';
 
   scroll.innerHTML = renderJournalForm(todayLabel);
   // Brancher les sliders après rendu DOM
@@ -3163,11 +3261,6 @@ function renderJournalForm(todayLabel) {
       <span class="e">${o.e}</span><span class="t">${o.t}</span>
     </div>`).join('');
 
-  // Aliments chips
-  const alimentsHtml = ALIMENTS.map((a, i) => `
-    <div class="jrn-chip${v.aliments.includes(i) ? ' selected' : ''}"
-         onclick="jrnToggleChip(${i}, this)">${a}</div>`).join('');
-
   return `
     <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
 
@@ -3188,8 +3281,8 @@ function renderJournalForm(todayLabel) {
                min="0" max="5" value="${v.ballonnements}"
                oninput="jrnUpdateSlider('ballonnements', this.value, 5)">
       </div>
-      <div class="jrn-question">Qu'as-tu mangé aujourd'hui ?</div>
-      <div class="jrn-chips" id="jrn-chips-aliments">${alimentsHtml}</div>
+      <div class="jrn-question" style="margin-top:8px">🍽️ Repas de la journée</div>
+      ${renderRepasSection(v)}
     </div>
 
     <!-- PEAU -->
@@ -3277,7 +3370,7 @@ function renderJournalDone(todayLabel, data) {
       <div style="text-align:left;font-size:0.78rem;color:var(--text-mid);line-height:2">
         🫀 Transit : ${data.transit !== null ? transitLabels[data.transit] : '—'}<br>
         💨 Ballonnements : ${data.ballonnements}/5<br>
-        🥗 Aliments : ${alimentsStr}<br>
+        🍽️ Repas : ${renderRepasResume(data)}<br>
         ✨ Peau : ${data.peau !== null ? peauLabels[data.peau] : '—'}<br>
         😮‍💨 Stress : ${data.stress}/5 · 😴 Sommeil : ${data.sommeil}/5 · ⚡ Énergie : ${data.energie}/5
       </div>
@@ -3285,6 +3378,198 @@ function renderJournalDone(todayLabel, data) {
       <button class="jrn-edit-btn" onclick="jrnStartEdit()">Modifier mes données</button>
     </div>
   `;
+}
+
+function renderRepasSection(v) {
+  const meals = [
+    { key: 'matin',  label: '🌅 Matin',  },
+    { key: 'midi',   label: '☀️ Midi',   },
+    { key: 'soir',   label: '🌙 Soir',   },
+    { key: 'encas',  label: '🍎 En-cas', },
+  ];
+
+  const tabs = meals.map(m => `
+    <div class="jrn-meal-tab${jrnCurrentMeal === m.key ? ' active' : ''}"
+         onclick="switchMeal('${m.key}', this)">${m.label}</div>
+  `).join('');
+
+  const panels = meals.map(m => `
+    <div class="jrn-meal-panel${jrnCurrentMeal === m.key ? ' active' : ''}" id="meal-panel-${m.key}">
+      ${renderMealPanel(m.key, v.repas?.[m.key] || { aliments: [], epices: [], portion: null })}
+    </div>
+  `).join('');
+
+  return `
+    <div class="jrn-meal-tabs">${tabs}</div>
+    <div>${panels}</div>
+  `;
+}
+
+function renderMealPanel(mealKey, data) {
+  // Historique des aliments saisis précédemment (depuis localStorage)
+  const history = getFoodHistory();
+  const recent = history.slice(0, 8);
+
+  const currentTags = (data.aliments || []).map((aliment, i) => `
+    <span class="jrn-tag">
+      ${escHtml(aliment)}
+      <button class="jrn-tag-del" onclick="removeMealAliment('${mealKey}', ${i})">×</button>
+    </span>
+  `).join('');
+
+  const suggestions = recent.filter(s => !(data.aliments || []).includes(s)).map(s => `
+    <div class="jrn-suggestion" onclick="addMealAlimentSuggestion('${mealKey}', '${escHtml(s)}')">${escHtml(s)}</div>
+  `).join('');
+
+  const spiceTags = (data.epices || []).map((ep, i) => `
+    <span class="jrn-spice-tag">
+      🌿 ${escHtml(ep)}
+      <button class="jrn-tag-del" onclick="removeMealEpice('${mealKey}', ${i})" style="color:#6b4fa0">×</button>
+    </span>
+  `).join('');
+
+  const portions = [
+    { key: 'petite',   icon: '🥣', label: 'Petite' },
+    { key: 'moderee',  icon: '🍽️', label: 'Modérée' },
+    { key: 'grosse',   icon: '🫕', label: 'Grosse' },
+  ];
+  const portionHtml = portions.map(p => `
+    <div class="jrn-portion${data.portion === p.key ? ' selected' : ''}"
+         onclick="selectMealPortion('${mealKey}', '${p.key}', this)">
+      <span class="por-icon">${p.icon}</span>
+      <span class="por-label">${p.label}</span>
+    </div>
+  `).join('');
+
+  return `
+    <!-- Aliments saisis -->
+    <span class="ql-section-label">Ce que j'ai mangé</span>
+    <div class="jrn-food-input-row">
+      <input class="jrn-food-input" type="text" id="food-input-${mealKey}"
+             placeholder="Riz, poulet, salade…" autocomplete="off"
+             onkeydown="onFoodInputKey(event, '${mealKey}')">
+      <button class="jrn-food-add-btn" onclick="addMealAliment('${mealKey}')">+</button>
+    </div>
+    <div class="jrn-tags" id="meal-tags-${mealKey}">${currentTags}</div>
+    ${suggestions ? `<div class="jrn-suggestions" id="meal-suggestions-${mealKey}">${suggestions}</div>` : ''}
+
+    <!-- Épices & aromates -->
+    <span class="ql-section-label" style="margin-top:8px">Épices & aromates</span>
+    <div class="jrn-spice-row">
+      <input class="jrn-spice-input" type="text" id="spice-input-${mealKey}"
+             placeholder="Curcuma, gingembre, cumin…"
+             onkeydown="onSpiceInputKey(event, '${mealKey}')">
+      <button class="jrn-food-add-btn" onclick="addMealEpice('${mealKey}')" style="background:var(--blush);color:var(--text-dark)">+</button>
+    </div>
+    <div class="jrn-spice-tags" id="meal-spices-${mealKey}">${spiceTags}</div>
+
+    <!-- Portion -->
+    <span class="ql-section-label" style="margin-top:8px">Quantité</span>
+    <div class="jrn-portions" id="meal-portions-${mealKey}">${portionHtml}</div>
+  `;
+}
+
+// ── Navigation entre moments de repas ──────────────────────────────────────
+function switchMeal(key, tabEl) {
+  jrnCurrentMeal = key;
+  document.querySelectorAll('.jrn-meal-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  document.querySelectorAll('.jrn-meal-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('meal-panel-' + key);
+  if (panel) panel.classList.add('active');
+}
+
+// ── Helpers aliments ────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function getMealData(mealKey) {
+  if (!jrnValues.repas) jrnValues.repas = { matin:{aliments:[],epices:[],portion:null}, midi:{aliments:[],epices:[],portion:null}, soir:{aliments:[],epices:[],portion:null}, encas:{aliments:[],epices:[],portion:null} };
+  if (!jrnValues.repas[mealKey]) jrnValues.repas[mealKey] = { aliments: [], epices: [], portion: null };
+  return jrnValues.repas[mealKey];
+}
+
+function onFoodInputKey(e, mealKey) {
+  if (e.key === 'Enter') { e.preventDefault(); addMealAliment(mealKey); }
+}
+
+function addMealAliment(mealKey) {
+  const input = document.getElementById('food-input-' + mealKey);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const data = getMealData(mealKey);
+  if (!data.aliments.includes(val)) {
+    data.aliments.push(val);
+    saveFoodToHistory(val);
+  }
+  input.value = '';
+  refreshMealPanel(mealKey);
+}
+
+function addMealAlimentSuggestion(mealKey, val) {
+  const data = getMealData(mealKey);
+  if (!data.aliments.includes(val)) {
+    data.aliments.push(val);
+    saveFoodToHistory(val);
+  }
+  refreshMealPanel(mealKey);
+}
+
+function removeMealAliment(mealKey, idx) {
+  const data = getMealData(mealKey);
+  data.aliments.splice(idx, 1);
+  refreshMealPanel(mealKey);
+}
+
+// ── Helpers épices ──────────────────────────────────────────────────────────
+function onSpiceInputKey(e, mealKey) {
+  if (e.key === 'Enter') { e.preventDefault(); addMealEpice(mealKey); }
+}
+
+function addMealEpice(mealKey) {
+  const input = document.getElementById('spice-input-' + mealKey);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const data = getMealData(mealKey);
+  if (!data.epices.includes(val)) data.epices.push(val);
+  input.value = '';
+  refreshMealPanel(mealKey);
+}
+
+function removeMealEpice(mealKey, idx) {
+  const data = getMealData(mealKey);
+  data.epices.splice(idx, 1);
+  refreshMealPanel(mealKey);
+}
+
+// ── Portions ────────────────────────────────────────────────────────────────
+function selectMealPortion(mealKey, val, el) {
+  getMealData(mealKey).portion = val;
+  el.closest('.jrn-portions').querySelectorAll('.jrn-portion').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── Re-rendu du panel actif après modification ──────────────────────────────
+function refreshMealPanel(mealKey) {
+  const panel = document.getElementById('meal-panel-' + mealKey);
+  if (!panel) return;
+  const data = getMealData(mealKey);
+  panel.innerHTML = renderMealPanel(mealKey, data);
+}
+
+// ── Historique personnel d'aliments ─────────────────────────────────────────
+function getFoodHistory() {
+  try { return JSON.parse(localStorage.getItem('nara_food_history') || '[]'); }
+  catch { return []; }
+}
+
+function saveFoodToHistory(food) {
+  let h = getFoodHistory();
+  h = [food, ...h.filter(f => f.toLowerCase() !== food.toLowerCase())].slice(0, 50);
+  localStorage.setItem('nara_food_history', JSON.stringify(h));
 }
 
 function bindJournalSliders() {
@@ -3592,8 +3877,11 @@ function closePhotoFullscreen() {
 
 async function saveJournal() {
   const today = getTodayStr();
+
+  // Vérifier qu'au moins quelque chose est rempli
+  const tousAliments = Object.values(jrnValues.repas || {}).flatMap(r => r.aliments || []);
   const hasData = jrnValues.transit !== null || jrnValues.peau !== null ||
-    jrnValues.aliments.length > 0 || jrnValues.stress > 0 ||
+    tousAliments.length > 0 || jrnValues.stress > 0 ||
     jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.ballonnements > 0;
   if (!hasData) { showToast("Remplis au moins un champ avant d'enregistrer"); return; }
 
@@ -3603,7 +3891,7 @@ async function saveJournal() {
   if (jrnValues.transit !== null || jrnValues.ballonnements > 0) {
     localStorage.setItem(`nara_log_${today}_transit`, JSON.stringify({
       type:'transit', date:today, ts:Date.now(),
-      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:jrnValues.aliments }
+      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }
     }));
   }
   if (jrnValues.peau !== null) {
@@ -3623,7 +3911,7 @@ async function saveJournal() {
       { onConflict:'user_id,date,type' }).then(({error}) => { if(error) console.warn('[Nara]',error.message); });
     const logs = [];
     if (jrnValues.transit !== null) logs.push({ user_id:userId, date:today, type:'transit',
-      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:jrnValues.aliments }});
+      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }});
     if (jrnValues.peau !== null) logs.push({ user_id:userId, date:today, type:'peau',
       values:{ peau_etat:jrnValues.peau }});
     if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) logs.push({
@@ -3633,9 +3921,23 @@ async function saveJournal() {
       .then(({error}) => { if(error) console.warn('[Nara]', error.message); });
   }
   jrnEditMode = false;
-  showToast('\u2713 Journal enregistr\u00e9 !');
+  showToast('✓ Journal enregistré !');
   try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   setTimeout(() => renderJournal(), 400);
+}
+
+
+function renderRepasResume(data) {
+  const repas = data.repas || {};
+  const labels = { matin:'Matin', midi:'Midi', soir:'Soir', encas:'En-cas' };
+  const parts = Object.entries(labels).map(([key, label]) => {
+    const r = repas[key] || {};
+    if (!r.aliments || r.aliments.length === 0) return null;
+    const portion = r.portion ? ` (${r.portion})` : '';
+    const epices = r.epices && r.epices.length > 0 ? ` + ${r.epices.join(', ')}` : '';
+    return `${label}: ${r.aliments.join(', ')}${epices}${portion}`;
+  }).filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : 'Aucun repas noté';
 }
 
 function handlePdfReport() {

@@ -3588,6 +3588,7 @@ function renderJournal() {
   jrnValues = existing && jrnEditMode ? { ...existing } : {
     transit: null,
     ballonnements: 0,
+    douleurs: null,    // 0=Aucune, 1=Légères, 2=Intenses
     // Repas structurés par moment
     repas: {
       matin:   { aliments: [], epices: [], portion: null },
@@ -3596,9 +3597,11 @@ function renderJournal() {
       encas:   { aliments: [], epices: [], portion: null },
     },
     peau: null,
+    zone: [],          // zones de peau concernées (indices)
     stress: 0,
     sommeil: 0,
     energie: 0,
+    humeur: null,      // 0=Bonne, 1=Neutre, 2=Basse
     notes: '',
   };
   // Moment de repas sélectionné par défaut selon l'heure
@@ -3625,6 +3628,18 @@ function renderJournalForm(todayLabel) {
       <span class="e">${o.e}</span><span class="t">${o.t}</span>
     </div>`).join('');
 
+  // Douleurs abdominales (manquait dans le journal)
+  const douleursOpts = [
+    { e: '😌', t: 'Aucune' },
+    { e: '😐', t: 'Légères' },
+    { e: '😣', t: 'Intenses' },
+  ];
+  const douleursHtml = douleursOpts.map((o, i) => `
+    <div class="jrn-option${v.douleurs === i ? ' selected' : ''}"
+         onclick="jrnSelectOption('douleurs', ${i}, this)">
+      <span class="e">${o.e}</span><span class="t">${o.t}</span>
+    </div>`).join('');
+
   // Peau options
   const peauOpts = [
     { e: '🔴', t: 'Poussée' },
@@ -3634,6 +3649,24 @@ function renderJournalForm(todayLabel) {
   const peauHtml = peauOpts.map((o, i) => `
     <div class="jrn-option${v.peau === i ? ' selected' : ''}"
          onclick="jrnSelectOption('peau', ${i}, this)">
+      <span class="e">${o.e}</span><span class="t">${o.t}</span>
+    </div>`).join('');
+
+  // Zones de peau concernées (manquait dans le journal)
+  const ZONES = ['Visage','Nuque','Dos','Ventre','Bras','Jambes','Cuir chevelu'];
+  const zonesHtml = ZONES.map((z, i) => `
+    <div class="jrn-chip${(v.zone || []).includes(i) ? ' selected' : ''}"
+         onclick="jrnToggleZone(${i}, this)">${z}</div>`).join('');
+
+  // Humeur générale (manquait dans le journal)
+  const humeurOpts = [
+    { e: '😊', t: 'Bonne' },
+    { e: '😐', t: 'Neutre' },
+    { e: '😔', t: 'Basse' },
+  ];
+  const humeurHtml = humeurOpts.map((o, i) => `
+    <div class="jrn-option${v.humeur === i ? ' selected' : ''}"
+         onclick="jrnSelectOption('humeur', ${i}, this)">
       <span class="e">${o.e}</span><span class="t">${o.t}</span>
     </div>`).join('');
 
@@ -3657,6 +3690,8 @@ function renderJournalForm(todayLabel) {
                min="0" max="5" value="${v.ballonnements}"
                oninput="jrnUpdateSlider('ballonnements', this.value, 5)">
       </div>
+      <div class="jrn-question">Douleurs abdominales ?</div>
+      <div class="jrn-emoji-row">${douleursHtml}</div>
       <div class="jrn-question" style="margin-top:8px">🍽️ Repas de la journée</div>
       ${renderRepasSection(v)}
     </div>
@@ -3669,6 +3704,8 @@ function renderJournalForm(todayLabel) {
       </div>
       <div class="jrn-question">Comment est ta peau aujourd'hui ?</div>
       <div class="jrn-emoji-row">${peauHtml}</div>
+      <div class="jrn-question">Zone concernée</div>
+      <div class="jrn-chips" style="margin-bottom:14px">${zonesHtml}</div>
       <div id="jrn-photo-zone" onclick="triggerPhotoInput()">
         ${renderPhotoZone()}
       </div>
@@ -3709,6 +3746,8 @@ function renderJournalForm(todayLabel) {
                min="0" max="5" value="${v.energie}"
                oninput="jrnUpdateSlider('energie', this.value, 5)">
       </div>
+      <div class="jrn-question">Humeur générale</div>
+      <div class="jrn-emoji-row">${humeurHtml}</div>
     </div>
 
     <button class="save-btn" onclick="saveJournal()">Enregistrer mon journal ✓</button>
@@ -3717,8 +3756,11 @@ function renderJournalForm(todayLabel) {
 
 function renderJournalDone(todayLabel, data) {
   const transitLabels = ['Lent 🐢', 'Normal 👍', 'Rapide 💨'];
+  const douleursLabels = ['Aucune 😌', 'Légères 😐', 'Intenses 😣'];
   const peauLabels = ['Poussée 🔴', 'Stable 🟡', 'Calme 🟢'];
-  const alimentsStr = (data.aliments || []).map(i => ALIMENTS[i]).filter(Boolean).join(', ') || 'Aucun noté';
+  const ZONES = ['Visage','Nuque','Dos','Ventre','Bras','Jambes','Cuir chevelu'];
+  const humeurLabels = ['Bonne 😊', 'Neutre 😐', 'Basse 😔'];
+  const zonesStr = (data.zone || []).map(i => ZONES[i]).filter(Boolean).join(', ') || '—';
 
   // Historique photos peau
   const skinPhotos = loadSkinPhotoHistory();
@@ -3745,10 +3787,12 @@ function renderJournalDone(todayLabel, data) {
       <br><br>
       <div style="text-align:left;font-size:0.78rem;color:var(--text-mid);line-height:2">
         🫀 Transit : ${data.transit !== null ? transitLabels[data.transit] : '—'}<br>
-        💨 Ballonnements : ${data.ballonnements}/5<br>
+        💊 Douleurs : ${data.douleurs !== null && data.douleurs !== undefined ? douleursLabels[data.douleurs] : '—'}<br>
         🍽️ Repas : ${renderRepasResume(data)}<br>
         ✨ Peau : ${data.peau !== null ? peauLabels[data.peau] : '—'}<br>
-        😮‍💨 Stress : ${data.stress}/5 · 😴 Sommeil : ${data.sommeil}/5 · ⚡ Énergie : ${data.energie}/5
+        📍 Zones : ${zonesStr}<br>
+        😮‍💨 Stress : ${data.stress}/5 · 😴 Sommeil : ${data.sommeil}/5 · ⚡ Énergie : ${data.energie}/5<br>
+        😊 Humeur : ${data.humeur !== null && data.humeur !== undefined ? humeurLabels[data.humeur] : '—'}
       </div>
       ${historyHtml}
       <button class="jrn-edit-btn" onclick="jrnStartEdit()">Modifier mes données</button>
@@ -3970,6 +4014,17 @@ function jrnToggleChip(idx, el) {
     if (!jrnValues.aliments.includes(idx)) jrnValues.aliments.push(idx);
   } else {
     jrnValues.aliments = jrnValues.aliments.filter(i => i !== idx);
+  }
+}
+
+// Toggle zones de peau concernées
+function jrnToggleZone(idx, el) {
+  if (!jrnValues.zone) jrnValues.zone = [];
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!jrnValues.zone.includes(idx)) jrnValues.zone.push(idx);
+  } else {
+    jrnValues.zone = jrnValues.zone.filter(i => i !== idx);
   }
 }
 

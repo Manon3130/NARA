@@ -124,6 +124,7 @@ if (typeof supabase === 'undefined') {
   #screen-routines    { background: #FFFAF2; }
   #screen-recipes     { background: #FFFAF2; }
   #screen-calendar    { background: #FFFAF2; }
+  #screen-gallery     { background: #FFFAF2; }
   #screen-article-detail   { background: #FFFAF2; }
   #screen-routine-detail   { background: #FFFAF2; }
   #screen-recipe-detail    { background: #FFFAF2; }
@@ -1070,6 +1071,149 @@ if (typeof supabase === 'undefined') {
   .jrn-portion.selected .por-label { color: var(--sage); }
 
 
+
+  /* ===== GALERIE PEAU ===== */
+  #screen-gallery { background: var(--cream); }
+
+  .gallery-header {
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) clamp(16px,6vw,28px) 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .gallery-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem; font-weight: 400; color: var(--text-dark);
+  }
+  .gallery-count {
+    font-size: 0.72rem; color: var(--text-light);
+    background: var(--honey); border-radius: 12px;
+    padding: 4px 10px; letter-spacing: 0.04em;
+  }
+  .gallery-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px clamp(12px,4vw,20px) calc(60px + 16px);
+    scrollbar-width: none;
+  }
+  .gallery-scroll::-webkit-scrollbar { display: none; }
+
+  /* État vide */
+  .gallery-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 60px 20px;
+    min-height: 50vh;
+  }
+  .gallery-empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+  .gallery-empty-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem; color: var(--text-dark); margin-bottom: 8px;
+  }
+  .gallery-empty-text { font-size: 0.82rem; color: var(--text-mid); line-height: 1.6; }
+  .gallery-empty-btn {
+    margin-top: 20px; padding: 12px 24px;
+    background: var(--sage); color: white; border: none;
+    border-radius: 14px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; cursor: pointer;
+  }
+
+  /* Groupe par mois */
+  .gallery-month-group { margin-bottom: 24px; }
+  .gallery-month-label {
+    font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-light);
+    margin-bottom: 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--oat);
+  }
+
+  /* Accordéon par jour */
+  .gallery-day-group { margin-bottom: 10px; }
+  .gallery-day-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: white; border-radius: 14px; padding: 12px 14px;
+    cursor: pointer; transition: background 0.18s;
+    border: 1.5px solid var(--oat);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .gallery-day-header:active { background: var(--honey); }
+  .gallery-day-header.open { border-color: var(--sage); border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; }
+  .gallery-day-left { display: flex; align-items: center; gap: 10px; }
+  .gallery-day-thumb {
+    width: 44px; height: 44px; border-radius: 8px;
+    object-fit: cover; background: var(--oat); flex-shrink: 0;
+  }
+  .gallery-day-thumb-placeholder {
+    width: 44px; height: 44px; border-radius: 8px;
+    background: var(--honey); display: flex; align-items: center;
+    justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+  }
+  .gallery-day-info {}
+  .gallery-day-date {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--text-dark); line-height: 1.2;
+  }
+  .gallery-day-meta { font-size: 0.68rem; color: var(--text-light); margin-top: 2px; }
+  .gallery-day-chevron {
+    font-size: 0.9rem; color: var(--text-light);
+    transition: transform 0.25s; flex-shrink: 0;
+  }
+  .gallery-day-header.open .gallery-day-chevron { transform: rotate(90deg); }
+
+  /* Contenu accordéon */
+  .gallery-day-content {
+    display: none; background: white;
+    border: 1.5px solid var(--sage); border-top: none;
+    border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;
+    padding: 12px; overflow: hidden;
+  }
+  .gallery-day-content.open { display: block; }
+  .gallery-day-photo-wrap {
+    position: relative; border-radius: 10px; overflow: hidden;
+    background: var(--oat); cursor: pointer;
+  }
+  .gallery-day-photo-wrap img {
+    width: 100%; max-height: 280px; object-fit: cover;
+    display: block; border-radius: 10px;
+  }
+  .gallery-day-photo-actions {
+    display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .gallery-photo-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 10px; border-radius: 16px;
+    font-size: 0.7rem; background: var(--honey);
+    color: var(--text-mid); border: 1px solid var(--oat);
+  }
+  .gallery-photo-tag.peau-poussee { background: #fff0f0; color: #c62828; border-color: #e5737366; }
+  .gallery-photo-tag.peau-stable  { background: #fffbf0; color: #e65100; border-color: #ff980066; }
+  .gallery-photo-tag.peau-calme   { background: #f1fdf1; color: #2e7d32; border-color: #4caf5066; }
+  .gallery-add-photo-btn {
+    width: 100%; padding: 14px; border-radius: 10px;
+    border: 1.5px dashed var(--oat); background: var(--honey);
+    color: var(--text-mid); font-size: 0.82rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Modale plein écran galerie */
+  .gallery-fullscreen {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.96);
+    z-index: 2000; display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .gallery-fullscreen.open { display: flex; }
+  .gallery-fs-close {
+    position: absolute; top: calc(env(safe-area-inset-top,16px) + 12px); right: 20px;
+    color: white; font-size: 1.4rem; cursor: pointer;
+    background: rgba(255,255,255,0.15); border: none;
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gallery-fs-img { max-width: 100%; max-height: 82vh; object-fit: contain; border-radius: 8px; }
+  .gallery-fs-info {
+    position: absolute; bottom: calc(env(safe-area-inset-bottom,16px) + 12px);
+    left: 0; right: 0; text-align: center;
+    color: rgba(255,255,255,0.7); font-size: 0.8rem;
+  }
+
   /* ===== CALENDRIER TRANSIT ===== */
   #screen-calendar { background: var(--cream); }
 
@@ -1659,6 +1803,7 @@ if (typeof supabase === 'undefined') {
       <div class="screen-header">
         <div class="back-btn" onclick="go('home')">←</div>
         <div class="screen-title">Mon journal</div>
+        <button onclick="go('gallery')" style="background:var(--honey);border:1.5px solid var(--oat);border-radius:12px;padding:6px 12px;font-size:0.72rem;color:var(--text-mid);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Galerie</button>
       </div>
       <div class="journal-scroll" id="journal-scroll">
         <!-- Tout est rendu dynamiquement par renderJournal() -->
@@ -2499,7 +2644,8 @@ const BNAV_MAP = {
   library: 'library', routines: 'routines',
   recipes: 'recipes', 'recipe-detail': 'recipes',
   'article-detail': 'library', 'routine-detail': 'routines',
-  calendar: null
+  calendar: null,
+  gallery: null
 };
 
 function updateBottomNav(screenId) {
@@ -2550,6 +2696,7 @@ function showScreen(id, btn) {
     renderJournal();
   }
   if (id === 'calendar') try { renderCalendar(); } catch(e) { console.warn('[Nara] renderCalendar:', e); }
+  if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
 }
@@ -4813,6 +4960,196 @@ async function loadUserData(userId) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// GALERIE PEAU — historique des photos avec accordéon par date
+// ══════════════════════════════════════════════════════════════════════════════
+
+function renderGallery() {
+  const scroll = document.getElementById('gallery-scroll');
+  const countEl = document.getElementById('gallery-count');
+  if (!scroll) return;
+
+  // Charger l'historique des photos (local + photos du jour sans historique)
+  let history = loadSkinPhotoHistory();
+
+  // Ajouter aussi les photos par date stockées directement (nara_photo_YYYY-MM-DD)
+  // qui n'auraient pas encore été indexées dans nara_skin_photos
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('nara_photo_')) {
+      const dateStr = key.replace('nara_photo_', '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+      const url = localStorage.getItem(key);
+      if (!url) continue;
+      // Vérifier si déjà dans l'historique
+      if (!history.find(p => p.date === dateStr)) {
+        const d = new Date(dateStr + 'T12:00:00');
+        const mois = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+        const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+        history.push({
+          date: dateStr,
+          dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`,
+          url
+        });
+      }
+    }
+  }
+
+  // Trier par date décroissante
+  history.sort((a, b) => b.date.localeCompare(a.date));
+
+  // Compteur
+  if (countEl) countEl.textContent = `${history.length} photo${history.length > 1 ? 's' : ''}`;
+
+  // État vide
+  if (history.length === 0) {
+    scroll.innerHTML = `
+      <div class="gallery-empty">
+        <div class="gallery-empty-icon">📷</div>
+        <div class="gallery-empty-title">Pas encore de photos</div>
+        <div class="gallery-empty-text">
+          Prends une photo de ta peau dans ton journal.<br>
+          Toutes tes photos s'affichent ici pour suivre l'évolution.
+        </div>
+        <button class="gallery-empty-btn" onclick="go('journal')">Ouvrir mon journal</button>
+      </div>`;
+    return;
+  }
+
+  // Regrouper par mois
+  const byMonth = {};
+  history.forEach(photo => {
+    const [year, month] = photo.date.split('-');
+    const key = `${year}-${month}`;
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(photo);
+  });
+
+  const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                     'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  let html = '';
+  Object.entries(byMonth)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .forEach(([monthKey, photos]) => {
+      const [year, month] = monthKey.split('-');
+      const monthLabel = `${MOIS_LONG[parseInt(month) - 1]} ${year}`;
+
+      html += `<div class="gallery-month-group">
+        <div class="gallery-month-label">${monthLabel} · ${photos.length} photo${photos.length > 1 ? 's' : ''}</div>`;
+
+      photos.forEach((photo, idx) => {
+        const accordionId = `gal-${photo.date.replace(/-/g,'_')}`;
+        // Lire l'état peau de ce jour depuis le journal
+        const skinData = getJournalSkinData(photo.date);
+
+        let skinTag = '';
+        if (skinData !== null) {
+          const classes = ['peau-poussee','peau-stable','peau-calme'];
+          const labels = ['Poussée 🔴','Stable 🟡','Calme 🟢'];
+          skinTag = `<div class="gallery-photo-tag ${classes[skinData]}">${labels[skinData]}</div>`;
+        }
+
+        // Jour de la semaine complet
+        const d = new Date(photo.date + 'T12:00:00');
+        const joursFull = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+        const moisFull = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+        const dateFullLabel = `${joursFull[d.getDay()]} ${d.getDate()} ${moisFull[d.getMonth()]} ${d.getFullYear()}`;
+
+        html += `
+          <div class="gallery-day-group">
+            <div class="gallery-day-header" id="hdr-${accordionId}"
+                 onclick="toggleGalleryDay('${accordionId}')">
+              <div class="gallery-day-left">
+                <img class="gallery-day-thumb" src="${photo.url}"
+                     alt="Peau ${photo.dateLabel}"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="gallery-day-thumb-placeholder" style="display:none">📷</div>
+                <div class="gallery-day-info">
+                  <div class="gallery-day-date">${dateFullLabel}</div>
+                  <div class="gallery-day-meta">${skinTag ? 'État noté' : 'Photo de suivi'}</div>
+                </div>
+              </div>
+              <span class="gallery-day-chevron">›</span>
+            </div>
+            <div class="gallery-day-content" id="cnt-${accordionId}">
+              <div class="gallery-day-photo-wrap"
+                   onclick="openGalleryFullscreen('${photo.url}','${dateFullLabel}')">
+                <img src="${photo.url}" alt="Peau ${dateFullLabel}" loading="lazy">
+              </div>
+              <div class="gallery-day-photo-actions">
+                ${skinTag}
+                <div class="gallery-photo-tag">📅 ${dateFullLabel}</div>
+              </div>
+              <button class="gallery-add-photo-btn" onclick="galleryGoToJournal('${photo.date}')">
+                ✏️ Voir le journal de ce jour
+              </button>
+            </div>
+          </div>`;
+      });
+
+      html += `</div>`;
+    });
+
+  scroll.innerHTML = html;
+
+  // Ouvrir automatiquement le premier accordéon (photo la plus récente)
+  if (history.length > 0) {
+    const firstId = `gal-${history[0].date.replace(/-/g,'_')}`;
+    setTimeout(() => toggleGalleryDay(firstId), 100);
+  }
+}
+
+// Lire l'état peau depuis le journal d'un jour spécifique
+function getJournalSkinData(dateStr) {
+  try {
+    // D'abord le journal complet
+    const jrn = JSON.parse(localStorage.getItem(`nara_journal_${dateStr}`) || 'null');
+    if (jrn?.peau !== null && jrn?.peau !== undefined) return jrn.peau;
+    // Sinon le log peau
+    const log = JSON.parse(localStorage.getItem(`nara_log_${dateStr}_peau`) || 'null');
+    if (log?.values?.peau_etat !== null && log?.values?.peau_etat !== undefined) return log.values.peau_etat;
+    return null;
+  } catch { return null; }
+}
+
+// Toggle accordéon
+function toggleGalleryDay(accordionId) {
+  const hdr = document.getElementById('hdr-' + accordionId);
+  const cnt = document.getElementById('cnt-' + accordionId);
+  if (!hdr || !cnt) return;
+  const isOpen = hdr.classList.contains('open');
+  hdr.classList.toggle('open', !isOpen);
+  cnt.classList.toggle('open', !isOpen);
+}
+
+// Plein écran galerie
+function openGalleryFullscreen(url, dateLabel) {
+  const fs = document.getElementById('gallery-fullscreen');
+  const img = document.getElementById('gallery-fs-img');
+  const info = document.getElementById('gallery-fs-info');
+  if (!fs || !img) return;
+  img.src = url;
+  if (info) info.textContent = dateLabel;
+  fs.classList.add('open');
+}
+
+function closeGalleryFullscreen() {
+  const fs = document.getElementById('gallery-fullscreen');
+  if (fs) fs.classList.remove('open');
+}
+
+// Naviguer vers le journal d'un jour passé (info seulement)
+function galleryGoToJournal(dateStr) {
+  const today = getTodayStr();
+  if (dateStr === today) {
+    go('journal');
+  } else {
+    showToast(`Journal du ${dateStr.split('-').reverse().join('/')}`);
+    go('journal');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // CALENDRIER TRANSIT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -5072,6 +5409,38 @@ try { renderRoutines(); } catch(e) {}
 try { updateHomeScore(); } catch(e) {}
 // fond géré par CSS uniquement
 </script>
+    <!-- SCREEN GALERIE PEAU -->
+    <div class="screen" id="screen-gallery">
+      <div class="gallery-header">
+        <div>
+          <div style="font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:2px">Suivi photo</div>
+          <div class="gallery-title">Ma galerie peau</div>
+        </div>
+        <div class="gallery-count" id="gallery-count">0 photo</div>
+      </div>
+
+      <div class="gallery-scroll" id="gallery-scroll">
+        <!-- Rendu dynamique par renderGallery() -->
+      </div>
+
+      <!-- Modale plein écran -->
+      <div class="gallery-fullscreen" id="gallery-fullscreen" onclick="closeGalleryFullscreen()">
+        <button class="gallery-fs-close" onclick="event.stopPropagation(); closeGalleryFullscreen()">✕</button>
+        <img class="gallery-fs-img" id="gallery-fs-img" src="" alt="">
+        <div class="gallery-fs-info" id="gallery-fs-info"></div>
+      </div>
+
+      <!-- shared bottom nav -->
+      <div class="bottom-nav-shared">
+        <div class="bnav-item" id="gal-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
+        <div class="bnav-item" id="gal-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
+        <div class="bnav-add" id="gal-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
+        <div class="bnav-item" id="gal-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
+        <div class="bnav-item" id="gal-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
+        <div class="bnav-item" id="gal-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+      </div>
+    </div>
+
     <!-- SCREEN CALENDRIER TRANSIT -->
     <div class="screen" id="screen-calendar">
       <div class="cal-header">

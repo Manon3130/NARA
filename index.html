@@ -268,9 +268,15 @@ if (typeof supabase === 'undefined') {
   .quick-log { background: var(--honey); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
   .quick-log-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--text-dark); margin-bottom: 16px; }
   .quick-row { display: flex; gap: 10px; }
-  .quick-btn { flex: 1; padding: clamp(8px, 3vw, 12px) clamp(4px, 2vw, 8px); border-radius: 14px; border: 1.5px solid var(--oat); background: white; text-align: center; cursor: pointer; min-width: 0; }
+  .quick-btn { flex: 1; padding: clamp(8px, 3vw, 12px) clamp(4px, 2vw, 8px); border-radius: 14px; border: 1.5px solid var(--oat); background: white; text-align: center; cursor: pointer; min-width: 0; position: relative; transition: all 0.2s; }
+  .quick-btn.done { border-color: var(--sage); background: var(--honey); }
   .quick-btn .emoji { font-size: 1.4rem; display: block; margin-bottom: 4px; }
   .quick-btn .label { font-size: 0.65rem; color: var(--text-mid); letter-spacing: 0.04em; }
+  .quick-btn.done .label { color: var(--sage); font-weight: 500; }
+  .quick-btn-check {
+    position: absolute; top: 4px; right: 5px;
+    font-size: 0.6rem; color: var(--sage); line-height: 1;
+  }
   .insight-card { border-radius: 20px; padding: 20px; margin-bottom: 12px; }
   .insight-card.gut { background: linear-gradient(135deg, var(--avocado) 0%, #d4d7a8 100%); }
   .insight-card.skin { background: linear-gradient(135deg, var(--peach) 0%, var(--blush) 100%); }
@@ -1398,16 +1404,20 @@ if (typeof supabase === 'undefined') {
         <div class="quick-log">
           <div class="quick-log-title">Comment tu te sens aujourd'hui ?</div>
           <div class="quick-row">
-            <div class="quick-btn" onclick="openQuickLog('transit')">
+            <div class="quick-btn" id="qbtn-transit" onclick="openQuickLog('transit')">
+              <span class="quick-btn-check" id="qcheck-transit"></span>
               <span class="emoji">🫀</span><span class="label">Transit</span>
             </div>
-            <div class="quick-btn" onclick="openQuickLog('repas')">
+            <div class="quick-btn" id="qbtn-repas" onclick="openQuickLog('repas')">
+              <span class="quick-btn-check" id="qcheck-repas"></span>
               <span class="emoji">🥗</span><span class="label">Repas</span>
             </div>
-            <div class="quick-btn" onclick="openQuickLog('peau')">
+            <div class="quick-btn" id="qbtn-peau" onclick="openQuickLog('peau')">
+              <span class="quick-btn-check" id="qcheck-peau"></span>
               <span class="emoji">✨</span><span class="label">Peau</span>
             </div>
-            <div class="quick-btn" onclick="openQuickLog('stress')">
+            <div class="quick-btn" id="qbtn-stress" onclick="openQuickLog('stress')">
+              <span class="quick-btn-check" id="qcheck-stress"></span>
               <span class="emoji">😮‍💨</span><span class="label">Stress</span>
             </div>
           </div>
@@ -2073,6 +2083,9 @@ function updateHomeScore() {
       `<div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
     ).join('');
   }
+
+  // Mettre à jour les boutons quicklog selon ce qui est déjà rempli aujourd'hui
+  try { updateQuickBtns(); } catch(e) {}
 
   // Insights home
   if (insEmpty && insList) {
@@ -2971,6 +2984,142 @@ async function startRoutine(id) {
 
 // Init
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYNCHRONISATION accueil ↔ journal ↔ quicklog
+// Toutes les données du jour sont lues/écrites dans le même localStorage.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Clés localStorage du jour
+function todayLogKey(type) {
+  return `nara_log_${getTodayStr()}_${type}`;
+}
+function todayJournalKey() {
+  return `nara_journal_${getTodayStr()}`;
+}
+
+// Lire les données d'un type pour aujourd'hui
+function readTodayLog(type) {
+  try { return JSON.parse(localStorage.getItem(todayLogKey(type)) || 'null'); } catch { return null; }
+}
+
+// Mettre à jour les boutons de l'accueil selon ce qui est déjà rempli
+function updateQuickBtns() {
+  const types = ['transit','repas','peau','stress'];
+  types.forEach(type => {
+    const btn = document.getElementById('qbtn-' + type);
+    const check = document.getElementById('qcheck-' + type);
+    if (!btn) return;
+    const log = readTodayLog(type);
+    // Pour repas : vérifier aussi le journal complet
+    const hasData = log !== null || (type === 'repas' && hasRepasData());
+    if (hasData) {
+      btn.classList.add('done');
+      if (check) check.textContent = '✓';
+    } else {
+      btn.classList.remove('done');
+      if (check) check.textContent = '';
+    }
+  });
+}
+
+function hasRepasData() {
+  const j = loadTodayJournal();
+  if (!j || !j.repas) return false;
+  return Object.values(j.repas).some(r => r.aliments && r.aliments.length > 0);
+}
+
+// Pré-remplir openQuickLog avec les données existantes du journal/quicklog du jour
+function getExistingValuesForQL(type) {
+  // 1. D'abord regarder dans le journal complet
+  const journal = loadTodayJournal();
+  // 2. Ensuite dans le log spécifique du quicklog
+  const log = readTodayLog(type);
+
+  if (type === 'transit') {
+    const v = log?.values || {};
+    const jv = journal || {};
+    return {
+      transit_etat: v.transit_etat ?? jv.transit ?? null,
+      ballonnements: v.ballonnements ?? jv.ballonnements ?? null,
+      douleurs: v.douleurs ?? null,
+    };
+  }
+  if (type === 'repas') {
+    // Priorité : journal complet (plus riche)
+    if (journal?.repas) return { repas: journal.repas, hydratation: log?.values?.hydratation ?? null };
+    return { repas: { matin:{aliments:[],epices:[],portion:null}, midi:{aliments:[],epices:[],portion:null}, soir:{aliments:[],epices:[],portion:null}, encas:{aliments:[],epices:[],portion:null} }, hydratation: null };
+  }
+  if (type === 'peau') {
+    const v = log?.values || {};
+    const jv = journal || {};
+    return {
+      peau_etat: v.peau_etat ?? jv.peau ?? null,
+      rougeurs: v.rougeurs ?? null,
+      zone: v.zone ?? [],
+    };
+  }
+  if (type === 'stress') {
+    const v = log?.values || {};
+    const jv = journal || {};
+    return {
+      stress: v.stress ?? jv.stress ?? null,
+      energie: v.energie ?? jv.energie ?? null,
+      sommeil: v.sommeil ?? jv.sommeil ?? null,
+      humeur: v.humeur ?? null,
+    };
+  }
+  return {};
+}
+
+// Appliquer les valeurs existantes sur le DOM du quicklog après rendu
+function applyExistingToQL(type, values) {
+  if (!values) return;
+  const body = document.getElementById('quicklog-body');
+  if (!body) return;
+
+  // Options (transit_etat, peau_etat, douleurs, humeur, hydratation)
+  const optionKeys = {
+    transit: ['transit_etat', 'douleurs'],
+    peau: ['peau_etat'],
+    stress: ['humeur'],
+    repas: ['hydratation'],
+  };
+  (optionKeys[type] || []).forEach(key => {
+    const val = values[key];
+    if (val === null || val === undefined) return;
+    const options = body.querySelectorAll(`.ql-options`);
+    options.forEach(group => {
+      const items = group.querySelectorAll('.ql-option');
+      // Trouver le bon groupe via l'onclick
+      if (items[0] && items[0].getAttribute('onclick') && items[0].getAttribute('onclick').includes(`'${key}'`)) {
+        items.forEach((el, i) => {
+          if (i === val) { el.classList.add('selected'); qlValues[key] = val; }
+        });
+      }
+    });
+  });
+
+  // Sliders (ballonnements, rougeurs, stress, energie, sommeil)
+  const sliderKeys = {
+    transit: ['ballonnements'],
+    peau: ['rougeurs'],
+    stress: ['stress', 'energie', 'sommeil'],
+  };
+  (sliderKeys[type] || []).forEach(key => {
+    const val = values[key];
+    if (val === null || val === undefined) return;
+    const slider = body.querySelector(`#jrn-slider-${key}, input[oninput*="${key}"]`);
+    if (slider) {
+      slider.value = val;
+      qlValues[key] = val;
+      const label = body.querySelector(`#slider-val-${key}`);
+      if (label) label.textContent = `${val}/${slider.max}`;
+    }
+  });
+}
+
+
 // ══════════════════════════════════════════════════════════════════════════════
 // QUICK LOG — formulaires Transit / Repas / Peau / Stress
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3029,25 +3178,29 @@ let qlValues = {};
 
 function openQuickLog(type) {
   currentQLType = type;
-  qlValues = {};
+  // Récupérer les données existantes du jour (journal ou quicklog précédent)
+  const existing = getExistingValuesForQL(type);
   const cfg = QL_CONFIGS[type];
   document.getElementById('quicklog-title').textContent = cfg.title;
 
   if (cfg.type === 'repas_custom') {
-    // Initialiser la structure repas par moment
-    qlValues.repas = {
+    // Pré-remplir avec les repas déjà saisis (journal ou quicklog)
+    qlValues.repas = existing.repas || {
       matin:  { aliments: [], epices: [], portion: null },
       midi:   { aliments: [], epices: [], portion: null },
       soir:   { aliments: [], epices: [], portion: null },
       encas:  { aliments: [], epices: [], portion: null },
     };
-    qlValues.hydratation = null;
+    qlValues.hydratation = existing.hydratation ?? null;
     // Onglet par défaut selon l'heure
     const h = new Date().getHours();
     qlCurrentMeal = h < 11 ? 'matin' : h < 14 ? 'midi' : h < 18 ? 'encas' : 'soir';
     document.getElementById('quicklog-body').innerHTML = renderQLRepas();
   } else {
+    qlValues = { ...existing };
     document.getElementById('quicklog-body').innerHTML = renderQLBody(cfg);
+    // Appliquer les sélections visuelles sur les options/sliders
+    setTimeout(() => applyExistingToQL(type, existing), 50);
   }
   document.getElementById('quicklog-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -3319,9 +3472,54 @@ async function saveQuickLog() {
     });
   }
 
+  // Sync vers le journal du jour : mettre à jour les champs correspondants
+  syncQuickLogToJournal(currentQLType, qlValues);
+
   closeQuickLogBtn();
   showToast('✓ Enregistré !');
+  // Mettre à jour les boutons de l'accueil
+  updateQuickBtns();
   try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
+}
+
+// Synchroniser les données du quicklog vers le journal du jour
+function syncQuickLogToJournal(type, values) {
+  const today = getTodayStr();
+  const existing = loadTodayJournal() || {};
+  let changed = false;
+
+  if (type === 'transit') {
+    if (values.transit_etat !== undefined && values.transit_etat !== null) {
+      existing.transit = values.transit_etat; changed = true;
+    }
+    if (values.ballonnements !== undefined && values.ballonnements !== null) {
+      existing.ballonnements = values.ballonnements; changed = true;
+    }
+  }
+  if (type === 'repas' && values.repas) {
+    existing.repas = values.repas; changed = true;
+  }
+  if (type === 'peau') {
+    if (values.peau_etat !== undefined && values.peau_etat !== null) {
+      existing.peau = values.peau_etat; changed = true;
+    }
+  }
+  if (type === 'stress') {
+    ['stress','energie','sommeil'].forEach(k => {
+      if (values[k] !== undefined && values[k] !== null) {
+        existing[k] = values[k]; changed = true;
+      }
+    });
+  }
+
+  if (changed) {
+    localStorage.setItem(todayJournalKey(), JSON.stringify({ ...existing, date: today, ts: Date.now() }));
+    // Si le journal est ouvert en ce moment, le rafraîchir
+    const jrnScreen = document.getElementById('screen-journal');
+    if (jrnScreen && jrnScreen.classList.contains('active')) {
+      try { renderJournal(); } catch(e) {}
+    }
+  }
 }
 
 function showToast(msg) {
@@ -4100,6 +4298,7 @@ async function saveJournal() {
   }
   jrnEditMode = false;
   showToast('✓ Journal enregistré !');
+  updateQuickBtns();  // Mettre à jour les boutons de l'accueil
   try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   setTimeout(() => renderJournal(), 400);
 }

@@ -2993,18 +2993,7 @@ const QL_CONFIGS = {
   },
   repas: {
     title: '🥗 Repas',
-    sections: [
-      { type: 'chips', label: "Ce que j'ai mangé aujourd'hui", key: 'aliments', items: [
-        '🥑 Avocat','🥦 Légumes verts','🍞 Gluten','🥛 Produits laitiers',
-        '🫙 Fermentés','🍬 Sucre raffiné','🥩 Viande','🐟 Poisson',
-        '🥚 Œufs','🍎 Fruits','🌾 Céréales','☕ Café',
-      ]},
-      { type: 'options', label: 'Hydratation', key: 'hydratation', items: [
-        { emoji:'💧', label:'< 1L' },
-        { emoji:'🚰', label:'1-2L' },
-        { emoji:'🌊', label:'> 2L' },
-      ]},
-    ]
+    type: 'repas_custom',  // rendu spécial — voir renderQLRepas()
   },
   peau: {
     title: '✨ Peau',
@@ -3043,10 +3032,194 @@ function openQuickLog(type) {
   qlValues = {};
   const cfg = QL_CONFIGS[type];
   document.getElementById('quicklog-title').textContent = cfg.title;
-  document.getElementById('quicklog-body').innerHTML = renderQLBody(cfg);
+
+  if (cfg.type === 'repas_custom') {
+    // Initialiser la structure repas par moment
+    qlValues.repas = {
+      matin:  { aliments: [], epices: [], portion: null },
+      midi:   { aliments: [], epices: [], portion: null },
+      soir:   { aliments: [], epices: [], portion: null },
+      encas:  { aliments: [], epices: [], portion: null },
+    };
+    qlValues.hydratation = null;
+    // Onglet par défaut selon l'heure
+    const h = new Date().getHours();
+    qlCurrentMeal = h < 11 ? 'matin' : h < 14 ? 'midi' : h < 18 ? 'encas' : 'soir';
+    document.getElementById('quicklog-body').innerHTML = renderQLRepas();
+  } else {
+    document.getElementById('quicklog-body').innerHTML = renderQLBody(cfg);
+  }
   document.getElementById('quicklog-overlay').classList.add('open');
-  // Prevent body scroll
   document.body.style.overflow = 'hidden';
+}
+
+// Moment de repas actif dans la modale quicklog
+let qlCurrentMeal = 'midi';
+
+function renderQLRepas() {
+  const meals = [
+    { key:'matin', label:'🌅 Matin' },
+    { key:'midi',  label:'☀️ Midi'  },
+    { key:'soir',  label:'🌙 Soir'  },
+    { key:'encas', label:'🍎 En-cas'},
+  ];
+
+  const tabs = meals.map(m => `
+    <div class="jrn-meal-tab${qlCurrentMeal === m.key ? ' active' : ''}"
+         onclick="qlSwitchMeal('${m.key}', this)">${m.label}</div>
+  `).join('');
+
+  const panels = meals.map(m => `
+    <div class="jrn-meal-panel${qlCurrentMeal === m.key ? ' active' : ''}" id="ql-meal-panel-${m.key}">
+      ${renderQLMealPanel(m.key)}
+    </div>
+  `).join('');
+
+  // Hydratation globale (une seule fois en bas)
+  const hydOpts = [
+    { emoji:'💧', label:'< 1L' },
+    { emoji:'🚰', label:'1-2L' },
+    { emoji:'🌊', label:'> 2L' },
+  ];
+  const hydHtml = hydOpts.map((o, i) => `
+    <div class="ql-option${qlValues.hydratation === i ? ' selected' : ''}"
+         onclick="selectQLOption('hydratation', ${i}, this)">
+      <span class="ql-emoji">${o.emoji}</span>
+      <span class="ql-label">${o.label}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="jrn-meal-tabs">${tabs}</div>
+    <div>${panels}</div>
+    <span class="ql-section-label" style="margin-top:12px">Hydratation du jour</span>
+    <div class="ql-options" id="ql-hydratation">${hydHtml}</div>
+  `;
+}
+
+function renderQLMealPanel(mealKey) {
+  const data = qlValues.repas?.[mealKey] || { aliments:[], epices:[], portion:null };
+  const history = getFoodHistory();
+  const recent = history.slice(0, 6).filter(s => !data.aliments.includes(s));
+
+  const tags = (data.aliments || []).map((a, i) => `
+    <span class="jrn-tag">
+      ${escHtml(a)}
+      <button class="jrn-tag-del" onclick="qlRemoveAliment('${mealKey}',${i})">×</button>
+    </span>
+  `).join('');
+
+  const suggestions = recent.map(s => `
+    <div class="jrn-suggestion" onclick="qlAddSuggestion('${mealKey}','${escHtml(s)}')">${escHtml(s)}</div>
+  `).join('');
+
+  const spiceTags = (data.epices || []).map((ep, i) => `
+    <span class="jrn-spice-tag">
+      🌿 ${escHtml(ep)}
+      <button class="jrn-tag-del" onclick="qlRemoveEpice('${mealKey}',${i})" style="color:#6b4fa0">×</button>
+    </span>
+  `).join('');
+
+  const portions = [
+    { key:'petite',  icon:'🥣', label:'Petite'  },
+    { key:'moderee', icon:'🍽️', label:'Modérée' },
+    { key:'grosse',  icon:'🫕', label:'Grosse'  },
+  ];
+  const portionHtml = portions.map(p => `
+    <div class="jrn-portion${data.portion === p.key ? ' selected' : ''}"
+         onclick="qlSelectPortion('${mealKey}','${p.key}',this)">
+      <span class="por-icon">${p.icon}</span>
+      <span class="por-label">${p.label}</span>
+    </div>
+  `).join('');
+
+  return `
+    <span class="ql-section-label">Ce que j'ai mangé</span>
+    <div class="jrn-food-input-row">
+      <input class="jrn-food-input" type="text" id="ql-food-${mealKey}"
+             placeholder="Riz, poulet, salade…" autocomplete="off"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();qlAddAliment('${mealKey}');}">
+      <button class="jrn-food-add-btn" onclick="qlAddAliment('${mealKey}')">+</button>
+    </div>
+    <div class="jrn-tags" id="ql-tags-${mealKey}">${tags}</div>
+    ${recent.length ? `<div class="jrn-suggestions">${suggestions}</div>` : ''}
+
+    <span class="ql-section-label" style="margin-top:6px">Épices & aromates</span>
+    <div class="jrn-spice-row">
+      <input class="jrn-spice-input" type="text" id="ql-spice-${mealKey}"
+             placeholder="Curcuma, gingembre…"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();qlAddEpice('${mealKey}');}">
+      <button class="jrn-food-add-btn" onclick="qlAddEpice('${mealKey}')"
+              style="background:var(--blush);color:var(--text-dark)">+</button>
+    </div>
+    <div class="jrn-spice-tags" id="ql-spices-${mealKey}">${spiceTags}</div>
+
+    <span class="ql-section-label" style="margin-top:6px">Quantité</span>
+    <div class="jrn-portions">${portionHtml}</div>
+  `;
+}
+
+// ── Navigation onglets quicklog repas ──────────────────────────────────────
+function qlSwitchMeal(key, tabEl) {
+  qlCurrentMeal = key;
+  document.querySelectorAll('#quicklog-body .jrn-meal-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  document.querySelectorAll('#quicklog-body .jrn-meal-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('ql-meal-panel-' + key);
+  if (panel) panel.classList.add('active');
+}
+
+// ── Actions aliments quicklog ───────────────────────────────────────────────
+function qlGetMeal(mealKey) {
+  if (!qlValues.repas) qlValues.repas = {};
+  if (!qlValues.repas[mealKey]) qlValues.repas[mealKey] = { aliments:[], epices:[], portion:null };
+  return qlValues.repas[mealKey];
+}
+
+function qlAddAliment(mealKey) {
+  const inp = document.getElementById('ql-food-' + mealKey);
+  if (!inp || !inp.value.trim()) return;
+  const val = inp.value.trim();
+  const data = qlGetMeal(mealKey);
+  if (!data.aliments.includes(val)) { data.aliments.push(val); saveFoodToHistory(val); }
+  inp.value = '';
+  qlRefreshPanel(mealKey);
+}
+
+function qlAddSuggestion(mealKey, val) {
+  const data = qlGetMeal(mealKey);
+  if (!data.aliments.includes(val)) { data.aliments.push(val); saveFoodToHistory(val); }
+  qlRefreshPanel(mealKey);
+}
+
+function qlRemoveAliment(mealKey, idx) {
+  qlGetMeal(mealKey).aliments.splice(idx, 1);
+  qlRefreshPanel(mealKey);
+}
+
+function qlAddEpice(mealKey) {
+  const inp = document.getElementById('ql-spice-' + mealKey);
+  if (!inp || !inp.value.trim()) return;
+  const data = qlGetMeal(mealKey);
+  if (!data.epices.includes(inp.value.trim())) data.epices.push(inp.value.trim());
+  inp.value = '';
+  qlRefreshPanel(mealKey);
+}
+
+function qlRemoveEpice(mealKey, idx) {
+  qlGetMeal(mealKey).epices.splice(idx, 1);
+  qlRefreshPanel(mealKey);
+}
+
+function qlSelectPortion(mealKey, val, el) {
+  qlGetMeal(mealKey).portion = val;
+  el.closest('.jrn-portions').querySelectorAll('.jrn-portion').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function qlRefreshPanel(mealKey) {
+  const panel = document.getElementById('ql-meal-panel-' + mealKey);
+  if (panel) panel.innerHTML = renderQLMealPanel(mealKey);
 }
 
 function renderQLBody(cfg) {
@@ -3112,9 +3285,14 @@ function closeQuickLogBtn() {
 
 async function saveQuickLog() {
   const today = new Date().toISOString().split('T')[0];
-  const entry = { type: currentQLType, date: today, values: qlValues, ts: Date.now() };
 
-  // 1. Sauvegarde locale immédiate (UX fluide, fonctionne offline)
+  // Si c'est le quicklog repas, agréger tous les aliments pour les insights
+  if (currentQLType === 'repas') {
+    const tousAliments = Object.values(qlValues.repas || {}).flatMap(r => r.aliments || []);
+    qlValues.aliments = tousAliments; // compat insights
+  }
+
+  const entry = { type: currentQLType, date: today, values: qlValues, ts: Date.now() };
   const localKey = `nara_log_${today}_${currentQLType}`;
   localStorage.setItem(localKey, JSON.stringify(entry));
 

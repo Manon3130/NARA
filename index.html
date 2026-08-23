@@ -2136,9 +2136,27 @@ async function handleForgotPassword() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function initSession() {
-  // Supabase restaure automatiquement la session depuis son propre localStorage.
-  // getSession() lit le storage local en priorité — protégé par timeout
-  // pour ne jamais bloquer l'app si le réseau est lent au démarrage.
+  // ── ÉTAPE 1 : lire le cache local immédiatement (zéro réseau) ──
+  // Supabase stocke la session sous une clé prévisible dans localStorage.
+  // On la lit directement pour afficher le dashboard SANS attendre le réseau.
+  const localSession = readLocalSession();
+
+  if (localSession) {
+    // Session trouvée localement → afficher le dashboard tout de suite
+    currentUser = localSession.user;
+    updateHomeUser(currentUser);
+    go('home');
+    hideBootLoader();
+    loadUserData(localSession.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
+
+    // ── ÉTAPE 2 : valider le token en arrière-plan ──
+    // Si le token est expiré, Supabase le rafraîchit silencieusement.
+    // On ne déconnecte JAMAIS l'utilisateur si le réseau échoue.
+    refreshSessionSilently();
+    return;
+  }
+
+  // Pas de session locale → tenter via réseau (première connexion ou cache effacé)
   try {
     const { data: { session } } = await withTimeout(
       sb.auth.getSession(),
@@ -2147,19 +2165,61 @@ async function initSession() {
     if (session?.user) {
       currentUser = session.user;
       updateHomeUser(currentUser);
-      // Utilisateur déjà connecté → aller directement au dashboard, sans attendre les données
       go('home');
-      // Charger ses données en arrière-plan — ne bloque jamais l'affichage
       loadUserData(session.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
     }
-    // Sinon, rester sur l'écran onboarding (déjà actif par défaut)
   } catch (e) {
-    // Le getSession a échoué ou timeout — on reste sur onboarding,
-    // l'utilisateur peut toujours se connecter manuellement.
-    console.warn('[Nara] initSession:', e.message);
+    console.warn('[Nara] initSession réseau:', e.message);
+    // Réseau indisponible mais pas de cache local → laisser l'écran onboarding
   } finally {
-    // Quoi qu'il arrive, on retire l'écran de chargement initial s'il existe
     hideBootLoader();
+  }
+}
+
+// Lire la session Supabase depuis le localStorage sans passer par le réseau
+function readLocalSession() {
+  try {
+    // Supabase v2 stocke la session sous la clé `sb-<ref>-auth-token`
+    // La référence est la partie entre https:// et .supabase.co dans l'URL
+    const ref = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '');
+    const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Vérifier que le token n'est pas expiré (avec 60s de marge)
+    const expiresAt = parsed?.expires_at || 0;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (expiresAt && expiresAt < nowSec - 60) {
+      // Token expiré mais on tente quand même de l'utiliser —
+      // autoRefreshToken le renouvellera
+      console.log('[Nara] Token expiré, tentative de refresh silencieux');
+    }
+    const user = parsed?.user || null;
+    if (!user) return null;
+    return { user, access_token: parsed?.access_token };
+  } catch (e) {
+    console.warn('[Nara] readLocalSession:', e);
+    return null;
+  }
+}
+
+// Rafraîchir le token en arrière-plan sans jamais déconnecter l'utilisateur
+async function refreshSessionSilently() {
+  try {
+    const { data: { session }, error } = await withTimeout(
+      sb.auth.getSession(),
+      10000, 'refresh silencieux'
+    );
+    if (error) {
+      console.warn('[Nara] Refresh silencieux échoué (session locale conservée):', error.message);
+      return; // On garde l'utilisateur connecté avec le cache local
+    }
+    if (session?.user) {
+      currentUser = session.user;
+      updateHomeUser(currentUser);
+    }
+  } catch (e) {
+    // Réseau indisponible ou timeout → on garde l'utilisateur connecté
+    console.warn('[Nara] Refresh réseau indisponible, session locale conservée');
   }
 }
 
@@ -4974,32 +5034,24 @@ setTimeout(hideBootLoader, 10000);
 let lastVisibilityCheck = Date.now();
 
 async function revalidateSessionOnResume() {
-  // Évite les vérifications trop fréquentes (debounce 3s)
   const now = Date.now();
   if (now - lastVisibilityCheck < 3000) return;
   lastVisibilityCheck = now;
 
-  try {
-    const { data: { session } } = await withTimeout(
-      sb.auth.getSession(), 8000, 'revalidation session'
-    );
-
-    if (session?.user) {
-      // Session toujours valide — mettre à jour l'utilisateur si besoin
-      if (!currentUser || currentUser.id !== session.user.id) {
-        currentUser = session.user;
-        updateHomeUser(currentUser);
-      }
-    } else if (currentUser) {
-      // La session a expiré pendant que l'app était en arrière-plan
-      // → on ne force PAS de déconnexion brutale, Supabase tentera
-      //   un refresh automatique via autoRefreshToken. On log seulement.
-      console.warn('[Nara] Session absente au retour — autoRefreshToken devrait la restaurer.');
+  // Si pas d'utilisateur connu, rien à revalider
+  if (!currentUser) {
+    // Tenter quand même de lire depuis le cache local (cas où app a été rechargée)
+    const local = readLocalSession();
+    if (local) {
+      currentUser = local.user;
+      updateHomeUser(currentUser);
+      go('home');
     }
-  } catch (e) {
-    // Échec réseau temporaire au retour — on n'interrompt jamais l'usage en cours
-    console.warn('[Nara] revalidateSessionOnResume:', e.message);
+    return;
   }
+
+  // Utilisateur connu → rafraîchir silencieusement SANS jamais déconnecter
+  refreshSessionSilently();
 }
 
 // Quand l'app/onglet redevient visible (retour depuis l'arrière-plan)

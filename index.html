@@ -1214,6 +1214,129 @@ if (typeof supabase === 'undefined') {
     color: rgba(255,255,255,0.7); font-size: 0.8rem;
   }
 
+
+  /* ===== MODULE CYCLE ===== */
+
+  /* Bannière phase dans le journal */
+  .cycle-phase-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: 14px;
+    margin-bottom: 16px; border: 1.5px solid transparent;
+  }
+  .cycle-phase-banner.phase-regles      { background: #fef2f2; border-color: #fca5a566; }
+  .cycle-phase-banner.phase-preovul     { background: #f0fdf4; border-color: #86efac66; }
+  .cycle-phase-banner.phase-ovulation   { background: #fff7ed; border-color: #fcd34d66; }
+  .cycle-phase-banner.phase-luteale     { background: #faf5ff; border-color: #d8b4fe66; }
+  .cycle-phase-banner.phase-off         { background: var(--honey); border-color: var(--oat); }
+
+  .cycle-phase-icon  { font-size: 1.4rem; flex-shrink: 0; }
+  .cycle-phase-text  {}
+  .cycle-phase-name  { font-size: 0.82rem; font-weight: 600; color: var(--text-dark); }
+  .cycle-phase-day   { font-size: 0.7rem; color: var(--text-light); margin-top: 1px; }
+  .cycle-phase-update {
+    margin-left: auto; font-size: 0.7rem; color: var(--sage);
+    cursor: pointer; text-decoration: underline; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* Modale paramètres cycle */
+  .cycle-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 700; display: none; align-items: flex-end; justify-content: center;
+  }
+  .cycle-modal-overlay.open { display: flex; }
+  .cycle-modal-card {
+    background: white; border-radius: 28px 28px 0 0;
+    padding: 24px clamp(16px,6vw,28px) calc(28px + env(safe-area-inset-bottom,0px));
+    width: 100%; max-height: 88vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cycle-modal-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--oat); margin: 0 auto 20px;
+  }
+  .cycle-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem; color: var(--text-dark); margin-bottom: 6px;
+  }
+  .cycle-modal-sub { font-size: 0.78rem; color: var(--text-mid); line-height: 1.5; margin-bottom: 20px; }
+
+  .cycle-field-label {
+    font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 8px; display: block;
+  }
+  .cycle-date-input {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--oat);
+    border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; color: var(--text-dark); background: white; outline: none;
+    -webkit-appearance: none; margin-bottom: 18px;
+  }
+  .cycle-date-input:focus { border-color: var(--sage); }
+
+  /* Durée cycle stepper */
+  .cycle-duration-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .cycle-duration-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1.5px solid var(--oat); background: white;
+    font-size: 1.2rem; color: var(--sage); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .cycle-duration-btn:active { background: var(--honey); }
+  .cycle-duration-val {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.4rem;
+    color: var(--text-dark); min-width: 60px; text-align: center;
+  }
+  .cycle-duration-unit { font-size: 0.75rem; color: var(--text-light); }
+
+  /* Toggle module on/off */
+  .cycle-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--oat); margin-bottom: 18px;
+  }
+  .cycle-toggle-label { font-size: 0.88rem; color: var(--text-dark); }
+  .cycle-toggle-sub   { font-size: 0.72rem; color: var(--text-light); margin-top: 2px; }
+  .cycle-toggle {
+    width: 48px; height: 26px; border-radius: 13px;
+    background: var(--oat); position: relative; cursor: pointer;
+    transition: background 0.25s; flex-shrink: 0;
+  }
+  .cycle-toggle.on { background: var(--sage); }
+  .cycle-toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: white; transition: transform 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .cycle-toggle.on::after { transform: translateX(22px); }
+
+  .cycle-save-btn {
+    width: 100%; padding: 15px; background: var(--sage); color: white;
+    border: none; border-radius: 14px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; cursor: pointer; margin-top: 6px;
+  }
+  .cycle-reset-btn {
+    width: 100%; padding: 11px; background: none; color: var(--text-light);
+    border: none; font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    cursor: pointer; margin-top: 8px; text-decoration: underline;
+  }
+
+  /* Alerte douleurs intenses */
+  .cycle-medical-alert {
+    background: #fef2f2; border: 1.5px solid #fca5a555;
+    border-radius: 12px; padding: 12px 14px;
+    font-size: 0.75rem; color: #c62828; line-height: 1.5;
+    margin-top: 14px; display: none;
+  }
+  .cycle-medical-alert.show { display: block; }
+
+  /* Badge phase dans insights */
+  .insight-cycle-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: 0.68rem;
+    background: #faf5ff; color: #7c3aed; border: 1px solid #d8b4fe55;
+    margin-bottom: 8px;
+  }
+
   /* ===== CALENDRIER TRANSIT ===== */
 
   /* Modale enrichie */
@@ -1795,6 +1918,7 @@ if (typeof supabase === 'undefined') {
         <div class="user-dropdown" id="user-dropdown">
           <div class="user-dropdown-name" id="dropdown-name">Manon</div>
           <div class="user-dropdown-email" id="dropdown-email">manon@exemple.fr</div>
+          <div class="user-dropdown-item" onclick="toggleUserMenu(); openCycleModal()">🌸 Suivi de cycle</div>
           <div class="user-dropdown-item" onclick="toggleUserMenu(); go('journal')">📓 Mon journal</div>
           <div class="user-dropdown-item danger" onclick="handleLogout()">← Se déconnecter</div>
         </div>
@@ -4230,6 +4354,9 @@ function renderJournalForm(todayLabel) {
       <div class="jrn-emoji-row">${humeurHtml}</div>
     </div>
 
+    <!-- BANNIÈRE PHASE CYCLE (visible uniquement si module activé) -->
+    ${renderCyclePhaseBanner()}
+
     <button class="save-btn" onclick="saveJournal()">Enregistrer mon journal ✓</button>
   `;
 }
@@ -4944,6 +5071,18 @@ function renderInsightsPage() {
     const avg = (sE.reduce((s,e) => s+e.values.stress,0)/sE.length).toFixed(1);
     html += `<div class="insight-real-card" style="border-left-color:#8a8ec4"><div class="irc-tag">\uD83D\uDE2E\u200D\uD83D\uDCA8 Stress \u00b7 ${sE.length} entr\u00e9es</div><div class="irc-text">Stress moyen : <strong>${avg}/5</strong>.</div></div>`;
   }
+  // Insights cycle (si module actif)
+  const cycleInsights = getCycleInsights(entries);
+  if (cycleInsights.length > 0) {
+    html += `<div class="section-title" style="margin-top:4px">Cycle & corrélations</div>`;
+    html += cycleInsights.map(ins => `
+      <div class="insight-real-card" style="border-left-color:#d8b4fe">
+        <div style="margin-bottom:6px"><span class="insight-cycle-badge">🌸 Suivi cycle</span></div>
+        <div class="irc-tag">${ins.icon} ${ins.tag}</div>
+        <div class="irc-text">${ins.text}</div>
+      </div>`).join('');
+  }
+
   content.innerHTML = html;
 }
 
@@ -5222,6 +5361,282 @@ function galleryGoToJournal(dateStr) {
     showToast(`Journal du ${dateStr.split('-').reverse().join('/')}`);
     go('journal');
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODULE CYCLE — suivi hormonale optionnel
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+function cycleLoad() {
+  try { return JSON.parse(localStorage.getItem('nara_cycle') || 'null'); } catch { return null; }
+}
+function cycleSave(data) {
+  localStorage.setItem('nara_cycle', JSON.stringify(data));
+  if (currentUser) {
+    sb.from('nara_logs').upsert({
+      user_id: currentUser.id, date: getTodayStr(), type: 'cycle_settings', values: data,
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] Cycle sync:', error.message);
+    });
+  }
+}
+
+// ── Calcul de phase ───────────────────────────────────────────────────────────
+function getCyclePhase(targetDate) {
+  const settings = cycleLoad();
+  if (!settings || !settings.active || !settings.startDate) return null;
+
+  const start   = new Date(settings.startDate + 'T12:00:00');
+  const target  = new Date((targetDate || getTodayStr()) + 'T12:00:00');
+  const cycleDuration = settings.cycleDuration || 28;
+  const regDuration   = settings.regDuration   || 5;
+
+  // Jour du cycle (1-based)
+  const diffDays = Math.round((target - start) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return null; // Avant le début du cycle connu
+
+  const dayInCycle = (diffDays % cycleDuration) + 1;
+
+  // Détermination de la phase
+  let phase, phaseName, phaseIcon, phaseClass, phaseDesc;
+
+  if (dayInCycle <= regDuration) {
+    phase = 'regles'; phaseName = 'Règles'; phaseIcon = '🩸';
+    phaseClass = 'phase-regles';
+    phaseDesc = 'Phase menstruelle — douceur et repos conseillés';
+  } else if (dayInCycle <= 13) {
+    phase = 'preovul'; phaseName = 'Phase folliculaire'; phaseIcon = '🌱';
+    phaseClass = 'phase-preovul';
+    phaseDesc = 'Énergie souvent croissante, transit généralement plus stable';
+  } else if (dayInCycle === 14) {
+    phase = 'ovulation'; phaseName = 'Ovulation'; phaseIcon = '✨';
+    phaseClass = 'phase-ovulation';
+    phaseDesc = 'Pic hormonal — énergie et humeur souvent au mieux';
+  } else {
+    phase = 'luteale'; phaseName = 'Phase lutéale'; phaseIcon = '🌙';
+    phaseClass = 'phase-luteale';
+    phaseDesc = 'Phase prémenstruelle — peau et transit peuvent varier';
+  }
+
+  return { phase, phaseName, phaseIcon, phaseClass, phaseDesc, dayInCycle, cycleDuration };
+}
+
+// ── Bannière journal ──────────────────────────────────────────────────────────
+function renderCyclePhaseBanner() {
+  const settings = cycleLoad();
+  if (!settings || !settings.active) return ''; // Module désactivé
+
+  const info = getCyclePhase(getTodayStr());
+  if (!info) {
+    return `
+      <div class="cycle-phase-banner phase-off" style="cursor:pointer" onclick="openCycleModal()">
+        <span class="cycle-phase-icon">🌸</span>
+        <div class="cycle-phase-text">
+          <div class="cycle-phase-name">Cycle — configurer</div>
+          <div class="cycle-phase-day">Indique la date de tes dernières règles</div>
+        </div>
+        <span class="cycle-phase-update">Configurer →</span>
+      </div>`;
+  }
+
+  return `
+    <div class="cycle-phase-banner ${info.phaseClass}">
+      <span class="cycle-phase-icon">${info.phaseIcon}</span>
+      <div class="cycle-phase-text">
+        <div class="cycle-phase-name">${info.phaseName} — J${info.dayInCycle}/${info.cycleDuration}</div>
+        <div class="cycle-phase-day">${info.phaseDesc}</div>
+      </div>
+      <span class="cycle-phase-update" onclick="openCycleModal()">Mettre à jour</span>
+    </div>`;
+}
+
+// ── Modale settings ───────────────────────────────────────────────────────────
+let cycleDurationTemp = 28;
+let cycleRegDurationTemp = 5;
+
+function openCycleModal() {
+  const settings = cycleLoad() || {};
+  const modal = document.getElementById('cycle-modal-overlay');
+  if (!modal) return;
+
+  // Init état toggle
+  const toggle = document.getElementById('cycle-toggle');
+  if (toggle) toggle.classList.toggle('on', !!settings.active);
+
+  // Init champs
+  cycleDurationTemp    = settings.cycleDuration || 28;
+  cycleRegDurationTemp = settings.regDuration   || 5;
+  const dateInput = document.getElementById('cycle-start-date');
+  if (dateInput) {
+    dateInput.value = settings.startDate || '';
+    dateInput.max = getTodayStr();
+    dateInput.addEventListener('change', checkCycleAlerts);
+  }
+  const durVal = document.getElementById('cycle-duration-val');
+  if (durVal) durVal.textContent = cycleDurationTemp;
+  const regVal = document.getElementById('cycle-reg-duration-val');
+  if (regVal) regVal.textContent = cycleRegDurationTemp;
+
+  // Afficher/masquer formulaire selon active
+  const form = document.getElementById('cycle-form');
+  if (form) form.style.display = settings.active !== false ? 'block' : 'none';
+
+  modal.classList.add('open');
+}
+
+function cycleHandleOverlay(e) {
+  if (e.target === document.getElementById('cycle-modal-overlay')) closeCycleModal();
+}
+function closeCycleModal() {
+  const modal = document.getElementById('cycle-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function cycleToggleModule() {
+  const toggle = document.getElementById('cycle-toggle');
+  const form   = document.getElementById('cycle-form');
+  if (!toggle) return;
+  const nowOn = !toggle.classList.contains('on');
+  toggle.classList.toggle('on', nowOn);
+  if (form) form.style.display = nowOn ? 'block' : 'none';
+}
+
+function cycleDurationStep(delta) {
+  cycleDurationTemp = Math.max(21, Math.min(45, cycleDurationTemp + delta));
+  const el = document.getElementById('cycle-duration-val');
+  if (el) el.textContent = cycleDurationTemp;
+}
+
+function cycleRegDurationStep(delta) {
+  cycleRegDurationTemp = Math.max(2, Math.min(10, cycleRegDurationTemp + delta));
+  const el = document.getElementById('cycle-reg-duration-val');
+  if (el) el.textContent = cycleRegDurationTemp;
+}
+
+function checkCycleAlerts() {
+  // Afficher alerte médicale si la date de début est > 45 jours (cycle très long / irrégulier)
+  const dateInput = document.getElementById('cycle-start-date');
+  const alert = document.getElementById('cycle-medical-alert');
+  if (!dateInput || !alert) return;
+  if (!dateInput.value) { alert.classList.remove('show'); return; }
+  const daysSince = Math.round((new Date() - new Date(dateInput.value)) / (1000 * 60 * 60 * 24));
+  alert.classList.toggle('show', daysSince > 45);
+}
+
+function cycleSaveSettings() {
+  const toggle    = document.getElementById('cycle-toggle');
+  const dateInput = document.getElementById('cycle-start-date');
+  const active    = toggle ? toggle.classList.contains('on') : false;
+
+  if (active && dateInput && !dateInput.value) {
+    showToast('Indique la date de tes dernières règles');
+    return;
+  }
+
+  const data = {
+    active,
+    startDate:      active ? dateInput.value : null,
+    cycleDuration:  cycleDurationTemp,
+    regDuration:    cycleRegDurationTemp,
+    updatedAt:      new Date().toISOString(),
+  };
+
+  cycleSave(data);
+  closeCycleModal();
+  showToast('✓ Cycle enregistré !');
+  // Rafraîchir le journal si ouvert
+  const jrn = document.getElementById('screen-journal');
+  if (jrn && jrn.classList.contains('active')) renderJournal();
+}
+
+function cycleResetModule() {
+  localStorage.removeItem('nara_cycle');
+  closeCycleModal();
+  showToast('Module cycle réinitialisé');
+  const jrn = document.getElementById('screen-journal');
+  if (jrn && jrn.classList.contains('active')) renderJournal();
+}
+
+// ── Accès rapide depuis l'accueil ─────────────────────────────────────────────
+// Bouton paramètres cycle dans le header home — appelé depuis le menu avatar
+function openCycleFromMenu() {
+  const dd = document.getElementById('user-dropdown');
+  if (dd) dd.classList.remove('open');
+  openCycleModal();
+}
+
+// ── Corrélation cycle × données journal (pour les insights) ──────────────────
+function getCycleInsights(entries) {
+  const settings = cycleLoad();
+  if (!settings || !settings.active || !settings.startDate) return [];
+
+  const insights = [];
+  const cycleDuration = settings.cycleDuration || 28;
+  const regDuration   = settings.regDuration   || 5;
+
+  // Enrichir chaque entrée avec sa phase
+  const enriched = entries.map(e => {
+    const info = getCyclePhase(e.dateStr || e.date);
+    return { ...e, cyclePhase: info?.phase || null, cycleDay: info?.dayInCycle || null };
+  });
+
+  // ── Peau en phase lutéale ────────────────────────────────────────────────
+  const peauLuteale  = enriched.filter(e => e.type === 'peau' && e.cyclePhase === 'luteale' && e.values?.peau_etat !== undefined);
+  const peauAutres   = enriched.filter(e => e.type === 'peau' && e.cyclePhase && e.cyclePhase !== 'luteale' && e.values?.peau_etat !== undefined);
+
+  if (peauLuteale.length >= 2 && peauAutres.length >= 2) {
+    const poussLuteale = peauLuteale.filter(e => e.values.peau_etat === 0).length / peauLuteale.length;
+    const poussAutres  = peauAutres.filter(e => e.values.peau_etat === 0).length / peauAutres.length;
+    if (poussLuteale > poussAutres + 0.15) {
+      insights.push({
+        type: 'skin', icon: '🌙', tag: 'Cycle · Peau — tendance observée',
+        text: `Chez toi, les poussées de peau semblent plus fréquentes en phase lutéale (avant les règles) que sur le reste du cycle. C'est une tendance observée — pas une certitude, mais ça vaut la peine d'y prêter attention.`
+      });
+    }
+  }
+
+  // ── Transit plus stable en phase folliculaire ────────────────────────────
+  const transitFollic = enriched.filter(e => e.type === 'transit' && e.cyclePhase === 'preovul' && e.values?.transit_etat !== undefined);
+  const transitRegles = enriched.filter(e => e.type === 'transit' && e.cyclePhase === 'regles'  && e.values?.transit_etat !== undefined);
+
+  if (transitFollic.length >= 2 && transitRegles.length >= 2) {
+    const stableFollic = transitFollic.filter(e => e.values.transit_etat === 1).length / transitFollic.length;
+    const stableRegles = transitRegles.filter(e => e.values.transit_etat === 1).length / transitRegles.length;
+    if (stableFollic > stableRegles + 0.2) {
+      insights.push({
+        type: 'gut', icon: '🌱', tag: 'Cycle · Transit — tendance observée',
+        text: `Ton transit semble plus régulier en phase folliculaire (après tes règles) qu'en période de règles. C'est une tendance que l'on observe parfois — continue à noter pour affiner ce pattern.`
+      });
+    }
+  }
+
+  // ── Stress plus élevé en phase prémenstruelle ────────────────────────────
+  const stressLuteale = enriched.filter(e => e.type === 'stress' && e.cyclePhase === 'luteale' && e.values?.stress !== undefined);
+  const stressAutres  = enriched.filter(e => e.type === 'stress' && e.cyclePhase && e.cyclePhase !== 'luteale' && e.values?.stress !== undefined);
+
+  if (stressLuteale.length >= 2 && stressAutres.length >= 2) {
+    const avgStressLuteale = stressLuteale.reduce((s,e) => s + e.values.stress, 0) / stressLuteale.length;
+    const avgStressAutres  = stressAutres.reduce((s,e) => s + e.values.stress, 0)  / stressAutres.length;
+    if (avgStressLuteale > avgStressAutres + 0.5) {
+      insights.push({
+        type: 'gut', icon: '😮‍💨', tag: 'Cycle · Stress — tendance observée',
+        text: `Tes niveaux de stress semblent un peu plus élevés en phase lutéale. On note une différence de ${(avgStressLuteale - avgStressAutres).toFixed(1)}/5 par rapport au reste du cycle — une tendance à surveiller.`
+      });
+    }
+  }
+
+  // Garde-fou : cycles très irréguliers (écart > 45j depuis le début déclaré)
+  const startDate = new Date(settings.startDate + 'T12:00:00');
+  const daysSince = Math.round((new Date() - startDate) / (1000 * 60 * 60 * 24));
+  if (daysSince > cycleDuration + 14) {
+    insights.push({
+      type: 'gut', icon: '🩺', tag: 'Cycle · À noter',
+      text: `Tes données de cycle semblent décalées — il peut être utile de les mettre à jour si ton cycle a changé. Si tu observes des irrégularités persistantes, une consultation gynécologique peut être utile.`
+    });
+  }
+
+  return insights;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -5726,6 +6141,61 @@ try { updateHomeScore(); } catch(e) {}
         <div class="bnav-item" id="cal-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="cal-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="cal-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+      </div>
+    </div>
+
+    <!-- MODALE PARAMÈTRES CYCLE -->
+    <div class="cycle-modal-overlay" id="cycle-modal-overlay" onclick="cycleHandleOverlay(event)">
+      <div class="cycle-modal-card">
+        <div class="cycle-modal-handle"></div>
+        <div class="cycle-modal-title">🌸 Suivi de cycle</div>
+        <div class="cycle-modal-sub">
+          Module optionnel — te permet de croiser ta phase hormonale avec ton transit, ta peau et ton énergie dans les insights.
+        </div>
+
+        <!-- Toggle activation -->
+        <div class="cycle-toggle-row">
+          <div>
+            <div class="cycle-toggle-label">Activer le suivi de cycle</div>
+            <div class="cycle-toggle-sub">Désactive si tu n'es pas concernée</div>
+          </div>
+          <div class="cycle-toggle" id="cycle-toggle" onclick="cycleToggleModule()"></div>
+        </div>
+
+        <!-- Formulaire (masqué si désactivé) -->
+        <div id="cycle-form">
+          <span class="cycle-field-label">Date de début de tes dernières règles</span>
+          <input type="date" class="cycle-date-input" id="cycle-start-date"
+                 max="" placeholder="jj/mm/aaaa">
+
+          <span class="cycle-field-label">Durée habituelle de ton cycle</span>
+          <div class="cycle-duration-row">
+            <button class="cycle-duration-btn" onclick="cycleDurationStep(-1)">−</button>
+            <div>
+              <div class="cycle-duration-val" id="cycle-duration-val">28</div>
+              <div class="cycle-duration-unit">jours</div>
+            </div>
+            <button class="cycle-duration-btn" onclick="cycleDurationStep(1)">+</button>
+          </div>
+
+          <span class="cycle-field-label" style="margin-top:-4px">Durée habituelle de tes règles</span>
+          <div class="cycle-duration-row" style="margin-bottom:20px">
+            <button class="cycle-duration-btn" onclick="cycleRegDurationStep(-1)">−</button>
+            <div>
+              <div class="cycle-duration-val" id="cycle-reg-duration-val">5</div>
+              <div class="cycle-duration-unit">jours</div>
+            </div>
+            <button class="cycle-duration-btn" onclick="cycleRegDurationStep(1)">+</button>
+          </div>
+
+          <!-- Alerte douleurs intenses -->
+          <div class="cycle-medical-alert" id="cycle-medical-alert">
+            🩺 Si tes règles sont très douloureuses, irrégulières, ou si tu observes des saignements inhabituels, une consultation gynécologique est conseillée. Nara ne remplace pas un avis médical.
+          </div>
+
+          <button class="cycle-save-btn" onclick="cycleSaveSettings()">Enregistrer ✓</button>
+          <button class="cycle-reset-btn" onclick="cycleResetModule()">Réinitialiser le module</button>
+        </div>
       </div>
     </div>
 

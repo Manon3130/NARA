@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -1255,34 +1255,46 @@ if (typeof supabase === 'undefined') {
   .cal-yn-btn.selected-non { border-color: #e57373; background: #fff5f5; }
 
   /* ÉCHELLE DE BRISTOL */
+  /* Grille Bristol — liste verticale avec SVG */
   .bristol-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    gap: 5px; margin-bottom: 6px;
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;
   }
   .bristol-item {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--oat);
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 14px; border: 2px solid var(--oat);
     background: white; cursor: pointer; transition: all 0.18s;
     -webkit-tap-highlight-color: transparent;
   }
-  .bristol-item .b-icon { font-size: 1.3rem; line-height: 1; display: block; }
-  .bristol-item .b-num {
-    font-size: 0.55rem; font-weight: 700; color: var(--text-light);
-    margin-top: 3px; line-height: 1;
+  .bristol-item:active { transform: scale(0.985); }
+  .b-svg-wrap {
+    width: 56px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
   }
-  /* Couleurs par groupe */
-  .bristol-item.b-dur  { border-color: #c8875622; }
-  .bristol-item.b-norm { border-color: var(--avocado); }
-  .bristol-item.b-mou  { border-color: #f9a82566; }
-  .bristol-item.selected.b-dur  { background: #fdf0e8; border-color: #c88756; }
-  .bristol-item.selected.b-norm { background: var(--honey); border-color: var(--sage); }
-  .bristol-item.selected.b-mou  { background: #fff8e6; border-color: #f9a825; }
-  .bristol-item.selected .b-num { color: var(--text-dark); }
-  .bristol-legend {
-    display: flex; justify-content: space-between;
-    font-size: 0.58rem; color: var(--text-light);
-    padding: 0 2px; margin-bottom: 4px;
+  .b-svg-wrap svg { width: 54px; height: 28px; display: block; }
+  .b-text { flex: 1; min-width: 0; }
+  .b-label {
+    font-size: 0.78rem; font-weight: 600; color: var(--text-dark);
+    line-height: 1.2; margin-bottom: 2px;
   }
+  .b-desc {
+    font-size: 0.68rem; color: var(--text-light); line-height: 1.3;
+  }
+  .b-badge {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+    padding: 3px 8px; border-radius: 10px; flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  /* Groupes couleur */
+  .bristol-item.b-dur  { border-color: #c8875633; }
+  .bristol-item.b-norm { border-color: #81826333; }
+  .bristol-item.b-mou  { border-color: #f9a82533; }
+  .bristol-item.selected.b-dur  { background: #fdf0e8; border-color: #c88756; box-shadow: 0 2px 10px #c8875622; }
+  .bristol-item.selected.b-norm { background: var(--honey); border-color: var(--sage); box-shadow: 0 2px 10px rgba(129,130,99,0.2); }
+  .bristol-item.selected.b-mou  { background: #fff8e6; border-color: #f9a825; box-shadow: 0 2px 10px #f9a82522; }
+  .b-badge.dur  { background: #fdf0e8; color: #c88756; }
+  .b-badge.norm { background: var(--honey); color: var(--sage); }
+  .b-badge.mou  { background: #fff8e6; color: #c97800; }
+
 
   /* FRÉQUENCE stepper */
   .cal-stepper {
@@ -5254,13 +5266,13 @@ let calCurrentTiming  = [];       // multi
 
 // Bristol — pictos et groupes couleurs
 const BRISTOL_TYPES = [
-  { num:1, icon:'⬛', label:'Très dur',      group:'b-dur'  },
-  { num:2, icon:'🪨', label:'Dur/Grumeleux', group:'b-dur'  },
-  { num:3, icon:'🌰', label:'Fissuré',       group:'b-norm' },
-  { num:4, icon:'🥖', label:'Normal',        group:'b-norm' },
-  { num:5, icon:'🫘', label:'Mou',           group:'b-mou'  },
-  { num:6, icon:'🌊', label:'Bouillie',      group:'b-mou'  },
-  { num:7, icon:'💧', label:'Liquide',       group:'b-mou'  },
+  { num:1, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 1 : petites billes rondes séparées -->  <circle cx="7" cy="10" r="4.5" fill="#8B6340" opacity=".85"/>  <circle cx="17" cy="7"  r="4.5" fill="#7A5530" opacity=".85"/>  <circle cx="27" cy="11" r="4.5" fill="#8B6340" opacity=".85"/>  <circle cx="37" cy="7"  r="4.5" fill="#7A5530" opacity=".85"/>  <circle cx="47" cy="10" r="4.5" fill="#8B6340" opacity=".85"/>  <circle cx="12" cy="20" r="4.5" fill="#7A5530" opacity=".85"/>  <circle cx="32" cy="21" r="4.5" fill="#8B6340" opacity=".85"/></svg>', label:'En billes séparées', desc:'Selles dures et morcelées en billes', badge:'Constipation', badgeClass:'dur', group:'b-dur' },
+  { num:2, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 2 : masse allongée bosselée, grumeleux -->  <ellipse cx="27" cy="15" rx="24" ry="9" fill="#8B6340" opacity=".25"/>  <ellipse cx="10" cy="16" rx="7" ry="5.5" fill="#7A5530" opacity=".9"/>  <ellipse cx="20" cy="14" rx="7" ry="5.5" fill="#8B6340" opacity=".9"/>  <ellipse cx="30" cy="16" rx="7" ry="5.5" fill="#7A5530" opacity=".9"/>  <ellipse cx="40" cy="14" rx="6" ry="5"   fill="#8B6340" opacity=".9"/>  <ellipse cx="48" cy="16" rx="4.5" ry="4" fill="#7A5530" opacity=".85"/></svg>', label:'Bosselées, dures', desc:'Selles dures, moulées et bosselées', badge:'Constipation', badgeClass:'dur', group:'b-dur' },
+  { num:3, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 3 : allongé avec fissures en surface -->  <ellipse cx="27" cy="15" rx="23" ry="7" fill="#7A5530" opacity=".9"/>  <line x1="12" y1="11" x2="16" y2="19" stroke="#5a3d1a" stroke-width="1.2" opacity=".5"/>  <line x1="20" y1="10" x2="24" y2="20" stroke="#5a3d1a" stroke-width="1.2" opacity=".5"/>  <line x1="30" y1="10" x2="34" y2="20" stroke="#5a3d1a" stroke-width="1.2" opacity=".5"/>  <line x1="39" y1="11" x2="43" y2="19" stroke="#5a3d1a" stroke-width="1.2" opacity=".5"/></svg>', label:'Craquelée en surface', desc:'Selles moulées avec craquelures en surface', badge:'Normal', badgeClass:'norm', group:'b-norm' },
+  { num:4, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 4 : allongé lisse, saucisse régulière (idéal) -->  <ellipse cx="27" cy="14" rx="23" ry="6" fill="#8B7355" opacity=".92"/>  <ellipse cx="27" cy="12" rx="22" ry="3.5" fill="#A08060" opacity=".35"/></svg>', label:'Lisse, en saucisse', desc:'Selles molles et lisses, en saucisse — transit normal', badge:'Normal ✓', badgeClass:'norm', group:'b-norm' },
+  { num:5, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 5 : morceaux mous à bords nets -->  <ellipse cx="10" cy="17" rx="7" ry="4.5" fill="#9E8060" opacity=".85"/>  <ellipse cx="22" cy="13" rx="8" ry="5"   fill="#8B6F50" opacity=".85"/>  <ellipse cx="35" cy="18" rx="7" ry="4"   fill="#9E8060" opacity=".85"/>  <ellipse cx="46" cy="14" rx="5.5" ry="4" fill="#8B6F50" opacity=".82"/></svg>', label:'Morceaux à bords nets', desc:'Selles molles, morcelées à bords nets', badge:'Accéléré', badgeClass:'mou', group:'b-mou' },
+  { num:6, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 6 : bouillie, morceaux déchiquetés, bords irréguliers -->  <ellipse cx="14" cy="16" rx="9" ry="5" fill="#B09070" opacity=".7" transform="rotate(-8 14 16)"/>  <ellipse cx="27" cy="14" rx="12" ry="6" fill="#9E8060" opacity=".65" transform="rotate(5 27 14)"/>  <ellipse cx="40" cy="18" rx="8" ry="4" fill="#B09070" opacity=".7" transform="rotate(-5 40 18)"/>  <ellipse cx="22" cy="21" rx="5" ry="3" fill="#9E8060" opacity=".55"/>  <ellipse cx="38" cy="12" rx="4" ry="2.5" fill="#B09070" opacity=".55"/></svg>', label:'Bouillie déchiquetée', desc:'Selles molles, en bouillie à bords déchiquetés', badge:'Accéléré', badgeClass:'mou', group:'b-mou' },
+  { num:7, svg:'<svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg">  <!-- Type 7 : entièrement liquide, flaque -->  <ellipse cx="27" cy="18" rx="22" ry="7" fill="#C8AA80" opacity=".45"/>  <ellipse cx="27" cy="17" rx="19" ry="5" fill="#B8956A" opacity=".5"/>  <ellipse cx="27" cy="16" rx="14" ry="3.5" fill="#A87D50" opacity=".55"/>  <ellipse cx="20" cy="20" rx="6" ry="2" fill="#C8AA80" opacity=".4"/>  <ellipse cx="38" cy="21" rx="5" ry="1.8" fill="#C8AA80" opacity=".4"/></svg>', label:'Entièrement liquide', desc:'Selles totalement liquides, sans forme solide', badge:'Liquide', badgeClass:'mou', group:'b-mou' },
 ];
 
 // Rendu grille Bristol
@@ -5269,9 +5281,13 @@ function renderBristolGrid() {
   if (!grid) return;
   grid.innerHTML = BRISTOL_TYPES.map(t => `
     <div class="bristol-item ${t.group}${calCurrentBristol === t.num ? ' selected' : ''}"
-         onclick="calSelectBristol(${t.num})" title="${t.label}">
-      <span class="b-icon">${t.icon}</span>
-      <span class="b-num">${t.num}</span>
+         onclick="calSelectBristol(${t.num})">
+      <div class="b-svg-wrap">${t.svg}</div>
+      <div class="b-text">
+        <div class="b-label">Type ${t.num} — ${t.label}</div>
+        <div class="b-desc">${t.desc}</div>
+      </div>
+      <div class="b-badge ${t.badgeClass}">${t.badge}</div>
     </div>`).join('');
 }
 
@@ -5329,16 +5345,8 @@ function calToggleTiming(key, el) {
 }
 
 // Alerte médicale si patterns potentiellement préoccupants
-function checkMedicalAlert() {
-  const alert = document.getElementById('cal-medical-alert');
-  if (!alert) return;
-  // Montrer si douleur ET fréquence anormale (>3 ou bristol 1-2)
-  const hasDouleur = calCurrentConfort.includes('douleur');
-  const highFreq   = calCurrentFreq > 3;
-  const hardstools = calCurrentBristol !== null && calCurrentBristol <= 2;
-  const showAlert  = hasDouleur || highFreq || hardstools;
-  alert.classList.toggle('show', showAlert);
-}
+// Note médicale maintenant permanente sous le calendrier — plus de logique conditionnelle
+function checkMedicalAlert() {}
 
 // ── Navigation mois ──────────────────────────────────────────────────────────
 function calPrevMonth() {
@@ -5480,10 +5488,17 @@ function calSaveDay() {
     showToast('Indique d\'abord si tu as eu une selle ce jour');
     return;
   }
+  // Récupérer l'appellation clinique complète pour les insights et PDF
+  const bristolInfo = calCurrentBristol
+    ? BRISTOL_TYPES.find(t => t.num === calCurrentBristol)
+    : null;
+
   const data = {
     yn:      calCurrentYN,
     freq:    calCurrentYN === 'oui' ? calCurrentFreq    : null,
     bristol: calCurrentYN === 'oui' ? calCurrentBristol : null,
+    bristol_label: calCurrentYN === 'oui' && bristolInfo ? bristolInfo.label : null,
+    bristol_desc:  calCurrentYN === 'oui' && bristolInfo ? bristolInfo.desc  : null,
     confort: calCurrentYN === 'oui' ? calCurrentConfort : [],
     timing:  calCurrentYN === 'oui' ? calCurrentTiming  : [],
   };
@@ -5623,19 +5638,9 @@ try { updateHomeScore(); } catch(e) {}
         <!-- Grille dynamique -->
         <div class="cal-grid" id="cal-grid"></div>
 
-        <!-- Légende -->
-        <div class="cal-legend">
-          <div class="cal-legend-title">Légende</div>
-          <div class="cal-legend-item">
-            <div class="cal-legend-dot" style="background:#4caf50"></div> Oui, journée ok
-          </div>
-          <div class="cal-legend-item">
-            <div class="cal-legend-dot" style="background:#e57373"></div> Non, rien ce jour
-          </div>
-          <div class="cal-legend-sep"></div>
-          <div class="cal-legend-item"><div class="cal-legend-num">1</div> Facile, sans effort</div>
-          <div class="cal-legend-item"><div class="cal-legend-num">2</div> Modéré, un peu difficile</div>
-          <div class="cal-legend-item"><div class="cal-legend-num">3</div> Compliqué, vraiment difficile</div>
+        <!-- Note médicale permanente sous le calendrier -->
+        <div style="background:#fff8f0;border:1.5px solid #f9a82555;border-radius:14px;padding:14px 16px;margin-top:12px;font-size:0.78rem;color:#8a5200;line-height:1.6;">
+          🩺 <strong>À noter :</strong> si tu observes des changements persistants sur plusieurs semaines — douleurs récurrentes, selles très dures ou très liquides de façon durable, ou tout autre symptôme inhabituel — il peut être utile d'en parler à ton médecin. Nara n'est pas un outil de diagnostic : une consultation reste le meilleur moyen d'être accompagnée.
         </div>
       </div>
 
@@ -5666,11 +5671,7 @@ try { updateHomeScore(); } catch(e) {}
             <div class="bristol-grid" id="bristol-grid">
               <!-- Rendu JS -->
             </div>
-            <div class="bristol-legend">
-              <span style="color:#c88756">Dure / Constipation</span>
-              <span style="color:var(--sage)">Normale</span>
-              <span style="color:#f9a825">Molle / Accéléré</span>
-            </div>
+
 
             <!-- FRÉQUENCE -->
             <span class="cal-section-label">Nombre de passages dans la journée</span>
@@ -5706,10 +5707,7 @@ try { updateHomeScore(); } catch(e) {}
               </div>
             </div>
 
-            <!-- Alerte médicale (si patterns préoccupants) -->
-            <div class="cal-medical-alert" id="cal-medical-alert">
-              🩺 <strong>À noter :</strong> si ces symptômes se répètent sur plusieurs semaines, il peut être utile d'en parler à un médecin. Nara n'est pas un outil de diagnostic — une consultation reste le meilleur moyen d'être accompagnée.
-            </div>
+
 
           </div>
 

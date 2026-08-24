@@ -1215,6 +1215,137 @@ if (typeof supabase === 'undefined') {
   }
 
   /* ===== CALENDRIER TRANSIT ===== */
+
+  /* Modale enrichie */
+  .cal-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 600; display: none; align-items: flex-end; justify-content: center;
+  }
+  .cal-modal-overlay.open { display: flex; }
+  .cal-modal-card {
+    background: var(--cream); border-radius: 28px 28px 0 0;
+    padding: 20px clamp(16px,6vw,24px) calc(20px + env(safe-area-inset-bottom,0px));
+    width: 100%; max-height: 92vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cal-modal-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--oat); margin: 0 auto 16px;
+  }
+  .cal-modal-date {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem; color: var(--text-dark);
+    text-align: center; margin-bottom: 18px;
+  }
+  .cal-section-label {
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 10px; margin-top: 18px; display: block;
+  }
+
+  /* OUI / NON */
+  .cal-yn-row { display: flex; gap: 10px; margin-bottom: 4px; }
+  .cal-yn-btn {
+    flex: 1; padding: 14px 8px; border-radius: 16px;
+    border: 2px solid var(--oat); background: white;
+    text-align: center; cursor: pointer; transition: all 0.18s;
+  }
+  .cal-yn-btn .yn-emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+  .cal-yn-btn .yn-label { font-size: 0.75rem; color: var(--text-mid); }
+  .cal-yn-btn.selected-oui { border-color: #4caf50; background: #f1fdf1; }
+  .cal-yn-btn.selected-non { border-color: #e57373; background: #fff5f5; }
+
+  /* ÉCHELLE DE BRISTOL */
+  .bristol-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 5px; margin-bottom: 6px;
+  }
+  .bristol-item {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--oat);
+    background: white; cursor: pointer; transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bristol-item .b-icon { font-size: 1.3rem; line-height: 1; display: block; }
+  .bristol-item .b-num {
+    font-size: 0.55rem; font-weight: 700; color: var(--text-light);
+    margin-top: 3px; line-height: 1;
+  }
+  /* Couleurs par groupe */
+  .bristol-item.b-dur  { border-color: #c8875622; }
+  .bristol-item.b-norm { border-color: var(--avocado); }
+  .bristol-item.b-mou  { border-color: #f9a82566; }
+  .bristol-item.selected.b-dur  { background: #fdf0e8; border-color: #c88756; }
+  .bristol-item.selected.b-norm { background: var(--honey); border-color: var(--sage); }
+  .bristol-item.selected.b-mou  { background: #fff8e6; border-color: #f9a825; }
+  .bristol-item.selected .b-num { color: var(--text-dark); }
+  .bristol-legend {
+    display: flex; justify-content: space-between;
+    font-size: 0.58rem; color: var(--text-light);
+    padding: 0 2px; margin-bottom: 4px;
+  }
+
+  /* FRÉQUENCE stepper */
+  .cal-stepper {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; background: white; border: 1.5px solid var(--oat);
+    border-radius: 16px; overflow: hidden;
+  }
+  .cal-stepper-btn {
+    width: 52px; height: 48px; background: none; border: none;
+    font-size: 1.4rem; color: var(--sage); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; flex-shrink: 0;
+  }
+  .cal-stepper-btn:active { background: var(--honey); }
+  .cal-stepper-val {
+    flex: 1; text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; color: var(--text-dark);
+    border-left: 1px solid var(--oat);
+    border-right: 1px solid var(--oat);
+    padding: 8px 0; line-height: 1.2;
+  }
+  .cal-stepper-unit { font-size: 0.6rem; color: var(--text-light); display: block; }
+
+  /* CHIPS confort */
+  .cal-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 4px; }
+  .cal-chip {
+    padding: 8px 14px; border-radius: 20px; font-size: 0.78rem;
+    border: 1.5px solid var(--oat); background: white;
+    color: var(--text-mid); cursor: pointer; transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-chip.selected { background: var(--sage); border-color: var(--sage); color: white; }
+  .cal-chip.chip-none { border-style: dashed; }
+  .cal-chip.chip-none.selected { background: var(--honey); border-color: var(--sage); color: var(--sage); }
+
+  /* TIMING */
+  .cal-timing-row { display: flex; gap: 8px; }
+  .cal-timing-btn {
+    flex: 1; padding: 11px 4px; border-radius: 12px;
+    border: 1.5px solid var(--oat); background: white;
+    text-align: center; cursor: pointer; transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-timing-btn .t-icon { font-size: 1.1rem; display: block; }
+  .cal-timing-btn .t-lbl { font-size: 0.62rem; color: var(--text-light); margin-top: 2px; }
+  .cal-timing-btn.selected { border-color: var(--sage); background: var(--honey); }
+  .cal-timing-btn.selected .t-lbl { color: var(--sage); }
+
+  /* Boutons action */
+  .cal-modal-save {
+    width: 100%; padding: 15px; background: var(--sage);
+    color: white; border: none; border-radius: 14px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    cursor: pointer; margin-top: 20px;
+  }
+  .cal-modal-delete {
+    width: 100%; padding: 11px; background: none; color: var(--text-light);
+    border: none; font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    cursor: pointer; margin-top: 8px; text-decoration: underline;
+  }
+
+
   #screen-calendar { background: var(--cream); }
 
   .cal-header {
@@ -1320,83 +1451,15 @@ if (typeof supabase === 'undefined') {
   }
 
   /* Modale log transit */
-  .cal-modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-    z-index: 600; display: none; align-items: flex-end; justify-content: center;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .cal-modal-overlay.open { display: flex; }
-  .cal-modal-card {
-    background: white; border-radius: 28px 28px 0 0;
-    padding: 28px clamp(16px,6vw,28px) 32px;
-    width: 100%; max-height: 85vh; overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .cal-modal-handle {
-    width: 36px; height: 4px; border-radius: 2px;
-    background: var(--oat); margin: 0 auto 20px;
-  }
-  .cal-modal-date {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.2rem; color: var(--text-dark);
-    text-align: center; margin-bottom: 22px;
-  }
 
-  /* Question oui/non */
-  .cal-yn-row { display: flex; gap: 12px; margin-bottom: 24px; }
-  .cal-yn-btn {
-    flex: 1; padding: 18px; border-radius: 18px;
-    border: 2px solid var(--oat); background: white;
-    text-align: center; cursor: pointer; transition: all 0.2s;
-  }
-  .cal-yn-btn .yn-emoji { font-size: 2rem; display: block; margin-bottom: 6px; }
-  .cal-yn-btn .yn-label { font-size: 0.82rem; color: var(--text-mid); }
-  .cal-yn-btn.selected-oui { border-color: #4caf50; background: #f1fdf1; }
-  .cal-yn-btn.selected-non { border-color: #e57373; background: #fff5f5; }
-  .cal-yn-btn.selected-oui .yn-label { color: #2e7d32; font-weight: 600; }
-  .cal-yn-btn.selected-non .yn-label { color: #c62828; font-weight: 600; }
 
-  /* Niveau de difficulté */
-  .cal-diff-row { display: flex; gap: 10px; margin-bottom: 10px; }
-  .cal-diff-btn {
-    flex: 1; padding: 14px 6px; border-radius: 14px;
-    border: 2px solid var(--oat); background: white;
-    text-align: center; cursor: pointer; transition: all 0.2s;
-  }
-  .cal-diff-btn .diff-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.6rem; font-weight: 400; color: var(--text-dark);
-    display: block; line-height: 1;
-  }
-  .cal-diff-btn .diff-lbl { font-size: 0.6rem; color: var(--text-light); margin-top: 4px; display: block; }
-  .cal-diff-btn.sel-1 { border-color: #4caf50; background: #f1fdf1; }
-  .cal-diff-btn.sel-2 { border-color: #ff9800; background: #fff8f0; }
-  .cal-diff-btn.sel-3 { border-color: #e57373; background: #fff5f5; }
-  .cal-diff-btn.sel-1 .diff-num { color: #2e7d32; }
-  .cal-diff-btn.sel-2 .diff-num { color: #e65100; }
-  .cal-diff-btn.sel-3 .diff-num { color: #c62828; }
 
-  .cal-diff-legend {
-    display: flex; gap: 12px; flex-wrap: wrap;
-    font-size: 0.65rem; color: var(--text-light);
-    margin-bottom: 22px; padding: 8px 12px;
-    background: var(--honey); border-radius: 10px;
-  }
-  .cal-diff-legend span { display: flex; align-items: center; gap: 4px; }
 
-  .cal-modal-save {
-    width: 100%; padding: 16px; background: var(--sage);
-    color: white; border: none; border-radius: 14px;
-    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
-    letter-spacing: 0.06em; cursor: pointer; margin-top: 4px;
-  }
-  .cal-modal-delete {
-    width: 100%; padding: 12px; background: none;
-    color: var(--text-light); border: none;
-    font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
-    cursor: pointer; margin-top: 8px;
-    text-decoration: underline;
-  }
+
+
+
+
+
 
   .cal-access-btn {
     width: 38px; height: 38px; border-radius: 50%;
@@ -5153,36 +5216,24 @@ function galleryGoToJournal(dateStr) {
 // CALENDRIER TRANSIT
 // ══════════════════════════════════════════════════════════════════════════════
 
-let calYear  = new Date().getFullYear();
-let calMonth = new Date().getMonth(); // 0-based
-let calSelectedDate = null; // 'YYYY-MM-DD'
-let calCurrentYN   = null;  // 'oui' | 'non'
-let calCurrentDiff = null;  // 1 | 2 | 3
-
-const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin',
-                 'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const JOURS_FR = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
-
-// Clé localStorage pour les données transit calendrier
+// ── Persistence calendrier ───────────────────────────────────────────────────
 function calKey(dateStr) { return 'nara_cal_' + dateStr; }
 
 function calLoad(dateStr) {
   try { return JSON.parse(localStorage.getItem(calKey(dateStr)) || 'null'); } catch { return null; }
 }
+
 function calSave(dateStr, data) {
   localStorage.setItem(calKey(dateStr), JSON.stringify(data));
-  // Sync Supabase en arrière-plan
   if (currentUser) {
     sb.from('nara_logs').upsert({
-      user_id: currentUser.id,
-      date: dateStr,
-      type: 'calendrier',
-      values: data,
+      user_id: currentUser.id, date: dateStr, type: 'calendrier', values: data,
     }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
       if (error) console.warn('[Nara] Cal sync:', error.message);
     });
   }
 }
+
 function calDelete(dateStr) {
   localStorage.removeItem(calKey(dateStr));
   if (currentUser) {
@@ -5191,61 +5242,105 @@ function calDelete(dateStr) {
   }
 }
 
-function renderCalendar() {
-  // Mettre à jour le label mois/année
-  const label = document.getElementById('cal-month-label');
-  if (label) label.innerHTML = `${MOIS_FR[calMonth]} <span class="cal-year">${calYear}</span>`;
+// ── État calendrier ──────────────────────────────────────────────────────────
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calSelectedDate = null;
+let calCurrentYN    = null;
+let calCurrentFreq  = 1;
+let calCurrentBristol = null;  // 1-7
+let calCurrentConfort = ['aucun']; // multi
+let calCurrentTiming  = [];       // multi
 
-  const grid = document.getElementById('cal-grid');
+// Bristol — pictos et groupes couleurs
+const BRISTOL_TYPES = [
+  { num:1, icon:'⬛', label:'Très dur',      group:'b-dur'  },
+  { num:2, icon:'🪨', label:'Dur/Grumeleux', group:'b-dur'  },
+  { num:3, icon:'🌰', label:'Fissuré',       group:'b-norm' },
+  { num:4, icon:'🥖', label:'Normal',        group:'b-norm' },
+  { num:5, icon:'🫘', label:'Mou',           group:'b-mou'  },
+  { num:6, icon:'🌊', label:'Bouillie',      group:'b-mou'  },
+  { num:7, icon:'💧', label:'Liquide',       group:'b-mou'  },
+];
+
+// Rendu grille Bristol
+function renderBristolGrid() {
+  const grid = document.getElementById('bristol-grid');
   if (!grid) return;
-
-  // Premier jour du mois (0=dim, 1=lun…)
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  // Décalage pour commencer le lundi (0=lun, 6=dim)
-  const offset = firstDay === 0 ? 6 : firstDay - 1;
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
-  let html = '';
-
-  // Cellules vides avant le 1er
-  for (let i = 0; i < offset; i++) {
-    html += '<div class="cal-day empty"></div>';
-  }
-
-  // Jours du mois
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isFuture = dateStr > todayStr;
-    const isToday  = dateStr === todayStr;
-    const entry    = calLoad(dateStr);
-
-    let classes = 'cal-day';
-    if (isToday) classes += ' today';
-    if (isFuture) classes += ' future';
-
-    let dotHtml = '';
-    let diffBadge = '';
-    if (entry) {
-      const dotClass = entry.yn === 'oui' ? 'oui' : 'non';
-      const diffClass = entry.diff ? `diff-${entry.diff}` : '';
-      dotHtml = `<div class="cal-dot ${dotClass} ${diffClass}"></div>`;
-      if (entry.diff) diffBadge = `<span class="cal-diff">${entry.diff}</span>`;
-    }
-
-    const onclick = isFuture ? '' : `onclick="calOpenDay('${dateStr}')"`;
-    html += `
-      <div class="${classes}" ${onclick}>
-        ${diffBadge}
-        <span class="cal-day-num">${d}</span>
-        ${dotHtml}
-      </div>`;
-  }
-
-  grid.innerHTML = html;
+  grid.innerHTML = BRISTOL_TYPES.map(t => `
+    <div class="bristol-item ${t.group}${calCurrentBristol === t.num ? ' selected' : ''}"
+         onclick="calSelectBristol(${t.num})" title="${t.label}">
+      <span class="b-icon">${t.icon}</span>
+      <span class="b-num">${t.num}</span>
+    </div>`).join('');
 }
 
+function calSelectBristol(num) {
+  calCurrentBristol = calCurrentBristol === num ? null : num;
+  renderBristolGrid();
+  checkMedicalAlert();
+}
+
+// Stepper fréquence
+function calStepFreq(delta) {
+  calCurrentFreq = Math.max(1, Math.min(10, calCurrentFreq + delta));
+  const el = document.getElementById('cal-freq-val');
+  if (el) el.innerHTML = `${calCurrentFreq}<span class="cal-stepper-unit">passage${calCurrentFreq > 1 ? 's' : ''}</span>`;
+  checkMedicalAlert();
+}
+
+// Chips confort (multi-sélection, mutex avec "aucun")
+function calToggleConfort(key, el) {
+  if (key === 'aucun') {
+    // Reset tout → seulement "aucun"
+    calCurrentConfort = ['aucun'];
+    document.querySelectorAll('#cal-confort-chips .cal-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    return;
+  }
+  // Désélectionner "aucun" si on choisit autre chose
+  calCurrentConfort = calCurrentConfort.filter(k => k !== 'aucun');
+  document.getElementById('chip-aucun').classList.remove('selected');
+
+  if (calCurrentConfort.includes(key)) {
+    calCurrentConfort = calCurrentConfort.filter(k => k !== key);
+    el.classList.remove('selected');
+  } else {
+    calCurrentConfort.push(key);
+    el.classList.add('selected');
+  }
+  // Si rien de sélectionné → remettre aucun
+  if (calCurrentConfort.length === 0) {
+    calCurrentConfort = ['aucun'];
+    document.getElementById('chip-aucun').classList.add('selected');
+  }
+  checkMedicalAlert();
+}
+
+// Timing (multi-sélection)
+function calToggleTiming(key, el) {
+  if (calCurrentTiming.includes(key)) {
+    calCurrentTiming = calCurrentTiming.filter(k => k !== key);
+    el.classList.remove('selected');
+  } else {
+    calCurrentTiming.push(key);
+    el.classList.add('selected');
+  }
+}
+
+// Alerte médicale si patterns potentiellement préoccupants
+function checkMedicalAlert() {
+  const alert = document.getElementById('cal-medical-alert');
+  if (!alert) return;
+  // Montrer si douleur ET fréquence anormale (>3 ou bristol 1-2)
+  const hasDouleur = calCurrentConfort.includes('douleur');
+  const highFreq   = calCurrentFreq > 3;
+  const hardstools = calCurrentBristol !== null && calCurrentBristol <= 2;
+  const showAlert  = hasDouleur || highFreq || hardstools;
+  alert.classList.toggle('show', showAlert);
+}
+
+// ── Navigation mois ──────────────────────────────────────────────────────────
 function calPrevMonth() {
   if (calMonth === 0) { calMonth = 11; calYear--; }
   else calMonth--;
@@ -5254,45 +5349,103 @@ function calPrevMonth() {
 
 function calNextMonth() {
   const today = new Date();
-  // Ne pas aller au-delà du mois en cours
   if (calYear === today.getFullYear() && calMonth >= today.getMonth()) return;
   if (calMonth === 11) { calMonth = 0; calYear++; }
   else calMonth++;
   renderCalendar();
 }
 
+// ── Rendu calendrier ─────────────────────────────────────────────────────────
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                 'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function renderCalendar() {
+  const label = document.getElementById('cal-month-label');
+  if (label) label.innerHTML = `${MOIS_FR[calMonth]} <span class="cal-year">${calYear}</span>`;
+
+  const grid = document.getElementById('cal-grid');
+  if (!grid) return;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  let html = '';
+  for (let i = 0; i < offset; i++) html += '<div class="cal-day empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isFuture = dateStr > todayStr;
+    const isToday  = dateStr === todayStr;
+    const entry    = calLoad(dateStr);
+
+    let classes = 'cal-day';
+    if (isToday)  classes += ' today';
+    if (isFuture) classes += ' future';
+
+    let dot = '', badge = '';
+    if (entry) {
+      const dotClass = entry.yn === 'oui' ? 'oui' : 'non';
+      // Couleur du dot selon Bristol si disponible
+      let extraClass = '';
+      if (entry.bristol) {
+        extraClass = entry.bristol <= 2 ? 'diff-3' : entry.bristol <= 4 ? 'diff-1' : 'diff-2';
+      }
+      dot = `<div class="cal-dot ${dotClass} ${extraClass}"></div>`;
+      if (entry.freq && entry.freq > 1) badge = `<span class="cal-diff">${entry.freq}×</span>`;
+    }
+
+    const onclick = isFuture ? '' : `onclick="calOpenDay('${dateStr}')"`;
+    html += `<div class="${classes}" ${onclick}>${badge}<span class="cal-day-num">${d}</span>${dot}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ── Ouvrir la modale d'un jour ───────────────────────────────────────────────
 function calOpenDay(dateStr) {
   calSelectedDate = dateStr;
   const d = new Date(dateStr + 'T12:00:00');
   const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-  const mois  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-  const label = `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}`;
-
-  document.getElementById('cal-modal-date').textContent = label;
+  const mois  = ['janvier','février','mars','avril','mai','juin','juillet','août',
+                 'septembre','octobre','novembre','décembre'];
+  document.getElementById('cal-modal-date').textContent =
+    `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}`;
 
   // Charger données existantes
   const entry = calLoad(dateStr);
-  calCurrentYN   = entry?.yn   || null;
-  calCurrentDiff = entry?.diff || null;
+  calCurrentYN      = entry?.yn      || null;
+  calCurrentFreq    = entry?.freq    || 1;
+  calCurrentBristol = entry?.bristol || null;
+  calCurrentConfort = entry?.confort || ['aucun'];
+  calCurrentTiming  = entry?.timing  || [];
 
   // Reset UI
   ['cal-btn-oui','cal-btn-non'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.className = 'cal-yn-btn';
+    const el = document.getElementById(id); if (el) el.className = 'cal-yn-btn';
   });
-  [1,2,3].forEach(n => {
-    const el = document.getElementById('cal-diff-' + n);
-    if (el) el.className = 'cal-diff-btn';
+  const detailSection = document.getElementById('cal-detail-section');
+  if (detailSection) detailSection.style.display = 'none';
+
+  // Appliquer valeurs
+  if (calCurrentYN) calSelectYN(calCurrentYN);
+  // Fréquence
+  const freqEl = document.getElementById('cal-freq-val');
+  if (freqEl) freqEl.innerHTML = `${calCurrentFreq}<span class="cal-stepper-unit">passage${calCurrentFreq > 1 ? 's' : ''}</span>`;
+  // Confort
+  document.querySelectorAll('#cal-confort-chips .cal-chip').forEach(c => {
+    const id = c.id.replace('chip-', '');
+    c.classList.toggle('selected', calCurrentConfort.includes(id));
   });
-
-  // Appliquer valeurs existantes
-  if (calCurrentYN) {
-    calSelectYN(calCurrentYN, true);
-  }
-  if (calCurrentDiff) {
-    calSelectDiff(calCurrentDiff, true);
-  }
-
+  // Timing
+  ['matin','repas','soir'].forEach(t => {
+    const el = document.getElementById('timing-' + t);
+    if (el) el.classList.toggle('selected', calCurrentTiming.includes(t));
+  });
+  // Bristol
+  renderBristolGrid();
+  // Alerte médicale
+  checkMedicalAlert();
   // Bouton supprimer
   const delBtn = document.getElementById('cal-delete-btn');
   if (delBtn) delBtn.style.display = entry ? 'block' : 'none';
@@ -5308,45 +5461,48 @@ function calCloseModal() {
   calSelectedDate = null;
 }
 
-function calSelectYN(val, silent) {
+function calSelectYN(val) {
   calCurrentYN = val;
-  // Mise à jour visuelle
   const oui = document.getElementById('cal-btn-oui');
   const non = document.getElementById('cal-btn-non');
   if (oui) oui.className = 'cal-yn-btn' + (val === 'oui' ? ' selected-oui' : '');
   if (non) non.className = 'cal-yn-btn' + (val === 'non' ? ' selected-non' : '');
-  // Montrer section difficulté seulement si "oui"
-  const diffSection = document.getElementById('cal-diff-section');
-  if (diffSection) diffSection.style.display = val === 'oui' ? 'block' : 'none';
-  if (val === 'non') { calCurrentDiff = null; [1,2,3].forEach(n => { const el = document.getElementById('cal-diff-' + n); if(el) el.className='cal-diff-btn'; }); }
-}
-
-function calSelectDiff(val, silent) {
-  calCurrentDiff = val;
-  [1,2,3].forEach(n => {
-    const el = document.getElementById('cal-diff-' + n);
-    if (el) el.className = 'cal-diff-btn' + (n === val ? ' sel-' + val : '');
-  });
+  const detail = document.getElementById('cal-detail-section');
+  if (detail) detail.style.display = val === 'oui' ? 'block' : 'none';
+  if (val === 'non') {
+    calCurrentBristol = null; calCurrentConfort = ['aucun'];
+    calCurrentTiming = []; calCurrentFreq = 1;
+  }
 }
 
 function calSaveDay() {
   if (!calSelectedDate || !calCurrentYN) {
-    showToast('Sélectionne d\'abord une réponse');
+    showToast('Indique d\'abord si tu as eu une selle ce jour');
     return;
   }
-  const data = { yn: calCurrentYN, diff: calCurrentYN === 'oui' ? calCurrentDiff : null };
+  const data = {
+    yn:      calCurrentYN,
+    freq:    calCurrentYN === 'oui' ? calCurrentFreq    : null,
+    bristol: calCurrentYN === 'oui' ? calCurrentBristol : null,
+    confort: calCurrentYN === 'oui' ? calCurrentConfort : [],
+    timing:  calCurrentYN === 'oui' ? calCurrentTiming  : [],
+  };
   calSave(calSelectedDate, data);
+
+  // Sync journal transit
+  if (calCurrentYN === 'oui') {
+    const existing = JSON.parse(localStorage.getItem(`nara_log_${calSelectedDate}_transit`) || 'null') || {};
+    const merged = { ...existing, type:'transit', date:calSelectedDate, ts:Date.now(),
+      values: { ...existing.values,
+        cal_transit: true, cal_bristol: calCurrentBristol,
+        cal_freq: calCurrentFreq, cal_confort: calCurrentConfort,
+        cal_timing: calCurrentTiming } };
+    localStorage.setItem(`nara_log_${calSelectedDate}_transit`, JSON.stringify(merged));
+  }
+
   calCloseModal();
   renderCalendar();
   showToast('✓ Journée enregistrée !');
-
-  // Sync avec le journal transit du même jour si oui
-  if (calCurrentYN === 'oui') {
-    const existing = JSON.parse(localStorage.getItem(`nara_log_${calSelectedDate}_transit`) || 'null') || {};
-    const merged = { ...existing, type: 'transit', date: calSelectedDate, ts: Date.now(),
-      values: { ...existing.values, cal_transit: true, cal_diff: calCurrentDiff } };
-    localStorage.setItem(`nara_log_${calSelectedDate}_transit`, JSON.stringify(merged));
-  }
 }
 
 function calDeleteDay() {
@@ -5356,6 +5512,7 @@ function calDeleteDay() {
   renderCalendar();
   showToast('Entrée supprimée');
 }
+
 
 
 // Filet de sécurité : si jamais initSession ne termine pas dans les 10s
@@ -5486,48 +5643,77 @@ try { updateHomeScore(); } catch(e) {}
       <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="calHandleOverlay(event)">
         <div class="cal-modal-card">
           <div class="cal-modal-handle"></div>
-          <div class="cal-modal-date" id="cal-modal-date">Lundi 4 août</div>
+          <div class="cal-modal-date" id="cal-modal-date"></div>
 
-          <div style="font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px">
-            As-tu eu une selle ce jour ?
-          </div>
+          <!-- OUI / NON -->
+          <span class="cal-section-label">As-tu eu une selle ce jour ?</span>
           <div class="cal-yn-row">
             <div class="cal-yn-btn" id="cal-btn-oui" onclick="calSelectYN('oui')">
-              <span class="yn-emoji">✅</span>
-              <span class="yn-label">Oui, c'est fait</span>
+              <span class="yn-emoji">🌿</span>
+              <span class="yn-label">Oui, aujourd'hui</span>
             </div>
             <div class="cal-yn-btn" id="cal-btn-non" onclick="calSelectYN('non')">
-              <span class="yn-emoji">❌</span>
+              <span class="yn-emoji">💤</span>
               <span class="yn-label">Non, pas ce jour</span>
             </div>
           </div>
 
-          <div id="cal-diff-section" style="display:none">
-            <div style="font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-light);margin-bottom:10px">
-              Niveau de facilité
+          <!-- Section détaillée — visible uniquement si OUI -->
+          <div id="cal-detail-section" style="display:none">
+
+            <!-- ÉCHELLE DE BRISTOL -->
+            <span class="cal-section-label">Consistance — Échelle de Bristol</span>
+            <div class="bristol-grid" id="bristol-grid">
+              <!-- Rendu JS -->
             </div>
-            <div class="cal-diff-row">
-              <div class="cal-diff-btn" id="cal-diff-1" onclick="calSelectDiff(1)">
-                <span class="diff-num">1</span>
-                <span class="diff-lbl">Facile</span>
+            <div class="bristol-legend">
+              <span style="color:#c88756">Dure / Constipation</span>
+              <span style="color:var(--sage)">Normale</span>
+              <span style="color:#f9a825">Molle / Accéléré</span>
+            </div>
+
+            <!-- FRÉQUENCE -->
+            <span class="cal-section-label">Nombre de passages dans la journée</span>
+            <div class="cal-stepper">
+              <button class="cal-stepper-btn" onclick="calStepFreq(-1)">−</button>
+              <div class="cal-stepper-val" id="cal-freq-val">
+                1<span class="cal-stepper-unit">passage</span>
               </div>
-              <div class="cal-diff-btn" id="cal-diff-2" onclick="calSelectDiff(2)">
-                <span class="diff-num">2</span>
-                <span class="diff-lbl">Modéré</span>
+              <button class="cal-stepper-btn" onclick="calStepFreq(1)">+</button>
+            </div>
+
+            <!-- CONFORT -->
+            <span class="cal-section-label">Confort associé <span style="font-weight:300;text-transform:none;letter-spacing:0">(optionnel, sélection multiple)</span></span>
+            <div class="cal-chips" id="cal-confort-chips">
+              <div class="cal-chip chip-none selected" id="chip-aucun" onclick="calToggleConfort('aucun', this)">✓ Aucun inconfort</div>
+              <div class="cal-chip" id="chip-ballonnements" onclick="calToggleConfort('ballonnements', this)">💨 Ballonnements</div>
+              <div class="cal-chip" id="chip-douleur" onclick="calToggleConfort('douleur', this)">😣 Douleur</div>
+              <div class="cal-chip" id="chip-urgence" onclick="calToggleConfort('urgence', this)">⚡ Urgence</div>
+              <div class="cal-chip" id="chip-incomplete" onclick="calToggleConfort('incomplete', this)">🔄 Évacuation incomplète</div>
+            </div>
+
+            <!-- TIMING -->
+            <span class="cal-section-label">Moment(s) de la journée <span style="font-weight:300;text-transform:none;letter-spacing:0">(multi-sélection)</span></span>
+            <div class="cal-timing-row">
+              <div class="cal-timing-btn" id="timing-matin" onclick="calToggleTiming('matin', this)">
+                <span class="t-icon">🌅</span><span class="t-lbl">Matin</span>
               </div>
-              <div class="cal-diff-btn" id="cal-diff-3" onclick="calSelectDiff(3)">
-                <span class="diff-num">3</span>
-                <span class="diff-lbl">Difficile</span>
+              <div class="cal-timing-btn" id="timing-repas" onclick="calToggleTiming('repas', this)">
+                <span class="t-icon">🍽️</span><span class="t-lbl">Après repas</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-soir" onclick="calToggleTiming('soir', this)">
+                <span class="t-icon">🌙</span><span class="t-lbl">Soir</span>
               </div>
             </div>
-            <div class="cal-diff-legend">
-              <span>1️⃣ Sans effort</span>
-              <span>2️⃣ Un peu difficile</span>
-              <span>3️⃣ Vraiment compliqué</span>
+
+            <!-- Alerte médicale (si patterns préoccupants) -->
+            <div class="cal-medical-alert" id="cal-medical-alert">
+              🩺 <strong>À noter :</strong> si ces symptômes se répètent sur plusieurs semaines, il peut être utile d'en parler à un médecin. Nara n'est pas un outil de diagnostic — une consultation reste le meilleur moyen d'être accompagnée.
             </div>
+
           </div>
 
-          <button class="cal-modal-save" id="cal-save-btn" onclick="calSaveDay()">Enregistrer ✓</button>
+          <button class="cal-modal-save" onclick="calSaveDay()">Enregistrer ✓</button>
           <button class="cal-modal-delete" id="cal-delete-btn" onclick="calDeleteDay()" style="display:none">
             Supprimer cette entrée
           </button>

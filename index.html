@@ -1216,6 +1216,218 @@ if (typeof supabase === 'undefined') {
 
 
 
+
+  /* ===== PROFIL SANTÉ ===== */
+  #screen-profile { background: var(--cream); }
+
+  /* Invitation post-inscription */
+  .profile-invite-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center;
+    padding: clamp(28px,8vw,48px) clamp(20px,6vw,32px);
+    min-height: 100%;
+  }
+  .profile-invite-icon { font-size: 3.2rem; margin-bottom: 20px; }
+  .profile-invite-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.4rem,5vw,1.8rem); font-weight: 400;
+    color: var(--text-dark); margin-bottom: 12px; line-height: 1.3;
+  }
+  .profile-invite-text {
+    font-size: 0.88rem; color: var(--text-mid); line-height: 1.7;
+    max-width: 340px; margin-bottom: 32px;
+  }
+  .profile-invite-btn-primary {
+    width: 100%; max-width: 340px; padding: 16px;
+    background: var(--sage); color: white; border: none;
+    border-radius: 16px; font-family: 'DM Sans',sans-serif;
+    font-size: 0.95rem; cursor: pointer; margin-bottom: 12px;
+  }
+  .profile-invite-btn-later {
+    font-size: 0.82rem; color: var(--text-light);
+    cursor: pointer; text-decoration: underline; background: none; border: none;
+    font-family: 'DM Sans',sans-serif;
+  }
+
+  /* Écran "Plus tard" */
+  .profile-later-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center;
+    padding: clamp(28px,8vw,48px) clamp(20px,6vw,32px); min-height: 100%;
+  }
+  .profile-later-note {
+    background: var(--honey); border-radius: 16px;
+    padding: 18px 20px; font-size: 0.82rem; color: var(--text-mid);
+    line-height: 1.65; max-width: 340px; margin-bottom: 24px; text-align: left;
+  }
+
+  /* Consentement RGPD */
+  .profile-consent-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 800; display: none; align-items: flex-end; justify-content: center;
+  }
+  .profile-consent-overlay.open { display: flex; }
+  .profile-consent-card {
+    background: white; border-radius: 28px 28px 0 0;
+    padding: 24px clamp(16px,6vw,28px) calc(28px + env(safe-area-inset-bottom,0px));
+    width: 100%; max-height: 80vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .profile-consent-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem; color: var(--text-dark); margin-bottom: 10px;
+  }
+  .profile-consent-text {
+    font-size: 0.78rem; color: var(--text-mid); line-height: 1.65; margin-bottom: 18px;
+  }
+  .profile-consent-check {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; cursor: pointer;
+  }
+  .profile-consent-check input { width: 18px; height: 18px; accent-color: var(--sage); flex-shrink: 0; margin-top: 2px; }
+  .profile-consent-check-label { font-size: 0.82rem; color: var(--text-dark); line-height: 1.5; }
+  .profile-consent-btn {
+    width: 100%; padding: 15px; background: var(--sage); color: white;
+    border: none; border-radius: 14px; font-family: 'DM Sans',sans-serif;
+    font-size: 0.9rem; cursor: pointer; opacity: 0.5; pointer-events: none;
+  }
+  .profile-consent-btn.enabled { opacity: 1; pointer-events: auto; }
+
+  /* Screen profil principal */
+  .profile-header {
+    padding: calc(env(safe-area-inset-top,0px) + 14px) clamp(16px,6vw,28px) 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .profile-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px clamp(12px,4vw,20px) calc(60px + 12px); scrollbar-width: none;
+  }
+  .profile-scroll::-webkit-scrollbar { display: none; }
+
+  /* Progression globale */
+  .profile-progress-card {
+    background: white; border-radius: 18px; padding: 16px 18px;
+    margin-bottom: 18px; display: flex; align-items: center; gap: 14px;
+  }
+  .profile-progress-bar-wrap {
+    flex: 1; height: 6px; background: var(--oat); border-radius: 3px; overflow: hidden;
+  }
+  .profile-progress-bar-fill {
+    height: 100%; border-radius: 3px; background: var(--sage); transition: width 0.5s;
+  }
+  .profile-progress-text { font-size: 0.72rem; color: var(--text-light); white-space: nowrap; }
+
+  /* Sections */
+  .profile-section-card {
+    background: white; border-radius: 18px; margin-bottom: 10px; overflow: hidden;
+    border: 1.5px solid var(--oat); transition: border-color 0.2s;
+  }
+  .profile-section-card.completed { border-color: var(--sage); }
+  .profile-section-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 15px 16px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .profile-section-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .profile-section-title { flex: 1; font-size: 0.88rem; font-weight: 500; color: var(--text-dark); }
+  .profile-section-badge {
+    font-size: 0.6rem; padding: 3px 8px; border-radius: 10px;
+    background: var(--oat); color: var(--text-light); white-space: nowrap;
+  }
+  .profile-section-card.completed .profile-section-badge {
+    background: var(--honey); color: var(--sage);
+  }
+  .profile-section-chevron {
+    font-size: 0.85rem; color: var(--text-light); transition: transform 0.25s;
+  }
+  .profile-section-header.open .profile-section-chevron { transform: rotate(90deg); }
+  .profile-section-body {
+    display: none; padding: 0 16px 18px; border-top: 1px solid var(--oat);
+  }
+  .profile-section-body.open { display: block; }
+
+  /* Composants de formulaire profil */
+  .prof-q { font-size: 0.78rem; color: var(--text-mid); margin: 14px 0 8px; }
+  .prof-q:first-child { margin-top: 16px; }
+  .prof-tranches { display: flex; flex-direction: column; gap: 6px; }
+  .prof-tranche {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--oat);
+    background: white; cursor: pointer; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .prof-tranche.selected { border-color: var(--sage); background: var(--honey); }
+  .prof-tranche-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--oat); flex-shrink: 0; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .prof-tranche.selected .prof-tranche-dot {
+    border-color: var(--sage); background: var(--sage);
+  }
+  .prof-tranche.selected .prof-tranche-dot::after {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: white;
+  }
+  .prof-tranche-label { font-size: 0.82rem; color: var(--text-dark); }
+  .prof-tranche.selected .prof-tranche-label { color: var(--sage); font-weight: 500; }
+
+  /* Chips profil */
+  .prof-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .prof-chip {
+    padding: 8px 14px; border-radius: 20px; font-size: 0.78rem;
+    border: 1.5px solid var(--oat); background: white;
+    color: var(--text-mid); cursor: pointer; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .prof-chip.selected { background: var(--sage); border-color: var(--sage); color: white; }
+
+  /* Slider profil */
+  .prof-slider-wrap {
+    background: var(--honey); border-radius: 12px; padding: 12px 14px;
+  }
+  .prof-slider-label {
+    font-size: 0.8rem; color: var(--text-dark);
+    display: flex; justify-content: space-between; margin-bottom: 8px;
+  }
+  .prof-slider-val { color: var(--sage); font-weight: 600; }
+  .prof-slider {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    border-radius: 4px; background: var(--oat); outline: none; cursor: pointer;
+  }
+  .prof-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--sage); border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(129,130,99,0.4);
+  }
+
+  /* Champ libre optionnel */
+  .prof-free-input {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--oat);
+    border-radius: 10px; font-family: 'DM Sans',sans-serif;
+    font-size: 0.82rem; color: var(--text-dark); background: white;
+    outline: none; margin-top: 8px;
+  }
+  .prof-free-input:focus { border-color: var(--sage); }
+
+  /* Bouton sauvegarder section */
+  .prof-save-section-btn {
+    width: 100%; padding: 13px; background: var(--sage); color: white;
+    border: none; border-radius: 12px; font-family: 'DM Sans',sans-serif;
+    font-size: 0.85rem; cursor: pointer; margin-top: 18px;
+  }
+
+  /* Bristol profil compact */
+  .prof-bristol-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .prof-bristol-item {
+    flex: 1; min-width: 38px; display: flex; flex-direction: column;
+    align-items: center; padding: 7px 3px; border-radius: 10px;
+    border: 1.5px solid var(--oat); background: white; cursor: pointer;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .prof-bristol-item.selected { border-color: var(--sage); background: var(--honey); }
+  .prof-bristol-item svg { width: 34px; height: 18px; }
+  .prof-bristol-item span { font-size: 0.5rem; color: var(--text-light); margin-top: 3px; }
+  .prof-bristol-item.selected span { color: var(--sage); }
+
   /* ===== MODULE TEST ALIMENTAIRE ===== */
 
   /* Bandeau dans le journal */
@@ -2047,6 +2259,7 @@ if (typeof supabase === 'undefined') {
         <div class="user-dropdown" id="user-dropdown">
           <div class="user-dropdown-name" id="dropdown-name">Manon</div>
           <div class="user-dropdown-email" id="dropdown-email">manon@exemple.fr</div>
+          <div class="user-dropdown-item" onclick="toggleUserMenu(); openProfileFromMenu()">🧬 Mon profil santé</div>
           <div class="user-dropdown-item" onclick="toggleUserMenu(); openCycleModal()">🌸 Suivi de cycle</div>
           <div class="user-dropdown-item" onclick="toggleUserMenu(); go('journal')">📓 Mon journal</div>
           <div class="user-dropdown-item danger" onclick="handleLogout()">← Se déconnecter</div>
@@ -2485,7 +2698,7 @@ async function handleSignup() {
       updateHomeUser(currentUser);
       showAuthMsg('success', 'signup', `🎉 Bienvenue ${prenom} ! Redirection…`);
       await loadUserData(currentUser.id);
-      setTimeout(() => go('home'), 1200);
+      setTimeout(() => go('profile-invite'), 1200);
     }
   } catch (err) {
     const msg = err.message.includes('already registered')
@@ -2973,7 +3186,10 @@ const BNAV_MAP = {
   recipes: 'recipes', 'recipe-detail': 'recipes',
   'article-detail': 'library', 'routine-detail': 'routines',
   calendar: null,
-  gallery: null
+  gallery: null,
+  profile: null,
+  'profile-invite': null,
+  'profile-later': null
 };
 
 function updateBottomNav(screenId) {
@@ -3024,6 +3240,7 @@ function showScreen(id, btn) {
     renderJournal();
   }
   if (id === 'calendar') try { renderCalendar(); } catch(e) { console.warn('[Nara] renderCalendar:', e); }
+  if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
   if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
@@ -5510,6 +5727,484 @@ function galleryGoToJournal(dateStr) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// PROFIL SANTÉ — ligne de base personnelle (6 sections)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Persistence ───────────────────────────────────────────────────────────────
+function profileLoad() {
+  try { return JSON.parse(localStorage.getItem('nara_profile') || 'null'); } catch { return null; }
+}
+function profileSave(data) {
+  data.updatedAt = new Date().toISOString();
+  localStorage.setItem('nara_profile', JSON.stringify(data));
+  if (currentUser) {
+    sb.from('nara_logs').upsert({
+      user_id: currentUser.id, date: getTodayStr(),
+      type: 'health_profile', values: data,
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] Profile sync:', error.message);
+    });
+  }
+}
+
+// État courant du profil en mémoire pendant l'édition
+let profileData = {};
+let profileOpenSection = null;
+
+// ── Consentement RGPD ─────────────────────────────────────────────────────────
+function profileToggleConsent() {
+  const cb  = document.getElementById('profile-consent-checkbox');
+  const btn = document.getElementById('profile-consent-btn');
+  if (!cb || !btn) return;
+  btn.classList.toggle('enabled', cb.checked);
+}
+
+function profileConsentOk() {
+  const cb = document.getElementById('profile-consent-checkbox');
+  if (!cb || !cb.checked) return;
+  // Enregistrer le consentement avec timestamp
+  const p = profileLoad() || {};
+  p.rgpdConsent = new Date().toISOString();
+  profileSave(p);
+  profileData = p;
+  document.getElementById('profile-consent-overlay').classList.remove('open');
+  renderProfile();
+}
+
+// ── Navigation post-inscription ────────────────────────────────────────────────
+function profileStartNow() {
+  // Vérifier consentement
+  const p = profileLoad();
+  if (!p?.rgpdConsent) {
+    document.getElementById('profile-consent-overlay').classList.add('open');
+  } else {
+    go('profile');
+  }
+}
+
+function profileLater() {
+  go('profile-later');
+}
+
+function openProfileFromMenu() {
+  const p = profileLoad();
+  if (!p?.rgpdConsent) {
+    document.getElementById('profile-consent-overlay').classList.add('open');
+  } else {
+    go('profile');
+  }
+}
+
+// ── Définition des 6 sections ─────────────────────────────────────────────────
+const PROFILE_SECTIONS = [
+  {
+    id: 's1', icon: '🫀', title: 'Transit', badge: 'Non rempli',
+    fields: ['transit_freq','transit_bristol','transit_difficulte','transit_ballonnements','transit_douleurs'],
+  },
+  {
+    id: 's2', icon: '🥗', title: 'Alimentation', badge: 'Non rempli',
+    fields: ['alim_type','alim_horaires','alim_regime','alim_suivi_medical','alim_complements'],
+  },
+  {
+    id: 's3', icon: '✨', title: 'Peau', badge: 'Non rempli',
+    fields: ['peau_probleme','peau_type','peau_diagnostic'],
+  },
+  {
+    id: 's4', icon: '😮‍💨', title: 'Stress & Énergie', badge: 'Non rempli',
+    fields: ['stress_niveau','energie_niveau','humeur_stabilite'],
+  },
+  {
+    id: 's5', icon: '😴', title: 'Sommeil', badge: 'Non rempli',
+    fields: ['sommeil_coucher','sommeil_duree','sommeil_reveils','sommeil_reveil_sensation'],
+  },
+  {
+    id: 's6', icon: '🌸', title: 'Cycle menstruel', badge: 'Optionnel',
+    fields: ['cycle_regularite','cycle_douleurs','cycle_patho'],
+  },
+];
+
+function profileSectionComplete(p, section) {
+  if (!p) return false;
+  return section.fields.some(f => p[f] !== undefined && p[f] !== null && p[f] !== '');
+}
+
+function profileCompletionCount(p) {
+  if (!p) return 0;
+  return PROFILE_SECTIONS.filter(s => profileSectionComplete(p, s)).length;
+}
+
+// ── Rendu principal ────────────────────────────────────────────────────────────
+function renderProfile() {
+  const scroll = document.getElementById('profile-scroll');
+  const badge  = document.getElementById('profile-completion-badge');
+  if (!scroll) return;
+
+  const p = profileLoad() || {};
+  profileData = { ...p };
+  const done = profileCompletionCount(p);
+
+  if (badge) badge.textContent = `${done}/${PROFILE_SECTIONS.length}`;
+
+  const pct = Math.round(done / PROFILE_SECTIONS.length * 100);
+
+  let html = `
+    <div class="profile-progress-card">
+      <div style="font-size:0.75rem;color:var(--text-mid);flex-shrink:0">Profil rempli</div>
+      <div class="profile-progress-bar-wrap">
+        <div class="profile-progress-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="profile-progress-text">${done}/${PROFILE_SECTIONS.length} sections</div>
+    </div>`;
+
+  PROFILE_SECTIONS.forEach(section => {
+    const isComplete = profileSectionComplete(p, section);
+    const isOpen = profileOpenSection === section.id;
+    html += `
+      <div class="profile-section-card${isComplete ? ' completed' : ''}" id="pcard-${section.id}">
+        <div class="profile-section-header${isOpen ? ' open' : ''}"
+             onclick="profileToggleSection('${section.id}')">
+          <span class="profile-section-icon">${section.icon}</span>
+          <span class="profile-section-title">${section.title}</span>
+          <span class="profile-section-badge">${isComplete ? '✓ Rempli' : section.badge}</span>
+          <span class="profile-section-chevron">›</span>
+        </div>
+        <div class="profile-section-body${isOpen ? ' open' : ''}" id="pbody-${section.id}">
+          ${renderProfileSection(section.id, p)}
+        </div>
+      </div>`;
+  });
+
+  scroll.innerHTML = html;
+}
+
+function profileToggleSection(id) {
+  profileOpenSection = (profileOpenSection === id) ? null : id;
+  renderProfile();
+  // Scroll vers la section ouverte
+  if (profileOpenSection) {
+    setTimeout(() => {
+      const el = document.getElementById('pcard-' + profileOpenSection);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  }
+}
+
+// ── Rendu des sections ─────────────────────────────────────────────────────────
+function renderProfileSection(id, p) {
+  if (id === 's1') return renderProfileTransit(p);
+  if (id === 's2') return renderProfileAlim(p);
+  if (id === 's3') return renderProfilePeau(p);
+  if (id === 's4') return renderProfileStress(p);
+  if (id === 's5') return renderProfileSommeil(p);
+  if (id === 's6') return renderProfileCycle(p);
+  return '';
+}
+
+// Helpers UI
+function profTranches(key, options, p, multi) {
+  return `<div class="prof-tranches">` + options.map(o => {
+    const sel = multi
+      ? (p[key] || []).includes(o.val)
+      : p[key] === o.val;
+    return `<div class="prof-tranche${sel?' selected':''}" onclick="profSelectTranche('${key}','${o.val}',this,${multi})">
+      <div class="prof-tranche-dot"></div>
+      <div class="prof-tranche-label">${o.label}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function profChips(key, options, p, multi) {
+  return `<div class="prof-chips">` + options.map(o => {
+    const sel = multi
+      ? (p[key] || []).includes(o)
+      : p[key] === o;
+    return `<div class="prof-chip${sel?' selected':''}" onclick="profSelectChip('${key}','${escHtml(o)}',this,${multi})">${escHtml(o)}</div>`;
+  }).join('') + `</div>`;
+}
+
+function profSlider(key, label, p, max) {
+  const val = p[key] ?? 0;
+  return `<div class="prof-slider-wrap">
+    <div class="prof-slider-label">${label} <span class="prof-slider-val" id="pslider-val-${key}">${val}/${max}</span></div>
+    <input type="range" class="prof-slider" min="0" max="${max}" value="${val}"
+           oninput="profUpdateSlider('${key}',this.value,${max})">
+  </div>`;
+}
+
+function profBristol(key, p) {
+  return `<div class="prof-bristol-row">` + BRISTOL_TYPES.map(t =>
+    `<div class="prof-bristol-item${p[key]===t.num?' selected':''}"
+          onclick="profSelectBristol('${key}',${t.num},this)" title="${t.label}">
+      ${t.svg}
+      <span>${t.num}</span>
+    </div>`).join('') + `</div>`;
+}
+
+// ── Section 1 : Transit ────────────────────────────────────────────────────────
+function renderProfileTransit(p) {
+  return `
+    <div class="prof-q">Fréquence habituelle</div>
+    ${profTranches('transit_freq', [
+      {val:'lt3', label:'Moins de 3 fois par semaine'},
+      {val:'3to6', label:'3 à 6 fois par semaine'},
+      {val:'1jour', label:'1 fois par jour'},
+      {val:'multi', label:'Plusieurs fois par jour'},
+    ], p, false)}
+
+    <div class="prof-q">Consistance habituelle — Échelle de Bristol</div>
+    ${profBristol('transit_bristol', p)}
+
+    <div class="prof-q">Difficulté d'évacuation habituelle</div>
+    ${profTranches('transit_difficulte', [
+      {val:'facile', label:'Facile, sans effort'},
+      {val:'normal', label:"Normal, un peu d\u2019effort"},
+      {val:'effort', label:'Effort nécessaire'},
+      {val:'douloureux', label:'Douloureux'},
+    ], p, false)}
+
+    <div class="prof-q">Ballonnements fréquents ?</div>
+    ${profTranches('transit_ballonnements', [
+      {val:'non', label:'Non, rarement'},
+      {val:'parfois', label:'Parfois'},
+      {val:'souvent', label:'Souvent, la plupart des jours'},
+    ], p, false)}
+
+    <div class="prof-q">Douleurs digestives récurrentes ?</div>
+    ${profTranches('transit_douleurs', [
+      {val:'non', label:'Non'},
+      {val:'oui_mineures', label:'Oui, mineures'},
+      {val:'oui_intenses', label:'Oui, intenses ou fréquentes'},
+    ], p, false)}
+
+    <button class="prof-save-section-btn" onclick="profileSaveSection('s1')">Enregistrer cette section ✓</button>
+  `;
+}
+
+// ── Section 2 : Alimentation ───────────────────────────────────────────────────
+function renderProfileAlim(p) {
+  return `
+    <div class="prof-q">Type de repas dominant</div>
+    ${profChips('alim_type', ['Fait maison','Plats préparés','Mixte','Équilibré','Riche en sucre/gras'], p, false)}
+
+    <div class="prof-q">Régularité des horaires de repas</div>
+    ${profTranches('alim_horaires', [
+      {val:'regulier', label:'Très régulier'},
+      {val:'variable', label:'Variable selon les jours'},
+      {val:'irregulier', label:'Irrégulier'},
+    ], p, false)}
+
+    <div class="prof-q">Régime particulier (plusieurs possibles)</div>
+    ${profChips('alim_regime', ['Aucun','Sans gluten','Végétarien','Végétalien','Low FODMAP','Sans lactose','Autre'], p, true)}
+    <input class="prof-free-input" type="text" placeholder="Autre régime…"
+           value="${p.alim_regime_libre||''}"
+           oninput="profileData.alim_regime_libre=this.value">
+
+    <div class="prof-q">Suivi médical actuel (plusieurs possibles)</div>
+    ${profChips('alim_suivi_medical', ['Aucun','Médecin généraliste','Gastro-entérologue','Dermatologue','Gynécologue','Naturopathe','Diététicien·ne','Autre'], p, true)}
+    <input class="prof-free-input" type="text" placeholder="Autre…"
+           value="${p.alim_suivi_libre||''}"
+           oninput="profileData.alim_suivi_libre=this.value">
+
+    <div class="prof-q">Compléments alimentaires actuels (plusieurs possibles)</div>
+    ${profChips('alim_complements', ['Aucun','Probiotiques','Magnésium','Oméga-3','Vitamine D','Fer','Zinc','Autre'], p, true)}
+    <input class="prof-free-input" type="text" placeholder="Autre complément…"
+           value="${p.alim_complements_libre||''}"
+           oninput="profileData.alim_complements_libre=this.value">
+
+    <button class="prof-save-section-btn" onclick="profileSaveSection('s2')">Enregistrer cette section ✓</button>
+  `;
+}
+
+// ── Section 3 : Peau ──────────────────────────────────────────────────────────
+function renderProfilePeau(p) {
+  return `
+    <div class="prof-q">Problème de peau identifié ?</div>
+    ${profTranches('peau_probleme', [
+      {val:'non', label:'Non, peau sans problème particulier'},
+      {val:'oui', label:'Oui'},
+    ], p, false)}
+
+    ${p.peau_probleme === 'oui' ? `
+    <div class="prof-q">Type de problème (plusieurs possibles)</div>
+    ${profChips('peau_type', ['Acné','Rosacée','Eczéma','Psoriasis','Peau réactive','Sécheresse','Autre'], p, true)}
+    <input class="prof-free-input" type="text" placeholder="Autre…"
+           value="${p.peau_type_libre||''}"
+           oninput="profileData.peau_type_libre=this.value">
+
+    <div class="prof-q">Diagnostic médical existant ?</div>
+    ${profTranches('peau_diagnostic', [
+      {val:'non', label:'Non, non diagnostiqué'},
+      {val:'dermatologue', label:'Oui — par un·e dermatologue'},
+      {val:'generaliste', label:'Oui — par un·e médecin généraliste'},
+      {val:'autre', label:'Oui — par un autre professionnel'},
+    ], p, false)}` : ''}
+
+    <button class="prof-save-section-btn" onclick="profileSaveSection('s3')">Enregistrer cette section ✓</button>
+  `;
+}
+
+// ── Section 4 : Stress & Énergie ──────────────────────────────────────────────
+function renderProfileStress(p) {
+  return `
+    <div class="prof-q">Niveau de stress général (0 = aucun, 5 = très élevé)</div>
+    ${profSlider('stress_niveau', 'Stress habituel', p, 5)}
+
+    <div class="prof-q" style="margin-top:14px">Niveau d'énergie général (0 = épuisé, 5 = très énergique)</div>
+    ${profSlider('energie_niveau', 'Énergie habituelle', p, 5)}
+
+    <div class="prof-q" style="margin-top:14px">Humeur / stabilité émotionnelle</div>
+    ${profTranches('humeur_stabilite', [
+      {val:'stable', label:'Stable, humeur généralement constante'},
+      {val:'variable', label:'Variable selon les jours'},
+      {val:'basse', label:'Souvent basse'},
+    ], p, false)}
+
+    <button class="prof-save-section-btn" onclick="profileSaveSection('s4')">Enregistrer cette section ✓</button>
+  `;
+}
+
+// ── Section 5 : Sommeil ───────────────────────────────────────────────────────
+function renderProfileSommeil(p) {
+  return `
+    <div class="prof-q">Heure de coucher habituelle</div>
+    ${profTranches('sommeil_coucher', [
+      {val:'avant22', label:'Avant 22h'},
+      {val:'22_23', label:'Entre 22h et 23h'},
+      {val:'23_0', label:'Entre 23h et minuit'},
+      {val:'apres0', label:'Après minuit'},
+    ], p, false)}
+
+    <div class="prof-q">Durée de sommeil moyenne</div>
+    ${profTranches('sommeil_duree', [
+      {val:'lt5', label:'Moins de 5h'},
+      {val:'5_6', label:'5 à 6h'},
+      {val:'6_8', label:'6 à 8h (recommandé)'},
+      {val:'gt8', label:'Plus de 8h'},
+    ], p, false)}
+
+    <div class="prof-q">Réveils nocturnes fréquents ?</div>
+    ${profTranches('sommeil_reveils', [
+      {val:'non', label:'Non, je dors bien en continu'},
+      {val:'parfois', label:'Parfois'},
+      {val:'souvent', label:'Souvent, plusieurs fois par nuit'},
+    ], p, false)}
+
+    <div class="prof-q">Sensation au réveil habituelle</div>
+    ${profChips('sommeil_reveil_sensation', ['Reposée','Fatiguée','Variable'], p, false)}
+
+    <button class="prof-save-section-btn" onclick="profileSaveSection('s5')">Enregistrer cette section ✓</button>
+  `;
+}
+
+// ── Section 6 : Cycle (optionnel) ─────────────────────────────────────────────
+function renderProfileCycle(p) {
+  return `
+    <div class="prof-q" style="margin-top:14px;color:var(--text-light);font-style:italic;font-size:0.75rem">
+      Section optionnelle — ne concerne pas tout le monde (contraception hormonale, ménopause, cycle très irrégulier…)
+    </div>
+
+    <div class="prof-q">Régularité de ton cycle</div>
+    ${profTranches('cycle_regularite', [
+      {val:'non_concernee', label:'Non concernée'},
+      {val:'regulier', label:'Régulier (±2 jours)'},
+      {val:'irregulier', label:'Irrégulier'},
+    ], p, false)}
+
+    ${p.cycle_regularite && p.cycle_regularite !== 'non_concernee' ? `
+    <div class="prof-q">Douleurs menstruelles</div>
+    ${profTranches('cycle_douleurs', [
+      {val:'aucune', label:'Aucune douleur'},
+      {val:'moderees', label:'Modérées, gérables'},
+      {val:'intenses', label:'Intenses, impactent le quotidien'},
+    ], p, false)}
+
+    <div class="prof-q">Pathologie connue (plusieurs possibles)</div>
+    ${profChips('cycle_patho', ['Aucune','Endométriose','SOPK','Fibromes','Autre'], p, true)}
+    <input class="prof-free-input" type="text" placeholder="Autre…"
+           value="${p.cycle_patho_libre||''}"
+           oninput="profileData.cycle_patho_libre=this.value">` : ''}
+
+    <button class="prof-save-section-btn" onclick="profileSaveSection('s6')">Enregistrer cette section ✓</button>
+  `;
+}
+
+// ── Interactions UI ───────────────────────────────────────────────────────────
+function profSelectTranche(key, val, el, multi) {
+  if (multi) {
+    if (!profileData[key]) profileData[key] = [];
+    const idx = profileData[key].indexOf(val);
+    if (idx >= 0) profileData[key].splice(idx, 1);
+    else profileData[key].push(val);
+    el.closest('.prof-tranches').querySelectorAll('.prof-tranche').forEach(t => {
+      const v = t.querySelector('.prof-tranche-label')?.textContent;
+      t.classList.toggle('selected', profileData[key].includes(v));
+    });
+  } else {
+    profileData[key] = val;
+    el.closest('.prof-tranches').querySelectorAll('.prof-tranche').forEach(t => t.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+}
+
+function profSelectChip(key, val, el, multi) {
+  if (multi) {
+    if (!profileData[key]) profileData[key] = [];
+    const idx = profileData[key].indexOf(val);
+    if (idx >= 0) profileData[key].splice(idx, 1);
+    else profileData[key].push(val);
+    el.classList.toggle('selected');
+  } else {
+    profileData[key] = val;
+    el.closest('.prof-chips').querySelectorAll('.prof-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+}
+
+function profUpdateSlider(key, val, max) {
+  profileData[key] = parseInt(val);
+  const el = document.getElementById('pslider-val-' + key);
+  if (el) el.textContent = `${val}/${max}`;
+  const slider = document.querySelector(`[oninput*="${key}"]`);
+  if (slider) {
+    const pct = (parseInt(val) / max) * 100;
+    slider.style.background = `linear-gradient(to right, var(--sage) ${pct}%, var(--oat) ${pct}%)`;
+  }
+}
+
+function profSelectBristol(key, num, el) {
+  profileData[key] = profileData[key] === num ? null : num;
+  el.closest('.prof-bristol-row').querySelectorAll('.prof-bristol-item').forEach(i => i.classList.remove('selected'));
+  if (profileData[key]) el.classList.add('selected');
+}
+
+function profileSaveSection(sectionId) {
+  const current = profileLoad() || {};
+  const merged  = { ...current, ...profileData, rgpdConsent: current.rgpdConsent };
+  profileSave(merged);
+  profileData = merged;
+  profileOpenSection = null;
+  showToast('✓ Section enregistrée !');
+  renderProfile();
+}
+
+// ── Utilisation par le moteur d'insights ──────────────────────────────────────
+function getProfileContext() {
+  const p = profileLoad();
+  if (!p) return null;
+  return {
+    transitFreq:         p.transit_freq,
+    transitBristol:      p.transit_bristol,
+    transitDifficulte:   p.transit_difficulte,
+    transitBallonnements:p.transit_ballonnements,
+    stressNiveau:        p.stress_niveau,
+    energieNiveau:       p.energie_niveau,
+    sommeilDuree:        p.sommeil_duree,
+    peauProbleme:        p.peau_probleme,
+    cycleRegularite:     p.cycle_regularite,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // MODULE TEST ALIMENTAIRE — protocole d'observation guidé
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -6699,6 +7394,72 @@ try { updateHomeScore(); } catch(e) {}
         <div class="bnav-item" id="cal-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="cal-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="cal-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+      </div>
+    </div>
+
+    <!-- SCREEN PROFIL SANTÉ -->
+    <div class="screen" id="screen-profile">
+      <div class="profile-header">
+        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="screen-title">Mon profil santé</div>
+        <div id="profile-completion-badge" style="font-size:0.72rem;color:var(--text-light);margin-left:auto"></div>
+      </div>
+      <div class="profile-scroll" id="profile-scroll">
+        <!-- Rendu dynamique par renderProfile() -->
+      </div>
+    </div>
+
+    <!-- SCREEN INVITATION POST-INSCRIPTION -->
+    <div class="screen" id="screen-profile-invite">
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div class="profile-invite-screen">
+          <div class="profile-invite-icon">🌿</div>
+          <div class="profile-invite-title">Bienvenue dans Nara</div>
+          <div class="profile-invite-text">
+            Pour que les insights soient pertinents dès le début, Nara a besoin de comprendre ta situation de base. 5 minutes pour remplir ton Profil Santé, et l'app pourra contextualiser chaque donnée que tu notes.
+            <br><br>
+            <span style="color:var(--text-light);font-size:0.82rem">Tu peux le faire maintenant ou plus tard — c'est toi qui choisis.</span>
+          </div>
+          <button class="profile-invite-btn-primary" onclick="profileStartNow()">Remplir mon profil maintenant →</button>
+          <button class="profile-invite-btn-later" onclick="profileLater()">Plus tard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN "PLUS TARD" -->
+    <div class="screen" id="screen-profile-later">
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div class="profile-later-screen">
+          <div class="profile-invite-icon">✅</div>
+          <div class="profile-invite-title" style="font-size:1.2rem">Pas de souci</div>
+          <div class="profile-later-note">
+            📍 Tu peux accéder à ton Profil Santé à tout moment via le <strong>menu avatar</strong> → <strong>Mon profil santé</strong>.<br><br>
+            Plus tu le complètes, plus Nara pourra distinguer ce qui est "normal pour toi" d'un vrai changement — et plus les insights seront précis et personnalisés.
+          </div>
+          <button class="profile-invite-btn-primary" onclick="go('home')">Accéder à l'appli →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODALE CONSENTEMENT RGPD DONNÉES DE SANTÉ -->
+    <div class="profile-consent-overlay" id="profile-consent-overlay">
+      <div class="profile-consent-card">
+        <div style="width:36px;height:4px;border-radius:2px;background:var(--oat);margin:0 auto 20px"></div>
+        <div class="profile-consent-title">🔒 Données de santé</div>
+        <div class="profile-consent-text">
+          Les informations que tu vas renseigner dans ton Profil Santé sont des <strong>données de santé</strong> au sens du RGPD (Règlement Européen sur la Protection des Données).<br><br>
+          Ces données sont <strong>stockées de façon sécurisée</strong> dans notre base de données, <strong>jamais partagées avec des tiers</strong>, et <strong>jamais utilisées à des fins publicitaires</strong>.<br><br>
+          Tu peux les modifier ou les supprimer à tout moment depuis ton profil.
+        </div>
+        <label class="profile-consent-check" onclick="profileToggleConsent()">
+          <input type="checkbox" id="profile-consent-checkbox">
+          <span class="profile-consent-check-label">
+            Je consens explicitement au traitement de mes données de santé par Nara, à des fins de personnalisation de l'application.
+          </span>
+        </label>
+        <button class="profile-consent-btn" id="profile-consent-btn" onclick="profileConsentOk()">
+          Accéder à mon profil santé →
+        </button>
       </div>
     </div>
 

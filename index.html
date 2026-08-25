@@ -1215,6 +1215,135 @@ if (typeof supabase === 'undefined') {
   }
 
 
+
+  /* ===== MODULE TEST ALIMENTAIRE ===== */
+
+  /* Bandeau dans le journal */
+  .food-test-banner {
+    border-radius: 14px; padding: 13px 15px;
+    margin-bottom: 16px; border: 1.5px solid transparent;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .food-test-banner.phase-eviction  { background: #f0f9ff; border-color: #7dd3fc66; }
+  .food-test-banner.phase-reintro   { background: #f0fdf4; border-color: #86efac66; }
+  .food-test-banner.phase-bilan     { background: #fff7ed; border-color: #fcd34d66; }
+  .food-test-banner-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+  .food-test-banner-body { flex: 1; }
+  .food-test-banner-title { font-size: 0.82rem; font-weight: 600; color: var(--text-dark); margin-bottom: 2px; }
+  .food-test-banner-sub   { font-size: 0.72rem; color: var(--text-mid); line-height: 1.45; }
+  .food-test-banner-link  { font-size: 0.7rem; color: var(--sage); cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
+  .food-test-progress {
+    height: 4px; border-radius: 2px; background: var(--oat); margin-top: 8px; overflow: hidden;
+  }
+  .food-test-progress-fill { height: 100%; border-radius: 2px; background: #7dd3fc; transition: width 0.4s; }
+  .food-test-banner.phase-reintro .food-test-progress-fill { background: #86efac; }
+
+  /* Modale lancement test */
+  .test-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 700; display: none; align-items: flex-end; justify-content: center;
+  }
+  .test-modal-overlay.open { display: flex; }
+  .test-modal-card {
+    background: white; border-radius: 28px 28px 0 0;
+    padding: 24px clamp(16px,6vw,28px) calc(28px + env(safe-area-inset-bottom,0px));
+    width: 100%; max-height: 90vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .test-modal-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--oat); margin: 0 auto 20px;
+  }
+  .test-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem; color: var(--text-dark); margin-bottom: 6px;
+  }
+  .test-modal-sub { font-size: 0.78rem; color: var(--text-mid); line-height: 1.5; margin-bottom: 20px; }
+
+  .test-field-label {
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 8px; display: block;
+  }
+  .test-food-input {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--oat);
+    border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem; color: var(--text-dark); background: white; outline: none;
+    margin-bottom: 18px;
+  }
+  .test-food-input:focus { border-color: var(--sage); }
+
+  /* Durée test stepper */
+  .test-duration-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .test-duration-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1.5px solid var(--oat); background: white;
+    font-size: 1.2rem; color: var(--sage); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .test-duration-btn:active { background: var(--honey); }
+  .test-duration-val {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.4rem;
+    color: var(--text-dark); min-width: 50px; text-align: center;
+  }
+  .test-duration-unit { font-size: 0.72rem; color: var(--text-light); }
+
+  /* Avertissement éthique */
+  .test-ethics-note {
+    background: var(--honey); border-radius: 12px;
+    padding: 12px 14px; font-size: 0.73rem; color: var(--text-mid);
+    line-height: 1.55; margin-bottom: 20px;
+  }
+
+  /* Boutons action */
+  .test-start-btn {
+    width: 100%; padding: 15px; background: var(--sage); color: white;
+    border: none; border-radius: 14px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; cursor: pointer;
+  }
+  .test-cancel-btn {
+    width: 100%; padding: 11px; background: none; color: var(--text-light);
+    border: none; font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    cursor: pointer; margin-top: 8px; text-decoration: underline;
+  }
+
+  /* Alerte dérive */
+  .test-drift-alert {
+    background: #fff7ed; border: 1.5px solid #fcd34d66;
+    border-radius: 14px; padding: 14px 16px;
+    font-size: 0.78rem; color: #92400e; line-height: 1.55;
+    margin-bottom: 16px;
+  }
+
+  /* Bilan test — dans les insights */
+  .test-bilan-card {
+    background: white; border-radius: 18px; padding: 18px;
+    border-left: 4px solid #7dd3fc; margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .test-bilan-title { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: var(--text-dark); margin-bottom: 8px; }
+  .test-bilan-stat  { font-size: 0.82rem; color: var(--text-dark); line-height: 1.6; margin-bottom: 6px; }
+  .test-bilan-stat strong { color: var(--sage); }
+  .test-bilan-footer { font-size: 0.72rem; color: var(--text-light); margin-top: 10px; font-style: italic; line-height: 1.5; }
+  .test-bilan-cta {
+    margin-top: 12px; display: inline-block; padding: 8px 16px;
+    background: var(--honey); border-radius: 20px; font-size: 0.75rem;
+    color: var(--sage); cursor: pointer; border: 1px solid var(--oat);
+  }
+
+  /* Bouton accès test dans le journal */
+  .jrn-test-btn {
+    width: 100%; padding: 13px 16px; border-radius: 14px;
+    border: 1.5px dashed var(--oat); background: white;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: background 0.18s;
+    margin-bottom: 8px;
+  }
+  .jrn-test-btn:active { background: var(--honey); }
+  .jrn-test-btn-icon  { font-size: 1.2rem; }
+  .jrn-test-btn-text  { text-align: left; }
+  .jrn-test-btn-title { font-size: 0.82rem; color: var(--text-dark); font-weight: 500; }
+  .jrn-test-btn-sub   { font-size: 0.68rem; color: var(--text-light); margin-top: 1px; }
+
   /* ===== MODULE CYCLE ===== */
 
   /* Bannière phase dans le journal */
@@ -4354,6 +4483,12 @@ function renderJournalForm(todayLabel) {
       <div class="jrn-emoji-row">${humeurHtml}</div>
     </div>
 
+    <!-- BANDEAU TEST ALIMENTAIRE (visible si test actif) -->
+    ${renderFoodTestBanner()}
+
+    <!-- BOUTON LANCER UN TEST (visible si pas de test actif) -->
+    ${renderFoodTestButton()}
+
     <!-- BANNIÈRE PHASE CYCLE (visible uniquement si module activé) -->
     ${renderCyclePhaseBanner()}
 
@@ -5071,6 +5206,17 @@ function renderInsightsPage() {
     const avg = (sE.reduce((s,e) => s+e.values.stress,0)/sE.length).toFixed(1);
     html += `<div class="insight-real-card" style="border-left-color:#8a8ec4"><div class="irc-tag">\uD83D\uDE2E\u200D\uD83D\uDCA8 Stress \u00b7 ${sE.length} entr\u00e9es</div><div class="irc-text">Stress moyen : <strong>${avg}/5</strong>.</div></div>`;
   }
+  // Insights test alimentaire
+  const foodTestInsights = getFoodTestInsights(entries);
+  if (foodTestInsights.length > 0) {
+    html += `<div class="section-title" style="margin-top:4px">Tests alimentaires</div>`;
+    html += foodTestInsights.map(ins => `
+      <div class="insight-real-card" style="border-left-color:#7dd3fc">
+        <div class="irc-tag">${ins.icon} ${ins.tag}</div>
+        <div class="irc-text">${ins.text}</div>
+      </div>`).join('');
+  }
+
   // Insights cycle (si module actif)
   const cycleInsights = getCycleInsights(entries);
   if (cycleInsights.length > 0) {
@@ -5364,7 +5510,419 @@ function galleryGoToJournal(dateStr) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MODULE CYCLE — suivi hormonale optionnel
+// MODULE TEST ALIMENTAIRE — protocole d'observation guidé
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+function testLoad() {
+  try { return JSON.parse(localStorage.getItem('nara_food_test') || 'null'); } catch { return null; }
+}
+function testSave(data) {
+  localStorage.setItem('nara_food_test', JSON.stringify(data));
+  if (currentUser) {
+    sb.from('nara_logs').upsert({
+      user_id: currentUser.id, date: getTodayStr(), type: 'food_test', values: data,
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] Test sync:', error.message); });
+  }
+}
+function testClear() { localStorage.removeItem('nara_food_test'); }
+
+// Historique des tests passés (pour détecter la dérive)
+function testHistory() {
+  try { return JSON.parse(localStorage.getItem('nara_food_test_history') || '[]'); } catch { return []; }
+}
+function testAddToHistory(test) {
+  const h = testHistory();
+  h.unshift({ food: test.food, startDate: test.startDate, endDate: getTodayStr(), result: test.phase });
+  localStorage.setItem('nara_food_test_history', JSON.stringify(h.slice(0, 20)));
+}
+
+// ── État courant d'un test ───────────────────────────────────────────────────
+// Structure : { food, startDate, evictionDays, phase: 'eviction'|'reintro'|'bilan'|'done', reintroDate }
+
+function testGetCurrentPhase(test) {
+  if (!test || test.phase === 'done') return null;
+  const today     = new Date(getTodayStr() + 'T12:00:00');
+  const startDate = new Date(test.startDate + 'T12:00:00');
+  const daysSince = Math.round((today - startDate) / (1000 * 60 * 60 * 24));
+
+  // Transition automatique vers la phase suivante
+  if (test.phase === 'eviction' && daysSince >= test.evictionDays) {
+    // Passer en réintroduction automatiquement
+    test.phase = 'reintro';
+    test.reintroDate = getTodayStr();
+    test.reintroDay = 1;
+    testSave(test);
+  }
+  if (test.phase === 'reintro') {
+    const reintroStart = new Date(test.reintroDate + 'T12:00:00');
+    const daysReintro  = Math.round((today - reintroStart) / (1000 * 60 * 60 * 24));
+    if (daysReintro >= 2) { // 48h de fenêtre d'observation
+      test.phase = 'bilan';
+      testSave(test);
+    }
+  }
+  return test.phase;
+}
+
+function testDayCurrent(test) {
+  const today = new Date(getTodayStr() + 'T12:00:00');
+  const start = new Date(test.startDate + 'T12:00:00');
+  return Math.round((today - start) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+// ── Rendu bandeau journal ─────────────────────────────────────────────────────
+function renderFoodTestBanner() {
+  const test = testLoad();
+  if (!test) return '';
+  const phase = testGetCurrentPhase(test);
+  if (!phase || phase === 'done') return '';
+
+  const day = testDayCurrent(test);
+
+  if (phase === 'eviction') {
+    const pct = Math.min(100, Math.round((day - 1) / test.evictionDays * 100));
+    return `
+      <div class="food-test-banner phase-eviction">
+        <span class="food-test-banner-icon">🧪</span>
+        <div class="food-test-banner-body">
+          <div class="food-test-banner-title">Test ${escHtml(test.food)} — Jour ${day}/${test.evictionDays}</div>
+          <div class="food-test-banner-sub">Phase d'éviction · Note bien ton transit, ta peau et ton énergie ces jours-ci.</div>
+          <div class="food-test-progress"><div class="food-test-progress-fill" style="width:${pct}%"></div></div>
+          <span class="food-test-banner-link" onclick="openTestModal()">Voir le protocole</span>
+        </div>
+      </div>`;
+  }
+  if (phase === 'reintro') {
+    return `
+      <div class="food-test-banner phase-reintro">
+        <span class="food-test-banner-icon">🔄</span>
+        <div class="food-test-banner-body">
+          <div class="food-test-banner-title">Réintroduction — ${escHtml(test.food)}</div>
+          <div class="food-test-banner-sub">Reprends ${escHtml(test.food)} aujourd'hui en quantité normale. Note toute réaction dans les 48h.</div>
+          <span class="food-test-banner-link" onclick="openTestModal()">Voir les instructions</span>
+        </div>
+      </div>`;
+  }
+  if (phase === 'bilan') {
+    return `
+      <div class="food-test-banner phase-bilan">
+        <span class="food-test-banner-icon">📊</span>
+        <div class="food-test-banner-body">
+          <div class="food-test-banner-title">Bilan disponible — ${escHtml(test.food)}</div>
+          <div class="food-test-banner-sub">Le test est terminé. Consulte ton bilan dans les insights.</div>
+          <span class="food-test-banner-link" onclick="openTestModal()">Voir le bilan</span>
+        </div>
+      </div>`;
+  }
+  return '';
+}
+
+// ── Bouton lancer un test (si pas de test actif) ──────────────────────────────
+function renderFoodTestButton() {
+  const test = testLoad();
+  if (test && test.phase !== 'done') return ''; // Test actif → pas de bouton
+
+  // Garde-fou dérive : plusieurs tests récents
+  const h = testHistory();
+  const recentTests = h.filter(t => {
+    const d = new Date(t.endDate || t.startDate);
+    const diff = (new Date() - d) / (1000 * 60 * 60 * 24);
+    return diff < 90; // Dans les 90 derniers jours
+  });
+  if (recentTests.length >= 3) return ''; // Silence si > 3 tests en 90j — alerte dans insights
+
+  return `
+    <div class="jrn-test-btn" onclick="openTestModal()">
+      <span class="jrn-test-btn-icon">🧪</span>
+      <div class="jrn-test-btn-text">
+        <div class="jrn-test-btn-title">Tester un aliment</div>
+        <div class="jrn-test-btn-sub">Protocole d'observation guidé · 7-14 jours</div>
+      </div>
+      <span style="color:var(--text-light);font-size:0.9rem;margin-left:auto">›</span>
+    </div>`;
+}
+
+// ── Modale principale (contenu dynamique selon l'état) ────────────────────────
+let testDurationTemp = 10; // jours d'éviction par défaut
+
+function openTestModal() {
+  const test = testLoad();
+  const modal = document.getElementById('test-modal-overlay');
+  const card  = document.getElementById('test-modal-card');
+  if (!modal || !card) return;
+
+  const phase = test ? testGetCurrentPhase(test) : null;
+  card.innerHTML = renderTestModalContent(test, phase);
+  modal.classList.add('open');
+}
+
+function testHandleOverlay(e) {
+  if (e.target === document.getElementById('test-modal-overlay')) closeTestModal();
+}
+function closeTestModal() {
+  const m = document.getElementById('test-modal-overlay');
+  if (m) m.classList.remove('open');
+}
+
+function renderTestModalContent(test, phase) {
+  const handle = '<div class="test-modal-handle"></div>';
+
+  // ── Dérive : trop de tests récents ───────────────────────────────────────
+  const h = testHistory();
+  const recentTests = h.filter(t => {
+    const diff = (new Date() - new Date(t.endDate || t.startDate)) / (1000 * 60 * 60 * 24);
+    return diff < 90;
+  });
+  if (recentTests.length >= 3 && (!test || phase === 'done')) {
+    return handle + `
+      <div class="test-modal-title">⏸️ Une pause s'impose</div>
+      <div class="test-drift-alert">
+        Tu as réalisé ${recentTests.length} tests d'éviction ces 3 derniers mois. Enchaîner des tests sans accompagnement peut entretenir une relation anxieuse à l'alimentation plutôt que t'aider.<br><br>
+        <strong>Avant de continuer, une consultation avec un·e diététicien·ne ou médecin gastroentérologue serait bénéfique</strong> — pour interpréter tes observations et construire une approche adaptée à toi.
+      </div>
+      <div class="test-modal-sub">Le module de test sera à nouveau disponible après cette pause.</div>
+      <button class="test-cancel-btn" onclick="closeTestModal()">Fermer</button>`;
+  }
+
+  // ── Pas de test actif → formulaire de lancement ───────────────────────────
+  if (!test || phase === 'done') {
+    return handle + `
+      <div class="test-modal-title">🧪 Tester un aliment</div>
+      <div class="test-modal-sub">
+        Protocole d'observation guidé. Un seul aliment à la fois, durée limitée, résultat factuel — jamais de diagnostic.
+      </div>
+      <div class="test-ethics-note">
+        ℹ️ Ce protocole observe les <em>tendances</em> dans tes données. Il ne diagnostique rien et ne remplace pas l'avis d'un professionnel de santé. Il n'est pas adapté aux personnes souffrant de TCA ou ayant une relation difficile avec l'alimentation.
+      </div>
+      <span class="test-field-label">Quel aliment veux-tu observer ?</span>
+      <input type="text" class="test-food-input" id="test-food-input"
+             placeholder="ex : gluten, produits laitiers, œufs…"
+             autocomplete="off" autocorrect="off" spellcheck="false">
+      <span class="test-field-label">Durée de la phase d'éviction</span>
+      <div class="test-duration-row">
+        <button class="test-duration-btn" onclick="testDurationStep(-1)">−</button>
+        <div>
+          <div class="test-duration-val" id="test-duration-val">${testDurationTemp}</div>
+          <div class="test-duration-unit">jours (max 14)</div>
+        </div>
+        <button class="test-duration-btn" onclick="testDurationStep(1)">+</button>
+      </div>
+      <button class="test-start-btn" onclick="testStart()">Démarrer le protocole →</button>
+      <button class="test-cancel-btn" onclick="closeTestModal()">Annuler</button>`;
+  }
+
+  // ── Phase éviction ────────────────────────────────────────────────────────
+  if (phase === 'eviction') {
+    const day = testDayCurrent(test);
+    const pct = Math.min(100, Math.round((day - 1) / test.evictionDays * 100));
+    return handle + `
+      <div class="test-modal-title">🧪 Test en cours — ${escHtml(test.food)}</div>
+      <div class="test-modal-sub">
+        Phase d'éviction · Jour ${day} sur ${test.evictionDays} · ${test.evictionDays - day + 1} jour${test.evictionDays - day + 1 > 1 ? 's' : ''} restant${test.evictionDays - day + 1 > 1 ? 's' : ''}
+      </div>
+      <div class="food-test-progress" style="margin-bottom:18px"><div class="food-test-progress-fill" style="width:${pct}%"></div></div>
+      <div class="test-ethics-note">
+        📋 <strong>À faire :</strong> évite ${escHtml(test.food)} jusqu'au jour ${test.evictionDays}. Continue à noter ton transit, ta peau, tes ballonnements et ton énergie comme d'habitude — c'est ce qui permettra la comparaison.
+      </div>
+      <div class="test-ethics-note" style="background:#fef2f2;margin-top:-10px">
+        ⚠️ Si tu ressens des symptômes inhabituels ou inquiétants, arrête le test et consulte un médecin.
+      </div>
+      <button class="test-start-btn" onclick="testAbort()" style="background:#e57373">Arrêter le test</button>
+      <button class="test-cancel-btn" onclick="closeTestModal()">Fermer</button>`;
+  }
+
+  // ── Phase réintroduction ──────────────────────────────────────────────────
+  if (phase === 'reintro') {
+    return handle + `
+      <div class="test-modal-title">🔄 Réintroduction — ${escHtml(test.food)}</div>
+      <div class="test-modal-sub">Phase d'éviction terminée. Voici comment procéder.</div>
+      <div class="test-ethics-note">
+        <strong>Aujourd'hui :</strong> réintroduis ${escHtml(test.food)} en quantité normale, dans un repas.<br><br>
+        <strong>Dans les 48h :</strong> continue à remplir ton journal normalement. Note tout changement : transit, ballonnements, peau, énergie.<br><br>
+        Le bilan sera généré automatiquement dans 48h.
+      </div>
+      <button class="test-cancel-btn" onclick="closeTestModal()">Compris, je ferme</button>`;
+  }
+
+  // ── Phase bilan ───────────────────────────────────────────────────────────
+  if (phase === 'bilan') {
+    const bilan = computeTestBilan(test);
+    return handle + `
+      <div class="test-modal-title">📊 Bilan — ${escHtml(test.food)}</div>
+      <div class="test-bilan-card" style="border-radius:16px;margin-top:4px">
+        ${bilan.html}
+        <div class="test-bilan-footer">
+          Ces observations sont basées sur tes données de journal. Elles indiquent une <em>tendance</em>, pas une certitude. Pour interpréter ce résultat et décider d'une suite, une consultation avec un professionnel de santé est recommandée.
+        </div>
+        ${bilan.showConsult ? `<div class="test-bilan-cta" onclick="closeTestModal()">🩺 Parler de ces résultats à un médecin</div>` : ''}
+      </div>
+      <button class="test-start-btn" onclick="testFinalize()">Terminer et archiver</button>
+      <button class="test-cancel-btn" onclick="closeTestModal()">Fermer</button>`;
+  }
+  return handle + '<div style="padding:20px;text-align:center;color:var(--text-light)">Chargement…</div>';
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function testDurationStep(delta) {
+  testDurationTemp = Math.max(7, Math.min(14, testDurationTemp + delta));
+  const el = document.getElementById('test-duration-val');
+  if (el) el.textContent = testDurationTemp;
+}
+
+function testStart() {
+  const input = document.getElementById('test-food-input');
+  const food  = input ? input.value.trim() : '';
+  if (!food) { showToast('Indique l\'aliment à observer'); return; }
+
+  // Vérifier qu'il n'y a pas déjà un test actif
+  const existing = testLoad();
+  if (existing && existing.phase !== 'done') {
+    showToast('Un test est déjà en cours'); return;
+  }
+
+  const test = {
+    food, startDate: getTodayStr(),
+    evictionDays: testDurationTemp,
+    phase: 'eviction',
+  };
+  testSave(test);
+  closeTestModal();
+  showToast(`✓ Test ${food} démarré — Jour 1/${testDurationTemp}`);
+  // Rafraîchir le journal
+  const jrn = document.getElementById('screen-journal');
+  if (jrn && jrn.classList.contains('active')) renderJournal();
+}
+
+function testAbort() {
+  const test = testLoad();
+  if (!test) return;
+  testAddToHistory({ ...test, result: 'aborted' });
+  testClear();
+  closeTestModal();
+  showToast('Test arrêté');
+  const jrn = document.getElementById('screen-journal');
+  if (jrn && jrn.classList.contains('active')) renderJournal();
+}
+
+function testFinalize() {
+  const test = testLoad();
+  if (!test) return;
+  testAddToHistory(test);
+  testClear();
+  closeTestModal();
+  showToast('✓ Test archivé');
+  const jrn = document.getElementById('screen-journal');
+  if (jrn && jrn.classList.contains('active')) renderJournal();
+}
+
+// ── Calcul du bilan ───────────────────────────────────────────────────────────
+function computeTestBilan(test) {
+  const startDate    = new Date(test.startDate + 'T12:00:00');
+  const reintroDate  = test.reintroDate ? new Date(test.reintroDate + 'T12:00:00') : null;
+  const evictionDays = test.evictionDays;
+
+  // Collecter les données pendant l'éviction
+  const duringEviction = [];
+  const afterReintro   = [];
+
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(startDate); d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const jrn = localStorage.getItem(`nara_journal_${dateStr}`);
+    const log = localStorage.getItem(`nara_log_${dateStr}_transit`);
+    const entry = jrn ? JSON.parse(jrn) : (log ? JSON.parse(log) : null);
+    if (!entry) continue;
+
+    const isEviction = i < evictionDays;
+    const isReintro  = reintroDate && d >= reintroDate;
+    if (isEviction) duringEviction.push({ ...entry, dateStr });
+    else if (isReintro) afterReintro.push({ ...entry, dateStr });
+  }
+
+  let stats = [];
+  let showConsult = false;
+
+  // Ballonnements pendant éviction vs réintroduction
+  const bEv = duringEviction.filter(e => (e.ballonnements ?? e.values?.ballonnements) !== undefined)
+    .map(e => e.ballonnements ?? e.values?.ballonnements ?? 0);
+  const bRe = afterReintro.filter(e => (e.ballonnements ?? e.values?.ballonnements) !== undefined)
+    .map(e => e.ballonnements ?? e.values?.ballonnements ?? 0);
+
+  if (bEv.length >= 2 && bRe.length >= 1) {
+    const avgEv = bEv.reduce((a,b) => a+b,0) / bEv.length;
+    const avgRe = bRe.reduce((a,b) => a+b,0) / bRe.length;
+    const diff  = avgRe - avgEv;
+    if (diff > 0.5) {
+      stats.push(`Tes <strong>ballonnements</strong> ont augmenté de <strong>+${diff.toFixed(1)}/5</strong> après réintroduction (${avgEv.toFixed(1)} → ${avgRe.toFixed(1)}).`);
+      showConsult = true;
+    } else if (diff < -0.3) {
+      stats.push(`Tes <strong>ballonnements</strong> ont diminué après réintroduction — la tendance n'est pas claire dans ce sens.`);
+    } else {
+      stats.push(`Tes ballonnements sont restés stables avant et après réintroduction (pas de différence notable).`);
+    }
+  }
+
+  // Peau
+  const pEv = duringEviction.filter(e => (e.peau ?? e.values?.peau_etat) !== null && (e.peau ?? e.values?.peau_etat) !== undefined)
+    .map(e => e.peau ?? e.values?.peau_etat);
+  const pRe = afterReintro.filter(e => (e.peau ?? e.values?.peau_etat) !== null && (e.peau ?? e.values?.peau_etat) !== undefined)
+    .map(e => e.peau ?? e.values?.peau_etat);
+
+  if (pEv.length >= 2 && pRe.length >= 1) {
+    // 0=poussée, 1=stable, 2=calme — inverser pour score positif = bien
+    const avgPEv = pEv.reduce((a,b) => a+b,0) / pEv.length;
+    const avgPRe = pRe.reduce((a,b) => a+b,0) / pRe.length;
+    const diff = avgPEv - avgPRe;
+    if (diff > 0.5) {
+      stats.push(`Ta <strong>peau</strong> semblait plus calme pendant l'éviction (score ${avgPEv.toFixed(1)}/2) qu'après réintroduction (${avgPRe.toFixed(1)}/2).`);
+      showConsult = true;
+    }
+  }
+
+  if (stats.length === 0) {
+    stats.push("Pas assez de données dans le journal pour générer un bilan chiffré. Le protocole reste utile pour une observation subjective.");
+  }
+
+  const html = `
+    <div class="test-bilan-title">Observations pendant le test de ${escHtml(test.food)}</div>
+    ${stats.map(s => `<div class="test-bilan-stat">· ${s}</div>`).join('')}
+  `;
+
+  return { html, showConsult };
+}
+
+// ── Suggestion depuis les insights ────────────────────────────────────────────
+function getFoodTestInsights(entries) {
+  const test = testLoad();
+  const h    = testHistory();
+  const insights = [];
+
+  // Alerte dérive : trop de tests enchaînés
+  const recentTests = h.filter(t => {
+    const diff = (new Date() - new Date(t.endDate || t.startDate)) / (1000 * 60 * 60 * 24);
+    return diff < 90;
+  });
+  if (recentTests.length >= 3) {
+    insights.push({
+      type: 'gut', icon: '⏸️', tag: 'Tests alimentaires — pause recommandée',
+      text: `Tu as réalisé ${recentTests.length} tests d'éviction en 3 mois. Pour éviter une relation anxieuse à l'alimentation, une pause et une consultation avec un·e diététicien·ne sont conseillées avant d'envisager un nouveau test.`
+    });
+    return insights;
+  }
+
+  // Bilan actif à consulter
+  if (test && test.phase === 'bilan') {
+    insights.push({
+      type: 'gut', icon: '📊', tag: `Bilan disponible — test ${test.food}`,
+      text: `Ton protocole d'observation de ${test.food} est terminé. Ouvre ton journal pour consulter le bilan et décider de la suite avec ton médecin si nécessaire.`
+    });
+  }
+
+  return insights;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── Persistence ──────────────────────────────────────────────────────────────
@@ -6141,6 +6699,13 @@ try { updateHomeScore(); } catch(e) {}
         <div class="bnav-item" id="cal-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
         <div class="bnav-item" id="cal-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="cal-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+      </div>
+    </div>
+
+    <!-- MODALE TEST ALIMENTAIRE -->
+    <div class="test-modal-overlay" id="test-modal-overlay" onclick="testHandleOverlay(event)">
+      <div class="test-modal-card" id="test-modal-card">
+        <!-- Rendu dynamique selon l'état du test -->
       </div>
     </div>
 

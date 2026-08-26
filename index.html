@@ -6110,8 +6110,8 @@ function renderProfileSommeil(p) {
 
 // ── Section 6 : Cycle (optionnel) ─────────────────────────────────────────────
 function renderProfileCycle(p) {
-  const active   = p.cycle_regularite && p.cycle_regularite !== 'non_concernee';
-  const pathoOui = active && p.cycle_patho_oui === 'oui';
+  const hasCycleChoice = !!p.cycle_regularite; // dès qu'une option est choisie → suite visible
+  const pathoOui = hasCycleChoice && p.cycle_patho_oui === 'oui';
   let html = '<div class="prof-q" style="margin-top:14px;color:var(--text-light);font-style:italic;font-size:0.75rem">Section optionnelle — ne concerne pas tout le monde (contraception hormonale, ménopause, cycle très irrégulier…)</div>';
   html += '<div class="prof-q">Régularité de ton cycle</div>';
   html += profTranches('cycle_regularite', [
@@ -6120,13 +6120,18 @@ function renderProfileCycle(p) {
     {val:'irregulier', label:'Irrégulier'},
   ], p, false);
 
-  if (active) {
-    html += '<div class="prof-q">Douleurs menstruelles</div>';
-    html += profTranches('cycle_douleurs', [
-      {val:'aucune', label:'Aucune douleur'},
-      {val:'moderees', label:'Modérées, gérables'},
-      {val:'intenses', label:'Intenses, impactent le quotidien'},
-    ], p, false);
+  // La suite apparaît immédiatement après tout choix
+  if (hasCycleChoice) {
+    // Q2 Douleurs — uniquement si concernée par le cycle
+    if (p.cycle_regularite !== 'non_concernee') {
+      html += '<div class="prof-q">Douleurs menstruelles</div>';
+      html += profTranches('cycle_douleurs', [
+        {val:'aucune', label:'Aucune douleur'},
+        {val:'moderees', label:'Modérées, gérables'},
+        {val:'intenses', label:'Intenses, impactent le quotidien'},
+      ], p, false);
+    }
+    // Q3 Pathologie — visible pour toutes
     html += '<div class="prof-q">As-tu une pathologie liée au cycle ou à la sphère gynécologique ?</div>';
     html += profTranches('cycle_patho_oui', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
 
@@ -6160,6 +6165,17 @@ function renderProfileCycle(p) {
 }
 
 // ── Interactions UI ───────────────────────────────────────────────────────────
+// Clés qui déclenchent un re-rendu de leur section (questions conditionnelles)
+const PROFILE_REACTIVE_KEYS = {
+  'peau_probleme':       's3',
+  'peau_diagnostic_oui': 's3',
+  'peau_traitement':     's3',
+  'cycle_regularite':    's6',
+  'cycle_patho_oui':     's6',
+  'cycle_diagnostic_oui':'s6',
+  'cycle_traitement':    's6',
+};
+
 function profSelectTranche(key, val, el, multi) {
   if (multi) {
     if (!profileData[key]) profileData[key] = [];
@@ -6174,6 +6190,12 @@ function profSelectTranche(key, val, el, multi) {
     profileData[key] = val;
     el.closest('.prof-tranches').querySelectorAll('.prof-tranche').forEach(t => t.classList.remove('selected'));
     el.classList.add('selected');
+  }
+  // Re-rendu réactif si cette clé conditionne l'affichage d'autres questions
+  const sectionId = PROFILE_REACTIVE_KEYS[key];
+  if (sectionId) {
+    const body = document.getElementById('pbody-' + sectionId);
+    if (body) body.innerHTML = renderProfileSection(sectionId, profileData);
   }
 }
 

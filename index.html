@@ -1011,29 +1011,54 @@ if (typeof supabase === 'undefined') {
     white-space: nowrap; flex-shrink: 0;
   }
 
-  /* Piste de slides */
+  /* Piste de slides — scroll horizontal uniquement */
   .jrn-track {
     display: flex;
     overflow-x: scroll;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     flex: 1;
+    align-items: stretch;
   }
   .jrn-track::-webkit-scrollbar { display: none; }
 
-  /* Slide individuel */
+  /* Slide individuel — chaque slide est un conteneur scrollable verticalement */
   .jrn-slide {
     flex: 0 0 100%;
     width: 100%;
+    min-width: 100%;
     scroll-snap-align: start;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: 12px clamp(16px,6vw,28px) 100px;
+    padding: 12px clamp(16px,6vw,28px) 24px;
     scrollbar-width: none;
     box-sizing: border-box;
   }
   .jrn-slide::-webkit-scrollbar { display: none; }
+
+  /* Indicateur de swipe — uniquement sur le 1er slide (id=0) */
+  .jrn-swipe-hint {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 24px; margin-bottom: 4px;
+    font-size: 0.7rem; color: var(--text-light); letter-spacing: 0.04em;
+    animation: swipeHintPulse 2.5s ease-in-out 1.5s 3 forwards;
+    opacity: 0.8;
+  }
+  .jrn-swipe-hint-arrow {
+    font-size: 1rem; display: inline-block;
+    animation: swipeArrow 1.2s ease-in-out infinite;
+  }
+  @keyframes swipeArrow {
+    0%, 100% { transform: translateX(0); opacity: 0.5; }
+    50%  { transform: translateX(6px); opacity: 1; }
+  }
+  @keyframes swipeHintPulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.3; }
+  }
 
   /* Header de section dans le slide */
   .jrn-slide-header {
@@ -4687,7 +4712,7 @@ function renderJournal() {
 
 function renderJournalCarousel(todayLabel, today) {
   const total   = JRN_SECTIONS.length;
-  const pct     = Math.round((jrnCurrentSlide) / total * 100);
+  const pct     = jrnComputeProgress(jrnValues);
   const existing = loadTodayJournal();
 
   // Vérifier quelles sections ont des données
@@ -4704,7 +4729,7 @@ function renderJournalCarousel(todayLabel, today) {
       <div class="jrn-progress-track">
         <div class="jrn-progress-fill" id="jrn-progress-fill" style="width:${pct}%"></div>
       </div>
-      <div class="jrn-progress-label" id="jrn-progress-label">${jrnCurrentSlide + 1} / ${total}</div>
+      <div class="jrn-progress-label" id="jrn-progress-label">${pct}%</div>
     </div>
     <div style="padding:0 clamp(16px,6vw,28px) 8px">
       <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
@@ -4777,7 +4802,13 @@ function renderJrnSlideContent(sectionId) {
                oninput="jrnUpdateSlider('ballonnements',this.value,5)">
       </div>
       <div class="jrn-question">Douleurs abdominales ?</div>
-      <div class="jrn-emoji-row">${douleursHtml}</div>`;
+      <div class="jrn-emoji-row">${douleursHtml}</div>
+      <!-- Indicateur swipe — uniquement sur la 1ère section -->
+      <div class="jrn-swipe-hint">
+        <span class="jrn-swipe-hint-arrow">→</span>
+        <span>Glisse pour passer à la section suivante</span>
+        <span class="jrn-swipe-hint-arrow">→</span>
+      </div>`;
   }
 
   if (sectionId === 'repas') {
@@ -4837,7 +4868,35 @@ function renderJrnSlideContent(sectionId) {
   return '';
 }
 
-// ── Navigation carrousel ──────────────────────────────────────────────────────
+// Calcul de la progression basée sur les champs réellement remplis
+function jrnComputeProgress(v) {
+  const checks = [
+    // Transit (3 champs)
+    v.transit !== null && v.transit !== undefined,
+    v.ballonnements > 0,
+    v.douleurs !== null && v.douleurs !== undefined,
+    // Repas (1 point si au moins un repas renseigné)
+    Object.values(v.repas || {}).some(r => r.aliments?.length > 0),
+    // Peau (2 champs)
+    v.peau !== null && v.peau !== undefined,
+    (v.zone || []).length > 0,
+    // Mode de vie (4 champs)
+    v.stress > 0,
+    v.sommeil > 0,
+    v.energie > 0,
+    v.humeur !== null && v.humeur !== undefined,
+  ];
+  const filled = checks.filter(Boolean).length;
+  return Math.round(filled / checks.length * 100);
+}
+
+function jrnUpdateProgress() {
+  const pct  = jrnComputeProgress(jrnValues);
+  const fill = document.getElementById('jrn-progress-fill');
+  const lbl  = document.getElementById('jrn-progress-label');
+  if (fill) fill.style.width = pct + '%';
+  if (lbl)  lbl.textContent  = pct + '%';
+}
 function jrnGoToSlide(idx) {
   jrnCurrentSlide = idx;
   const track = document.getElementById('jrn-track');
@@ -4877,14 +4936,14 @@ function jrnHandleScroll(track) {
 function updateJrnNavBar() {
   const total    = JRN_SECTIONS.length;
   const isLast   = jrnCurrentSlide === total - 1;
-  const pct      = Math.round(jrnCurrentSlide / total * 100);
+  const pct      = jrnComputeProgress(jrnValues);
   const existing = loadTodayJournal();
 
   // Barre de progression
   const fill  = document.getElementById('jrn-progress-fill');
   const label = document.getElementById('jrn-progress-label');
   if (fill)  fill.style.width  = pct + '%';
-  if (label) label.textContent = `${jrnCurrentSlide + 1} / ${total}`;
+  if (label) label.textContent = pct + '%';
 
   // Prev button
   const prev = document.getElementById('jrn-nav-prev');
@@ -5213,6 +5272,7 @@ function jrnSelectOption(key, idx, el) {
     .forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
   jrnValues[key] = idx;
+  jrnUpdateProgress();
 }
 
 function jrnToggleChip(idx, el) {
@@ -5233,6 +5293,7 @@ function jrnToggleZone(idx, el) {
   } else {
     jrnValues.zone = jrnValues.zone.filter(i => i !== idx);
   }
+  jrnUpdateProgress();
 }
 
 function jrnUpdateSlider(key, val, max) {
@@ -5245,6 +5306,7 @@ function jrnUpdateSlider(key, val, max) {
     const pct = (parseInt(val) / max) * 100;
     slider.style.background = `linear-gradient(to right, var(--sage) ${pct}%, var(--oat) ${pct}%)`;
   }
+  jrnUpdateProgress();
 }
 
 function jrnStartEdit() {

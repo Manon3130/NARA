@@ -1142,6 +1142,65 @@ if (typeof supabase === 'undefined') {
   }
   .jrn-autosave-toast.show { opacity: 1; }
 
+
+  /* ===== HISTORIQUE REPAS — liste verticale ===== */
+  .meal-history-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 800; display: none; align-items: flex-end; justify-content: center;
+  }
+  .meal-history-overlay.open { display: flex; }
+  .meal-history-sheet {
+    background: white; border-radius: 24px 24px 0 0;
+    width: 100%; max-height: 70vh; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .meal-history-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--oat); margin: 14px auto 10px; flex-shrink: 0;
+  }
+  .meal-history-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px 12px; flex-shrink: 0;
+  }
+  .meal-history-title {
+    font-size: 0.78rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-light);
+  }
+  .meal-history-close {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--oat); border: none; cursor: pointer;
+    font-size: 0.85rem; color: var(--text-mid);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .meal-history-list {
+    overflow-y: auto; flex: 1; padding: 0 12px 12px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .meal-history-list::-webkit-scrollbar { display: none; }
+  .meal-history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 8px; border-bottom: 1px solid var(--oat);
+    cursor: pointer; transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .meal-history-item:last-child { border-bottom: none; }
+  .meal-history-item:active { background: var(--honey); border-radius: 8px; }
+  .meal-history-item-label { font-size: 0.88rem; color: var(--text-dark); }
+  .meal-history-item-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--oat); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .meal-history-item.selected .meal-history-item-check {
+    background: var(--sage); border-color: var(--sage); color: white;
+    font-size: 0.75rem;
+  }
+  .meal-history-empty {
+    text-align: center; color: var(--text-light);
+    font-size: 0.82rem; padding: 24px 16px; line-height: 1.6;
+  }
+
   /* ===== REPAS PAR TEMPS DE REPAS ===== */
   .jrn-meal-tabs {
     display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;
@@ -5129,70 +5188,133 @@ function renderRepasSection(v) {
 }
 
 function renderMealPanel(mealKey, data) {
-  // Historique des aliments saisis précédemment (depuis localStorage)
-  const history = getFoodHistory();
-  const recent = history.slice(0, 8);
+  const k = mealKey;
+  const currentTags = (data.aliments || []).map(function(aliment, i) {
+    return `<span class="jrn-tag">${escHtml(aliment)}<button class="jrn-tag-del" onclick="removeMealAliment('${k}',${i})">×</button></span>`;
+  }).join('');
 
-  const currentTags = (data.aliments || []).map((aliment, i) => `
-    <span class="jrn-tag">
-      ${escHtml(aliment)}
-      <button class="jrn-tag-del" onclick="removeMealAliment('${mealKey}', ${i})">×</button>
-    </span>
-  `).join('');
-
-  const suggestions = recent.filter(s => !(data.aliments || []).includes(s)).map(s => `
-    <div class="jrn-suggestion" onclick="addMealAlimentSuggestion('${mealKey}', '${escHtml(s)}')">${escHtml(s)}</div>
-  `).join('');
-
-  const spiceTags = (data.epices || []).map((ep, i) => `
-    <span class="jrn-spice-tag">
-      🌿 ${escHtml(ep)}
-      <button class="jrn-tag-del" onclick="removeMealEpice('${mealKey}', ${i})" style="color:#6b4fa0">×</button>
-    </span>
-  `).join('');
+  const spiceTags = (data.epices || []).map(function(ep, i) {
+    return `<span class="jrn-spice-tag">🌿 ${escHtml(ep)}<button class="jrn-tag-del" onclick="removeMealEpice('${k}',${i})" style="color:#6b4fa0">×</button></span>`;
+  }).join('');
 
   const portions = [
-    { key: 'petite',   icon: '🥣', label: 'Petite' },
-    { key: 'moderee',  icon: '🍽️', label: 'Modérée' },
-    { key: 'grosse',   icon: '🫕', label: 'Grosse' },
+    { key:'petite',  icon:'🥣', label:'Petite' },
+    { key:'moderee', icon:'🍽️', label:'Modérée' },
+    { key:'grosse',  icon:'🫕', label:'Grosse' },
   ];
-  const portionHtml = portions.map(p => `
-    <div class="jrn-portion${data.portion === p.key ? ' selected' : ''}"
-         onclick="selectMealPortion('${mealKey}', '${p.key}', this)">
-      <span class="por-icon">${p.icon}</span>
-      <span class="por-label">${p.label}</span>
-    </div>
-  `).join('');
+  const portionHtml = portions.map(function(p) {
+    return `<div class="jrn-portion${data.portion === p.key ? ' selected' : ''}" onclick="selectMealPortion('${k}','${p.key}',this)"><span class="por-icon">${p.icon}</span><span class="por-label">${p.label}</span></div>`;
+  }).join('');
 
   return `
-    <!-- Aliments saisis -->
     <span class="ql-section-label">Ce que j'ai mangé</span>
     <div class="jrn-food-input-row">
-      <input class="jrn-food-input" type="text" id="food-input-${mealKey}"
+      <input class="jrn-food-input" type="text" id="food-input-${k}"
              placeholder="Riz, poulet, salade…" autocomplete="off"
-             onkeydown="onFoodInputKey(event, '${mealKey}')">
-      <button class="jrn-food-add-btn" onclick="addMealAliment('${mealKey}')">+</button>
+             onkeydown="onFoodInputKey(event,'${k}')">
+      <button class="jrn-food-add-btn" onclick="openMealHistory('${k}','food')" title="Suggestions">+</button>
     </div>
-    <div class="jrn-tags" id="meal-tags-${mealKey}">${currentTags}</div>
-    ${suggestions ? `<div class="jrn-suggestions" id="meal-suggestions-${mealKey}">${suggestions}</div>` : ''}
-
-    <!-- Épices & aromates -->
-    <span class="ql-section-label" style="margin-top:8px">Épices & aromates</span>
+    <div class="jrn-tags" id="meal-tags-${k}">${currentTags}</div>
+    <span class="ql-section-label" style="margin-top:8px">Épices &amp; aromates</span>
     <div class="jrn-spice-row">
-      <input class="jrn-spice-input" type="text" id="spice-input-${mealKey}"
+      <input class="jrn-spice-input" type="text" id="spice-input-${k}"
              placeholder="Curcuma, gingembre, cumin…"
-             onkeydown="onSpiceInputKey(event, '${mealKey}')">
-      <button class="jrn-food-add-btn" onclick="addMealEpice('${mealKey}')" style="background:var(--blush);color:var(--text-dark)">+</button>
+             onkeydown="onSpiceInputKey(event,'${k}')">
+      <button class="jrn-food-add-btn" onclick="openMealHistory('${k}','spice')"
+              style="background:var(--blush);color:var(--text-dark)" title="Suggestions">+</button>
     </div>
-    <div class="jrn-spice-tags" id="meal-spices-${mealKey}">${spiceTags}</div>
-
-    <!-- Portion -->
+    <div class="jrn-spice-tags" id="meal-spices-${k}">${spiceTags}</div>
     <span class="ql-section-label" style="margin-top:8px">Quantité</span>
-    <div class="jrn-portions" id="meal-portions-${mealKey}">${portionHtml}</div>
+    <div class="jrn-portions" id="meal-portions-${k}">${portionHtml}</div>
   `;
 }
 
-// ── Navigation entre moments de repas ──────────────────────────────────────
+// ── Overlay historique repas ──────────────────────────────────────────────────
+let _mealHistoryKey  = null; // mealKey actif
+let _mealHistoryType = null; // 'food' | 'spice'
+
+function openMealHistory(mealKey, type) {
+  _mealHistoryKey  = mealKey;
+  _mealHistoryType = type;
+
+  const overlay = document.getElementById('meal-history-overlay');
+  if (!overlay) return;
+
+  // Titre
+  const title = overlay.querySelector('.meal-history-title');
+  if (title) title.textContent = type === 'spice' ? 'Épices & aromates' : 'Ce que j\'ai mangé';
+
+  // Construire la liste fusionnée (historique perso + défauts, tri alpha)
+  const list     = getMergedList(type);
+  const data     = getMealData(mealKey);
+  const selected = type === 'spice' ? (data.epices || []) : (data.aliments || []);
+
+  const listEl = overlay.querySelector('.meal-history-list');
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="meal-history-empty">Aucun élément pour l\'instant.<br>Saisis quelque chose dans le champ texte.</div>';
+  } else {
+    listEl.innerHTML = list.map(item => {
+      const isSel = selected.includes(item);
+      return '<div class="meal-history-item' + (isSel ? ' selected' : '') + '"' +
+        ' onclick="toggleMealHistoryItem(\'' + escHtml(item) + '\')">' +
+        '<span class="meal-history-item-label">' + escHtml(item) + '</span>' +
+        '<span class="meal-history-item-check">' + (isSel ? '✓' : '') + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  overlay.classList.add('open');
+}
+
+function closeMealHistory() {
+  const overlay = document.getElementById('meal-history-overlay');
+  if (overlay) overlay.classList.remove('open');
+  _mealHistoryKey  = null;
+  _mealHistoryType = null;
+}
+
+function toggleMealHistoryItem(item) {
+  if (!_mealHistoryKey || !_mealHistoryType) return;
+  const data = getMealData(_mealHistoryKey);
+
+  if (_mealHistoryType === 'food') {
+    if (!data.aliments) data.aliments = [];
+    if (data.aliments.includes(item)) {
+      data.aliments = data.aliments.filter(a => a !== item);
+    } else {
+      data.aliments.push(item);
+      saveFoodToHistory(item, 'food');
+    }
+  } else {
+    if (!data.epices) data.epices = [];
+    if (data.epices.includes(item)) {
+      data.epices = data.epices.filter(e => e !== item);
+    } else {
+      data.epices.push(item);
+      saveFoodToHistory(item, 'spice');
+    }
+  }
+
+  // Mettre à jour la coche dans la liste sans fermer
+  const overlay = document.getElementById('meal-history-overlay');
+  if (overlay) {
+    const items = overlay.querySelectorAll('.meal-history-item');
+    items.forEach(el => {
+      const label = el.querySelector('.meal-history-item-label')?.textContent;
+      const selected = _mealHistoryType === 'food'
+        ? data.aliments.includes(label)
+        : data.epices.includes(label);
+      el.classList.toggle('selected', selected);
+      const check = el.querySelector('.meal-history-item-check');
+      if (check) check.textContent = selected ? '✓' : '';
+    });
+  }
+
+  // Mettre à jour les tags dans le panel
+  refreshMealPanel(_mealHistoryKey);
+}
+
+
 function switchMeal(key, tabEl) {
   jrnCurrentMeal = key;
   document.querySelectorAll('.jrn-meal-tab').forEach(t => t.classList.remove('active'));
@@ -5209,8 +5331,11 @@ function escHtml(str) {
 
 function getMealData(mealKey) {
   if (!jrnValues.repas) jrnValues.repas = { matin:{aliments:[],epices:[],portion:null}, midi:{aliments:[],epices:[],portion:null}, soir:{aliments:[],epices:[],portion:null}, encas:{aliments:[],epices:[],portion:null} };
-  if (!jrnValues.repas[mealKey]) jrnValues.repas[mealKey] = { aliments: [], epices: [], portion: null };
-  return jrnValues.repas[mealKey];
+  if (!jrnValues.repas[mealKey]) jrnValues.repas[mealKey] = { aliments:[], epices:[], portion:null };
+  const d = jrnValues.repas[mealKey];
+  if (!Array.isArray(d.aliments)) d.aliments = [];
+  if (!Array.isArray(d.epices))   d.epices   = [];
+  return d;
 }
 
 function onFoodInputKey(e, mealKey) {
@@ -5219,25 +5344,16 @@ function onFoodInputKey(e, mealKey) {
 
 function addMealAliment(mealKey) {
   const input = document.getElementById('food-input-' + mealKey);
-  if (!input) return;
+  if (!input || !input.value.trim()) return;
   const val = input.value.trim();
-  if (!val) return;
   const data = getMealData(mealKey);
   if (!data.aliments.includes(val)) {
     data.aliments.push(val);
-    saveFoodToHistory(val);
+    saveFoodToHistory(val, 'food');
   }
   input.value = '';
   refreshMealPanel(mealKey);
-}
-
-function addMealAlimentSuggestion(mealKey, val) {
-  const data = getMealData(mealKey);
-  if (!data.aliments.includes(val)) {
-    data.aliments.push(val);
-    saveFoodToHistory(val);
-  }
-  refreshMealPanel(mealKey);
+  jrnUpdateProgress();
 }
 
 function removeMealAliment(mealKey, idx) {
@@ -5253,11 +5369,13 @@ function onSpiceInputKey(e, mealKey) {
 
 function addMealEpice(mealKey) {
   const input = document.getElementById('spice-input-' + mealKey);
-  if (!input) return;
+  if (!input || !input.value.trim()) return;
   const val = input.value.trim();
-  if (!val) return;
   const data = getMealData(mealKey);
-  if (!data.epices.includes(val)) data.epices.push(val);
+  if (!data.epices.includes(val)) {
+    data.epices.push(val);
+    saveFoodToHistory(val, 'spice');
+  }
   input.value = '';
   refreshMealPanel(mealKey);
 }
@@ -5283,16 +5401,39 @@ function refreshMealPanel(mealKey) {
   panel.innerHTML = renderMealPanel(mealKey, data);
 }
 
-// ── Historique personnel d'aliments ─────────────────────────────────────────
-function getFoodHistory() {
-  try { return JSON.parse(localStorage.getItem('nara_food_history') || '[]'); }
-  catch { return []; }
+// ── Pré-listes de suggestions par défaut ─────────────────────────────────────
+// Affichées quand l'historique personnel est vide ou peu fourni (< 5 éléments)
+const DEFAULT_FOOD_SUGGESTIONS = [
+  'Amandes','Avocat','Banane','Escalope de poulet','Fromage blanc',
+  'Lentilles','Œufs','Pain complet','Pâtes','Pomme',
+  'Riz','Salade verte','Saumon','Tomate','Yaourt',
+].sort();
+
+const DEFAULT_SPICE_SUGGESTIONS = [
+  'Ail','Basilic','Cannelle','Cumin','Curcuma',
+  'Gingembre','Graines de chia','Graines de lin','Miel','Origan',
+  'Paprika','Persil','Poivre','Vinaigre de cidre','Zeste de citron',
+].sort();
+
+// Fusionner historique personnel + suggestions par défaut, tri alpha, sans doublons
+function getMergedList(type) {
+  const personal = getFoodHistory(type);  // historique par type 'food' ou 'spice'
+  const defaults  = type === 'spice' ? DEFAULT_SPICE_SUGGESTIONS : DEFAULT_FOOD_SUGGESTIONS;
+  const merged = [...new Set([...personal, ...defaults])];
+  return merged.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
 }
 
-function saveFoodToHistory(food) {
-  let h = getFoodHistory();
-  h = [food, ...h.filter(f => f.toLowerCase() !== food.toLowerCase())].slice(0, 50);
-  localStorage.setItem('nara_food_history', JSON.stringify(h));
+// Historique spécifique par type (food/spice)
+function getFoodHistory(type) {
+  const key = type === 'spice' ? 'nara_spice_history' : 'nara_food_history';
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+}
+
+function saveFoodToHistory(food, type) {
+  const key = type === 'spice' ? 'nara_spice_history' : 'nara_food_history';
+  let h = getFoodHistory(type);
+  h = [food, ...h.filter(f => f.toLowerCase() !== food.toLowerCase())].slice(0, 100);
+  localStorage.setItem(key, JSON.stringify(h));
 }
 
 function bindJournalSliders() {
@@ -7937,6 +8078,18 @@ try { updateHomeScore(); } catch(e) {}
           <button class="cycle-save-btn" onclick="cycleSaveSettings()">Enregistrer ✓</button>
           <button class="cycle-reset-btn" onclick="cycleResetModule()">Réinitialiser le module</button>
         </div>
+      </div>
+    </div>
+
+    <!-- OVERLAY HISTORIQUE REPAS -->
+    <div class="meal-history-overlay" id="meal-history-overlay" onclick="if(event.target===this)closeMealHistory()">
+      <div class="meal-history-sheet">
+        <div class="meal-history-handle"></div>
+        <div class="meal-history-header">
+          <span class="meal-history-title">Historique</span>
+          <button class="meal-history-close" onclick="closeMealHistory()">✕</button>
+        </div>
+        <div class="meal-history-list"></div>
       </div>
     </div>
 

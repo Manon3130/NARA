@@ -989,7 +989,10 @@ if (typeof supabase === 'undefined') {
   /* Container scrollable horizontal */
   .jrn-carousel-outer {
     display: flex; flex-direction: column;
-    flex: 1; overflow: hidden; position: relative;
+    flex: 1;
+    min-height: 0;          /* CRITIQUE sur iOS : permet au flex child de rétrécir */
+    overflow: hidden;
+    position: relative;
   }
 
   /* Barre de progression en haut */
@@ -1020,15 +1023,17 @@ if (typeof supabase === 'undefined') {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     flex: 1;
+    min-height: 0;          /* CRITIQUE : sans ça, flex:1 ne contraint pas la hauteur sur iOS */
     align-items: stretch;
   }
   .jrn-track::-webkit-scrollbar { display: none; }
 
-  /* Slide individuel — chaque slide est un conteneur scrollable verticalement */
+  /* Slide individuel — hauteur bornée pour que overflow-y:auto soit effectif */
   .jrn-slide {
     flex: 0 0 100%;
     width: 100%;
     min-width: 100%;
+    height: 100%;            /* CRITIQUE : sans hauteur explicite, overflow-y:auto ne crée pas de zone scrollable sur iOS */
     scroll-snap-align: start;
     overflow-y: auto;
     overflow-x: hidden;
@@ -1036,6 +1041,7 @@ if (typeof supabase === 'undefined') {
     padding: 12px clamp(16px,6vw,28px) 24px;
     scrollbar-width: none;
     box-sizing: border-box;
+    overscroll-behavior-x: none; /* empêche le swipe vertical de déclencher la nav horizontale */
   }
   .jrn-slide::-webkit-scrollbar { display: none; }
 
@@ -2486,13 +2492,14 @@ if (typeof supabase === 'undefined') {
 
     <!-- SCREEN 3 — JOURNAL -->
     <div class="screen" id="screen-journal">
-      <div class="screen-header">
+      <div class="screen-header" id="jrn-screen-header">
         <div class="back-btn" onclick="go('home')">←</div>
         <div class="screen-title">Mon journal</div>
         <button onclick="go('gallery')" style="background:var(--honey);border:1.5px solid var(--oat);border-radius:12px;padding:6px 12px;font-size:0.72rem;color:var(--text-mid);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Galerie</button>
       </div>
-      <div id="journal-scroll">
+      <div id="journal-scroll" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
         <!-- Rendu dynamique par renderJournal() -->
+      </div>
       </div>
       <!-- shared bottom nav -->
       <div class="bottom-nav-shared">
@@ -4684,11 +4691,13 @@ function renderJournal() {
   const container = document.getElementById('journal-scroll');
   if (!container) return;
 
-  const today     = getTodayStr();
+  const today      = getTodayStr();
   const todayLabel = getTodayLabel();
-  const existing  = loadTodayJournal();
+  const existing   = loadTodayJournal();
 
-  // Initialiser jrnValues
+  // Reset slide actif à 0 à chaque ouverture sauf si édition en cours
+  if (!jrnEditMode) jrnCurrentSlide = 0;
+
   jrnValues = existing && jrnEditMode ? { ...existing } : (existing || {
     transit: null, ballonnements: 0, douleurs: null,
     repas: {
@@ -4701,13 +4710,20 @@ function renderJournal() {
     humeur: null, notes: '',
   });
 
-  // Onglet actif par heure si 1er chargement
   const heure = new Date().getHours();
   jrnCurrentMeal = heure < 11 ? 'matin' : heure < 14 ? 'midi' : heure < 18 ? 'encas' : 'soir';
 
   container.innerHTML = renderJournalCarousel(todayLabel, today);
   bindJournalSliders();
   updateJrnNavBar();
+
+  // Scroll au slide actif sans animation (initialisation)
+  const track = document.getElementById('jrn-track');
+  if (track && jrnCurrentSlide > 0) {
+    requestAnimationFrame(() => {
+      track.scrollLeft = jrnCurrentSlide * track.offsetWidth;
+    });
+  }
 }
 
 function renderJournalCarousel(todayLabel, today) {

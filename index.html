@@ -983,6 +983,126 @@ if (typeof supabase === 'undefined') {
   }
 
 
+
+  /* ===== JOURNAL CARROUSEL ===== */
+
+  /* Container scrollable horizontal */
+  .jrn-carousel-outer {
+    display: flex; flex-direction: column;
+    flex: 1; overflow: hidden; position: relative;
+  }
+
+  /* Barre de progression en haut */
+  .jrn-progress-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px clamp(16px,6vw,28px) 6px;
+    flex-shrink: 0;
+  }
+  .jrn-progress-track {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--oat); overflow: hidden;
+  }
+  .jrn-progress-fill {
+    height: 100%; border-radius: 2px;
+    background: var(--sage); transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+  .jrn-progress-label {
+    font-size: 0.7rem; color: var(--text-light);
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* Piste de slides */
+  .jrn-track {
+    display: flex;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex: 1;
+  }
+  .jrn-track::-webkit-scrollbar { display: none; }
+
+  /* Slide individuel */
+  .jrn-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    scroll-snap-align: start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px clamp(16px,6vw,28px) 100px;
+    scrollbar-width: none;
+    box-sizing: border-box;
+  }
+  .jrn-slide::-webkit-scrollbar { display: none; }
+
+  /* Header de section dans le slide */
+  .jrn-slide-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  }
+  .jrn-slide-icon { font-size: 1.5rem; }
+  .jrn-slide-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem; color: var(--text-dark); font-weight: 400;
+  }
+  .jrn-slide-saved {
+    margin-left: auto; font-size: 0.65rem; color: var(--sage);
+    background: var(--honey); border-radius: 10px;
+    padding: 3px 8px; flex-shrink: 0;
+  }
+
+  /* Dots de pagination */
+  .jrn-dots {
+    display: flex; justify-content: center; gap: 7px;
+    padding: 10px 0 6px; flex-shrink: 0;
+  }
+  .jrn-dot-item {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--oat); transition: all 0.3s;
+    cursor: pointer;
+  }
+  .jrn-dot-item.active {
+    width: 22px; border-radius: 4px;
+    background: var(--sage);
+  }
+  .jrn-dot-item.done {
+    background: var(--avocado); opacity: 0.6;
+  }
+
+  /* Boutons navigation slide */
+  .jrn-nav-bar {
+    display: flex; gap: 10px;
+    padding: 8px clamp(16px,6vw,28px) calc(env(safe-area-inset-bottom,0px) + 68px);
+    flex-shrink: 0;
+  }
+  .jrn-nav-prev {
+    width: 44px; height: 44px; border-radius: 22px;
+    border: 1.5px solid var(--oat); background: white;
+    font-size: 1.1rem; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    color: var(--text-mid); flex-shrink: 0;
+    transition: all 0.18s;
+  }
+  .jrn-nav-prev:disabled { opacity: 0.3; pointer-events: none; }
+  .jrn-nav-next {
+    flex: 1; height: 44px; border-radius: 22px;
+    border: none; background: var(--sage); color: white;
+    font-size: 0.88rem; cursor: pointer; font-family: 'DM Sans',sans-serif;
+    transition: all 0.18s;
+  }
+  .jrn-nav-next.last { background: var(--avocado); }
+  .jrn-nav-next:active { opacity: 0.85; transform: scale(0.97); }
+
+  /* Badge enregistré dans l'auto-save */
+  .jrn-autosave-toast {
+    position: fixed; bottom: calc(env(safe-area-inset-bottom,0px) + 124px);
+    left: 50%; transform: translateX(-50%);
+    background: var(--avocado); color: white;
+    font-size: 0.75rem; padding: 7px 16px; border-radius: 20px;
+    z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .jrn-autosave-toast.show { opacity: 1; }
+
   /* ===== REPAS PAR TEMPS DE REPAS ===== */
   .jrn-meal-tabs {
     display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;
@@ -2346,8 +2466,8 @@ if (typeof supabase === 'undefined') {
         <div class="screen-title">Mon journal</div>
         <button onclick="go('gallery')" style="background:var(--honey);border:1.5px solid var(--oat);border-radius:12px;padding:6px 12px;font-size:0.72rem;color:var(--text-mid);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Galerie</button>
       </div>
-      <div class="journal-scroll" id="journal-scroll">
-        <!-- Tout est rendu dynamiquement par renderJournal() -->
+      <div id="journal-scroll">
+        <!-- Rendu dynamique par renderJournal() -->
       </div>
       <!-- shared bottom nav -->
       <div class="bottom-nav-shared">
@@ -2358,6 +2478,8 @@ if (typeof supabase === 'undefined') {
         <div class="bnav-item" id="jrn-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
         <div class="bnav-item" id="jrn-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
       </div>
+      <!-- Auto-save toast -->
+      <div class="jrn-autosave-toast" id="jrn-autosave-toast">✓ Section enregistrée</div>
     </div>
 
     <!-- SCREEN 4 — INSIGHTS -->
@@ -4520,198 +4642,324 @@ function loadTodayJournal() {
   return null;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// JOURNAL CARROUSEL — 4 sections, navigation horizontale, auto-save par section
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Sections du carrousel
+const JRN_SECTIONS = [
+  { id: 'transit', icon: '🫀', title: 'Intestin & Transit' },
+  { id: 'repas',   icon: '🍽️', title: 'Repas du jour' },
+  { id: 'peau',    icon: '✨', title: 'Peau' },
+  { id: 'vie',     icon: '⚡', title: 'Mode de vie' },
+];
+let jrnCurrentSlide = 0; // slide actif
+
 function renderJournal() {
-  const scroll = document.getElementById('journal-scroll');
-  if (!scroll) return;
+  const container = document.getElementById('journal-scroll');
+  if (!container) return;
 
-  const today = getTodayStr();
+  const today     = getTodayStr();
   const todayLabel = getTodayLabel();
-  const existing = loadTodayJournal();
+  const existing  = loadTodayJournal();
 
-  // Si déjà rempli aujourd'hui et pas en mode édition → afficher résumé
-  if (existing && !jrnEditMode) {
-    scroll.innerHTML = renderJournalDone(todayLabel, existing);
-    return;
-  }
-
-  // Initialiser les valeurs : si édition, reprendre les valeurs existantes ; sinon tout à zéro
-  jrnValues = existing && jrnEditMode ? { ...existing } : {
-    transit: null,
-    ballonnements: 0,
-    douleurs: null,    // 0=Aucune, 1=Légères, 2=Intenses
-    // Repas structurés par moment
+  // Initialiser jrnValues
+  jrnValues = existing && jrnEditMode ? { ...existing } : (existing || {
+    transit: null, ballonnements: 0, douleurs: null,
     repas: {
-      matin:   { aliments: [], epices: [], portion: null },
-      midi:    { aliments: [], epices: [], portion: null },
-      soir:    { aliments: [], epices: [], portion: null },
-      encas:   { aliments: [], epices: [], portion: null },
+      matin:  { aliments:[], epices:[], portion:null },
+      midi:   { aliments:[], epices:[], portion:null },
+      soir:   { aliments:[], epices:[], portion:null },
+      encas:  { aliments:[], epices:[], portion:null },
     },
-    peau: null,
-    zone: [],          // zones de peau concernées (indices)
-    stress: 0,
-    sommeil: 0,
-    energie: 0,
-    humeur: null,      // 0=Bonne, 1=Neutre, 2=Basse
-    notes: '',
-  };
-  // Moment de repas sélectionné par défaut selon l'heure
+    peau: null, zone: [], stress: 0, sommeil: 0, energie: 0,
+    humeur: null, notes: '',
+  });
+
+  // Onglet actif par heure si 1er chargement
   const heure = new Date().getHours();
   jrnCurrentMeal = heure < 11 ? 'matin' : heure < 14 ? 'midi' : heure < 18 ? 'encas' : 'soir';
 
-  scroll.innerHTML = renderJournalForm(todayLabel);
-  // Brancher les sliders après rendu DOM
+  container.innerHTML = renderJournalCarousel(todayLabel, today);
   bindJournalSliders();
+  updateJrnNavBar();
 }
 
-function renderJournalForm(todayLabel) {
-  const v = jrnValues;
+function renderJournalCarousel(todayLabel, today) {
+  const total   = JRN_SECTIONS.length;
+  const pct     = Math.round((jrnCurrentSlide) / total * 100);
+  const existing = loadTodayJournal();
 
-  // Transit options
-  const transitOpts = [
-    { e: '🐢', t: 'Lent' },
-    { e: '👍', t: 'Normal' },
-    { e: '💨', t: 'Rapide' },
-  ];
-  const transitHtml = transitOpts.map((o, i) => `
-    <div class="jrn-option${v.transit === i ? ' selected' : ''}"
-         onclick="jrnSelectOption('transit', ${i}, this)">
-      <span class="e">${o.e}</span><span class="t">${o.t}</span>
+  // Vérifier quelles sections ont des données
+  const sectionDone = {
+    transit: existing && (existing.transit !== null || existing.ballonnements > 0 || existing.douleurs !== null),
+    repas:   existing && Object.values(existing.repas || {}).some(r => r.aliments?.length > 0),
+    peau:    existing && existing.peau !== null,
+    vie:     existing && (existing.stress > 0 || existing.sommeil > 0 || existing.energie > 0 || existing.humeur !== null),
+  };
+
+  // Barre de progression + chips date
+  const headerHtml = `
+    <div class="jrn-progress-bar">
+      <div class="jrn-progress-track">
+        <div class="jrn-progress-fill" id="jrn-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="jrn-progress-label" id="jrn-progress-label">${jrnCurrentSlide + 1} / ${total}</div>
+    </div>
+    <div style="padding:0 clamp(16px,6vw,28px) 8px">
+      <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
+    </div>`;
+
+  // Dots
+  const dotsHtml = `
+    <div class="jrn-dots" id="jrn-dots">
+      ${JRN_SECTIONS.map((s, i) => {
+        let cls = 'jrn-dot-item';
+        if (i === jrnCurrentSlide) cls += ' active';
+        else if (sectionDone[s.id]) cls += ' done';
+        return `<div class="${cls}" onclick="jrnGoToSlide(${i})"></div>`;
+      }).join('')}
+    </div>`;
+
+  // Slides
+  const slidesHtml = JRN_SECTIONS.map((s, i) => `
+    <div class="jrn-slide" id="jrn-slide-${i}">
+      <div class="jrn-slide-header">
+        <span class="jrn-slide-icon">${s.icon}</span>
+        <span class="jrn-slide-title">${s.title}</span>
+        ${sectionDone[s.id] ? '<span class="jrn-slide-saved">✓ Enregistré</span>' : ''}
+      </div>
+      ${renderJrnSlideContent(s.id)}
     </div>`).join('');
 
-  // Douleurs abdominales (manquait dans le journal)
-  const douleursOpts = [
-    { e: '😌', t: 'Aucune' },
-    { e: '😐', t: 'Légères' },
-    { e: '😣', t: 'Intenses' },
-  ];
-  const douleursHtml = douleursOpts.map((o, i) => `
-    <div class="jrn-option${v.douleurs === i ? ' selected' : ''}"
-         onclick="jrnSelectOption('douleurs', ${i}, this)">
-      <span class="e">${o.e}</span><span class="t">${o.t}</span>
-    </div>`).join('');
-
-  // Peau options
-  const peauOpts = [
-    { e: '🔴', t: 'Poussée' },
-    { e: '🟡', t: 'Stable' },
-    { e: '🟢', t: 'Calme' },
-  ];
-  const peauHtml = peauOpts.map((o, i) => `
-    <div class="jrn-option${v.peau === i ? ' selected' : ''}"
-         onclick="jrnSelectOption('peau', ${i}, this)">
-      <span class="e">${o.e}</span><span class="t">${o.t}</span>
-    </div>`).join('');
-
-  // Zones de peau concernées (manquait dans le journal)
-  const ZONES = ['Visage','Nuque','Dos','Ventre','Bras','Jambes','Cuir chevelu'];
-  const zonesHtml = ZONES.map((z, i) => `
-    <div class="jrn-chip${(v.zone || []).includes(i) ? ' selected' : ''}"
-         onclick="jrnToggleZone(${i}, this)">${z}</div>`).join('');
-
-  // Humeur générale (manquait dans le journal)
-  const humeurOpts = [
-    { e: '😊', t: 'Bonne' },
-    { e: '😐', t: 'Neutre' },
-    { e: '😔', t: 'Basse' },
-  ];
-  const humeurHtml = humeurOpts.map((o, i) => `
-    <div class="jrn-option${v.humeur === i ? ' selected' : ''}"
-         onclick="jrnSelectOption('humeur', ${i}, this)">
-      <span class="e">${o.e}</span><span class="t">${o.t}</span>
-    </div>`).join('');
+  // Barre de navigation prev/next
+  const isLast = jrnCurrentSlide === total - 1;
+  const navHtml = `
+    <div class="jrn-nav-bar" id="jrn-nav-bar">
+      <button class="jrn-nav-prev" id="jrn-nav-prev"
+              onclick="jrnPrevSlide()" ${jrnCurrentSlide === 0 ? 'disabled' : ''}>←</button>
+      <button class="jrn-nav-next ${isLast ? 'last' : ''}" id="jrn-nav-next"
+              onclick="${isLast ? 'saveJournal()' : 'jrnNextSlide()'}">
+        ${isLast ? 'Enregistrer mon journal ✓' : 'Suivant →'}
+      </button>
+    </div>`;
 
   return `
-    <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
-
-    <!-- INTESTIN & TRANSIT -->
-    <div class="jrn-section">
-      <div class="jrn-section-header">
-        <div class="jrn-dot" style="background:var(--avocado)"></div>
-        <div class="jrn-section-name">Intestin & Transit</div>
+    <div class="jrn-carousel-outer" id="jrn-carousel-outer">
+      ${headerHtml}
+      <div class="jrn-track" id="jrn-track" onscroll="jrnHandleScroll(this)">
+        ${slidesHtml}
       </div>
+      ${dotsHtml}
+      ${navHtml}
+    </div>`;
+}
+
+// Rendu du contenu de chaque slide
+function renderJrnSlideContent(sectionId) {
+  const v = jrnValues;
+
+  if (sectionId === 'transit') {
+    const transitOpts = [{ e:'🐢', t:'Lent' },{ e:'👍', t:'Normal' },{ e:'💨', t:'Rapide' }];
+    const douleursOpts = [{ e:'😌', t:'Aucune' },{ e:'😐', t:'Légères' },{ e:'😣', t:'Intenses' }];
+    const transitHtml  = transitOpts.map((o,i) =>
+      `<div class="jrn-option${v.transit===i?' selected':''}" onclick="jrnSelectOption('transit',${i},this)"><span class="e">${o.e}</span><span class="t">${o.t}</span></div>`).join('');
+    const douleursHtml = douleursOpts.map((o,i) =>
+      `<div class="jrn-option${v.douleurs===i?' selected':''}" onclick="jrnSelectOption('douleurs',${i},this)"><span class="e">${o.e}</span><span class="t">${o.t}</span></div>`).join('');
+    return `
       <div class="jrn-question">Comment est ton transit ?</div>
       <div class="jrn-emoji-row">${transitHtml}</div>
       <div class="jrn-slider-wrap">
-        <div class="jrn-slider-label">
-          Ballonnements
-          <span class="jrn-slider-val" id="jrn-val-ballonnements">${v.ballonnements}/5</span>
-        </div>
+        <div class="jrn-slider-label">Ballonnements
+          <span class="jrn-slider-val" id="jrn-val-ballonnements">${v.ballonnements}/5</span></div>
         <input type="range" class="jrn-slider" id="jrn-slider-ballonnements"
                min="0" max="5" value="${v.ballonnements}"
-               oninput="jrnUpdateSlider('ballonnements', this.value, 5)">
+               oninput="jrnUpdateSlider('ballonnements',this.value,5)">
       </div>
       <div class="jrn-question">Douleurs abdominales ?</div>
-      <div class="jrn-emoji-row">${douleursHtml}</div>
-      <div class="jrn-question" style="margin-top:8px">🍽️ Repas de la journée</div>
-      ${renderRepasSection(v)}
-    </div>
+      <div class="jrn-emoji-row">${douleursHtml}</div>`;
+  }
 
-    <!-- PEAU -->
-    <div class="jrn-section">
-      <div class="jrn-section-header">
-        <div class="jrn-dot" style="background:var(--blush)"></div>
-        <div class="jrn-section-name">Peau</div>
-      </div>
+  if (sectionId === 'repas') {
+    return `
+      ${renderFoodTestBanner()}
+      ${renderRepasSection(v)}
+      ${renderFoodTestButton()}`;
+  }
+
+  if (sectionId === 'peau') {
+    const peauOpts = [{ e:'🔴', t:'Poussée' },{ e:'🟡', t:'Stable' },{ e:'🟢', t:'Calme' }];
+    const ZONES = ['Visage','Nuque','Dos','Ventre','Bras','Jambes','Cuir chevelu'];
+    const peauHtml  = peauOpts.map((o,i) =>
+      `<div class="jrn-option${v.peau===i?' selected':''}" onclick="jrnSelectOption('peau',${i},this)"><span class="e">${o.e}</span><span class="t">${o.t}</span></div>`).join('');
+    const zonesHtml = ZONES.map((z,i) =>
+      `<div class="jrn-chip${(v.zone||[]).includes(i)?' selected':''}" onclick="jrnToggleZone(${i},this)">${z}</div>`).join('');
+    return `
       <div class="jrn-question">Comment est ta peau aujourd'hui ?</div>
       <div class="jrn-emoji-row">${peauHtml}</div>
       <div class="jrn-question">Zone concernée</div>
       <div class="jrn-chips" style="margin-bottom:14px">${zonesHtml}</div>
-      <div id="jrn-photo-zone" onclick="triggerPhotoInput()">
-        ${renderPhotoZone()}
-      </div>
+      <div id="jrn-photo-zone" onclick="triggerPhotoInput()">${renderPhotoZone()}</div>
       <input type="file" id="jrn-photo-input" accept="image/*" capture="environment"
-             style="display:none" onchange="handlePhotoSelected(this)">
-    </div>
+             style="display:none" onchange="handlePhotoSelected(this)">`;
+  }
 
-    <!-- MODE DE VIE -->
-    <div class="jrn-section">
-      <div class="jrn-section-header">
-        <div class="jrn-dot" style="background:var(--oat)"></div>
-        <div class="jrn-section-name">Mode de vie</div>
-      </div>
+  if (sectionId === 'vie') {
+    const humeurOpts = [{ e:'😊', t:'Bonne' },{ e:'😐', t:'Neutre' },{ e:'😔', t:'Basse' }];
+    const humeurHtml = humeurOpts.map((o,i) =>
+      `<div class="jrn-option${v.humeur===i?' selected':''}" onclick="jrnSelectOption('humeur',${i},this)"><span class="e">${o.e}</span><span class="t">${o.t}</span></div>`).join('');
+    return `
       <div class="jrn-slider-wrap">
-        <div class="jrn-slider-label">
-          Stress du jour
-          <span class="jrn-slider-val" id="jrn-val-stress">${v.stress}/5</span>
-        </div>
+        <div class="jrn-slider-label">Stress du jour
+          <span class="jrn-slider-val" id="jrn-val-stress">${v.stress}/5</span></div>
         <input type="range" class="jrn-slider" id="jrn-slider-stress"
                min="0" max="5" value="${v.stress}"
-               oninput="jrnUpdateSlider('stress', this.value, 5)">
+               oninput="jrnUpdateSlider('stress',this.value,5)">
       </div>
       <div class="jrn-slider-wrap">
-        <div class="jrn-slider-label">
-          Qualité du sommeil
-          <span class="jrn-slider-val" id="jrn-val-sommeil">${v.sommeil}/5</span>
-        </div>
+        <div class="jrn-slider-label">Qualité du sommeil
+          <span class="jrn-slider-val" id="jrn-val-sommeil">${v.sommeil}/5</span></div>
         <input type="range" class="jrn-slider" id="jrn-slider-sommeil"
                min="0" max="5" value="${v.sommeil}"
-               oninput="jrnUpdateSlider('sommeil', this.value, 5)">
+               oninput="jrnUpdateSlider('sommeil',this.value,5)">
       </div>
       <div class="jrn-slider-wrap">
-        <div class="jrn-slider-label">
-          Niveau d'énergie
-          <span class="jrn-slider-val" id="jrn-val-energie">${v.energie}/5</span>
-        </div>
+        <div class="jrn-slider-label">Niveau d'énergie
+          <span class="jrn-slider-val" id="jrn-val-energie">${v.energie}/5</span></div>
         <input type="range" class="jrn-slider" id="jrn-slider-energie"
                min="0" max="5" value="${v.energie}"
-               oninput="jrnUpdateSlider('energie', this.value, 5)">
+               oninput="jrnUpdateSlider('energie',this.value,5)">
       </div>
       <div class="jrn-question">Humeur générale</div>
       <div class="jrn-emoji-row">${humeurHtml}</div>
-    </div>
-
-    <!-- BANDEAU TEST ALIMENTAIRE (visible si test actif) -->
-    ${renderFoodTestBanner()}
-
-    <!-- BOUTON LANCER UN TEST (visible si pas de test actif) -->
-    ${renderFoodTestButton()}
-
-    <!-- BANNIÈRE PHASE CYCLE (visible uniquement si module activé) -->
-    ${renderCyclePhaseBanner()}
-
-    <button class="save-btn" onclick="saveJournal()">Enregistrer mon journal ✓</button>
-  `;
+      ${renderCyclePhaseBanner()}`;
+  }
+  return '';
 }
+
+// ── Navigation carrousel ──────────────────────────────────────────────────────
+function jrnGoToSlide(idx) {
+  jrnCurrentSlide = idx;
+  const track = document.getElementById('jrn-track');
+  if (track) {
+    track.scrollTo({ left: idx * track.offsetWidth, behavior: 'smooth' });
+  }
+  updateJrnNavBar();
+}
+
+function jrnNextSlide() {
+  // Auto-save la section courante avant de passer à la suivante
+  jrnAutoSaveSection(jrnCurrentSlide);
+  if (jrnCurrentSlide < JRN_SECTIONS.length - 1) {
+    jrnGoToSlide(jrnCurrentSlide + 1);
+  }
+}
+
+function jrnPrevSlide() {
+  if (jrnCurrentSlide > 0) jrnGoToSlide(jrnCurrentSlide - 1);
+}
+
+// Sync slide actif avec le scroll natif (swipe)
+let jrnScrollTimeout = null;
+function jrnHandleScroll(track) {
+  clearTimeout(jrnScrollTimeout);
+  jrnScrollTimeout = setTimeout(() => {
+    const slideW  = track.offsetWidth;
+    const newIdx  = Math.round(track.scrollLeft / slideW);
+    if (newIdx !== jrnCurrentSlide) {
+      jrnAutoSaveSection(jrnCurrentSlide); // auto-save avant de changer
+      jrnCurrentSlide = newIdx;
+      updateJrnNavBar();
+    }
+  }, 120);
+}
+
+function updateJrnNavBar() {
+  const total    = JRN_SECTIONS.length;
+  const isLast   = jrnCurrentSlide === total - 1;
+  const pct      = Math.round(jrnCurrentSlide / total * 100);
+  const existing = loadTodayJournal();
+
+  // Barre de progression
+  const fill  = document.getElementById('jrn-progress-fill');
+  const label = document.getElementById('jrn-progress-label');
+  if (fill)  fill.style.width  = pct + '%';
+  if (label) label.textContent = `${jrnCurrentSlide + 1} / ${total}`;
+
+  // Prev button
+  const prev = document.getElementById('jrn-nav-prev');
+  if (prev) prev.disabled = (jrnCurrentSlide === 0);
+
+  // Next button
+  const next = document.getElementById('jrn-nav-next');
+  if (next) {
+    next.textContent = isLast ? 'Enregistrer mon journal ✓' : 'Suivant →';
+    next.className   = 'jrn-nav-next' + (isLast ? ' last' : '');
+    next.onclick     = isLast ? saveJournal : jrnNextSlide;
+  }
+
+  // Dots
+  const dots = document.getElementById('jrn-dots');
+  if (dots) {
+    const sectionDone = {
+      transit: existing && (existing.transit !== null || existing.ballonnements > 0),
+      repas:   existing && Object.values(existing.repas || {}).some(r => r.aliments?.length > 0),
+      peau:    existing && existing.peau !== null,
+      vie:     existing && (existing.stress > 0 || existing.sommeil > 0 || existing.humeur !== null),
+    };
+    dots.innerHTML = JRN_SECTIONS.map((s, i) => {
+      let cls = 'jrn-dot-item';
+      if (i === jrnCurrentSlide) cls += ' active';
+      else if (sectionDone[s.id]) cls += ' done';
+      return `<div class="${cls}" onclick="jrnGoToSlide(${i})"></div>`;
+    }).join('');
+  }
+}
+
+// ── Auto-save par section ──────────────────────────────────────────────────────
+function jrnAutoSaveSection(slideIdx) {
+  const today  = getTodayStr();
+  const s      = JRN_SECTIONS[slideIdx];
+  if (!s) return;
+
+  // Vérifier si la section a des données
+  const hasData = {
+    transit: jrnValues.transit !== null || jrnValues.ballonnements > 0 || jrnValues.douleurs !== null,
+    repas:   Object.values(jrnValues.repas || {}).some(r => r.aliments?.length > 0),
+    peau:    jrnValues.peau !== null || (jrnValues.zone||[]).length > 0,
+    vie:     jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.humeur !== null,
+  };
+
+  if (!hasData[s.id]) return; // Rien à sauvegarder
+
+  // Merge avec les données existantes (ne pas écraser les autres sections)
+  const existing = loadTodayJournal() || {};
+  const merged   = { ...existing, ...jrnValues, date: today, ts: Date.now() };
+  localStorage.setItem(`nara_journal_${today}`, JSON.stringify(merged));
+
+  // Sync Supabase silencieuse
+  if (currentUser) {
+    sb.from('nara_logs').upsert({
+      user_id: currentUser.id, date: today, type: 'journal', values: merged,
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] Auto-save:', error.message);
+    });
+  }
+
+  // Toast discret
+  const toast = document.getElementById('jrn-autosave-toast');
+  if (toast) {
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+}
+
+
+
+
+
+
+
 
 function renderJournalDone(todayLabel, data) {
   const transitLabels = ['Lent 🐢', 'Normal 👍', 'Rapide 💨'];

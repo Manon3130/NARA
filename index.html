@@ -98,6 +98,14 @@ if (typeof supabase === 'undefined') {
   }
   .screen.active { display: flex; }
 
+  /* Masque TOUTES les navs quand l'écran est non-authentifié.
+     Utilise une classe sur le body plutôt que display:none sur le parent,
+     car position:fixed échappe au display:none de son parent sur Safari iOS. */
+  body.no-nav .bottom-nav,
+  body.no-nav .bottom-nav-shared {
+    display: none !important;
+  }
+
   /* Loader de démarrage — masqué automatiquement par hideBootLoader() */
   #boot-loader {
     position: fixed; inset: 0; z-index: 9999;
@@ -234,7 +242,7 @@ if (typeof supabase === 'undefined') {
 
 
   /* ===== ONBOARDING ===== */
-  #screen-onboarding { background: var(--honey, #F6EAD4); justify-content: flex-end; align-items: center; padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+  #screen-onboarding { background: var(--honey, #F6EAD4); justify-content: flex-end; align-items: center; padding-bottom: clamp(40px, 8vh, 64px); }
   .onboarding-bg { position: absolute; inset: 0; overflow: hidden; }
   .blob1 { position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, var(--blush) 0%, transparent 70%); top: -60px; right: -60px; opacity: 0.7; animation: float1 6s ease-in-out infinite; }
   .blob2 { position: absolute; width: 250px; height: 250px; background: radial-gradient(circle, var(--avocado) 0%, transparent 70%); top: 150px; left: -80px; opacity: 0.5; animation: float2 8s ease-in-out infinite; }
@@ -2282,7 +2290,7 @@ if (typeof supabase === 'undefined') {
 
 </style>
 </head>
-<body>
+<body class="no-nav">
 
 
 <div id="app">
@@ -3346,13 +3354,26 @@ const BNAV_MAP = {
   'profile-later': null
 };
 
+// Écrans non-authentifiés — la bottom nav ne doit pas s'afficher
+const NO_NAV_SCREENS = new Set(['onboarding','signup','login','profile-invite','profile-later']);
+
 function updateBottomNav(screenId) {
-  // Update the fixed home bottom nav
+  // Masquer TOUTES les navs sur les écrans non-authentifiés.
+  // On utilise une classe CSS sur le body plutôt que display:none
+  // sur chaque nav individuelle, car position:fixed échappe au
+  // display:none de son parent sur Safari iOS (bug WebKit connu).
+  if (NO_NAV_SCREENS.has(screenId)) {
+    document.body.classList.add('no-nav');
+  } else {
+    document.body.classList.remove('no-nav');
+  }
+
+  // Mettre à jour l'onglet actif
   ['home','journal','insights','routines','library','recipes'].forEach(k => {
     const el = document.getElementById('bnav-' + k);
     if (el) el.classList.toggle('active', BNAV_MAP[screenId] === k);
   });
-  // Update all shared bottom navs (prefixed)
+  // Shared bottom navs (prefixed)
   const prefixes = ['jrn','ins','lib','rout','rec'];
   prefixes.forEach(pfx => {
     ['home','journal','insights','routines','library','recipes'].forEach(k => {

@@ -5807,7 +5807,7 @@ const PROFILE_SECTIONS = [
   },
   {
     id: 's3', icon: '✨', title: 'Peau', badge: 'Non rempli',
-    fields: ['peau_probleme','peau_type','peau_diagnostic'],
+    fields: ['peau_probleme','peau_type','peau_diagnostic_oui','peau_traitement'],
   },
   {
     id: 's4', icon: '😮‍💨', title: 'Stress & Énergie', badge: 'Non rempli',
@@ -5819,7 +5819,7 @@ const PROFILE_SECTIONS = [
   },
   {
     id: 's6', icon: '🌸', title: 'Cycle menstruel', badge: 'Optionnel',
-    fields: ['cycle_regularite','cycle_douleurs','cycle_patho'],
+    fields: ['cycle_regularite','cycle_douleurs','cycle_patho_oui','cycle_diagnostic_oui','cycle_traitement'],
   },
 ];
 
@@ -6017,30 +6017,42 @@ function renderProfileAlim(p) {
 
 // ── Section 3 : Peau ──────────────────────────────────────────────────────────
 function renderProfilePeau(p) {
-  return `
-    <div class="prof-q">Problème de peau identifié ?</div>
-    ${profTranches('peau_probleme', [
-      {val:'non', label:'Non, peau sans problème particulier'},
-      {val:'oui', label:'Oui'},
-    ], p, false)}
+  const aOui = p.peau_probleme === 'oui';
+  let html = '';
+  html += '<div class="prof-q">Problème de peau identifié ?</div>';
+  html += profTranches('peau_probleme', [
+    {val:'non', label:'Non, ma peau va bien'},
+    {val:'oui', label:'Oui'},
+  ], p, false);
 
-    ${p.peau_probleme === 'oui' ? `
-    <div class="prof-q">Type de problème (plusieurs possibles)</div>
-    ${profChips('peau_type', ['Acné','Rosacée','Eczéma','Psoriasis','Peau réactive','Sécheresse','Autre'], p, true)}
-    <input class="prof-free-input" type="text" placeholder="Autre…"
-           value="${p.peau_type_libre||''}"
-           oninput="profileData.peau_type_libre=this.value">
-
-    <div class="prof-q">Diagnostic médical existant ?</div>
-    ${profTranches('peau_diagnostic', [
-      {val:'non', label:'Non, non diagnostiqué'},
-      {val:'dermatologue', label:'Oui — par un·e dermatologue'},
-      {val:'generaliste', label:'Oui — par un·e médecin généraliste'},
-      {val:'autre', label:'Oui — par un autre professionnel'},
-    ], p, false)}` : ''}
-
-    <button class="prof-save-section-btn" onclick="profileSaveSection('s3')">Enregistrer cette section ✓</button>
-  `;
+  if (aOui) {
+    html += '<div class="prof-q">Quel(s) problème(s) ? <span style="font-weight:400;color:var(--text-light)">(sélection multiple)</span></div>';
+    html += profChips('peau_type', [
+      'Acné (légère à modérée)','Acné sévère','Rosacée','Eczéma',
+      'Psoriasis','Dermatite séborrhéique','Peau réactive / sensible',
+    ], p, true);
+    html += '<input class="prof-free-input" type="text" placeholder="Autre — précise ici…" value="' + (p.peau_type_libre||'') + '" oninput="profileData.peau_type_libre=this.value">';
+    html += '<div class="prof-q">As-tu été diagnostiquée par un médecin ?</div>';
+    html += profTranches('peau_diagnostic_oui', [
+      {val:'oui', label:'Oui'}, {val:'non', label:'Non'},
+    ], p, false);
+    if (p.peau_diagnostic_oui === 'oui') {
+      html += '<div class="prof-q">Par quel professionnel ?</div>';
+      html += profChips('peau_diagnostic_pro', ['Dermatologue','Médecin généraliste','Autre'], p, true);
+      html += '<input class="prof-free-input" type="text" placeholder="Autre professionnel…" value="' + (p.peau_diagnostic_pro_libre||'') + '" oninput="profileData.peau_diagnostic_pro_libre=this.value">';
+    }
+    if (p.peau_diagnostic_oui === 'non') {
+      html += '<div style="background:var(--honey);border-radius:12px;padding:12px 14px;font-size:0.75rem;color:var(--text-mid);line-height:1.6;margin-top:4px">' +
+        '💬 Un diagnostic professionnel permettrait d&#39;y voir plus clair &mdash; n&#39;h&eacute;site pas &agrave; consulter un&middot;e dermatologue si &ccedil;a te pr&eacute;occupe.</div>';
+    }
+    html += '<div class="prof-q">Suis-tu un traitement actuellement pour ce problème de peau ?</div>';
+    html += profTranches('peau_traitement', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
+    if (p.peau_traitement === 'oui') {
+      html += '<input class="prof-free-input" type="text" placeholder="Tu peux préciser si tu le souhaites (optionnel)…" value="' + (p.peau_traitement_libre||'') + '" oninput="profileData.peau_traitement_libre=this.value">';
+    }
+  }
+  html += '<button class="prof-save-section-btn" onclick="profileSaveSection(&apos;s3&apos;)">Enregistrer cette section ✓</button>';
+  return html;
 }
 
 // ── Section 4 : Stress & Énergie ──────────────────────────────────────────────
@@ -6098,34 +6110,53 @@ function renderProfileSommeil(p) {
 
 // ── Section 6 : Cycle (optionnel) ─────────────────────────────────────────────
 function renderProfileCycle(p) {
-  return `
-    <div class="prof-q" style="margin-top:14px;color:var(--text-light);font-style:italic;font-size:0.75rem">
-      Section optionnelle — ne concerne pas tout le monde (contraception hormonale, ménopause, cycle très irrégulier…)
-    </div>
+  const active   = p.cycle_regularite && p.cycle_regularite !== 'non_concernee';
+  const pathoOui = active && p.cycle_patho_oui === 'oui';
+  let html = '<div class="prof-q" style="margin-top:14px;color:var(--text-light);font-style:italic;font-size:0.75rem">Section optionnelle — ne concerne pas tout le monde (contraception hormonale, ménopause, cycle très irrégulier…)</div>';
+  html += '<div class="prof-q">Régularité de ton cycle</div>';
+  html += profTranches('cycle_regularite', [
+    {val:'non_concernee', label:'Non concernée'},
+    {val:'regulier', label:'Régulier (±2 jours)'},
+    {val:'irregulier', label:'Irrégulier'},
+  ], p, false);
 
-    <div class="prof-q">Régularité de ton cycle</div>
-    ${profTranches('cycle_regularite', [
-      {val:'non_concernee', label:'Non concernée'},
-      {val:'regulier', label:'Régulier (±2 jours)'},
-      {val:'irregulier', label:'Irrégulier'},
-    ], p, false)}
-
-    ${p.cycle_regularite && p.cycle_regularite !== 'non_concernee' ? `
-    <div class="prof-q">Douleurs menstruelles</div>
-    ${profTranches('cycle_douleurs', [
+  if (active) {
+    html += '<div class="prof-q">Douleurs menstruelles</div>';
+    html += profTranches('cycle_douleurs', [
       {val:'aucune', label:'Aucune douleur'},
       {val:'moderees', label:'Modérées, gérables'},
       {val:'intenses', label:'Intenses, impactent le quotidien'},
-    ], p, false)}
+    ], p, false);
+    html += '<div class="prof-q">As-tu une pathologie liée au cycle ou à la sphère gynécologique ?</div>';
+    html += profTranches('cycle_patho_oui', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
 
-    <div class="prof-q">Pathologie connue (plusieurs possibles)</div>
-    ${profChips('cycle_patho', ['Aucune','Endométriose','SOPK','Fibromes','Autre'], p, true)}
-    <input class="prof-free-input" type="text" placeholder="Autre…"
-           value="${p.cycle_patho_libre||''}"
-           oninput="profileData.cycle_patho_libre=this.value">` : ''}
-
-    <button class="prof-save-section-btn" onclick="profileSaveSection('s6')">Enregistrer cette section ✓</button>
-  `;
+    if (pathoOui) {
+      html += '<div class="prof-q">Laquelle / lesquelles ? <span style="font-weight:400;color:var(--text-light)">(sélection multiple)</span></div>';
+      html += profChips('cycle_patho', [
+        'Endométriose','SOPK (syndrome des ovaires polykystiques)',
+        'Fibromes','Adénomyose','Aménorrhée',
+      ], p, true);
+      html += '<input class="prof-free-input" type="text" placeholder="Autre — précise ici…" value="' + (p.cycle_patho_libre||'') + '" oninput="profileData.cycle_patho_libre=this.value">';
+      html += '<div class="prof-q">As-tu été diagnostiquée par un médecin pour cette pathologie ?</div>';
+      html += profTranches('cycle_diagnostic_oui', [{val:'oui',label:'Oui'},{val:'non',label:'Non'}], p, false);
+      if (p.cycle_diagnostic_oui === 'oui') {
+        html += '<div class="prof-q">Par quel professionnel ?</div>';
+        html += profChips('cycle_diagnostic_pro', ['Gynécologue','Médecin généraliste','Endocrinologue','Autre'], p, true);
+        html += '<input class="prof-free-input" type="text" placeholder="Autre professionnel…" value="' + (p.cycle_diagnostic_pro_libre||'') + '" oninput="profileData.cycle_diagnostic_pro_libre=this.value">';
+      }
+      if (p.cycle_diagnostic_oui === 'non') {
+        html += '<div style="background:var(--honey);border-radius:12px;padding:12px 14px;font-size:0.75rem;color:var(--text-mid);line-height:1.6;margin-top:4px">' +
+          '💬 Un diagnostic gyn&eacute;cologique permettrait de mieux comprendre ce que tu vis &mdash; n&#39;h&eacute;site pas &agrave; consulter si ces sympt&ocirc;mes te p&egrave;sent.</div>';
+      }
+      html += '<div class="prof-q">Suis-tu un traitement actuellement pour cette pathologie ?</div>';
+      html += profTranches('cycle_traitement', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
+      if (p.cycle_traitement === 'oui') {
+        html += '<input class="prof-free-input" type="text" placeholder="Tu peux préciser si tu le souhaites (optionnel)…" value="' + (p.cycle_traitement_libre||'') + '" oninput="profileData.cycle_traitement_libre=this.value">';
+      }
+    }
+  }
+  html += '<button class="prof-save-section-btn" onclick="profileSaveSection(&apos;s6&apos;)">Enregistrer cette section ✓</button>';
+  return html;
 }
 
 // ── Interactions UI ───────────────────────────────────────────────────────────
@@ -6192,15 +6223,30 @@ function getProfileContext() {
   const p = profileLoad();
   if (!p) return null;
   return {
-    transitFreq:         p.transit_freq,
-    transitBristol:      p.transit_bristol,
-    transitDifficulte:   p.transit_difficulte,
-    transitBallonnements:p.transit_ballonnements,
-    stressNiveau:        p.stress_niveau,
-    energieNiveau:       p.energie_niveau,
-    sommeilDuree:        p.sommeil_duree,
-    peauProbleme:        p.peau_probleme,
-    cycleRegularite:     p.cycle_regularite,
+    // Transit
+    transitFreq:          p.transit_freq,
+    transitBristol:       p.transit_bristol,
+    transitDifficulte:    p.transit_difficulte,
+    transitBallonnements: p.transit_ballonnements,
+    // Peau — contexte silencieux pour ne pas mal interpréter des patterns connus
+    peauProbleme:         p.peau_probleme,
+    peauType:             p.peau_type || [],
+    peauDiagnostic:       p.peau_diagnostic_oui,   // 'oui'|'non' — pathologie confirmée médicalement
+    peauTraitement:       p.peau_traitement,         // 'oui'|'non' — traitement en cours
+    // Stress / Énergie
+    stressNiveau:         p.stress_niveau,
+    energieNiveau:        p.energie_niveau,
+    // Sommeil
+    sommeilDuree:         p.sommeil_duree,
+    // Cycle — contexte silencieux : ne jamais interpréter ce qui est déjà expliqué par une condition connue
+    cycleRegularite:      p.cycle_regularite,
+    cycleDouleurs:        p.cycle_douleurs,
+    cyclePathoConfirmee:  p.cycle_diagnostic_oui === 'oui', // true = condition diagnostiquée
+    cyclePatho:           p.cycle_patho || [],              // liste des pathologies
+    cycleTraitement:      p.cycle_traitement,               // 'oui'|'non'
+    // Règle d'usage : si cyclePathoConfirmee === true et un pattern de peau/transit
+    // correspond à une pathologie connue → ne pas signaler comme "nouveau pattern",
+    // indiquer seulement que c'est cohérent avec le profil déclaré.
   };
 }
 

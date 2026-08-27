@@ -1786,6 +1786,51 @@ if (typeof supabase === 'undefined') {
   .jrn-test-btn-title { font-size: 0.82rem; color: var(--text-dark); font-weight: 500; }
   .jrn-test-btn-sub   { font-size: 0.68rem; color: var(--text-light); margin-top: 1px; }
 
+
+  /* ===== RESSENTI APRÈS REPAS ===== */
+  .jrn-ressenti-chips {
+    display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px;
+  }
+  .jrn-ressenti-chip {
+    padding: 8px 14px; border-radius: 20px; font-size: 0.78rem;
+    border: 1.5px solid var(--oat); background: white;
+    color: var(--text-mid); cursor: pointer; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .jrn-ressenti-chip.selected {
+    background: var(--sage); border-color: var(--sage); color: white;
+  }
+  .jrn-ressenti-chip.chip-aucune { border-style: dashed; }
+  .jrn-ressenti-chip.chip-aucune.selected {
+    background: var(--honey); border-color: var(--sage);
+    color: var(--sage); border-style: solid;
+  }
+  .jrn-ressenti-libre {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--oat);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; color: var(--text-dark); background: white;
+    outline: none; margin-top: 4px; display: none;
+  }
+  .jrn-ressenti-libre.show { display: block; }
+  .jrn-ressenti-libre:focus { border-color: var(--sage); }
+
+
+  /* Feedback de sauvegarde */
+  .jrn-save-feedback {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    left: 50%; transform: translateX(-50%) scale(0.85);
+    background: var(--avocado); color: white;
+    padding: 12px 24px; border-radius: 24px;
+    font-size: 0.85rem; font-family: 'DM Sans', sans-serif;
+    font-weight: 500; letter-spacing: 0.04em;
+    z-index: 300; pointer-events: none; opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    white-space: nowrap;
+  }
+  .jrn-save-feedback.show {
+    opacity: 1; transform: translateX(-50%) scale(1);
+  }
   /* ===== MODULE CYCLE ===== */
 
   /* Bannière phase dans le journal */
@@ -2591,6 +2636,8 @@ if (typeof supabase === 'undefined') {
       </div>
       <!-- Auto-save toast -->
       <div class="jrn-autosave-toast" id="jrn-autosave-toast">✓ Section enregistrée</div>
+      <!-- Feedback de sauvegarde finale -->
+      <div class="jrn-save-feedback" id="jrn-save-feedback">✓ Journal enregistré !</div>
     </div>
 
     <!-- SCREEN 4 — INSIGHTS -->
@@ -5210,14 +5257,19 @@ function renderMealPanel(mealKey, data) {
     return `<span class="jrn-spice-tag">🌿 ${escHtml(ep)}<button class="jrn-tag-del" onclick="removeMealEpice('${k}',${i})" style="color:#6b4fa0">×</button></span>`;
   }).join('');
 
-  const portions = [
-    { key:'petite',  icon:'🥣', label:'Petite' },
-    { key:'moderee', icon:'🍽️', label:'Modérée' },
-    { key:'grosse',  icon:'🫕', label:'Grosse' },
+  const RESSENTIS = [
+    { key:'aucune',   label:'✓ Aucune gêne',       cls:'chip-aucune' },
+    { key:'ballot',   label:'💨 Ballonnements',     cls:'' },
+    { key:'ventre',   label:'😣 Mal de ventre',     cls:'' },
+    { key:'lourdeur', label:'🪨 Lourdeur digestive', cls:'' },
+    { key:'autre',    label:'+ Autre',              cls:'' },
   ];
-  const portionHtml = portions.map(function(p) {
-    return `<div class="jrn-portion${data.portion === p.key ? ' selected' : ''}" onclick="selectMealPortion('${k}','${p.key}',this)"><span class="por-icon">${p.icon}</span><span class="por-label">${p.label}</span></div>`;
-  }).join('');
+  const ressenti = data.ressenti || [];
+  const ressentiHtml = RESSENTIS.map(r =>
+    `<div class="jrn-ressenti-chip ${r.cls}${ressenti.includes(r.key) ? ' selected' : ''}"
+          onclick="toggleMealRessenti('${k}','${r.key}',this)">${r.label}</div>`
+  ).join('');
+  const showLibre = ressenti.includes('autre');
 
   return `
     <span class="ql-section-label">Ce que j'ai mangé</span>
@@ -5237,8 +5289,13 @@ function renderMealPanel(mealKey, data) {
               style="background:var(--blush);color:var(--text-dark)" title="Suggestions">+</button>
     </div>
     <div class="jrn-spice-tags" id="meal-spices-${k}">${spiceTags}</div>
-    <span class="ql-section-label" style="margin-top:8px">Quantité</span>
-    <div class="jrn-portions" id="meal-portions-${k}">${portionHtml}</div>
+    <span class="ql-section-label" style="margin-top:8px">Ressenti après repas</span>
+    <div class="jrn-ressenti-chips" id="meal-ressenti-${k}">${ressentiHtml}</div>
+    <input class="jrn-ressenti-libre${showLibre ? ' show' : ''}"
+           id="meal-ressenti-libre-${k}"
+           type="text" placeholder="Précise si tu le souhaites…"
+           value="${escHtml(data.ressenti_libre || '')}"
+           oninput="jrnValues.repas['${k}'].ressenti_libre=this.value">
   `;
 }
 
@@ -5442,6 +5499,38 @@ function selectMealPortion(mealKey, val, el) {
   getMealData(mealKey).portion = val;
   el.closest('.jrn-portions').querySelectorAll('.jrn-portion').forEach(p => p.classList.remove('selected'));
   el.classList.add('selected');
+}
+
+// Toggle ressenti après repas (multi-sélection, mutex "aucune")
+function toggleMealRessenti(mealKey, key, el) {
+  const data = getMealData(mealKey);
+  if (!data.ressenti) data.ressenti = [];
+
+  if (key === 'aucune') {
+    data.ressenti = data.ressenti.includes('aucune') ? [] : ['aucune'];
+  } else {
+    data.ressenti = data.ressenti.filter(r => r !== 'aucune');
+    if (data.ressenti.includes(key)) {
+      data.ressenti = data.ressenti.filter(r => r !== key);
+    } else {
+      data.ressenti.push(key);
+    }
+  }
+
+  // Mise à jour visuelle des chips du panel
+  const container = document.getElementById('meal-ressenti-' + mealKey);
+  if (container) {
+    container.querySelectorAll('.jrn-ressenti-chip').forEach(function(chip) {
+      const onclick = chip.getAttribute('onclick') || '';
+      const m = onclick.match(/'([a-z]+)'\s*,\s*this\)/);
+      const chipKey = m ? m[1] : null;
+      if (chipKey) chip.classList.toggle('selected', data.ressenti.includes(chipKey));
+    });
+  }
+
+  // Afficher/masquer le champ libre "Autre"
+  const libre = document.getElementById('meal-ressenti-libre-' + mealKey);
+  if (libre) libre.classList.toggle('show', data.ressenti.includes('autre'));
 }
 
 // ── Re-rendu du panel actif après modification ──────────────────────────────
@@ -5857,10 +5946,16 @@ async function saveJournal() {
       .then(({error}) => { if(error) console.warn('[Nara]', error.message); });
   }
   jrnEditMode = false;
+  // Feedback visuel de confirmation
+  const feedback = document.getElementById('jrn-save-feedback');
+  if (feedback) {
+    feedback.classList.add('show');
+    setTimeout(() => feedback.classList.remove('show'), 2200);
+  }
   showToast('✓ Journal enregistré !');
-  updateQuickBtns();  // Mettre à jour les boutons de l'accueil
+  updateQuickBtns();
   try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
-  setTimeout(() => renderJournal(), 400);
+  setTimeout(() => { jrnCurrentSlide = 0; renderJournal(); }, 2400);
 }
 
 

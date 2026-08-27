@@ -4846,7 +4846,7 @@ function renderJournal() {
       encas:  { aliments:[], epices:[], portion:null },
     },
     peau: null, zone: [], stress: 0, sommeil: 0, energie: 0,
-    humeur: null, notes: '',
+    humeur: null, hydratation: null, notes: '',
   });
 
   const heure = new Date().getHours();
@@ -4968,10 +4968,22 @@ function renderJrnSlideContent(sectionId) {
   }
 
   if (sectionId === 'repas') {
+    const hydOpts = [
+      { key:'lt1', icon:'💧', label:'< 1L' },
+      { key:'1to2', icon:'🚰', label:'1 – 2L' },
+      { key:'gt2', icon:'🌊', label:'> 2L' },
+    ];
+    const hydHtml = hydOpts.map(o => `
+      <div class="jrn-option${v.hydratation === o.key ? ' selected' : ''}"
+           onclick="jrnSelectHydratation('${o.key}', this)">
+        <span class="e">${o.icon}</span><span class="t">${o.label}</span>
+      </div>`).join('');
     return `
       ${renderFoodTestBanner()}
       ${renderRepasSection(v)}
-      ${renderFoodTestButton()}`;
+      ${renderFoodTestButton()}
+      <div class="jrn-question" style="margin-top:16px">💧 Hydratation du jour</div>
+      <div class="jrn-emoji-row">${hydHtml}</div>`;
   }
 
   if (sectionId === 'peau') {
@@ -5625,6 +5637,14 @@ function jrnToggleChip(idx, el) {
 }
 
 // Toggle zones de peau concernées
+function jrnSelectHydratation(key, el) {
+  jrnValues.hydratation = jrnValues.hydratation === key ? null : key;
+  el.closest('.jrn-emoji-row').querySelectorAll('.jrn-option')
+    .forEach(o => o.classList.remove('selected'));
+  if (jrnValues.hydratation) el.classList.add('selected');
+  jrnPersist(false);
+}
+
 function jrnToggleZone(idx, el) {
   if (!jrnValues.zone) jrnValues.zone = [];
   el.classList.toggle('selected');

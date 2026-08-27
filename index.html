@@ -5132,40 +5132,51 @@ function updateJrnNavBar() {
 }
 
 // ── Auto-save par section ──────────────────────────────────────────────────────
-function jrnAutoSaveSection(slideIdx) {
-  const today  = getTodayStr();
-  const s      = JRN_SECTIONS[slideIdx];
-  if (!s) return;
+// ── Sauvegarde continue ────────────────────────────────────────────────────────
+// Principe : chaque interaction écrit immédiatement dans localStorage.
+// Supabase reçoit les données avec un debounce de 1.5s pour éviter les appels
+// en rafale (ex : frappe dans un champ texte).
+// Le bouton "Enregistrer" sur le dernier slide marque la journée comme "complète"
+// (champ `completed: true`) — distinct de la sauvegarde en continu.
 
-  // Vérifier si la section a des données
-  const hasData = {
-    transit: jrnValues.transit !== null || jrnValues.ballonnements > 0 || jrnValues.douleurs !== null,
-    repas:   Object.values(jrnValues.repas || {}).some(r => r.aliments?.length > 0),
-    peau:    jrnValues.peau !== null || (jrnValues.zone||[]).length > 0,
-    vie:     jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.humeur !== null,
-  };
+let _jrnSaveDebounce = null;
 
-  if (!hasData[s.id]) return; // Rien à sauvegarder
+function jrnPersist(markComplete) {
+  const today = getTodayStr();
 
-  // Merge avec les données existantes (ne pas écraser les autres sections)
+  // 1. Écriture immédiate dans localStorage — jamais de perte si l'app ferme
   const existing = loadTodayJournal() || {};
-  const merged   = { ...existing, ...jrnValues, date: today, ts: Date.now() };
+  const merged   = { ...existing, ...jrnValues, date: today };
+  if (markComplete) merged.completed = true;
+  merged.ts = Date.now();
   localStorage.setItem(`nara_journal_${today}`, JSON.stringify(merged));
 
-  // Sync Supabase silencieuse
-  if (currentUser) {
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id, date: today, type: 'journal', values: merged,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Auto-save:', error.message);
-    });
-  }
+  // 2. Mise à jour de la barre de progression en temps réel
+  try { jrnUpdateProgress(); } catch(e) {}
 
+  // 3. Sync Supabase avec debounce 1.5s (évite les appels en rafale)
+  clearTimeout(_jrnSaveDebounce);
+  _jrnSaveDebounce = setTimeout(() => {
+    if (!currentUser) return;
+    sb.from('nara_logs').upsert({
+      user_id: currentUser.id,
+      date: today,
+      type: 'journal',
+      values: merged,
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] jrnPersist:', error.message);
+    });
+  }, 1500);
+}
+
+// Gardé pour la compatibilité (appelé au changement de slide)
+function jrnAutoSaveSection(slideIdx) {
+  jrnPersist(false);
   // Toast discret
   const toast = document.getElementById('jrn-autosave-toast');
   if (toast) {
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1800);
+    setTimeout(() => toast.classList.remove('show'), 1500);
   }
 }
 
@@ -5420,6 +5431,7 @@ function toggleMealHistoryItem(item) {
 
   refreshMealPanel(_mealHistoryKey);
   jrnUpdateProgress();
+  jrnPersist(false);
 }
 
 
@@ -5462,6 +5474,7 @@ function addMealAliment(mealKey) {
   input.value = '';
   refreshMealPanel(mealKey);
   jrnUpdateProgress();
+  jrnPersist(false);
 }
 
 function removeMealAliment(mealKey, idx) {
@@ -5531,6 +5544,7 @@ function toggleMealRessenti(mealKey, key, el) {
   // Afficher/masquer le champ libre "Autre"
   const libre = document.getElementById('meal-ressenti-libre-' + mealKey);
   if (libre) libre.classList.toggle('show', data.ressenti.includes('autre'));
+  jrnPersist(false);
 }
 
 // ── Re-rendu du panel actif après modification ──────────────────────────────
@@ -5598,6 +5612,7 @@ function jrnSelectOption(key, idx, el) {
   el.classList.add('selected');
   jrnValues[key] = idx;
   jrnUpdateProgress();
+  jrnPersist(false);
 }
 
 function jrnToggleChip(idx, el) {
@@ -5619,19 +5634,20 @@ function jrnToggleZone(idx, el) {
     jrnValues.zone = jrnValues.zone.filter(i => i !== idx);
   }
   jrnUpdateProgress();
+  jrnPersist(false);
 }
 
 function jrnUpdateSlider(key, val, max) {
   jrnValues[key] = parseInt(val);
   const labelEl = document.getElementById(`jrn-val-${key}`);
   if (labelEl) labelEl.textContent = `${val}/${max}`;
-  // Couleur dynamique du slider
   const slider = document.getElementById(`jrn-slider-${key}`);
   if (slider) {
     const pct = (parseInt(val) / max) * 100;
     slider.style.background = `linear-gradient(to right, var(--sage) ${pct}%, var(--oat) ${pct}%)`;
   }
   jrnUpdateProgress();
+  jrnPersist(false); // debounce gère le réseau, localStorage est immédiat
 }
 
 function jrnStartEdit() {
@@ -5903,16 +5919,19 @@ function closePhotoFullscreen() {
 async function saveJournal() {
   const today = getTodayStr();
 
-  // Vérifier qu'au moins quelque chose est rempli
+  // Les données sont déjà sauvegardées en continu par jrnPersist().
+  // Le bouton "Enregistrer" marque la journée comme complète et
+  // persiste les logs dérivés (transit, peau, stress) pour les insights.
   const tousAliments = Object.values(jrnValues.repas || {}).flatMap(r => r.aliments || []);
   const hasData = jrnValues.transit !== null || jrnValues.peau !== null ||
     tousAliments.length > 0 || jrnValues.stress > 0 ||
     jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.ballonnements > 0;
   if (!hasData) { showToast("Remplis au moins un champ avant d'enregistrer"); return; }
 
-  const entry = { ...jrnValues, date: today, ts: Date.now() };
-  localStorage.setItem(`nara_journal_${today}`, JSON.stringify(entry));
+  // Marquer la journée comme complète dans jrnValues puis sauvegarder
+  jrnPersist(true); // true = completed
 
+  // Logs dérivés (pour les insights et le score)
   if (jrnValues.transit !== null || jrnValues.ballonnements > 0) {
     localStorage.setItem(`nara_log_${today}_transit`, JSON.stringify({
       type:'transit', date:today, ts:Date.now(),
@@ -5930,10 +5949,9 @@ async function saveJournal() {
       values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }
     }));
   }
+  // Sync logs dérivés vers Supabase
   if (currentUser) {
     const userId = currentUser.id;
-    sb.from('nara_logs').upsert({ user_id:userId, date:today, type:'journal', values:jrnValues },
-      { onConflict:'user_id,date,type' }).then(({error}) => { if(error) console.warn('[Nara]',error.message); });
     const logs = [];
     if (jrnValues.transit !== null) logs.push({ user_id:userId, date:today, type:'transit',
       values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }});
@@ -5945,14 +5963,14 @@ async function saveJournal() {
     if (logs.length > 0) sb.from('nara_logs').upsert(logs, { onConflict:'user_id,date,type' })
       .then(({error}) => { if(error) console.warn('[Nara]', error.message); });
   }
+
   jrnEditMode = false;
-  // Feedback visuel de confirmation
+  // Feedback visuel
   const feedback = document.getElementById('jrn-save-feedback');
   if (feedback) {
     feedback.classList.add('show');
     setTimeout(() => feedback.classList.remove('show'), 2200);
   }
-  showToast('✓ Journal enregistré !');
   updateQuickBtns();
   try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   setTimeout(() => { jrnCurrentSlide = 0; renderJournal(); }, 2400);

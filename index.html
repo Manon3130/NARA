@@ -1958,6 +1958,78 @@ if (typeof supabase === 'undefined') {
   .jrn-save-feedback.show {
     opacity: 1; transform: translateX(-50%) scale(1);
   }
+
+  /* ===== BLOC CYCLE ACCUEIL ===== */
+  .home-cycle-block {
+    background: white; border-radius: 18px;
+    padding: 16px 18px; margin-bottom: 16px;
+    border: 1.5px solid var(--oat); position: relative;
+  }
+  .home-cycle-block.phase-regles  { border-color: #fca5a566; background: #fef9f9; }
+  .home-cycle-block.phase-preovul { border-color: #86efac66; background: #f8fef9; }
+  .home-cycle-block.phase-ovulation { border-color: #fcd34d66; background: #fefdf5; }
+  .home-cycle-block.phase-luteale { border-color: #d8b4fe66; background: #fdf8ff; }
+
+  .home-cycle-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .home-cycle-icon { font-size: 1.1rem; }
+  .home-cycle-title {
+    font-size: 0.85rem; font-weight: 500; color: var(--text-dark); flex: 1;
+  }
+  .home-cycle-update {
+    font-size: 0.68rem; color: var(--text-light);
+    cursor: pointer; text-decoration: underline;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Chemin de points (règles) */
+  .cycle-dots-track {
+    display: flex; align-items: center; gap: 4px; margin-bottom: 8px;
+    padding: 4px 0;
+  }
+  .cycle-dot-node {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(220,60,60,0.18); border: 1.5px solid rgba(220,60,60,0.3);
+    flex-shrink: 0; transition: all 0.2s; position: relative;
+  }
+  .cycle-dot-node.active {
+    background: #dc3c3c; border-color: #dc3c3c;
+    transform: scale(1.35);
+  }
+  .cycle-dot-node.past {
+    background: rgba(220,60,60,0.55); border-color: rgba(220,60,60,0.6);
+  }
+  .cycle-dot-connector {
+    flex: 1; height: 1.5px;
+    background: rgba(220,60,60,0.2); border-radius: 1px;
+  }
+  .home-cycle-desc {
+    font-size: 0.75rem; color: var(--text-mid); line-height: 1.5;
+  }
+
+  /* Question recalibrage */
+  .cycle-calibrate-q {
+    font-size: 0.8rem; color: var(--text-dark); margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .cycle-calibrate-btns {
+    display: flex; gap: 8px;
+  }
+  .cycle-calibrate-btn {
+    flex: 1; padding: 9px 6px; border-radius: 12px;
+    border: 1.5px solid var(--oat); background: white;
+    font-size: 0.78rem; color: var(--text-dark);
+    cursor: pointer; text-align: center; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .cycle-calibrate-btn.yes { border-color: #dc3c3c; color: #dc3c3c; }
+  .cycle-calibrate-btn.yes:active { background: #fff0f0; }
+  .cycle-calibrate-btn.no  { border-color: var(--oat); }
+  .cycle-calibrate-btn.no:active  { background: var(--honey); }
+  .cycle-calibrate-btn.later { border-color: var(--oat); color: var(--text-light); }
+  .cycle-calibrate-btn.later:active { background: var(--honey); }
+
   /* ===== MODULE CYCLE ===== */
 
   /* Bannière phase dans le journal */
@@ -2690,6 +2762,11 @@ if (typeof supabase === 'undefined') {
         <!-- Bloc contextuel : profil incomplet → invitation ; profil complet → résumé veille -->
         <div id="home-context-block">
           <!-- Rendu dynamique par renderHomeContextBlock() -->
+        </div>
+
+        <!-- Bloc cycle (affiché si module activé) -->
+        <div id="home-cycle-block">
+          <!-- Rendu dynamique par renderHomeCycleBlock() -->
         </div>
 
         <!-- Insights — vides au départ, remplis après 7 jours de données -->
@@ -3439,6 +3516,7 @@ function updateHomeScore() {
   try { updateQuickBtns(); } catch(e) {}
   // Bloc contextuel (profil incomplet → invitation / profil complet → résumé veille)
   try { renderHomeContextBlock(); } catch(e) { console.warn('[Nara] contextBlock:', e); }
+  try { renderHomeCycleBlock(); } catch(e) { console.warn('[Nara] cycleBlock:', e); }
 
   // Insights home
   if (insEmpty && insList) {
@@ -7604,6 +7682,166 @@ function getFoodTestInsights(entries) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── Persistence ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// BLOC CYCLE ACCUEIL — affichage phase + recalibrage + apprentissage progressif
+// ══════════════════════════════════════════════════════════════════════════════
+
+function renderHomeCycleBlock() {
+  const block = document.getElementById('home-cycle-block');
+  if (!block) return;
+
+  const settings = cycleLoad();
+  if (!settings || !settings.active || !settings.startDate) {
+    block.innerHTML = '';
+    return;
+  }
+
+  const info = getCyclePhase(getTodayStr());
+  if (!info) { block.innerHTML = ''; return; }
+
+  const regDuration   = settings.regDuration || 5;
+  const cycleDuration = cycleGetEffectiveDuration(settings);
+
+  // ── Détection recalibrage ─────────────────────────────────────────────────
+  const shouldAsk = cycleCalibrationDue(settings, cycleDuration);
+  if (shouldAsk) {
+    block.innerHTML = renderCycleCalibrationQuestion();
+    return;
+  }
+
+  // ── Phase règles → chemin de points ──────────────────────────────────────
+  if (info.phase === 'regles') {
+    const dayInReg = info.dayInCycle;
+    let dots = '';
+    for (let i = 1; i <= regDuration; i++) {
+      if (i > 1) dots += '<div class="cycle-dot-connector"></div>';
+      let cls = 'cycle-dot-node';
+      if (i < dayInReg) cls += ' past';
+      else if (i === dayInReg) cls += ' active';
+      dots += `<div class="${cls}" title="Jour ${i}"></div>`;
+    }
+    block.innerHTML = `
+      <div class="home-cycle-block phase-regles">
+        <div class="home-cycle-header">
+          <span class="home-cycle-icon">🩸</span>
+          <span class="home-cycle-title">Tu es probablement en période de règles</span>
+          <span class="home-cycle-update" onclick="openCycleModal()">Ajuster</span>
+        </div>
+        <div class="cycle-dots-track">${dots}</div>
+        <div class="home-cycle-desc">
+          Jour ${dayInReg} sur ~${regDuration} · Transit souvent plus rapide, fatigue possible — écoute ton corps 🌿
+        </div>
+      </div>`;
+    return;
+  }
+
+  // ── Autres phases ─────────────────────────────────────────────────────────
+  const phaseDescs = {
+    preovul:   'Énergie souvent croissante, transit généralement plus stable',
+    ovulation: "Pic d'énergie probable — humeur souvent au mieux",
+    luteale:   'Phase prémenstruelle probable — peau et transit peuvent varier',
+  };
+  const phaseIcons = { preovul:'🌱', ovulation:'✨', luteale:'🌙' };
+  const phaseNames = {
+    preovul:'Phase folliculaire probable',
+    ovulation:'Ovulation probable',
+    luteale:'Phase lutéale probable',
+  };
+  const desc = phaseDescs[info.phase] || info.phaseDesc;
+  const icon = phaseIcons[info.phase] || info.phaseIcon;
+  const name = phaseNames[info.phase] || info.phaseName;
+
+  block.innerHTML = `
+    <div class="home-cycle-block ${info.phaseClass}">
+      <div class="home-cycle-header">
+        <span class="home-cycle-icon">${icon}</span>
+        <span class="home-cycle-title">${name} — J${info.dayInCycle}/${cycleDuration}</span>
+        <span class="home-cycle-update" onclick="openCycleModal()">Ajuster</span>
+      </div>
+      <div class="home-cycle-desc">${desc}</div>
+    </div>`;
+}
+
+// Durée effective : moyenne réelle si ≥2 cycles confirmés, sinon durée manuelle
+function cycleGetEffectiveDuration(settings) {
+  try {
+    const history = JSON.parse(localStorage.getItem('nara_cycle_history') || '[]');
+    const durations = history.slice(0, 6).map(h => h.duration).filter(d => d >= 21 && d <= 45);
+    if (durations.length >= 2) {
+      return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+    }
+  } catch {}
+  return settings.cycleDuration || 28;
+}
+
+// Question de recalibrage due ?
+function cycleCalibrationDue(settings, cycleDuration) {
+  const lastAnswer = localStorage.getItem('nara_cycle_calibrate_date');
+  if (lastAnswer === getTodayStr()) return false;
+  const laterDate = localStorage.getItem('nara_cycle_calibrate_later');
+  if (laterDate) {
+    const diffDays = Math.round((new Date() - new Date(laterDate + 'T12:00:00')) / 86400000);
+    if (diffDays < 3) return false;
+  }
+  const diffTotal  = Math.round((new Date(getTodayStr() + 'T12:00:00') - new Date(settings.startDate + 'T12:00:00')) / 86400000);
+  const dayInCycle = (diffTotal % cycleDuration) + 1;
+  return dayInCycle >= (cycleDuration - 2) || dayInCycle <= 5;
+}
+
+// Rendu de la question de recalibrage
+function renderCycleCalibrationQuestion() {
+  return `
+    <div class="home-cycle-block phase-regles">
+      <div class="home-cycle-header">
+        <span class="home-cycle-icon">🩸</span>
+        <span class="home-cycle-title">Tes règles ont commencé ?</span>
+      </div>
+      <div class="cycle-calibrate-q">Confirme pour recalibrer ton cycle automatiquement</div>
+      <div class="cycle-calibrate-btns">
+        <div class="cycle-calibrate-btn yes"   onclick="cycleConfirmStart('oui')">✓ Oui, aujourd'hui</div>
+        <div class="cycle-calibrate-btn no"    onclick="cycleConfirmStart('non')">Non</div>
+        <div class="cycle-calibrate-btn later" onclick="cycleConfirmStart('later')">Plus tard</div>
+      </div>
+    </div>`;
+}
+
+// Traitement des réponses
+function cycleConfirmStart(answer) {
+  const today = getTodayStr();
+  localStorage.setItem('nara_cycle_calibrate_date', today);
+
+  if (answer === 'oui') {
+    const settings = cycleLoad() || {};
+    // Enregistrer la durée réelle pour affiner la moyenne
+    if (settings.startDate) {
+      const realDuration = Math.round(
+        (new Date(today + 'T12:00:00') - new Date(settings.startDate + 'T12:00:00')) / 86400000
+      );
+      if (realDuration >= 21 && realDuration <= 45) {
+        let history = [];
+        try { history = JSON.parse(localStorage.getItem('nara_cycle_history') || '[]'); } catch {}
+        history.unshift({ date: today, duration: realDuration });
+        localStorage.setItem('nara_cycle_history', JSON.stringify(history.slice(0, 12)));
+      }
+    }
+    settings.startDate = today;
+    settings.active    = true;
+    cycleSave(settings);
+    localStorage.removeItem('nara_cycle_calibrate_later');
+    showToast("✓ Cycle recalibré à aujourd'hui");
+
+  } else if (answer === 'non') {
+    localStorage.removeItem('nara_cycle_calibrate_later');
+    openCycleModal();
+    return;
+
+  } else {
+    localStorage.setItem('nara_cycle_calibrate_later', today);
+  }
+
+  renderHomeCycleBlock();
+}
+
 function cycleLoad() {
   try { return JSON.parse(localStorage.getItem('nara_cycle') || 'null'); } catch { return null; }
 }

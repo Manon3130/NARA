@@ -1658,6 +1658,68 @@ if (typeof supabase === 'undefined') {
   .prof-bristol-item span { font-size: 0.5rem; color: var(--text-light); margin-top: 3px; }
   .prof-bristol-item.selected span { color: var(--sage); }
 
+
+  /* ===== BLOC CONTEXTUEL ACCUEIL ===== */
+  .home-context-card {
+    background: white; border-radius: 18px;
+    padding: 16px 18px; margin-bottom: 14px;
+    border: 1.5px solid var(--oat); cursor: pointer;
+    transition: border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .home-context-card:active { background: var(--honey); }
+
+  /* État 1 — profil incomplet */
+  .hcc-profile-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .hcc-profile-label {
+    font-size: 0.68rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-light);
+  }
+  .hcc-profile-count {
+    font-size: 0.72rem; color: var(--sage); font-weight: 500;
+  }
+  .hcc-profile-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--text-dark);
+    margin-bottom: 10px; line-height: 1.4;
+  }
+  .hcc-profile-bar-track {
+    height: 5px; background: var(--oat); border-radius: 3px; overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .hcc-profile-bar-fill {
+    height: 100%; border-radius: 3px; background: var(--sage);
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .hcc-profile-cta {
+    font-size: 0.72rem; color: var(--sage);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* État 2 — résumé veille */
+  .hcc-yesterday-header {
+    font-size: 0.65rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-light);
+    margin-bottom: 8px;
+  }
+  .hcc-yesterday-pills {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .hcc-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 10px; border-radius: 16px;
+    font-size: 0.75rem; background: var(--honey);
+    color: var(--text-dark); border: 1px solid var(--oat);
+    white-space: nowrap;
+  }
+  .hcc-no-data {
+    font-size: 0.82rem; color: var(--text-light);
+    font-style: italic; line-height: 1.5;
+  }
+
   /* ===== MODULE TEST ALIMENTAIRE ===== */
 
   /* Bandeau dans le journal */
@@ -1786,6 +1848,66 @@ if (typeof supabase === 'undefined') {
   .jrn-test-btn-title { font-size: 0.82rem; color: var(--text-dark); font-weight: 500; }
   .jrn-test-btn-sub   { font-size: 0.68rem; color: var(--text-light); margin-top: 1px; }
 
+
+
+  /* ===== BLOC CONTEXTUEL ACCUEIL ===== */
+  .ctx-block {
+    background: white; border-radius: 18px;
+    padding: 16px 18px; margin-bottom: 16px;
+    border: 1.5px solid var(--oat);
+  }
+
+  /* État 1 : invitation profil */
+  .ctx-profile-label {
+    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 10px;
+  }
+  .ctx-profile-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4;
+  }
+  .ctx-profile-progress {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .ctx-profile-bar-wrap {
+    flex: 1; height: 5px; border-radius: 3px; background: var(--oat); overflow: hidden;
+  }
+  .ctx-profile-bar-fill {
+    height: 100%; border-radius: 3px; background: var(--sage); transition: width 0.4s;
+  }
+  .ctx-profile-count {
+    font-size: 0.72rem; color: var(--text-light); white-space: nowrap; flex-shrink: 0;
+  }
+  .ctx-profile-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--honey);
+    border-radius: 12px; border: 1px solid var(--oat);
+    cursor: pointer; transition: background 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ctx-profile-btn:active { background: var(--oat); }
+  .ctx-profile-btn-label { font-size: 0.82rem; color: var(--text-dark); }
+  .ctx-profile-btn-arrow { font-size: 0.85rem; color: var(--text-light); }
+
+  /* État 2 : résumé de la veille */
+  .ctx-yesterday-label {
+    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-light); margin-bottom: 10px;
+  }
+  .ctx-yesterday-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .ctx-kw {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.82rem; color: var(--text-dark);
+  }
+  .ctx-sep {
+    color: var(--text-light); font-size: 0.7rem; opacity: 0.5;
+  }
+  .ctx-no-data {
+    font-size: 0.82rem; color: var(--text-light); line-height: 1.5;
+    font-style: italic;
+  }
 
   /* ===== RESSENTI APRÈS REPAS ===== */
   .jrn-ressenti-chips {
@@ -2557,27 +2679,9 @@ if (typeof supabase === 'undefined') {
           <div class="score-bars" id="score-bars"></div>
         </div>
 
-        <!-- Quick log — boutons cliquables -->
-        <div class="quick-log">
-          <div class="quick-log-title">Comment tu te sens aujourd'hui ?</div>
-          <div class="quick-row">
-            <div class="quick-btn" id="qbtn-transit" onclick="openQuickLog('transit')">
-              <span class="quick-btn-check" id="qcheck-transit"></span>
-              <span class="emoji">🫀</span><span class="label">Transit</span>
-            </div>
-            <div class="quick-btn" id="qbtn-repas" onclick="openQuickLog('repas')">
-              <span class="quick-btn-check" id="qcheck-repas"></span>
-              <span class="emoji">🥗</span><span class="label">Repas</span>
-            </div>
-            <div class="quick-btn" id="qbtn-peau" onclick="openQuickLog('peau')">
-              <span class="quick-btn-check" id="qcheck-peau"></span>
-              <span class="emoji">✨</span><span class="label">Peau</span>
-            </div>
-            <div class="quick-btn" id="qbtn-stress" onclick="openQuickLog('stress')">
-              <span class="quick-btn-check" id="qcheck-stress"></span>
-              <span class="emoji">😮‍💨</span><span class="label">Stress</span>
-            </div>
-          </div>
+        <!-- Bloc contextuel : profil incomplet → invitation ; profil complet → résumé veille -->
+        <div id="home-context-block">
+          <!-- Rendu dynamique par renderHomeContextBlock() -->
         </div>
 
         <!-- Insights — vides au départ, remplis après 7 jours de données -->
@@ -3309,6 +3413,8 @@ function updateHomeScore() {
 
   // Mettre à jour les boutons quicklog selon ce qui est déjà rempli aujourd'hui
   try { updateQuickBtns(); } catch(e) {}
+  // Bloc contextuel (profil incomplet → invitation / profil complet → résumé veille)
+  try { renderHomeContextBlock(); } catch(e) { console.warn('[Nara] contextBlock:', e); }
 
   // Insights home
   if (insEmpty && insList) {
@@ -6952,7 +7058,113 @@ function getProfileContext() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MODULE TEST ALIMENTAIRE — protocole d'observation guidé
+// BLOC CONTEXTUEL ACCUEIL
+// État 1 : profil incomplet → invitation douce + progression
+// État 2 : profil complet (6/6) → résumé veille en mots-clés
+// ══════════════════════════════════════════════════════════════════════════════
+
+function renderHomeContextBlock() {
+  const block = document.getElementById('home-context-block');
+  if (!block) return;
+
+  const p = profileLoad ? profileLoad() : null;
+  const done = p ? profileCompletionCount(p) : 0;
+  const TOTAL = 6;
+
+  // Condition de bascule : profil à 100% ET flag persisté
+  // (on mémorise la bascule pour ne jamais revenir à l'état 1)
+  const basculeKey = 'nara_profile_complete_seen';
+  if (done >= TOTAL) localStorage.setItem(basculeKey, '1');
+  const alreadySeen = localStorage.getItem(basculeKey) === '1';
+
+  if (!alreadySeen) {
+    // ── ÉTAT 1 — invitation profil ────────────────────────────────────────────
+    const pct = Math.round(done / TOTAL * 100);
+    block.innerHTML = `
+      <div class="ctx-block" onclick="openProfileFromMenu()" style="cursor:pointer">
+        <div class="ctx-profile-label">Mon profil santé</div>
+        <div class="ctx-profile-title">Complète ton profil pour des insights plus précis</div>
+        <div class="ctx-profile-progress">
+          <div class="ctx-profile-bar-wrap">
+            <div class="ctx-profile-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="ctx-profile-count">${done}/${TOTAL} sections</div>
+        </div>
+        <div class="ctx-profile-btn">
+          <span class="ctx-profile-btn-label">Compléter mon profil →</span>
+          <span class="ctx-profile-btn-arrow">›</span>
+        </div>
+      </div>`;
+  } else {
+    // ── ÉTAT 2 — résumé de la veille ─────────────────────────────────────────
+    block.innerHTML = `
+      <div class="ctx-block">
+        <div class="ctx-yesterday-label">Hier</div>
+        ${buildYesterdaySummary()}
+      </div>`;
+  }
+}
+
+function buildYesterdaySummary() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dateStr = yesterday.toISOString().split('T')[0];
+
+  const jrn = (() => { try { return JSON.parse(localStorage.getItem(`nara_journal_${dateStr}`) || 'null'); } catch { return null; } })();
+  const logTransit = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_transit`) || 'null'); } catch { return null; } })();
+  const logPeau    = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_peau`)    || 'null'); } catch { return null; } })();
+  const logStress  = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_stress`)  || 'null'); } catch { return null; } })();
+
+  const kws = [];
+
+  // Transit
+  const transitVal = jrn?.transit ?? logTransit?.values?.transit_etat;
+  if (transitVal !== null && transitVal !== undefined) {
+    const tLabels = ['🐢 Transit lent', '✅ Transit normal', '💨 Transit rapide'];
+    kws.push(tLabels[transitVal] || null);
+  }
+
+  // Peau
+  const peauVal = jrn?.peau ?? logPeau?.values?.peau_etat;
+  if (peauVal !== null && peauVal !== undefined) {
+    const pLabels = ['🔴 Peau en poussée', '🟡 Peau stable', '🟢 Peau calme'];
+    kws.push(pLabels[peauVal] || null);
+  }
+
+  // Énergie
+  const energieVal = jrn?.energie ?? logStress?.values?.energie;
+  if (energieVal !== null && energieVal !== undefined && energieVal > 0) {
+    kws.push(`⚡ Énergie ${energieVal}/5`);
+  }
+
+  // Stress
+  const stressVal = jrn?.stress ?? logStress?.values?.stress;
+  if (stressVal !== null && stressVal !== undefined && stressVal > 0) {
+    const label = stressVal <= 1 ? 'Stress faible' : stressVal <= 3 ? `Stress ${stressVal}/5` : 'Stress élevé';
+    kws.push(`😮‍💨 ${label}`);
+  }
+
+  // Sommeil
+  const sommeilVal = jrn?.sommeil ?? logStress?.values?.sommeil;
+  if (sommeilVal !== null && sommeilVal !== undefined && sommeilVal > 0) {
+    kws.push(`😴 Sommeil ${sommeilVal}/5`);
+  }
+
+  // Repas — juste indiquer si rempli
+  const hasRepas = jrn?.repas && Object.values(jrn.repas).some(r => r.aliments?.length > 0);
+  if (hasRepas) kws.push('🍽️ Repas noté');
+
+  if (kws.filter(Boolean).length === 0) {
+    return `<div class="ctx-no-data">Pas de données hier — pense à remplir ton journal aujourd'hui 🌿</div>`;
+  }
+
+  const parts = kws.filter(Boolean).map((k, i) =>
+    `<span class="ctx-kw">${k}</span>${i < kws.length - 1 ? '<span class="ctx-sep">·</span>' : ''}`
+  ).join('');
+  return `<div class="ctx-yesterday-row">${parts}</div>`;
+}
+
+
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── Persistence ──────────────────────────────────────────────────────────────

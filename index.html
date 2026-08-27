@@ -1178,13 +1178,18 @@ if (typeof supabase === 'undefined') {
   }
   .meal-history-list::-webkit-scrollbar { display: none; }
   .meal-history-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 8px; border-bottom: 1px solid var(--oat);
-    cursor: pointer; transition: background 0.15s;
+    display: flex; align-items: center;
+    border-bottom: 1px solid var(--oat);
     -webkit-tap-highlight-color: transparent;
   }
   .meal-history-item:last-child { border-bottom: none; }
-  .meal-history-item:active { background: var(--honey); border-radius: 8px; }
+  .meal-history-item.selected { background: var(--honey); border-radius: 8px; }
+  .meal-history-item-tap {
+    flex: 1; display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 8px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .meal-history-item-tap:active { opacity: 0.7; }
   .meal-history-item-label { font-size: 0.88rem; color: var(--text-dark); }
   .meal-history-item-check {
     width: 22px; height: 22px; border-radius: 50%;
@@ -1196,6 +1201,13 @@ if (typeof supabase === 'undefined') {
     background: var(--sage); border-color: var(--sage); color: white;
     font-size: 0.75rem;
   }
+  .meal-history-item-del {
+    padding: 12px 10px; background: none; border: none;
+    cursor: pointer; font-size: 0.9rem; opacity: 0.35;
+    flex-shrink: 0; transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .meal-history-item-del:active { opacity: 0.8; }
   .meal-history-empty {
     text-align: center; color: var(--text-light);
     font-size: 0.82rem; padding: 24px 16px; line-height: 1.6;
@@ -4853,17 +4865,18 @@ function renderJournalCarousel(todayLabel, today) {
       ${renderJrnSlideContent(s.id)}
     </div>`).join('');
 
-  // Barre de navigation prev/next
+  // Barre de navigation — uniquement sur le dernier slide
+  // Sur les slides 0-2 : navigation par swipe uniquement
   const isLast = jrnCurrentSlide === total - 1;
-  const navHtml = `
+  const navHtml = isLast ? `
     <div class="jrn-nav-bar" id="jrn-nav-bar">
       <button class="jrn-nav-prev" id="jrn-nav-prev"
-              onclick="jrnPrevSlide()" ${jrnCurrentSlide === 0 ? 'disabled' : ''}>←</button>
-      <button class="jrn-nav-next ${isLast ? 'last' : ''}" id="jrn-nav-next"
-              onclick="${isLast ? 'saveJournal()' : 'jrnNextSlide()'}">
-        ${isLast ? 'Enregistrer mon journal ✓' : 'Suivant →'}
+              onclick="jrnPrevSlide()">←</button>
+      <button class="jrn-nav-next last" id="jrn-nav-next"
+              onclick="saveJournal()">
+        Enregistrer mon journal ✓
       </button>
-    </div>`;
+    </div>` : `<div class="jrn-nav-bar" id="jrn-nav-bar" style="display:none"></div>`;
 
   return `
     <div class="jrn-carousel-outer" id="jrn-carousel-outer">
@@ -5041,16 +5054,16 @@ function updateJrnNavBar() {
   if (fill)  fill.style.width  = pct + '%';
   if (label) label.textContent = pct + '%';
 
-  // Prev button
-  const prev = document.getElementById('jrn-nav-prev');
-  if (prev) prev.disabled = (jrnCurrentSlide === 0);
-
-  // Next button
-  const next = document.getElementById('jrn-nav-next');
+  // Barre de navigation — visible uniquement sur le dernier slide
+  const navBar = document.getElementById('jrn-nav-bar');
+  const prev   = document.getElementById('jrn-nav-prev');
+  const next   = document.getElementById('jrn-nav-next');
+  if (navBar) navBar.style.display = isLast ? '' : 'none';
+  if (prev)   prev.disabled = (jrnCurrentSlide === 0);
   if (next) {
-    next.textContent = isLast ? 'Enregistrer mon journal ✓' : 'Suivant →';
-    next.className   = 'jrn-nav-next' + (isLast ? ' last' : '');
-    next.onclick     = isLast ? saveJournal : jrnNextSlide;
+    next.textContent = 'Enregistrer mon journal ✓';
+    next.className   = 'jrn-nav-next last';
+    next.onclick     = saveJournal;
   }
 
   // Dots
@@ -5240,30 +5253,70 @@ function openMealHistory(mealKey, type) {
   const overlay = document.getElementById('meal-history-overlay');
   if (!overlay) return;
 
-  // Titre
   const title = overlay.querySelector('.meal-history-title');
   if (title) title.textContent = type === 'spice' ? 'Épices & aromates' : 'Ce que j\'ai mangé';
 
-  // Construire la liste fusionnée (historique perso + défauts, tri alpha)
+  renderMealHistoryList(overlay, mealKey, type);
+  overlay.classList.add('open');
+}
+
+function renderMealHistoryList(overlay, mealKey, type) {
   const list     = getMergedList(type);
   const data     = getMealData(mealKey);
   const selected = type === 'spice' ? (data.epices || []) : (data.aliments || []);
+  const listEl   = overlay.querySelector('.meal-history-list');
 
-  const listEl = overlay.querySelector('.meal-history-list');
   if (list.length === 0) {
     listEl.innerHTML = '<div class="meal-history-empty">Aucun élément pour l\'instant.<br>Saisis quelque chose dans le champ texte.</div>';
-  } else {
-    listEl.innerHTML = list.map(item => {
-      const isSel = selected.includes(item);
-      return '<div class="meal-history-item' + (isSel ? ' selected' : '') + '"' +
-        ' onclick="toggleMealHistoryItem(\'' + escHtml(item) + '\')">' +
-        '<span class="meal-history-item-label">' + escHtml(item) + '</span>' +
-        '<span class="meal-history-item-check">' + (isSel ? '✓' : '') + '</span>' +
-        '</div>';
-    }).join('');
+    return;
   }
 
-  overlay.classList.add('open');
+  listEl.innerHTML = list.map(item => {
+    const isSel = selected.includes(item);
+    const safeItem = escHtml(item);
+    return `<div class="meal-history-item${isSel ? ' selected' : ''}" id="mhi-${safeItem}">
+      <div class="meal-history-item-tap" onclick="toggleMealHistoryItem('${safeItem}')">
+        <span class="meal-history-item-label">${safeItem}</span>
+        <span class="meal-history-item-check">${isSel ? '✓' : ''}</span>
+      </div>
+      <button class="meal-history-item-del" onclick="deleteFromHistory('${safeItem}')" title="Supprimer">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteFromHistory(item) {
+  if (!_mealHistoryType) return;
+  const key = _mealHistoryType === 'spice' ? 'nara_spice_history' : 'nara_food_history';
+
+  // Supprimer de l'historique personnel
+  let h = getFoodHistory(_mealHistoryType);
+  h = h.filter(f => f.toLowerCase() !== item.toLowerCase());
+  localStorage.setItem(key, JSON.stringify(h));
+
+  // Supprimer aussi de la pré-liste si c'en est un :
+  // on la stocke dans une liste "supprimés" pour ne plus la montrer
+  const delKey = _mealHistoryType === 'spice' ? 'nara_spice_deleted' : 'nara_food_deleted';
+  let deleted = [];
+  try { deleted = JSON.parse(localStorage.getItem(delKey) || '[]'); } catch {}
+  if (!deleted.some(d => d.toLowerCase() === item.toLowerCase())) {
+    deleted.push(item);
+    localStorage.setItem(delKey, JSON.stringify(deleted));
+  }
+
+  // Retirer aussi des aliments sélectionnés si besoin
+  if (_mealHistoryKey) {
+    const data = getMealData(_mealHistoryKey);
+    if (_mealHistoryType === 'food') {
+      data.aliments = (data.aliments || []).filter(a => a !== item);
+    } else {
+      data.epices = (data.epices || []).filter(e => e !== item);
+    }
+    refreshMealPanel(_mealHistoryKey);
+  }
+
+  // Re-rendre la liste
+  const overlay = document.getElementById('meal-history-overlay');
+  if (overlay) renderMealHistoryList(overlay, _mealHistoryKey, _mealHistoryType);
 }
 
 function closeMealHistory() {
@@ -5295,23 +5348,21 @@ function toggleMealHistoryItem(item) {
     }
   }
 
-  // Mettre à jour la coche dans la liste sans fermer
+  // Mettre à jour visuellement l'item dans la liste
   const overlay = document.getElementById('meal-history-overlay');
   if (overlay) {
-    const items = overlay.querySelectorAll('.meal-history-item');
-    items.forEach(el => {
+    const selected = _mealHistoryType === 'food' ? data.aliments : data.epices;
+    overlay.querySelectorAll('.meal-history-item').forEach(el => {
       const label = el.querySelector('.meal-history-item-label')?.textContent;
-      const selected = _mealHistoryType === 'food'
-        ? data.aliments.includes(label)
-        : data.epices.includes(label);
-      el.classList.toggle('selected', selected);
+      const isSel = selected.includes(label);
+      el.classList.toggle('selected', isSel);
       const check = el.querySelector('.meal-history-item-check');
-      if (check) check.textContent = selected ? '✓' : '';
+      if (check) check.textContent = isSel ? '✓' : '';
     });
   }
 
-  // Mettre à jour les tags dans le panel
   refreshMealPanel(_mealHistoryKey);
+  jrnUpdateProgress();
 }
 
 
@@ -5416,10 +5467,17 @@ const DEFAULT_SPICE_SUGGESTIONS = [
 ].sort();
 
 // Fusionner historique personnel + suggestions par défaut, tri alpha, sans doublons
+// Exclut les éléments que l'utilisatrice a supprimés
 function getMergedList(type) {
-  const personal = getFoodHistory(type);  // historique par type 'food' ou 'spice'
+  const personal  = getFoodHistory(type);
   const defaults  = type === 'spice' ? DEFAULT_SPICE_SUGGESTIONS : DEFAULT_FOOD_SUGGESTIONS;
-  const merged = [...new Set([...personal, ...defaults])];
+  const delKey    = type === 'spice' ? 'nara_spice_deleted' : 'nara_food_deleted';
+  let deleted = [];
+  try { deleted = JSON.parse(localStorage.getItem(delKey) || '[]'); } catch {}
+  const deletedLower = deleted.map(d => d.toLowerCase());
+
+  const merged = [...new Set([...personal, ...defaults])]
+    .filter(item => !deletedLower.includes(item.toLowerCase()));
   return merged.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
 }
 

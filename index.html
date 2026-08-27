@@ -8346,7 +8346,7 @@ function calOpenDay(dateStr) {
     c.classList.toggle('selected', calCurrentConfort.includes(id));
   });
   // Timing
-  ['matin','repas','soir'].forEach(t => {
+  ['matin','apmidi','repas','soir'].forEach(t => {
     const el = document.getElementById('timing-' + t);
     if (el) el.classList.toggle('selected', calCurrentTiming.includes(t));
   });
@@ -8598,6 +8598,9 @@ try { updateHomeScore(); } catch(e) {}
             <div class="cal-timing-row">
               <div class="cal-timing-btn" id="timing-matin" onclick="calToggleTiming('matin', this)">
                 <span class="t-icon">🌅</span><span class="t-lbl">Matin</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-apmidi" onclick="calToggleTiming('apmidi', this)">
+                <span class="t-icon">☀️</span><span class="t-lbl">Après-midi</span>
               </div>
               <div class="cal-timing-btn" id="timing-repas" onclick="calToggleTiming('repas', this)">
                 <span class="t-icon">🍽️</span><span class="t-lbl">Après repas</span>

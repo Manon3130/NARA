@@ -271,9 +271,14 @@ if (typeof supabase === 'undefined') {
   .score-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; margin-bottom: 8px; }
   .score-value { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 10vw, 3.5rem); font-weight: 300; line-height: 1; margin-bottom: 4px; }
   .score-sub { font-size: 0.8rem; opacity: 0.75; margin-bottom: 20px; }
+  .score-bars-wrap { margin-top: 4px; }
   .score-bars { display: flex; gap: 8px; align-items: flex-end; height: 40px; }
   .score-bar { flex: 1; background: rgba(255,255,255,0.2); border-radius: 4px; position: relative; overflow: hidden; }
   .score-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.6); border-radius: 4px; }
+  .score-days { display: flex; gap: 8px; margin-top: 5px; }
+  .score-day-lbl { flex: 1; text-align: center; font-size: 0.55rem; text-transform: uppercase;
+    letter-spacing: 0.04em; opacity: 0.55; color: white; line-height: 1; }
+  .score-day-lbl.today { opacity: 0.95; font-weight: 700; }
   .section-title { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); margin-bottom: 12px; }
   .quick-log { background: var(--honey); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
   .quick-log-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--text-dark); margin-bottom: 16px; }
@@ -2676,7 +2681,10 @@ if (typeof supabase === 'undefined') {
           <div class="score-label">Équilibre global</div>
           <div class="score-value"><span id="score-num">—</span><span style="font-size:1.5rem;opacity:0.6">/100</span></div>
           <div class="score-sub" id="score-sub">Complète ton journal pour suivre ta progression</div>
-          <div class="score-bars" id="score-bars"></div>
+          <div class="score-bars-wrap">
+            <div class="score-bars" id="score-bars"></div>
+            <div class="score-days" id="score-days"></div>
+          </div>
         </div>
 
         <!-- Bloc contextuel : profil incomplet → invitation ; profil complet → résumé veille -->
@@ -3402,12 +3410,28 @@ function updateHomeScore() {
     const subEl = document.getElementById('score-sub');
     const barsEl = document.getElementById('score-bars');
     if (numEl) numEl.textContent = avgScore;
-    if (subEl) subEl.textContent = entries.length >= 14
-      ? `Basé sur ${entries.length} entrées · Continue comme ça 🌱`
-      : `${entries.length} entrées · Continue à noter pour affiner`;
+    // Compter les jours réellement remplis sur les 7 derniers jours
+    const daysWithData = barsData.filter(Boolean).length;
+    if (subEl) subEl.textContent = daysWithData >= 6
+      ? `${daysWithData} jours sur 7 notés · Continue comme ça 🌱`
+      : daysWithData >= 3
+        ? `${daysWithData} jours notés sur 7 — chaque jour affine tes insights`
+        : `${daysWithData} jour${daysWithData > 1 ? 's' : ''} noté${daysWithData > 1 ? 's' : ''} sur 7 — note chaque jour pour voir tes tendances`;
     const maxBar = Math.max(...barsData.filter(Boolean), 1);
-    if (barsEl) barsEl.innerHTML = barsData.map(v =>
-      `<div class="score-bar" style="height:30px"><div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
+    // Générer les initiales de jours dans l'ordre des 7 derniers jours (J-6 → aujourd'hui)
+    const joursFull = ['D','L','M','M','J','V','S']; // 0=dim…6=sam
+    const dayLabels = Array.from({length:7}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      return { lbl: joursFull[d.getDay()], isToday: i === 6 };
+    });
+    if (barsEl) barsEl.innerHTML = barsData.map((v, i) =>
+      `<div class="score-bar" title="${dayLabels[i].lbl}${dayLabels[i].isToday ? ' (auj.)' : ''}">` +
+      `<div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
+    ).join('');
+    // Légende jours
+    const daysEl = document.getElementById('score-days');
+    if (daysEl) daysEl.innerHTML = dayLabels.map(d =>
+      `<div class="score-day-lbl${d.isToday ? ' today' : ''}">${d.lbl}</div>`
     ).join('');
   }
 

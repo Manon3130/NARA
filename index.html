@@ -7727,6 +7727,7 @@ function renderHomeCycleBlock() {
           <span class="home-cycle-title">Tu es probablement en période de règles</span>
           <span class="home-cycle-update" onclick="openCycleModal()">Ajuster</span>
         </div>
+        <div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">Phase d'élimination de la muqueuse utérine — début d'un nouveau cycle.</div>
         <div class="cycle-dots-track">${dots}</div>
         <div class="home-cycle-desc">
           Jour ${dayInReg} sur ~${regDuration} · Transit souvent plus rapide, fatigue possible — écoute ton corps 🌿
@@ -7747,9 +7748,16 @@ function renderHomeCycleBlock() {
     ovulation:'Ovulation probable',
     luteale:'Phase lutéale probable',
   };
+  // Définitions courtes en langage simple
+  const phaseDefs = {
+    preovul:   'Après les règles, ton corps se prépare à une nouvelle ovulation.',
+    ovulation: 'Moment du cycle où un ovule est libéré — généralement vers le milieu du cycle.',
+    luteale:   'Après l\'ovulation, avant les prochaines règles.',
+  };
   const desc = phaseDescs[info.phase] || info.phaseDesc;
   const icon = phaseIcons[info.phase] || info.phaseIcon;
   const name = phaseNames[info.phase] || info.phaseName;
+  const def  = phaseDefs[info.phase] || '';
 
   block.innerHTML = `
     <div class="home-cycle-block ${info.phaseClass}">
@@ -7758,6 +7766,7 @@ function renderHomeCycleBlock() {
         <span class="home-cycle-title">${name} — J${info.dayInCycle}/${cycleDuration}</span>
         <span class="home-cycle-update" onclick="openCycleModal()">Ajuster</span>
       </div>
+      ${def ? `<div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">${def}</div>` : ''}
       <div class="home-cycle-desc">${desc}</div>
     </div>`;
 }
@@ -8004,7 +8013,7 @@ function cycleSaveSettings() {
   const active    = toggle ? toggle.classList.contains('on') : false;
 
   if (active && dateInput && !dateInput.value) {
-    showToast('Indique la date de tes dernières règles');
+    showToast('Indique la date de début de tes dernières règles');
     return;
   }
 
@@ -8018,8 +8027,10 @@ function cycleSaveSettings() {
 
   cycleSave(data);
   closeCycleModal();
-  showToast('✓ Cycle enregistré !');
-  // Rafraîchir le journal si ouvert
+  showToast('✓ Cycle mis à jour !');
+  // Recalculer immédiatement partout — phase ne doit jamais être obsolète
+  try { renderHomeCycleBlock(); } catch(e) {}
+  try { updateHomeScore();      } catch(e) {}
   const jrn = document.getElementById('screen-journal');
   if (jrn && jrn.classList.contains('active')) renderJournal();
 }
@@ -8711,7 +8722,10 @@ try { updateHomeScore(); } catch(e) {}
 
         <!-- Formulaire (masqué si désactivé) -->
         <div id="cycle-form">
-          <span class="cycle-field-label">Date de début de tes dernières règles</span>
+          <span class="cycle-field-label">Quand ont commencé tes dernières règles ?</span>
+          <p style="font-size:0.72rem;color:var(--text-light);margin:-4px 0 10px;line-height:1.5;">
+            Mets à jour ce champ à chaque nouveau cycle pour garder tes phases à jour.
+          </p>
           <input type="date" class="cycle-date-input" id="cycle-start-date"
                  max="" placeholder="jj/mm/aaaa">
 

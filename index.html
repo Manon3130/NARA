@@ -3224,10 +3224,17 @@ async function handleLogin() {
 }
 
 // ===== DÉCONNEXION =====
+// Flag explicite : distingue déconnexion volontaire
+// d'un SIGNED_OUT provoqué par erreur réseau/expiration.
+// Placé ici pour être défini avant onAuthStateChange et handleLogout.
+let _userRequestedLogout = false;
+
 async function handleLogout() {
+  _userRequestedLogout = true; // AVANT signOut pour que onAuthStateChange le voie
   document.getElementById('user-dropdown').classList.remove('open');
-  await sb.auth.signOut();
   currentUser = null;
+  clearLocalCache();           // Nettoyer les données Nara (pas les tokens auth)
+  await sb.auth.signOut();     // signOut efface lui-même les tokens sb-*
   document.getElementById('home-user-name').textContent = '—';
   document.getElementById('dropdown-name').textContent = '—';
   document.getElementById('dropdown-email').textContent = '';
@@ -3331,25 +3338,36 @@ async function initSession() {
   }
 }
 
-// Lire la session Supabase depuis le localStorage sans passer par le réseau
+// Lire la session Supabase depuis le localStorage sans passer par le réseau.
+// Robuste : cherche la clé auth par préfixe plutôt qu'une clé exacte,
+// car le format peut varier selon la version du SDK.
 function readLocalSession() {
   try {
-    // Supabase v2 stocke la session sous la clé `sb-<ref>-auth-token`
-    // La référence est la partie entre https:// et .supabase.co dans l'URL
+    // Méthode 1 : clé prédictible Supabase v2
     const ref = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '');
-    const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+    const predictableKey = `sb-${ref}-auth-token`;
+    let raw = localStorage.getItem(predictableKey);
+
+    // Méthode 2 : scan par préfixe si méthode 1 échoue
+    // (SDK v2 peut utiliser supabase.auth.token ou autre selon la config)
+    if (!raw) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('sb-') && k.includes('auth'))) {
+          raw = localStorage.getItem(k);
+          if (raw) break;
+        }
+      }
+    }
+
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Vérifier que le token n'est pas expiré (avec 60s de marge)
-    const expiresAt = parsed?.expires_at || 0;
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (expiresAt && expiresAt < nowSec - 60) {
-      // Token expiré mais on tente quand même de l'utiliser —
-      // autoRefreshToken le renouvellera
-      console.log('[Nara] Token expiré, tentative de refresh silencieux');
-    }
-    const user = parsed?.user || null;
+
+    // Vérifier qu'on a un user — peu importe l'expiration,
+    // autoRefreshToken de Supabase renouvellera le token si besoin.
+    const user = parsed?.user || parsed?.currentSession?.user || null;
     if (!user) return null;
+
     return { user, access_token: parsed?.access_token };
   } catch (e) {
     console.warn('[Nara] readLocalSession:', e);
@@ -3390,23 +3408,27 @@ sb.auth.onAuthStateChange(async (event, session) => {
     updateHomeUser(currentUser);
 
     if (event === 'SIGNED_IN') {
-      // Nettoyage champs de formulaire
       ['signup-email','signup-password','signup-prenom','login-email','login-password']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-      // Charger les données en arrière-plan — ne bloque jamais l'event auth
       loadUserData(session.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
     }
 
     if (event === 'TOKEN_REFRESHED') {
-      // Token rafraîchi silencieusement — rien à faire, session toujours active
       console.log('[Nara] Token rafraîchi automatiquement');
     }
   } else {
-    currentUser = null;
-    // Nettoyer le cache local si déconnexion
-    if (event === 'SIGNED_OUT') {
+    // Ne nettoyer le cache QUE sur déconnexion explicitement déclenchée
+    // par l'utilisatrice via handleLogout().
+    // SIGNED_OUT peut aussi arriver en cas d'erreur réseau ou d'expiration —
+    // dans ces cas, on ne vide RIEN pour éviter la perte de session.
+    if (event === 'SIGNED_OUT' && _userRequestedLogout) {
+      _userRequestedLogout = false;
+      currentUser = null;
       clearLocalCache();
+      go('onboarding');
     }
+    // Dans tous les autres cas (erreur réseau, token expiré etc.) : ne rien faire.
+    // readLocalSession + refreshSessionSilently gèrent la continuité.
   }
 });
 
@@ -3534,15 +3556,22 @@ function updateHomeScore() {
 
 // Nettoyer le cache local à la déconnexion
 function clearLocalCache() {
+  // IMPORTANT : ne jamais supprimer les clés d'authentification Supabase (sb-*).
+  // clearLocalCache est appelée à la déconnexion VOLONTAIRE uniquement,
+  // mais onAuthStateChange peut l'appeler sur des erreurs réseau —
+  // effacer le token rendrait la reconnexion permanente.
+  // On ne supprime que les données applicatives Nara (nara_*).
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && (key.startsWith('nara_') || key.startsWith('sb-'))) {
+    if (key && key.startsWith('nara_')) {
       keysToRemove.push(key);
     }
+    // Les clés sb-* (tokens Supabase) sont intentionnellement préservées —
+    // Supabase les gère lui-même via signOut().
   }
   keysToRemove.forEach(k => localStorage.removeItem(k));
-  console.log('[Nara] Cache local nettoyé');
+  console.log('[Nara] Cache applicatif nettoyé (tokens auth préservés)');
 }
 
 // ===== DATA =====

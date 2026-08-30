@@ -3298,32 +3298,31 @@ async function handleForgotPassword() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function initSession() {
+  console.log('[Nara Init] Démarrage initSession — ' + new Date().toISOString());
+
   // ── ÉTAPE 1 : lire le cache local immédiatement (zéro réseau) ──
-  // Supabase stocke la session sous une clé prévisible dans localStorage.
-  // On la lit directement pour afficher le dashboard SANS attendre le réseau.
   const localSession = readLocalSession();
+  console.log('[Nara Init] Session locale:', localSession ? 'TROUVÉE (user: ' + localSession.user?.email + ')' : 'ABSENTE');
 
   if (localSession) {
-    // Session trouvée localement → afficher le dashboard tout de suite
     currentUser = localSession.user;
     updateHomeUser(currentUser);
     go('home');
     hideBootLoader();
+    console.log('[Nara Init] → Dashboard affiché depuis cache local');
     loadUserData(localSession.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
-
-    // ── ÉTAPE 2 : valider le token en arrière-plan ──
-    // Si le token est expiré, Supabase le rafraîchit silencieusement.
-    // On ne déconnecte JAMAIS l'utilisateur si le réseau échoue.
     refreshSessionSilently();
     return;
   }
 
-  // Pas de session locale → tenter via réseau (première connexion ou cache effacé)
+  // Pas de session locale → tenter via réseau
+  console.log('[Nara Init] Tentative réseau (getSession)...');
   try {
     const { data: { session } } = await withTimeout(
       sb.auth.getSession(),
       8000, 'restauration de session'
     );
+    console.log('[Nara Init] Réseau getSession:', session ? 'SESSION OK (' + session.user?.email + ')' : 'VIDE');
     if (session?.user) {
       currentUser = session.user;
       updateHomeUser(currentUser);
@@ -3331,8 +3330,7 @@ async function initSession() {
       loadUserData(session.user.id).catch(e => console.warn('[Nara] loadUserData:', e));
     }
   } catch (e) {
-    console.warn('[Nara] initSession réseau:', e.message);
-    // Réseau indisponible mais pas de cache local → laisser l'écran onboarding
+    console.warn('[Nara Init] getSession échoué:', e.message);
   } finally {
     hideBootLoader();
   }
@@ -8508,6 +8506,8 @@ try { renderRecettes(); } catch(e) {}
 try { renderBibliotheque(); } catch(e) {}
 try { renderRoutines(); } catch(e) {}
 try { updateHomeScore(); } catch(e) {}
+// Restaurer la session utilisateur — DOIT être appelé au démarrage
+try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); hideBootLoader(); }
 // fond géré par CSS uniquement
 </script>
     <!-- SCREEN GALERIE PEAU -->

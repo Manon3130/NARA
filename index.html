@@ -1914,6 +1914,29 @@ if (typeof supabase === 'undefined') {
     font-style: italic;
   }
 
+
+  /* ===== CHAMP DATE MOIS/ANNÉE PROFIL ===== */
+  .prof-since-wrap {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; margin-bottom: 4px;
+  }
+  .prof-since-label {
+    font-size: 0.72rem; color: var(--text-light);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .prof-since-input {
+    padding: 7px 10px; border: 1.5px solid var(--oat);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; color: var(--text-dark); background: white;
+    outline: none; flex: 1; min-width: 0;
+    -webkit-appearance: none;
+  }
+  .prof-since-input:focus { border-color: var(--sage); }
+  .prof-since-note {
+    font-size: 0.65rem; color: var(--text-light); margin-top: 2px;
+    font-style: italic;
+  }
+
   /* ===== RESSENTI APRÈS REPAS ===== */
   .jrn-ressenti-chips {
     display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px;
@@ -6896,6 +6919,9 @@ function renderProfileTransit(p) {
 
 // ── Section 2 : Alimentation ───────────────────────────────────────────────────
 function renderProfileAlim(p) {
+  const hasSuivi = p.alim_suivi_medical && p.alim_suivi_medical.length > 0 && !p.alim_suivi_medical.includes('Aucun');
+  const hasCompl = p.alim_complements && p.alim_complements.length > 0 && !p.alim_complements.includes('Aucun');
+
   return `
     <div class="prof-q">Type de repas dominant</div>
     ${profChips('alim_type', ['Fait maison','Plats préparés','Mixte','Équilibré','Riche en sucre/gras'], p, false)}
@@ -6918,20 +6944,41 @@ function renderProfileAlim(p) {
     <input class="prof-free-input" type="text" placeholder="Autre…"
            value="${p.alim_suivi_libre||''}"
            oninput="profileData.alim_suivi_libre=this.value">
+    ${hasSuivi ? `
+    <div class="prof-since-wrap">
+      <span class="prof-since-label">📅 Depuis quand ?</span>
+      <input class="prof-since-input" type="month" id="prof-since-alim_suivi_date"
+             value="${p.alim_suivi_date||''}"
+             max="${new Date().toISOString().slice(0,7)}"
+             oninput="profileData.alim_suivi_date=this.value">
+    </div>
+    <div class="prof-since-note">Optionnel — laisse vide si tu ne te souviens pas exactement</div>
+    ` : ''}
 
     <div class="prof-q">Compléments alimentaires actuels (plusieurs possibles)</div>
     ${profChips('alim_complements', ['Aucun','Probiotiques','Magnésium','Oméga-3','Vitamine D','Fer','Zinc','Autre'], p, true)}
     <input class="prof-free-input" type="text" placeholder="Autre complément…"
            value="${p.alim_complements_libre||''}"
            oninput="profileData.alim_complements_libre=this.value">
+    ${hasCompl ? `
+    <div class="prof-since-wrap">
+      <span class="prof-since-label">📅 Depuis quand ?</span>
+      <input class="prof-since-input" type="month" id="prof-since-alim_complements_date"
+             value="${p.alim_complements_date||''}"
+             max="${new Date().toISOString().slice(0,7)}"
+             oninput="profileData.alim_complements_date=this.value">
+    </div>
+    <div class="prof-since-note">Optionnel — laisse vide si tu ne te souviens pas exactement</div>
+    ` : ''}
 
-    <button class="prof-save-section-btn" onclick="profileSaveSection('s2')">Enregistrer cette section ✓</button>
+    <button class="prof-save-section-btn" onclick="profileSaveSection(&apos;s2&apos;)">Enregistrer cette section ✓</button>
   `;
 }
 
 // ── Section 3 : Peau ──────────────────────────────────────────────────────────
 function renderProfilePeau(p) {
   const aOui = p.peau_probleme === 'oui';
+  const maxMonth = new Date().toISOString().slice(0,7);
   let html = '';
   html += '<div class="prof-q">Problème de peau identifié ?</div>';
   html += profTranches('peau_probleme', [
@@ -6954,6 +7001,10 @@ function renderProfilePeau(p) {
       html += '<div class="prof-q">Par quel professionnel ?</div>';
       html += profChips('peau_diagnostic_pro', ['Dermatologue','Médecin généraliste','Autre'], p, true);
       html += '<input class="prof-free-input" type="text" placeholder="Autre professionnel…" value="' + (p.peau_diagnostic_pro_libre||'') + '" oninput="profileData.peau_diagnostic_pro_libre=this.value">';
+      // Date du diagnostic
+      html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Diagnostiquée depuis ?</span>' +
+        '<input class="prof-since-input" type="month" value="' + (p.peau_diagnostic_date||'') + '" max="' + maxMonth + '" oninput="profileData.peau_diagnostic_date=this.value"></div>' +
+        '<div class="prof-since-note">Optionnel — mois et année suffisent</div>';
     }
     if (p.peau_diagnostic_oui === 'non') {
       html += '<div style="background:var(--honey);border-radius:12px;padding:12px 14px;font-size:0.75rem;color:var(--text-mid);line-height:1.6;margin-top:4px">' +
@@ -6963,6 +7014,10 @@ function renderProfilePeau(p) {
     html += profTranches('peau_traitement', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
     if (p.peau_traitement === 'oui') {
       html += '<input class="prof-free-input" type="text" placeholder="Tu peux préciser si tu le souhaites (optionnel)…" value="' + (p.peau_traitement_libre||'') + '" oninput="profileData.peau_traitement_libre=this.value">';
+      // Date début du traitement (indépendante du diagnostic)
+      html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Traitement débuté en ?</span>' +
+        '<input class="prof-since-input" type="month" value="' + (p.peau_traitement_date||'') + '" max="' + maxMonth + '" oninput="profileData.peau_traitement_date=this.value"></div>' +
+        '<div class="prof-since-note">Optionnel — indépendant de la date de diagnostic</div>';
     }
   }
   html += '<button class="prof-save-section-btn" onclick="profileSaveSection(&apos;s3&apos;)">Enregistrer cette section ✓</button>';
@@ -7062,6 +7117,10 @@ function renderProfileCycle(p) {
         html += '<div class="prof-q">Par quel professionnel ?</div>';
         html += profChips('cycle_diagnostic_pro', ['Gynécologue','Médecin généraliste','Endocrinologue','Autre'], p, true);
         html += '<input class="prof-free-input" type="text" placeholder="Autre professionnel…" value="' + (p.cycle_diagnostic_pro_libre||'') + '" oninput="profileData.cycle_diagnostic_pro_libre=this.value">';
+        // Date du diagnostic gynécologique
+        html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Diagnostiquée depuis ?</span>' +
+          '<input class="prof-since-input" type="month" value="' + (p.cycle_diagnostic_date||'') + '" max="' + new Date().toISOString().slice(0,7) + '" oninput="profileData.cycle_diagnostic_date=this.value"></div>' +
+          '<div class="prof-since-note">Optionnel — mois et année suffisent</div>';
       }
       if (p.cycle_diagnostic_oui === 'non') {
         html += '<div style="background:var(--honey);border-radius:12px;padding:12px 14px;font-size:0.75rem;color:var(--text-mid);line-height:1.6;margin-top:4px">' +
@@ -7071,6 +7130,10 @@ function renderProfileCycle(p) {
       html += profTranches('cycle_traitement', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
       if (p.cycle_traitement === 'oui') {
         html += '<input class="prof-free-input" type="text" placeholder="Tu peux préciser si tu le souhaites (optionnel)…" value="' + (p.cycle_traitement_libre||'') + '" oninput="profileData.cycle_traitement_libre=this.value">';
+        // Date début du traitement (indépendante du diagnostic)
+        html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Traitement débuté en ?</span>' +
+          '<input class="prof-since-input" type="month" value="' + (p.cycle_traitement_date||'') + '" max="' + new Date().toISOString().slice(0,7) + '" oninput="profileData.cycle_traitement_date=this.value"></div>' +
+          '<div class="prof-since-note">Optionnel — indépendant de la date de diagnostic</div>';
       }
     }
   }
@@ -7164,25 +7227,34 @@ function getProfileContext() {
     transitBristol:       p.transit_bristol,
     transitDifficulte:    p.transit_difficulte,
     transitBallonnements: p.transit_ballonnements,
-    // Peau — contexte silencieux pour ne pas mal interpréter des patterns connus
+    // Alimentation & suivi médical — avec dates de référence pour avant/après
+    suiviMedical:         p.alim_suivi_medical || [],
+    suiviMedicalDate:     p.alim_suivi_date    || null, // YYYY-MM → point de référence
+    complements:          p.alim_complements   || [],
+    complementsDate:      p.alim_complements_date || null,
+    // Peau — contexte silencieux + dates pour comparaison avant/après traitement
     peauProbleme:         p.peau_probleme,
     peauType:             p.peau_type || [],
-    peauDiagnostic:       p.peau_diagnostic_oui,   // 'oui'|'non' — pathologie confirmée médicalement
-    peauTraitement:       p.peau_traitement,         // 'oui'|'non' — traitement en cours
+    peauDiagnostic:       p.peau_diagnostic_oui,
+    peauDiagnosticDate:   p.peau_diagnostic_date  || null, // YYYY-MM
+    peauTraitement:       p.peau_traitement,
+    peauTraitementDate:   p.peau_traitement_date  || null, // YYYY-MM (indépendant du diagnostic)
     // Stress / Énergie
     stressNiveau:         p.stress_niveau,
     energieNiveau:        p.energie_niveau,
     // Sommeil
     sommeilDuree:         p.sommeil_duree,
-    // Cycle — contexte silencieux : ne jamais interpréter ce qui est déjà expliqué par une condition connue
+    // Cycle — contexte silencieux + dates pour comparaison avant/après traitement
     cycleRegularite:      p.cycle_regularite,
     cycleDouleurs:        p.cycle_douleurs,
-    cyclePathoConfirmee:  p.cycle_diagnostic_oui === 'oui', // true = condition diagnostiquée
-    cyclePatho:           p.cycle_patho || [],              // liste des pathologies
-    cycleTraitement:      p.cycle_traitement,               // 'oui'|'non'
-    // Règle d'usage : si cyclePathoConfirmee === true et un pattern de peau/transit
-    // correspond à une pathologie connue → ne pas signaler comme "nouveau pattern",
-    // indiquer seulement que c'est cohérent avec le profil déclaré.
+    cyclePathoConfirmee:  p.cycle_diagnostic_oui === 'oui',
+    cyclePatho:           p.cycle_patho || [],
+    cycleTraitement:      p.cycle_traitement,
+    cycleDiagnosticDate:  p.cycle_diagnostic_date  || null, // YYYY-MM
+    cycleTraitementDate:  p.cycle_traitement_date  || null, // YYYY-MM (indépendant du diagnostic)
+    // Règle d'usage : si une date est disponible, le moteur peut comparer
+    // les données journal AVANT vs APRÈS cette date.
+    // Si la date est null → pas de comparaison avant/après générée pour ce point.
   };
 }
 

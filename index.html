@@ -5087,8 +5087,26 @@ const ALIMENTS = [
 // ── Date active du journal (aujourd'hui par défaut, modifiable pour jours passés) ──
 let jrnCurrentDate = null; // null = aujourd'hui (getTodayStr())
 
+
+function loadTodayJournal() {
+  // Toujours lire les données du jour réel (utilisé par quicklog accueil, syncs etc.)
+  const today = getTodayStr();
+  const raw = localStorage.getItem(`nara_journal_${today}`);
+  if (raw) { try { return JSON.parse(raw); } catch { return null; } }
+  return null;
+}
+
 function jrnGetDate() {
   return jrnCurrentDate || getTodayStr();
+}
+
+
+function loadTodayJournal() {
+  // Toujours lire les données du jour réel (utilisé par quicklog accueil, syncs etc.)
+  const today = getTodayStr();
+  const raw = localStorage.getItem(`nara_journal_${today}`);
+  if (raw) { try { return JSON.parse(raw); } catch { return null; } }
+  return null;
 }
 
 function jrnGetDateLabel() {
@@ -5438,7 +5456,7 @@ function updateJrnNavBar() {
   const total    = JRN_SECTIONS.length;
   const isLast   = jrnCurrentSlide === total - 1;
   const pct      = jrnComputeProgress(jrnValues);
-  const existing = loadTodayJournal();
+  const existing = jrnLoadCurrentJournal();
 
   // Barre de progression
   const fill  = document.getElementById('jrn-progress-fill');

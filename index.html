@@ -997,6 +997,41 @@ if (typeof supabase === 'undefined') {
 
 
 
+
+  /* ===== NAVIGATION DATE JOURNAL ===== */
+  .jrn-date-nav {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 clamp(16px,6vw,28px) 8px; flex-shrink: 0;
+  }
+  .jrn-date-nav-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: white; border: 1.5px solid var(--oat);
+    font-size: 1rem; cursor: pointer; color: var(--text-mid);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .jrn-date-nav-btn:active { background: var(--honey); }
+  .jrn-date-nav-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .jrn-date-chip-wrap { flex: 1; text-align: center; }
+  .jrn-date-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--honey); border: 1px solid var(--oat);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 0.78rem; color: var(--text-mid);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .jrn-date-chip.past-day {
+    background: #fff0e0; border-color: #f9a82566; color: #c97800;
+  }
+  .jrn-past-banner {
+    margin: 0 clamp(16px,6vw,28px) 8px;
+    background: #fff8e6; border: 1.5px solid #fcd34d66;
+    border-radius: 12px; padding: 9px 14px;
+    font-size: 0.75rem; color: #c97800; text-align: center;
+    flex-shrink: 0;
+  }
+
   /* ===== JOURNAL CARROUSEL ===== */
 
   /* Container scrollable horizontal */
@@ -5049,27 +5084,52 @@ const ALIMENTS = [
   '🍷 Alcool','🥜 Oléagineux',
 ];
 
-function getTodayStr() {
-  return new Date().toISOString().split('T')[0];
+// ── Date active du journal (aujourd'hui par défaut, modifiable pour jours passés) ──
+let jrnCurrentDate = null; // null = aujourd'hui (getTodayStr())
+
+function jrnGetDate() {
+  return jrnCurrentDate || getTodayStr();
 }
 
-function getTodayLabel() {
-  const d = new Date();
+function jrnGetDateLabel() {
+  const dateStr = jrnGetDate();
+  const todayStr = getTodayStr();
+  const d = new Date(dateStr + 'T12:00:00');
   const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-  const mois = ['janvier','février','mars','avril','mai','juin',
+  const mois  = ['janvier','février','mars','avril','mai','juin',
                  'juillet','août','septembre','octobre','novembre','décembre'];
-  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+  const label = `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+  return dateStr === todayStr ? `Aujourd'hui · ${label}` : label;
 }
 
-function loadTodayJournal() {
-  // Charger les données du jour depuis localStorage (ou Supabase si disponible)
-  const today = getTodayStr();
-  const raw = localStorage.getItem(`nara_journal_${today}`);
-  if (raw) {
-    try { return JSON.parse(raw); } catch { return null; }
-  }
+function jrnIsToday() {
+  return jrnGetDate() === getTodayStr();
+}
+
+function jrnLoadCurrentJournal() {
+  const dateStr = jrnGetDate();
+  const raw = localStorage.getItem(`nara_journal_${dateStr}`);
+  if (raw) { try { return JSON.parse(raw); } catch { return null; } }
   return null;
 }
+
+function jrnNavigateDate(deltaDays) {
+  const current = new Date(jrnGetDate() + 'T12:00:00');
+  current.setDate(current.getDate() + deltaDays);
+  const newDate = current.toISOString().split('T')[0];
+  const today   = getTodayStr();
+  // Pas de futur, pas de plus de 30 jours en arrière
+  const minDate = new Date(today + 'T12:00:00');
+  minDate.setDate(minDate.getDate() - 30);
+  const minStr = minDate.toISOString().split('T')[0];
+  if (newDate > today) return; // Futur bloqué
+  if (newDate < minStr) return; // > 30 jours bloqué
+  jrnCurrentDate = newDate === today ? null : newDate; // null = today (plus simple)
+  jrnCurrentSlide = 0;
+  renderJournal();
+}
+
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // JOURNAL CARROUSEL — 4 sections, navigation horizontale, auto-save par section
@@ -5088,11 +5148,10 @@ function renderJournal() {
   const container = document.getElementById('journal-scroll');
   if (!container) return;
 
-  const today      = getTodayStr();
-  const todayLabel = getTodayLabel();
-  const existing   = loadTodayJournal();
+  const dateStr    = jrnGetDate();
+  const dateLabel  = jrnGetDateLabel();
+  const existing   = jrnLoadCurrentJournal();
 
-  // Reset slide actif à 0 à chaque ouverture sauf si édition en cours
   if (!jrnEditMode) jrnCurrentSlide = 0;
 
   jrnValues = existing && jrnEditMode ? { ...existing } : (existing || {
@@ -5110,33 +5169,31 @@ function renderJournal() {
   const heure = new Date().getHours();
   jrnCurrentMeal = heure < 11 ? 'matin' : heure < 14 ? 'midi' : heure < 18 ? 'encas' : 'soir';
 
-  container.innerHTML = renderJournalCarousel(todayLabel, today);
+  container.innerHTML = renderJournalCarousel(dateLabel, dateStr);
   bindJournalSliders();
   updateJrnNavBar();
 
-  // Scroll au slide actif sans animation (initialisation)
   const track = document.getElementById('jrn-track');
   if (track && jrnCurrentSlide > 0) {
-    requestAnimationFrame(() => {
-      track.scrollLeft = jrnCurrentSlide * track.offsetWidth;
-    });
+    requestAnimationFrame(() => { track.scrollLeft = jrnCurrentSlide * track.offsetWidth; });
   }
 }
 
 function renderJournalCarousel(todayLabel, today) {
-  const total   = JRN_SECTIONS.length;
-  const pct     = jrnComputeProgress(jrnValues);
-  const existing = loadTodayJournal();
+  const isToday   = jrnIsToday();
+  const isPast    = !isToday;
+  const dateStr   = jrnGetDate();
+  const todayStr  = getTodayStr();
+  // Calculer si on peut encore reculer (max 30 jours)
+  const minDate   = new Date(todayStr + 'T12:00:00');
+  minDate.setDate(minDate.getDate() - 30);
+  const canGoBack = new Date(dateStr + 'T12:00:00') > minDate;
+  const canGoFwd  = !isToday;
 
-  // Vérifier quelles sections ont des données
-  const sectionDone = {
-    transit: existing && (existing.transit !== null || existing.ballonnements > 0 || existing.douleurs !== null),
-    repas:   existing && Object.values(existing.repas || {}).some(r => r.aliments?.length > 0),
-    peau:    existing && existing.peau !== null,
-    vie:     existing && (existing.stress > 0 || existing.sommeil > 0 || existing.energie > 0 || existing.humeur !== null),
-  };
+  // Barre de progression basée sur les champs remplis
+  const pct = jrnComputeProgress(jrnValues);
 
-  // Barre de progression + chips date
+  // Entête : progression + navigation date
   const headerHtml = `
     <div class="jrn-progress-bar">
       <div class="jrn-progress-track">
@@ -5144,11 +5201,29 @@ function renderJournalCarousel(todayLabel, today) {
       </div>
       <div class="jrn-progress-label" id="jrn-progress-label">${pct}%</div>
     </div>
-    <div style="padding:0 clamp(16px,6vw,28px) 8px">
-      <div class="jrn-date-chip">📅 Aujourd'hui · ${todayLabel}</div>
-    </div>`;
+    <div class="jrn-date-nav">
+      <button class="jrn-date-nav-btn" onclick="jrnNavigateDate(-1)" ${canGoBack ? '' : 'disabled'}>‹</button>
+      <div class="jrn-date-chip-wrap">
+        <div class="jrn-date-chip${isPast ? ' past-day' : ''}">
+          ${isPast ? '📅' : '📅'} ${todayLabel}
+        </div>
+      </div>
+      <button class="jrn-date-nav-btn" onclick="jrnNavigateDate(1)" ${canGoFwd ? '' : 'disabled'}>›</button>
+    </div>
+    ${isPast ? `<div class="jrn-past-banner">⏪ Tu modifies le journal du ${todayLabel} — pas celui d'aujourd'hui</div>` : ''}
+  `;
 
-  // Dots
+  // Vérifier quelles sections ont des données
+  const existing  = jrnLoadCurrentJournal();
+  const total     = JRN_SECTIONS.length;
+  const sectionDone = {
+    transit: existing && (existing.transit !== null || existing.ballonnements > 0 || existing.douleurs !== null),
+    repas:   existing && Object.values(existing.repas || {}).some(r => r.aliments?.length > 0),
+    peau:    existing && existing.peau !== null,
+    vie:     existing && (existing.stress > 0 || existing.sommeil > 0 || existing.energie > 0 || existing.humeur !== null),
+  };
+
+  // Dots de pagination
   const dotsHtml = `
     <div class="jrn-dots" id="jrn-dots">
       ${JRN_SECTIONS.map((s, i) => {
@@ -5412,30 +5487,32 @@ function updateJrnNavBar() {
 let _jrnSaveDebounce = null;
 
 function jrnPersist(markComplete) {
-  const today = getTodayStr();
+  const dateStr = jrnGetDate(); // date active (aujourd'hui ou jour passé)
 
-  // 1. Écriture immédiate dans localStorage — jamais de perte si l'app ferme
-  const existing = loadTodayJournal() || {};
-  const merged   = { ...existing, ...jrnValues, date: today };
+  // 1. Écriture immédiate dans localStorage avec la VRAIE date du jour concerné
+  const existing = jrnLoadCurrentJournal() || {};
+  const merged   = { ...existing, ...jrnValues, date: dateStr };
   if (markComplete) merged.completed = true;
   merged.ts = Date.now();
-  localStorage.setItem(`nara_journal_${today}`, JSON.stringify(merged));
+  localStorage.setItem(`nara_journal_${dateStr}`, JSON.stringify(merged));
 
-  // 2. Mise à jour de la barre de progression en temps réel
+  // 2. Mise à jour barre de progression
   try { jrnUpdateProgress(); } catch(e) {}
 
-  // 3. Sync Supabase avec debounce 1.5s (évite les appels en rafale)
+  // 3. Sync Supabase avec debounce 1.5s
   clearTimeout(_jrnSaveDebounce);
   _jrnSaveDebounce = setTimeout(() => {
     if (!currentUser) return;
     sb.from('nara_logs').upsert({
       user_id: currentUser.id,
-      date: today,
-      type: 'journal',
-      values: merged,
+      date:    dateStr,          // date réelle, pas forcément aujourd'hui
+      type:    'journal',
+      values:  merged,
     }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
       if (error) console.warn('[Nara] jrnPersist:', error.message);
     });
+    // Recalcul immédiat des insights dès qu'une donnée (rétroactive ou non) est sauvegardée
+    try { updateHomeScore(); } catch(e) {}
   }, 1500);
 }
 
@@ -6195,61 +6272,58 @@ function closePhotoFullscreen() {
 
 
 async function saveJournal() {
-  const today = getTodayStr();
+  const dateStr = jrnGetDate();
 
-  // Les données sont déjà sauvegardées en continu par jrnPersist().
-  // Le bouton "Enregistrer" marque la journée comme complète et
-  // persiste les logs dérivés (transit, peau, stress) pour les insights.
   const tousAliments = Object.values(jrnValues.repas || {}).flatMap(r => r.aliments || []);
   const hasData = jrnValues.transit !== null || jrnValues.peau !== null ||
     tousAliments.length > 0 || jrnValues.stress > 0 ||
     jrnValues.sommeil > 0 || jrnValues.energie > 0 || jrnValues.ballonnements > 0;
   if (!hasData) { showToast("Remplis au moins un champ avant d'enregistrer"); return; }
 
-  // Marquer la journée comme complète dans jrnValues puis sauvegarder
-  jrnPersist(true); // true = completed
+  // Persister avec la vraie date (rétroactive ou aujourd'hui)
+  jrnPersist(true);
 
-  // Logs dérivés (pour les insights et le score)
+  // Logs dérivés pour les insights — toujours sur la vraie date
   if (jrnValues.transit !== null || jrnValues.ballonnements > 0) {
-    localStorage.setItem(`nara_log_${today}_transit`, JSON.stringify({
-      type:'transit', date:today, ts:Date.now(),
+    localStorage.setItem(`nara_log_${dateStr}_transit`, JSON.stringify({
+      type:'transit', date:dateStr, ts:Date.now(),
       values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }
     }));
   }
   if (jrnValues.peau !== null) {
-    localStorage.setItem(`nara_log_${today}_peau`, JSON.stringify({
-      type:'peau', date:today, ts:Date.now(), values:{ peau_etat:jrnValues.peau }
+    localStorage.setItem(`nara_log_${dateStr}_peau`, JSON.stringify({
+      type:'peau', date:dateStr, ts:Date.now(), values:{ peau_etat:jrnValues.peau }
     }));
   }
   if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) {
-    localStorage.setItem(`nara_log_${today}_stress`, JSON.stringify({
-      type:'stress', date:today, ts:Date.now(),
+    localStorage.setItem(`nara_log_${dateStr}_stress`, JSON.stringify({
+      type:'stress', date:dateStr, ts:Date.now(),
       values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }
     }));
   }
-  // Sync logs dérivés vers Supabase
   if (currentUser) {
     const userId = currentUser.id;
     const logs = [];
-    if (jrnValues.transit !== null) logs.push({ user_id:userId, date:today, type:'transit',
+    if (jrnValues.transit !== null) logs.push({ user_id:userId, date:dateStr, type:'transit',
       values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }});
-    if (jrnValues.peau !== null) logs.push({ user_id:userId, date:today, type:'peau',
+    if (jrnValues.peau !== null) logs.push({ user_id:userId, date:dateStr, type:'peau',
       values:{ peau_etat:jrnValues.peau }});
     if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) logs.push({
-      user_id:userId, date:today, type:'stress',
+      user_id:userId, date:dateStr, type:'stress',
       values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }});
     if (logs.length > 0) sb.from('nara_logs').upsert(logs, { onConflict:'user_id,date,type' })
       .then(({error}) => { if(error) console.warn('[Nara]', error.message); });
   }
 
-  jrnEditMode = false;
-  // Feedback visuel
+  jrnEditMode    = false;
+  jrnCurrentDate = null; // Revenir sur aujourd'hui après enregistrement
   const feedback = document.getElementById('jrn-save-feedback');
   if (feedback) {
     feedback.classList.add('show');
     setTimeout(() => feedback.classList.remove('show'), 2200);
   }
   updateQuickBtns();
+  // Recalcul immédiat des insights (données rétroactives incluses)
   try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   setTimeout(() => { jrnCurrentSlide = 0; renderJournal(); }, 2400);
 }

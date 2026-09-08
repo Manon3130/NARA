@@ -794,8 +794,8 @@ if (typeof supabase === 'undefined') {
   .icr-title { font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: var(--text-dark); margin-bottom: 4px; }
   .icr-sub { font-size: 0.72rem; color: var(--text-light); margin-bottom: 14px; }
   .icr-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
-  .icr-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .icr-bar { width: 100%; border-radius: 5px 5px 0 0; min-height: 3px; transition: height 0.5s ease; }
+  .icr-col { flex: 1; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; height: 80px; }
+  .icr-bar { width: 100%; border-radius: 5px 5px 0 0; min-height: 3px; transition: height 0.5s ease; flex-shrink: 0; }
   .icr-label { font-size: 0.55rem; color: var(--text-light); margin-top: 3px; }
 
   /* PDF button désactivé */
@@ -6608,11 +6608,12 @@ function renderInsightsPage() {
     const v = getDayVals(dateStr) || {};
     const transit = v.transit;
     const peau    = v.peau;
-    const tH = transit !== null && transit !== undefined ? (transit===1?70:transit===0?30:50) : 0;
-    const pH = peau    !== null && peau    !== undefined ? (peau===2?70:peau===1?45:20)       : 0;
+    const tH = transit !== null && transit !== undefined ? (transit===1?56:transit===0?24:40) : 0; // px sur 80px
+    const pH = peau    !== null && peau    !== undefined ? (peau===2?56:peau===1?36:16)        : 0; // px sur 80px
     return `<div class="icr-col">
-      ${tH>0?`<div class="icr-bar bar-gut"  style="height:${tH}%;width:100%"></div>`:'<div style="flex:1"></div>'}
-      ${pH>0?`<div class="icr-bar bar-skin" style="height:${pH}%;width:100%"></div>`:'<div style="height:3px"></div>'}
+      <div style="flex:1"></div>
+      ${tH>0?`<div class="icr-bar bar-gut"  style="height:${tH}px"></div>`:''}
+      ${pH>0?`<div class="icr-bar bar-skin" style="height:${pH}px;margin-top:2px"></div>`:''}
       <div class="icr-label">${dayName}</div></div>`;
   }).join('');
 
@@ -6635,10 +6636,15 @@ function renderInsightsPage() {
       <div class="irc-text">Ton transit est <strong>normal ${pct}% du temps</strong> sur les données disponibles.</div></div>`;
   }
   if (pE.length >= 3) {
-    const calme = pE.filter(e => e.values.peau_etat===2).length;
-    const pct = Math.round(calme/pE.length*100);
+    const calme  = pE.filter(e => e.values.peau_etat===2).length;
+    const stable = pE.filter(e => e.values.peau_etat===1).length;
+    const pctCalme  = Math.round(calme /pE.length*100);
+    const pctPositif = Math.round((calme+stable)/pE.length*100);
+    const label = calme > 0
+      ? `calme ${pctCalme}% du temps et stable ${Math.round(stable/pE.length*100)}% du temps`
+      : `stable ${pctPositif}% du temps`;
     html += `<div class="insight-real-card" style="border-left-color:var(--blush)"><div class="irc-tag">✨ Peau · ${pE.length} entrées</div>
-      <div class="irc-text">Ta peau est <strong>calme ${pct}% du temps</strong> sur les données disponibles.</div></div>`;
+      <div class="irc-text">Ta peau est <strong>${label}</strong> sur les données disponibles.</div></div>`;
   }
   if (sE.length >= 3) {
     const avgS = (sE.reduce((s,e)=>s+(e.values.stress||0),0)/sE.length).toFixed(1);
@@ -6669,35 +6675,85 @@ function renderInsightsPage() {
       </div>`).join('');
   }
 
+  // ── Brique 1 : Nouveaux suivis × Journal (avant/après) ────────────────────
+  const suivis = getSuivisContext ? getSuivisContext() : [];
+  if (suivis.length > 0) {
+    const brique1 = [];
+    suivis.forEach(suivi => {
+      if (!suivi.date) return;
+      const cutoff = suivi.date; // YYYY-MM → compare avant/après ce mois
+      // Données AVANT le cutoff
+      const avant = entries.filter(e => (e.dateStr||e.date||'') < cutoff + '-32');
+      // Données APRÈS le cutoff
+      const apres = entries.filter(e => (e.dateStr||e.date||'') >= cutoff + '-01');
+      if (avant.length < 5 || apres.length < 5) return; // garde-fou min 5 jours chaque côté
+      const dim = suivi.problo; // Transit, Peau, Cycle menstruel…
+      if (dim === 'Peau') {
+        const peauAv = avant.filter(e=>e.type==='peau'&&e.values?.peau_etat!==undefined);
+        const peauAp = apres.filter(e=>e.type==='peau'&&e.values?.peau_etat!==undefined);
+        if (peauAv.length < 3 || peauAp.length < 3) return;
+        const positifAv = Math.round(peauAv.filter(e=>e.values.peau_etat>=1).length/peauAv.length*100);
+        const positifAp = Math.round(peauAp.filter(e=>e.values.peau_etat>=1).length/peauAp.length*100);
+        const diff = positifAp - positifAv;
+        if (Math.abs(diff) >= 15) {
+          brique1.push({ icon:'✨', tag:`Peau — avant/après ${suivi.type}`,
+            text:`Depuis "${suivi.type}" (${cutoff}), les jours de peau stable/calme semblent ${diff>0?'plus fréquents':'moins fréquents'} : ${positifAp}% vs ${positifAv}% avant. C'est une tendance observée — pas une conclusion.` });
+        }
+      }
+      if (dim === 'Transit') {
+        const tAv = avant.filter(e=>e.type==='transit'&&e.values?.transit_etat!==undefined);
+        const tAp = apres.filter(e=>e.type==='transit'&&e.values?.transit_etat!==undefined);
+        if (tAv.length < 3 || tAp.length < 3) return;
+        const normAv = Math.round(tAv.filter(e=>e.values.transit_etat===1).length/tAv.length*100);
+        const normAp = Math.round(tAp.filter(e=>e.values.transit_etat===1).length/tAp.length*100);
+        const diff = normAp - normAv;
+        if (Math.abs(diff) >= 15) {
+          brique1.push({ icon:'🌿', tag:`Transit — avant/après ${suivi.type}`,
+            text:`Depuis "${suivi.type}" (${cutoff}), le transit normal semble ${diff>0?'plus fréquent':'moins fréquent'} : ${normAp}% vs ${normAv}% avant. Tendance à confirmer avec plus de données.` });
+        }
+      }
+    });
+    if (brique1.length > 0) {
+      html += `<div class="section-title" style="margin-top:4px">Avant / Après tes nouveaux suivis</div>`;
+      html += brique1.map(ins => `
+        <div class="insight-real-card" style="border-left-color:var(--sage)">
+          <div class="irc-tag">${ins.icon} ${ins.tag}</div>
+          <div class="irc-text">${ins.text}</div>
+        </div>`).join('');
+    }
+  }
+
   content.innerHTML = html;
 }
 
+// generateInsights — version simplifiée pour le home (les observations détaillées
+// sont dans renderInsightsPage). Prend des entries [{type, values, date}].
 function generateInsights(entries) {
   const insights = [];
   const sE = entries.filter(e => e.type==='stress' && e.values?.stress !== undefined);
   const pE = entries.filter(e => e.type==='peau' && e.values?.peau_etat !== undefined);
   const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
   if (sE.length >= 3) {
-    const avg = sE.reduce((s,e) => s+e.values.stress,0)/sE.length;
-    if (avg >= 3) insights.push({ type:'gut', icon:'\uD83E\uDDE0', tag:'Stress',
+    const avg = sE.reduce((s,e) => s+(e.values.stress||0),0)/sE.length;
+    if (avg >= 3) insights.push({ type:'gut', icon:'🧠', tag:'Stress',
       text: `Ton stress moyen est de <strong>${avg.toFixed(1)}/5</strong>. Le stress impacte directement la digestion.` });
   }
   if (pE.length >= 3) {
-    const calme = pE.filter(e => e.values.peau_etat===2).length;
-    const pct = Math.round(calme/pE.length*100);
-    insights.push({ type:'skin', icon:'\u2728', tag:'Peau',
-      text: `Ta peau est <strong>calme ${pct}% du temps</strong>.` });
+    const pos = pE.filter(e => e.values.peau_etat >= 1).length;
+    const pct = Math.round(pos/pE.length*100);
+    insights.push({ type:'skin', icon:'✨', tag:'Peau',
+      text: `Ta peau est stable ou calme <strong>${pct}% du temps</strong> sur les données disponibles.` });
   }
   if (tE.length >= 3) {
     const normal = tE.filter(e => e.values.transit_etat===1).length;
-    if (normal/tE.length > 0.6) insights.push({ type:'gut', icon:'\uD83E\uDEB4', tag:'Transit',
-      text: `Ton transit est <strong>normal la majorit\u00e9 du temps</strong>.` });
+    const pct = Math.round(normal/tE.length*100);
+    if (pct > 60) insights.push({ type:'gut', icon:'🌿', tag:'Transit',
+      text: `Ton transit est <strong>normal ${pct}% du temps</strong>.` });
   }
-  if (insights.length === 0) insights.push({ type:'gut', icon:'\uD83D\uDCC8', tag:"En cours d'analyse",
-    text: "Nara analyse tes donn\u00e9es. Continue \u00e0 noter chaque jour pour des insights plus pr\u00e9cis." });
+  if (insights.length === 0) insights.push({ type:'gut', icon:'📈', tag:"En cours d'analyse",
+    text: "Continue à noter chaque jour pour des insights plus précis." });
   return insights;
 }
-
 
 // Charger toutes les données de l'utilisateur depuis Supabase
 async function loadUserData(userId) {

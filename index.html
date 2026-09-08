@@ -3612,52 +3612,90 @@ function routineCacheKey(userId, routineId) {
 // SCORE — calculé à partir des entrées localStorage
 // ══════════════════════════════════════════════════════════════════════════════
 function updateHomeScore() {
-  const entries = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    ['transit','repas','peau','stress'].forEach(type => {
+  // Lire les données depuis le journal complet (nara_journal_YYYY-MM-DD)
+  // qui contient TOUTES les données y compris les saisies rétroactives.
+  // Fallback sur nara_log_* pour la compatibilité avec les anciennes entrées.
+  function getDayValues(dateStr) {
+    // Priorité 1 : journal complet
+    const jRaw = localStorage.getItem(`nara_journal_${dateStr}`);
+    if (jRaw) {
+      try {
+        const j = JSON.parse(jRaw);
+        return {
+          transit_etat: j.transit,
+          ballonnements: j.ballonnements,
+          peau_etat: j.peau,
+          stress: j.stress,
+          energie: j.energie,
+          sommeil: j.sommeil,
+          hasData: j.transit !== null || j.peau !== null || j.stress > 0 || j.energie > 0,
+        };
+      } catch {}
+    }
+    // Fallback : clés log séparées
+    const v = {};
+    let hasData = false;
+    ['transit','peau','stress'].forEach(type => {
       const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
-      if (raw) try { entries.push(JSON.parse(raw)); } catch {}
+      if (raw) { try { Object.assign(v, JSON.parse(raw).values); hasData = true; } catch {} }
     });
+    return hasData ? { ...v, hasData } : null;
   }
 
-  const emptyEl = document.getElementById('score-card-empty');
-  const dataEl  = document.getElementById('score-card-data');
+  // Compter les jours avec données sur 30 jours (insights) et 7 jours (score/barres)
+  const daysWithAnyData = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const vals = getDayValues(dateStr);
+    if (vals && vals.hasData) daysWithAnyData.push({ dateStr, vals });
+  }
+
+  const emptyEl  = document.getElementById('score-card-empty');
+  const dataEl   = document.getElementById('score-card-data');
   const insEmpty = document.getElementById('insights-empty');
   const insList  = document.getElementById('insights-list');
 
-  if (entries.length < 3) {
+  // Seuil minimal pour afficher quelque chose : 3 jours avec données
+  if (daysWithAnyData.length < 3) {
     if (emptyEl) emptyEl.style.display = '';
     if (dataEl)  dataEl.style.display  = 'none';
     if (insEmpty) insEmpty.style.display = '';
     if (insList)  insList.innerHTML = '';
+    try { updateQuickBtns(); } catch(e) {}
+    try { renderHomeContextBlock(); } catch(e) {}
+    try { renderHomeCycleBlock(); }  catch(e) {}
     return;
   }
 
-  // Calculer score sur 7 jours
+  // ── Score sur les 7 derniers jours ──────────────────────────────────────────
   let scoreTotal = 0, scoreCount = 0;
   const barsData = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
+    const v = getDayValues(dateStr);
     let dayScore = 0, dayCount = 0;
-    ['transit','repas','peau','stress'].forEach(type => {
-      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
-      if (!raw) return;
-      let entry; try { entry = JSON.parse(raw); } catch { return; }
-      const v = entry.values || {};
-      if (type === 'transit') {
-        if (v.transit_etat !== undefined) { dayScore += v.transit_etat === 1 ? 100 : v.transit_etat === 0 ? 40 : 70; dayCount++; }
-        if (v.ballonnements !== undefined) { dayScore += Math.round((1 - v.ballonnements/5) * 100); dayCount++; }
+    if (v) {
+      if (v.transit_etat !== null && v.transit_etat !== undefined) {
+        dayScore += v.transit_etat === 1 ? 100 : v.transit_etat === 0 ? 40 : 70; dayCount++;
       }
-      if (type === 'peau' && v.peau_etat !== undefined) { dayScore += v.peau_etat === 2 ? 100 : v.peau_etat === 1 ? 60 : 20; dayCount++; }
-      if (type === 'stress') {
-        if (v.stress !== undefined) { dayScore += Math.round((1 - v.stress/5) * 100); dayCount++; }
-        if (v.energie !== undefined) { dayScore += Math.round(v.energie/5 * 100); dayCount++; }
-        if (v.sommeil !== undefined) { dayScore += Math.round(v.sommeil/5 * 100); dayCount++; }
+      if (v.ballonnements !== undefined && v.ballonnements !== null) {
+        dayScore += Math.round((1 - v.ballonnements / 5) * 100); dayCount++;
       }
-    });
+      if (v.peau_etat !== null && v.peau_etat !== undefined) {
+        dayScore += v.peau_etat === 2 ? 100 : v.peau_etat === 1 ? 60 : 20; dayCount++;
+      }
+      if (v.stress !== undefined && v.stress > 0) {
+        dayScore += Math.round((1 - v.stress / 5) * 100); dayCount++;
+      }
+      if (v.energie !== undefined && v.energie > 0) {
+        dayScore += Math.round(v.energie / 5 * 100); dayCount++;
+      }
+      if (v.sommeil !== undefined && v.sommeil > 0) {
+        dayScore += Math.round(v.sommeil / 5 * 100); dayCount++;
+      }
+    }
     const dScore = dayCount > 0 ? Math.round(dayScore / dayCount) : null;
     barsData.push(dScore);
     if (dScore !== null) { scoreTotal += dScore; scoreCount++; }
@@ -3667,20 +3705,18 @@ function updateHomeScore() {
   if (avgScore !== null && emptyEl && dataEl) {
     emptyEl.style.display = 'none';
     dataEl.style.display  = '';
-    const numEl = document.getElementById('score-num');
-    const subEl = document.getElementById('score-sub');
+    const numEl  = document.getElementById('score-num');
+    const subEl  = document.getElementById('score-sub');
     const barsEl = document.getElementById('score-bars');
     if (numEl) numEl.textContent = avgScore;
-    // Compter les jours réellement remplis sur les 7 derniers jours
     const daysWithData = barsData.filter(Boolean).length;
     if (subEl) subEl.textContent = daysWithData >= 6
       ? `${daysWithData} jours sur 7 notés · Continue comme ça 🌱`
       : daysWithData >= 3
         ? `${daysWithData} jours notés sur 7 — chaque jour affine tes insights`
-        : `${daysWithData} jour${daysWithData > 1 ? 's' : ''} noté${daysWithData > 1 ? 's' : ''} sur 7 — note chaque jour pour voir tes tendances`;
+        : `${daysWithData} jour${daysWithData > 1 ? 's' : ''} noté${daysWithData > 1 ? 's' : ''} sur 7`;
     const maxBar = Math.max(...barsData.filter(Boolean), 1);
-    // Générer les initiales de jours dans l'ordre des 7 derniers jours (J-6 → aujourd'hui)
-    const joursFull = ['D','L','M','M','J','V','S']; // 0=dim…6=sam
+    const joursFull = ['D','L','M','M','J','V','S'];
     const dayLabels = Array.from({length:7}, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       return { lbl: joursFull[d.getDay()], isToday: i === 6 };
@@ -3689,24 +3725,31 @@ function updateHomeScore() {
       `<div class="score-bar" title="${dayLabels[i].lbl}${dayLabels[i].isToday ? ' (auj.)' : ''}">` +
       `<div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
     ).join('');
-    // Légende jours
     const daysEl = document.getElementById('score-days');
     if (daysEl) daysEl.innerHTML = dayLabels.map(d =>
       `<div class="score-day-lbl${d.isToday ? ' today' : ''}">${d.lbl}</div>`
     ).join('');
   }
 
-  // Mettre à jour les boutons quicklog selon ce qui est déjà rempli aujourd'hui
+  // ── Insights home (seuil : 5 jours avec données sur 30j) ────────────────────
   try { updateQuickBtns(); } catch(e) {}
-  // Bloc contextuel (profil incomplet → invitation / profil complet → résumé veille)
   try { renderHomeContextBlock(); } catch(e) { console.warn('[Nara] contextBlock:', e); }
-  try { renderHomeCycleBlock(); } catch(e) { console.warn('[Nara] cycleBlock:', e); }
+  try { renderHomeCycleBlock(); }  catch(e) { console.warn('[Nara] cycleBlock:', e); }
 
-  // Insights home
   if (insEmpty && insList) {
-    if (entries.length >= 7) {
+    if (daysWithAnyData.length >= 5) {
       insEmpty.style.display = 'none';
-      insList.innerHTML = generateInsights(entries).map(ins =>
+      // Construire entries au format attendu par generateInsights
+      const insEntries = [];
+      daysWithAnyData.slice(0, 30).forEach(({ dateStr, vals: v }) => {
+        if (v.transit_etat !== null && v.transit_etat !== undefined)
+          insEntries.push({ type:'transit', date:dateStr, values:{ transit_etat:v.transit_etat, ballonnements:v.ballonnements||0 }});
+        if (v.peau_etat !== null && v.peau_etat !== undefined)
+          insEntries.push({ type:'peau', date:dateStr, values:{ peau_etat:v.peau_etat }});
+        if (v.stress > 0 || v.energie > 0 || v.sommeil > 0)
+          insEntries.push({ type:'stress', date:dateStr, values:{ stress:v.stress||0, energie:v.energie||0, sommeil:v.sommeil||0 }});
+      });
+      insList.innerHTML = generateInsights(insEntries).map(ins =>
         `<div class="insight-card ${ins.type}"><div class="insight-icon">${ins.icon}</div><div class="insight-tag">${ins.tag}</div><div class="insight-text">${ins.text}</div></div>`
       ).join('');
     } else {
@@ -6493,85 +6536,115 @@ function handlePdfReport() {
 function renderInsightsPage() {
   const content = document.getElementById('insights-page-content');
   if (!content) return;
+
+  // Lire depuis nara_journal_* (source principale) avec fallback nara_log_*
+  function getDayVals(dateStr) {
+    const jRaw = localStorage.getItem(`nara_journal_${dateStr}`);
+    if (jRaw) { try { const j = JSON.parse(jRaw); return j; } catch {} }
+    const v = {}; let any = false;
+    ['transit','peau','stress'].forEach(type => {
+      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
+      if (raw) { try { Object.assign(v, JSON.parse(raw).values); any = true; } catch {} }
+    });
+    return any ? v : null;
+  }
+
+  // Construire les entries sur 30 jours
   const entries = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
-    ['transit','repas','peau','stress'].forEach(type => {
-      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
-      if (raw) entries.push({ ...JSON.parse(raw), dateStr });
-    });
+    const v = getDayVals(dateStr);
+    if (!v) continue;
+    if (v.transit !== null && v.transit !== undefined)
+      entries.push({ type:'transit', dateStr, values:{ transit_etat:v.transit, ballonnements:v.ballonnements||0 }});
+    if (v.peau !== null && v.peau !== undefined)
+      entries.push({ type:'peau', dateStr, values:{ peau_etat:v.peau }});
+    if (v.stress > 0 || v.energie > 0 || v.sommeil > 0)
+      entries.push({ type:'stress', dateStr, values:{ stress:v.stress||0, energie:v.energie||0, sommeil:v.sommeil||0 }});
   }
+
   const totalEntries = entries.length;
-  const SEUIL_INSIGHTS = 7;
+  const SEUIL_INSIGHTS = 5; // abaissé : 5 entrées suffisent pour des observations de base
   const SEUIL_PDF = 14;
+
   const pdfBtn = document.getElementById('pdf-btn-insights');
   const pdfSub = document.getElementById('pdf-btn-sub');
   if (pdfBtn) {
     if (totalEntries >= SEUIL_PDF) {
       pdfBtn.style.opacity = '1'; pdfBtn.style.cursor = 'pointer';
-      pdfBtn.setAttribute('aria-disabled', 'false');
-      if (pdfSub) pdfSub.textContent = '\u00c0 partager avec ton dermatologue ou gastro-ent\u00e9rologue';
+      if (pdfSub) pdfSub.textContent = 'À partager avec ton dermatologue ou gastro-entérologue';
     } else {
       pdfBtn.style.opacity = '0.45'; pdfBtn.style.cursor = 'not-allowed';
-      pdfBtn.setAttribute('aria-disabled', 'true');
-      const remaining = SEUIL_PDF - totalEntries;
-      if (pdfSub) pdfSub.textContent = `Disponible dans ${remaining} entr\u00e9e${remaining > 1 ? 's' : ''} de plus`;
+      const rem = SEUIL_PDF - totalEntries;
+      if (pdfSub) pdfSub.textContent = `Disponible dans ${rem} entrée${rem > 1 ? 's' : ''} de plus`;
     }
   }
+
   if (totalEntries < SEUIL_INSIGHTS) {
     const types = { transit:false, repas:false, peau:false, stress:false };
     entries.forEach(e => { if (types[e.type] !== undefined) types[e.type] = true; });
-    const pills = Object.entries({ transit:'\uD83E\uDEB4 Transit', repas:'\uD83E\uDD57 Repas', peau:'\u2728 Peau', stress:'\uD83D\uDE2E\u200D\uD83D\uDCA8 Stress' })
+    const pills = Object.entries({ transit:'🌿 Transit', repas:'🥗 Repas', peau:'✨ Peau', stress:'😮‍💨 Stress' })
       .map(([key, label]) => `<div class="ipp${types[key] ? ' done' : ''}"><div class="ipp-dot"></div>${label}</div>`).join('');
     content.innerHTML = `
       <div class="insights-empty-page">
-        <div class="iep-icon">\uD83C\uDF3F</div>
-        <div class="iep-title">Tes insights arrivent bient\u00f4t</div>
-        <div class="iep-text">Tes insights appara\u00eetront ici au fur et \u00e0 mesure que tu remplis ton journal. Continue comme \u00e7a !<br><br>
-          <span style="font-size:0.78rem;color:var(--text-light);">${totalEntries} entr\u00e9e${totalEntries > 1 ? 's' : ''} \u00b7 ${SEUIL_INSIGHTS - totalEntries} de plus pour tes premiers insights</span>
+        <div class="iep-icon">🌿</div>
+        <div class="iep-title">Tes insights arrivent bientôt</div>
+        <div class="iep-text">Continue à remplir ton journal pour voir tes premières observations.<br><br>
+          <span style="font-size:0.78rem;color:var(--text-light)">${totalEntries} entrée${totalEntries > 1 ? 's' : ''} · ${SEUIL_INSIGHTS - totalEntries} de plus pour tes premiers insights</span>
         </div>
-        <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px;">Ce que tu as d\u00e9j\u00e0 not\u00e9</div>
+        <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px">Ce que tu as déjà noté</div>
         <div class="insights-progress-pills">${pills}</div>
       </div>`;
     return;
   }
+
+  // ── Graphique 7 jours (transit + peau) ────────────────────────────────────
   const jours = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const barsHtml = Array.from({length:7}, (_,i) => {
+  const barsHtml = Array.from({length:7}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6-i));
     const dateStr = d.toISOString().split('T')[0];
     const dayName = jours[d.getDay() === 0 ? 6 : d.getDay()-1];
-    const tR = localStorage.getItem(`nara_log_${dateStr}_transit`);
-    const pR = localStorage.getItem(`nara_log_${dateStr}_peau`);
-    let tH = 0, pH = 0;
-    if (tR) { const v = JSON.parse(tR).values; tH = v.transit_etat===1?70:v.transit_etat===0?30:50; }
-    if (pR) { const v = JSON.parse(pR).values; pH = v.peau_etat===2?70:v.peau_etat===1?45:20; }
+    const v = getDayVals(dateStr) || {};
+    const transit = v.transit;
+    const peau    = v.peau;
+    const tH = transit !== null && transit !== undefined ? (transit===1?70:transit===0?30:50) : 0;
+    const pH = peau    !== null && peau    !== undefined ? (peau===2?70:peau===1?45:20)       : 0;
     return `<div class="icr-col">
-      ${tH>0?`<div class="icr-bar bar-gut" style="height:${tH}%;width:100%"></div>`:'<div style="flex:1"></div>'}
+      ${tH>0?`<div class="icr-bar bar-gut"  style="height:${tH}%;width:100%"></div>`:'<div style="flex:1"></div>'}
       ${pH>0?`<div class="icr-bar bar-skin" style="height:${pH}%;width:100%"></div>`:'<div style="height:3px"></div>'}
       <div class="icr-label">${dayName}</div></div>`;
   }).join('');
+
   let html = `<div class="insights-chart-real">
-    <div class="icr-title">\u00c9volution sur 7 jours</div>
-    <div class="icr-sub">Transit <span style="color:var(--avocado)">&#9679;</span> \u00b7 Peau <span style="color:var(--blush)">&#9679;</span></div>
+    <div class="icr-title">Évolution sur 7 jours</div>
+    <div class="icr-sub">Transit <span style="color:var(--avocado)">●</span> · Peau <span style="color:var(--blush)">●</span></div>
     <div class="icr-bars">${barsHtml}</div></div>`;
+
+  // ── Observations textuelles ────────────────────────────────────────────────
   const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
-  const pE = entries.filter(e => e.type==='peau' && e.values?.peau_etat !== undefined);
-  const sE = entries.filter(e => e.type==='stress' && e.values?.stress !== undefined);
+  const pE = entries.filter(e => e.type==='peau'    && e.values?.peau_etat    !== undefined);
+  const sE = entries.filter(e => e.type==='stress'  && e.values?.stress       !== undefined);
+
   html += '<div class="section-title">Observations</div>';
+
   if (tE.length >= 3) {
     const normal = tE.filter(e => e.values.transit_etat===1).length;
     const pct = Math.round(normal/tE.length*100);
-    html += `<div class="insight-real-card"><div class="irc-tag">\uD83E\uDEB4 Transit \u00b7 ${tE.length} entr\u00e9es</div><div class="irc-text">Ton transit est <strong>normal ${pct}% du temps</strong>.</div></div>`;
+    html += `<div class="insight-real-card"><div class="irc-tag">🌿 Transit · ${tE.length} entrées</div>
+      <div class="irc-text">Ton transit est <strong>normal ${pct}% du temps</strong> sur les données disponibles.</div></div>`;
   }
   if (pE.length >= 3) {
     const calme = pE.filter(e => e.values.peau_etat===2).length;
     const pct = Math.round(calme/pE.length*100);
-    html += `<div class="insight-real-card" style="border-left-color:var(--blush)"><div class="irc-tag">\u2728 Peau \u00b7 ${pE.length} entr\u00e9es</div><div class="irc-text">Ta peau est <strong>calme ${pct}% du temps</strong>.</div></div>`;
+    html += `<div class="insight-real-card" style="border-left-color:var(--blush)"><div class="irc-tag">✨ Peau · ${pE.length} entrées</div>
+      <div class="irc-text">Ta peau est <strong>calme ${pct}% du temps</strong> sur les données disponibles.</div></div>`;
   }
   if (sE.length >= 3) {
-    const avg = (sE.reduce((s,e) => s+e.values.stress,0)/sE.length).toFixed(1);
-    html += `<div class="insight-real-card" style="border-left-color:#8a8ec4"><div class="irc-tag">\uD83D\uDE2E\u200D\uD83D\uDCA8 Stress \u00b7 ${sE.length} entr\u00e9es</div><div class="irc-text">Stress moyen : <strong>${avg}/5</strong>.</div></div>`;
+    const avgS = (sE.reduce((s,e)=>s+(e.values.stress||0),0)/sE.length).toFixed(1);
+    const avgE = (sE.reduce((s,e)=>s+(e.values.energie||0),0)/sE.length).toFixed(1);
+    html += `<div class="insight-real-card" style="border-left-color:#8a8ec4"><div class="irc-tag">😮‍💨 Stress & Énergie · ${sE.length} entrées</div>
+      <div class="irc-text">Stress moyen : <strong>${avgS}/5</strong> · Énergie moyenne : <strong>${avgE}/5</strong>.</div></div>`;
   }
   // Insights test alimentaire
   const foodTestInsights = getFoodTestInsights(entries);

@@ -1487,6 +1487,111 @@ if (typeof supabase === 'undefined') {
 
 
 
+
+  /* ===== MES NOUVEAUX SUIVIS ===== */
+  #screen-suivis { background: var(--cream); }
+  .suivis-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px clamp(12px,4vw,20px) calc(32px + env(safe-area-inset-bottom,0px));
+    scrollbar-width: none;
+  }
+  .suivis-scroll::-webkit-scrollbar { display: none; }
+
+  /* Entrée */
+  .suivi-card {
+    background: white; border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 10px; border: 1.5px solid var(--oat); position: relative;
+  }
+  .suivi-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .suivi-card-date {
+    font-size: 0.7rem; color: var(--text-light);
+    background: var(--honey); border-radius: 8px; padding: 2px 8px;
+    flex-shrink: 0;
+  }
+  .suivi-card-type {
+    font-size: 0.82rem; font-weight: 500; color: var(--text-dark); flex: 1;
+  }
+  .suivi-card-tags {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px;
+  }
+  .suivi-card-tag {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+    background: var(--oat); color: var(--text-mid);
+  }
+  .suivi-card-note {
+    font-size: 0.75rem; color: var(--text-light); font-style: italic;
+    margin-top: 4px;
+  }
+  .suivi-card-actions {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .suivi-card-btn {
+    font-size: 0.72rem; padding: 5px 12px; border-radius: 10px;
+    border: 1.5px solid var(--oat); background: white; color: var(--text-mid);
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .suivi-card-btn.danger { border-color: #fca5a5; color: #dc2626; }
+
+  /* Formulaire ajout/édition */
+  .suivi-form {
+    background: white; border-radius: 18px; padding: 18px 16px;
+    margin-bottom: 16px; border: 1.5px solid var(--sage);
+  }
+  .suivi-form-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--text-dark); margin-bottom: 14px;
+  }
+  .suivi-form-label {
+    font-size: 0.72rem; color: var(--text-light); letter-spacing: 0.06em;
+    text-transform: uppercase; margin: 12px 0 6px;
+  }
+  .suivi-form-label:first-of-type { margin-top: 0; }
+  .suivi-form-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .suivi-form-chip {
+    padding: 7px 13px; border-radius: 20px; font-size: 0.78rem;
+    border: 1.5px solid var(--oat); background: white; color: var(--text-mid);
+    cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .suivi-form-chip.selected { background: var(--sage); border-color: var(--sage); color: white; }
+  .suivi-form-input {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--oat);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; color: var(--text-dark); background: white;
+    outline: none; box-sizing: border-box; margin-top: 2px;
+  }
+  .suivi-form-input:focus { border-color: var(--sage); }
+  .suivi-date-required {
+    font-size: 0.7rem; color: #dc2626; margin-left: 4px;
+  }
+  .suivi-form-actions {
+    display: flex; gap: 8px; margin-top: 16px;
+  }
+  .suivi-form-save {
+    flex: 1; padding: 12px; background: var(--sage); color: white;
+    border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; cursor: pointer;
+  }
+  .suivi-form-cancel {
+    padding: 12px 16px; background: white; color: var(--text-light);
+    border: 1.5px solid var(--oat); border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; cursor: pointer;
+  }
+  .suivi-add-btn {
+    width: 100%; padding: 14px; background: var(--honey);
+    border: 1.5px dashed var(--sage); border-radius: 14px;
+    color: var(--sage); font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; cursor: pointer; margin-top: 8px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .suivis-empty {
+    text-align: center; padding: 32px 16px;
+    color: var(--text-light); font-size: 0.82rem; line-height: 1.7;
+  }
+
   /* ===== PROFIL SANTÉ ===== */
   #screen-profile { background: var(--cream); }
 
@@ -2792,6 +2897,7 @@ if (typeof supabase === 'undefined') {
           <div class="user-dropdown-name" id="dropdown-name">Manon</div>
           <div class="user-dropdown-email" id="dropdown-email">manon@exemple.fr</div>
           <div class="user-dropdown-item" onclick="toggleUserMenu(); openProfileFromMenu()">🧬 Mon profil santé</div>
+          <div class="user-dropdown-item" onclick="toggleUserMenu(); go('suivis')">📋 Mes nouveaux suivis</div>
           <div class="user-dropdown-item" onclick="toggleUserMenu(); openCycleModal()">🌸 Suivi de cycle</div>
           <div class="user-dropdown-item" onclick="toggleUserMenu(); go('journal')">📓 Mon journal</div>
           <div class="user-dropdown-item danger" onclick="handleLogout()">← Se déconnecter</div>
@@ -3762,7 +3868,8 @@ const BNAV_MAP = {
   gallery: null,
   profile: null,
   'profile-invite': null,
-  'profile-later': null
+  'profile-later': null,
+  suivis: null
 };
 
 // Écrans non-authentifiés — la bottom nav ne doit pas s'afficher
@@ -3836,6 +3943,7 @@ function showScreen(id, btn) {
   }
   if (id === 'calendar') try { renderCalendar(); } catch(e) { console.warn('[Nara] renderCalendar:', e); }
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
+  if (id === 'suivis') try { renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
   if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
@@ -7024,9 +7132,6 @@ function renderProfileTransit(p) {
 
 // ── Section 2 : Alimentation ───────────────────────────────────────────────────
 function renderProfileAlim(p) {
-  const hasSuivi = p.alim_suivi_medical && p.alim_suivi_medical.length > 0 && !p.alim_suivi_medical.includes('Aucun');
-  const hasCompl = p.alim_complements && p.alim_complements.length > 0 && !p.alim_complements.includes('Aucun');
-
   return `
     <div class="prof-q">Type de repas dominant</div>
     ${profChips('alim_type', ['Fait maison','Plats préparés','Mixte','Équilibré','Riche en sucre/gras'], p, false)}
@@ -7049,32 +7154,14 @@ function renderProfileAlim(p) {
     <input class="prof-free-input" type="text" placeholder="Autre…"
            value="${p.alim_suivi_libre||''}"
            oninput="profileData.alim_suivi_libre=this.value">
-    ${hasSuivi ? `
-    <div class="prof-since-wrap">
-      <span class="prof-since-label">📅 Depuis quand ?</span>
-      <input class="prof-since-input" type="month" id="prof-since-alim_suivi_date"
-             value="${p.alim_suivi_date||''}"
-             max="${new Date().toISOString().slice(0,7)}"
-             oninput="profileData.alim_suivi_date=this.value">
-    </div>
-    <div class="prof-since-note">Optionnel — laisse vide si tu ne te souviens pas exactement</div>
-    ` : ''}
+
 
     <div class="prof-q">Compléments alimentaires actuels (plusieurs possibles)</div>
     ${profChips('alim_complements', ['Aucun','Probiotiques','Magnésium','Oméga-3','Vitamine D','Fer','Zinc','Autre'], p, true)}
     <input class="prof-free-input" type="text" placeholder="Autre complément…"
            value="${p.alim_complements_libre||''}"
            oninput="profileData.alim_complements_libre=this.value">
-    ${hasCompl ? `
-    <div class="prof-since-wrap">
-      <span class="prof-since-label">📅 Depuis quand ?</span>
-      <input class="prof-since-input" type="month" id="prof-since-alim_complements_date"
-             value="${p.alim_complements_date||''}"
-             max="${new Date().toISOString().slice(0,7)}"
-             oninput="profileData.alim_complements_date=this.value">
-    </div>
-    <div class="prof-since-note">Optionnel — laisse vide si tu ne te souviens pas exactement</div>
-    ` : ''}
+
 
     <button class="prof-save-section-btn" onclick="profileSaveSection(&apos;s2&apos;)">Enregistrer cette section ✓</button>
   `;
@@ -7083,7 +7170,6 @@ function renderProfileAlim(p) {
 // ── Section 3 : Peau ──────────────────────────────────────────────────────────
 function renderProfilePeau(p) {
   const aOui = p.peau_probleme === 'oui';
-  const maxMonth = new Date().toISOString().slice(0,7);
   let html = '';
   html += '<div class="prof-q">Problème de peau identifié ?</div>';
   html += profTranches('peau_probleme', [
@@ -7106,10 +7192,7 @@ function renderProfilePeau(p) {
       html += '<div class="prof-q">Par quel professionnel ?</div>';
       html += profChips('peau_diagnostic_pro', ['Dermatologue','Médecin généraliste','Autre'], p, true);
       html += '<input class="prof-free-input" type="text" placeholder="Autre professionnel…" value="' + (p.peau_diagnostic_pro_libre||'') + '" oninput="profileData.peau_diagnostic_pro_libre=this.value">';
-      // Date du diagnostic
-      html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Diagnostiquée depuis ?</span>' +
-        '<input class="prof-since-input" type="month" value="' + (p.peau_diagnostic_date||'') + '" max="' + maxMonth + '" oninput="profileData.peau_diagnostic_date=this.value"></div>' +
-        '<div class="prof-since-note">Optionnel — mois et année suffisent</div>';
+
     }
     if (p.peau_diagnostic_oui === 'non') {
       html += '<div style="background:var(--honey);border-radius:12px;padding:12px 14px;font-size:0.75rem;color:var(--text-mid);line-height:1.6;margin-top:4px">' +
@@ -7119,10 +7202,7 @@ function renderProfilePeau(p) {
     html += profTranches('peau_traitement', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
     if (p.peau_traitement === 'oui') {
       html += '<input class="prof-free-input" type="text" placeholder="Tu peux préciser si tu le souhaites (optionnel)…" value="' + (p.peau_traitement_libre||'') + '" oninput="profileData.peau_traitement_libre=this.value">';
-      // Date début du traitement (indépendante du diagnostic)
-      html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Traitement débuté en ?</span>' +
-        '<input class="prof-since-input" type="month" value="' + (p.peau_traitement_date||'') + '" max="' + maxMonth + '" oninput="profileData.peau_traitement_date=this.value"></div>' +
-        '<div class="prof-since-note">Optionnel — indépendant de la date de diagnostic</div>';
+
     }
   }
   html += '<button class="prof-save-section-btn" onclick="profileSaveSection(&apos;s3&apos;)">Enregistrer cette section ✓</button>';
@@ -7222,10 +7302,7 @@ function renderProfileCycle(p) {
         html += '<div class="prof-q">Par quel professionnel ?</div>';
         html += profChips('cycle_diagnostic_pro', ['Gynécologue','Médecin généraliste','Endocrinologue','Autre'], p, true);
         html += '<input class="prof-free-input" type="text" placeholder="Autre professionnel…" value="' + (p.cycle_diagnostic_pro_libre||'') + '" oninput="profileData.cycle_diagnostic_pro_libre=this.value">';
-        // Date du diagnostic gynécologique
-        html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Diagnostiquée depuis ?</span>' +
-          '<input class="prof-since-input" type="month" value="' + (p.cycle_diagnostic_date||'') + '" max="' + new Date().toISOString().slice(0,7) + '" oninput="profileData.cycle_diagnostic_date=this.value"></div>' +
-          '<div class="prof-since-note">Optionnel — mois et année suffisent</div>';
+
       }
       if (p.cycle_diagnostic_oui === 'non') {
         html += '<div style="background:var(--honey);border-radius:12px;padding:12px 14px;font-size:0.75rem;color:var(--text-mid);line-height:1.6;margin-top:4px">' +
@@ -7235,10 +7312,7 @@ function renderProfileCycle(p) {
       html += profTranches('cycle_traitement', [{val:'non',label:'Non'},{val:'oui',label:'Oui'}], p, false);
       if (p.cycle_traitement === 'oui') {
         html += '<input class="prof-free-input" type="text" placeholder="Tu peux préciser si tu le souhaites (optionnel)…" value="' + (p.cycle_traitement_libre||'') + '" oninput="profileData.cycle_traitement_libre=this.value">';
-        // Date début du traitement (indépendante du diagnostic)
-        html += '<div class="prof-since-wrap"><span class="prof-since-label">📅 Traitement débuté en ?</span>' +
-          '<input class="prof-since-input" type="month" value="' + (p.cycle_traitement_date||'') + '" max="' + new Date().toISOString().slice(0,7) + '" oninput="profileData.cycle_traitement_date=this.value"></div>' +
-          '<div class="prof-since-note">Optionnel — indépendant de la date de diagnostic</div>';
+
       }
     }
   }
@@ -7332,34 +7406,26 @@ function getProfileContext() {
     transitBristol:       p.transit_bristol,
     transitDifficulte:    p.transit_difficulte,
     transitBallonnements: p.transit_ballonnements,
-    // Alimentation & suivi médical — avec dates de référence pour avant/après
+    // Alimentation & suivi médical (statique, sans date — les dates sont dans "Mes nouveaux suivis")
     suiviMedical:         p.alim_suivi_medical || [],
-    suiviMedicalDate:     p.alim_suivi_date    || null, // YYYY-MM → point de référence
     complements:          p.alim_complements   || [],
-    complementsDate:      p.alim_complements_date || null,
-    // Peau — contexte silencieux + dates pour comparaison avant/après traitement
+    // Peau — contexte silencieux
     peauProbleme:         p.peau_probleme,
     peauType:             p.peau_type || [],
     peauDiagnostic:       p.peau_diagnostic_oui,
-    peauDiagnosticDate:   p.peau_diagnostic_date  || null, // YYYY-MM
     peauTraitement:       p.peau_traitement,
-    peauTraitementDate:   p.peau_traitement_date  || null, // YYYY-MM (indépendant du diagnostic)
     // Stress / Énergie
     stressNiveau:         p.stress_niveau,
     energieNiveau:        p.energie_niveau,
     // Sommeil
     sommeilDuree:         p.sommeil_duree,
-    // Cycle — contexte silencieux + dates pour comparaison avant/après traitement
+    // Cycle — contexte silencieux
     cycleRegularite:      p.cycle_regularite,
     cycleDouleurs:        p.cycle_douleurs,
     cyclePathoConfirmee:  p.cycle_diagnostic_oui === 'oui',
     cyclePatho:           p.cycle_patho || [],
     cycleTraitement:      p.cycle_traitement,
-    cycleDiagnosticDate:  p.cycle_diagnostic_date  || null, // YYYY-MM
-    cycleTraitementDate:  p.cycle_traitement_date  || null, // YYYY-MM (indépendant du diagnostic)
-    // Règle d'usage : si une date est disponible, le moteur peut comparer
-    // les données journal AVANT vs APRÈS cette date.
-    // Si la date est null → pas de comparaison avant/après générée pour ce point.
+    // NOTE : les points de référence avant/après (dates) sont dans nara_suivis (getSuivisContext())
   };
 }
 
@@ -7470,6 +7536,149 @@ function buildYesterdaySummary() {
   return `<div class="ctx-yesterday-row">${parts}</div>`;
 }
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODULE "MES NOUVEAUX SUIVIS"
+// Consigne les changements de suivi/traitement avec date de référence.
+// Ces dates sont les déclencheurs de la Brique 1 (comparaison avant/après).
+// ══════════════════════════════════════════════════════════════════════════════
+
+function suivisLoad() {
+  try { return JSON.parse(localStorage.getItem('nara_suivis') || '[]'); } catch { return []; }
+}
+function suivisSave(list) {
+  localStorage.setItem('nara_suivis', JSON.stringify(list));
+  if (currentUser) {
+    sb.from('nara_logs').upsert({
+      user_id: currentUser.id, date: getTodayStr(),
+      type: 'suivis', values: { list },
+    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
+      if (error) console.warn('[Nara] suivis sync:', error.message);
+    });
+  }
+}
+
+let _suiviForm = null;
+
+const SUIVI_TYPES  = ['Nouveau suivi médical démarré','Nouveau traitement démarré','Changement de traitement','Arr\xEAt d\u2019un traitement','Autre'];
+const SUIVI_PROBLO = ['Transit','Peau','Cycle menstruel','Alimentation','\xC9nergie / stress','Autre'];
+const SUIVI_PROS   = ['Gastro-ent\xE9rologue','Dermatologue','Gyn\xE9cologue','M\xE9decin g\xE9n\xE9raliste','Naturopathe','Endocrinologue','Di\xE9t\xE9ticien\xB7ne','Autre'];
+
+function renderSuivis() {
+  const scroll = document.getElementById('suivis-scroll');
+  if (!scroll) return;
+  const list = suivisLoad();
+  let html = '';
+  if (_suiviForm !== null) html += renderSuivisForm(_suiviForm);
+  if (list.length === 0 && _suiviForm === null) {
+    html += '<div class="suivis-empty">Aucun suivi enregistr\xE9 pour l\u2019instant.<br>Ajoute un suivi ou traitement pour que Nara puisse<br>observer ce qui change avant et apr\xE8s.</div>';
+  } else {
+    [...list]
+      .map((e,i)=>({...e,_i:i}))
+      .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+      .forEach(entry => { html += renderSuiviCard(entry, entry._i); });
+  }
+  if (_suiviForm === null) html += '<button class="suivi-add-btn" onclick="suivisStartAdd()">+ Ajouter un nouveau suivi</button>';
+  scroll.innerHTML = html;
+}
+
+function renderSuiviCard(entry, idx) {
+  const dateDisplay = entry.date
+    ? new Date(entry.date + '-01T12:00:00').toLocaleDateString('fr-FR', { month:'long', year:'numeric' })
+    : '\u2014';
+  const tags = [entry.problo, entry.pro].filter(Boolean);
+  return `<div class="suivi-card">
+    <div class="suivi-card-header">
+      <span class="suivi-card-type">${escHtml(entry.type||'\u2014')}</span>
+      <span class="suivi-card-date">\uD83D\uDCC5 ${dateDisplay}</span>
+    </div>
+    ${tags.length ? '<div class="suivi-card-tags">'+tags.map(t=>`<span class="suivi-card-tag">${escHtml(t)}</span>`).join('')+'</div>' : ''}
+    ${entry.note ? `<div class="suivi-card-note">${escHtml(entry.note)}</div>` : ''}
+    <div class="suivi-card-actions">
+      <button class="suivi-card-btn" onclick="suivisStartEdit(${idx})">Modifier</button>
+      <button class="suivi-card-btn danger" onclick="suivisDelete(${idx})">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function renderSuivisForm(f) {
+  const maxMonth = new Date().toISOString().slice(0,7);
+  const isEdit   = f.idx !== undefined;
+  const typeHtml = SUIVI_TYPES.map(t =>
+    `<div class="suivi-form-chip${f.type===t?' selected':''}" onclick="suivisSetField('type','${escHtml(t)}',this)">${escHtml(t)}</div>`).join('');
+  const probloHtml = SUIVI_PROBLO.map(t =>
+    `<div class="suivi-form-chip${f.problo===t?' selected':''}" onclick="suivisSetField('problo','${escHtml(t)}',this)">${escHtml(t)}</div>`).join('');
+  const proHtml = SUIVI_PROS.map(t =>
+    `<div class="suivi-form-chip${f.pro===t?' selected':''}" onclick="suivisSetField('pro','${escHtml(t)}',this)">${escHtml(t)}</div>`).join('');
+  return `<div class="suivi-form">
+    <div class="suivi-form-title">${isEdit ? 'Modifier le suivi' : 'Nouveau suivi ou traitement'}</div>
+    <div class="suivi-form-label">Type d\u2019\xE9v\xE9nement</div>
+    <div class="suivi-form-chips">${typeHtml}</div>
+    <div class="suivi-form-label">Probl\xE9matique concern\xE9e</div>
+    <div class="suivi-form-chips">${probloHtml}</div>
+    <div class="suivi-form-label">Professionnel concern\xE9 <span style="font-weight:400;color:var(--text-light)">(optionnel)</span></div>
+    <div class="suivi-form-chips">${proHtml}</div>
+    <div class="suivi-form-label">Pr\xE9cision libre <span style="font-weight:400;color:var(--text-light)">(optionnel)</span></div>
+    <input class="suivi-form-input" type="text" placeholder="Ex\u00A0: probiotiques prescrits par gastro\u2026"
+           value="${escHtml(f.note||'')}" oninput="_suiviForm.note=this.value">
+    <div class="suivi-form-label">Date de d\xE9but <span class="suivi-date-required">*</span></div>
+    <input class="suivi-form-input" type="month" max="${maxMonth}"
+           value="${f.date||''}" oninput="_suiviForm.date=this.value" style="max-width:200px">
+    <div class="suivi-form-actions">
+      <button class="suivi-form-save" onclick="suivisSaveForm()">Enregistrer \u2713</button>
+      <button class="suivi-form-cancel" onclick="suivisCancelForm()">Annuler</button>
+    </div>
+  </div>`;
+}
+
+function suivisStartAdd() {
+  _suiviForm = { type:'', problo:'', pro:'', note:'', date:'' };
+  renderSuivis();
+  document.getElementById('suivis-scroll')?.scrollTo({ top:0, behavior:'smooth' });
+}
+function suivisStartEdit(idx) {
+  const list = suivisLoad();
+  _suiviForm = { ...list[idx], idx };
+  renderSuivis();
+  document.getElementById('suivis-scroll')?.scrollTo({ top:0, behavior:'smooth' });
+}
+function suivisCancelForm() { _suiviForm = null; renderSuivis(); }
+
+function suivisSetField(key, val, el) {
+  if (!_suiviForm) return;
+  _suiviForm[key] = _suiviForm[key] === val ? '' : val;
+  el.closest('.suivi-form-chips').querySelectorAll('.suivi-form-chip')
+    .forEach(c => c.classList.toggle('selected', c.textContent.trim() === _suiviForm[key]));
+}
+
+function suivisSaveForm() {
+  if (!_suiviForm) return;
+  if (!_suiviForm.date) { showToast('La date de d\xE9but est obligatoire'); return; }
+  if (!_suiviForm.type) { showToast('Choisis un type d\u2019\xE9v\xE9nement'); return; }
+  const list  = suivisLoad();
+  const entry = { type:_suiviForm.type, problo:_suiviForm.problo||'', pro:_suiviForm.pro||'',
+    note:_suiviForm.note||'', date:_suiviForm.date, addedAt:new Date().toISOString() };
+  if (_suiviForm.idx !== undefined) list[_suiviForm.idx] = entry;
+  else list.push(entry);
+  suivisSave(list);
+  _suiviForm = null;
+  showToast('\u2713 Suivi enregistr\xE9\u00A0!');
+  renderSuivis();
+}
+
+function suivisDelete(idx) {
+  const list = suivisLoad();
+  list.splice(idx, 1);
+  suivisSave(list);
+  renderSuivis();
+}
+
+// Exposition au moteur d'insights : points de référence avant/après (Brique 1)
+function getSuivisContext() {
+  return suivisLoad()
+    .filter(e => e.date && e.date.length >= 7)
+    .sort((a,b) => a.date.localeCompare(b.date));
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -8901,6 +9110,17 @@ try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); hideBo
         <button class="profile-consent-btn" id="profile-consent-btn" onclick="profileConsentOk()">
           Accéder à mon profil santé →
         </button>
+      </div>
+    </div>
+
+    <!-- SCREEN MES NOUVEAUX SUIVIS -->
+    <div class="screen" id="screen-suivis">
+      <div class="profile-header">
+        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="screen-title">Mes nouveaux suivis</div>
+      </div>
+      <div class="suivis-scroll" id="suivis-scroll">
+        <!-- Rendu dynamique par renderSuivis() -->
       </div>
     </div>
 

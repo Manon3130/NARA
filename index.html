@@ -3823,7 +3823,16 @@ function showScreen(id, btn) {
       const stored = localStorage.getItem(`nara_photo_${today}`);
       if (stored) currentPhotoPublicUrl = stored;
     }
-    renderJournal();
+    try {
+      renderJournal();
+    } catch(e) {
+      console.warn('[Nara] renderJournal error:', e.message, e.stack);
+      // Afficher l'erreur directement dans le conteneur pour diagnostic
+      const c = document.getElementById('journal-scroll');
+      if (c) c.innerHTML = '<div style="padding:20px;color:red;font-size:0.8rem;word-break:break-all">' +
+        '<strong>Erreur journal:</strong> ' + (e.message||'') + '<br>' +
+        (e.stack||'').split("\n").slice(0,5).join('<br>') + '</div>';
+    }
   }
   if (id === 'calendar') try { renderCalendar(); } catch(e) { console.warn('[Nara] renderCalendar:', e); }
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
@@ -5084,17 +5093,21 @@ const ALIMENTS = [
   '🍷 Alcool','🥜 Oléagineux',
 ];
 
+// ── Fonctions date de base — NE PAS SUPPRIMER ─────────────────────────────────
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getTodayLabel() {
+  const d = new Date();
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois  = ['janvier','février','mars','avril','mai','juin',
+                 'juillet','août','septembre','octobre','novembre','décembre'];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+}
+
 // ── Date active du journal (aujourd'hui par défaut, modifiable pour jours passés) ──
 let jrnCurrentDate = null; // null = aujourd'hui (getTodayStr())
-
-
-function loadTodayJournal() {
-  // Toujours lire les données du jour réel (utilisé par quicklog accueil, syncs etc.)
-  const today = getTodayStr();
-  const raw = localStorage.getItem(`nara_journal_${today}`);
-  if (raw) { try { return JSON.parse(raw); } catch { return null; } }
-  return null;
-}
 
 function jrnGetDate() {
   return jrnCurrentDate || getTodayStr();

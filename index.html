@@ -6845,7 +6845,195 @@ function renderInsightsPage() {
     }
   }
 
+  // ── Brique 2 : Co-évolution de deux indicateurs ────────────────────────────
+  const brique2Html = computeBrique2(allEntries);
+  if (brique2Html) html += brique2Html;
+
   content.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 2 — Co-évolution de deux indicateurs
+// Détecte les paires qui bougent ensemble : sommeil ↔ peau, stress ↔ transit
+// Méthode : corrélation de Spearman (robuste sur valeurs ordinales, petits n)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Corrélation de Spearman sur deux tableaux de valeurs numériques alignées
+function spearmanCorr(xs, ys) {
+  const n = xs.length;
+  if (n < 5) return null; // trop peu de points
+
+  function rank(arr) {
+    const sorted = [...arr].sort((a,b) => a-b);
+    return arr.map(v => {
+      const ties = sorted.filter(x => x === v);
+      const first = sorted.indexOf(v);
+      return first + (ties.length - 1) / 2 + 1; // rang moyen pour les ex-aequo
+    });
+  }
+
+  const rx = rank(xs), ry = rank(ys);
+  const meanRx = rx.reduce((s,v)=>s+v,0)/n;
+  const meanRy = ry.reduce((s,v)=>s+v,0)/n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i=0;i<n;i++) {
+    num  += (rx[i]-meanRx)*(ry[i]-meanRy);
+    dx2  += (rx[i]-meanRx)**2;
+    dy2  += (ry[i]-meanRy)**2;
+  }
+  const denom = Math.sqrt(dx2*dy2);
+  return denom === 0 ? 0 : num/denom;
+}
+
+// Graphique SVG cubic bezier à deux courbes
+function renderBrique2Chart(seriesA, seriesB, labelsA, labelsB, days) {
+  const W = 300, H = 80, padL = 8, padR = 8, padT = 6, padB = 18;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const n = days.length;
+  if (n < 2) return '';
+
+  // Normalise une valeur sur son min/max vers [padT, padT+innerH]
+  function norm(val, min, max) {
+    if (max === min) return padT + innerH / 2;
+    return padT + innerH - ((val - min) / (max - min)) * innerH;
+  }
+
+  function xPos(i) { return padL + (i / (n-1)) * innerW; }
+
+  function cubicPath(pts) {
+    if (pts.length < 2) return '';
+    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i=1; i<pts.length; i++) {
+      const p0 = pts[i-1], p1 = pts[i];
+      const cpx = (p0.x + p1.x) / 2;
+      d += ` C${cpx.toFixed(1)},${p0.y.toFixed(1)} ${cpx.toFixed(1)},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  const minA = Math.min(...seriesA), maxA = Math.max(...seriesA);
+  const minB = Math.min(...seriesB), maxB = Math.max(...seriesB);
+  const globalMin = Math.min(minA, minB), globalMax = Math.max(maxA, maxB);
+
+  const ptsA = seriesA.map((v,i) => ({ x: xPos(i), y: norm(v, globalMin, globalMax) }));
+  const ptsB = seriesB.map((v,i) => ({ x: xPos(i), y: norm(v, globalMin, globalMax) }));
+
+  const pathA = cubicPath(ptsA);
+  const pathB = cubicPath(ptsB);
+
+  // Étiquettes des jours (une sur deux pour lisibilité)
+  const dayLabels = days.map((ds, i) => {
+    if (n > 14 && i % 7 !== 0 && i !== n-1) return '';
+    if (n <= 14 && i % 2 !== 0 && i !== n-1) return '';
+    const d = new Date(ds+'T12:00:00');
+    const jours = ['D','L','M','M','J','V','S'];
+    return `<text x="${xPos(i).toFixed(1)}" y="${H}" text-anchor="middle" font-size="8" fill="var(--text-light)">${jours[d.getDay()]}</text>`;
+  }).join('');
+
+  const dotsA = ptsA.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--avocado)" stroke="white" stroke-width="1.5"/>`).join('');
+  const dotsB = ptsB.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--blush)" stroke="white" stroke-width="1.5"/>`).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="var(--oat)" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT+innerH}" x2="${W-padR}" y2="${padT+innerH}" stroke="var(--oat)" stroke-width="1"/>
+    ${pathA ? `<path d="${pathA}" fill="none" stroke="var(--avocado)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+    ${pathB ? `<path d="${pathB}" fill="none" stroke="var(--blush)"   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+    ${dotsA}${dotsB}${dayLabels}
+  </svg>`;
+}
+
+function computeBrique2(allEntries) {
+  // Construire un index par date : { YYYY-MM-DD: { sommeil, stress, energie, peau, transit, ballonnements } }
+  const byDate = {};
+  allEntries.forEach(e => {
+    const ds = e.dateStr;
+    if (!byDate[ds]) byDate[ds] = {};
+    if (e.type === 'stress')  Object.assign(byDate[ds], { sommeil: e.values.sommeil, stress: e.values.stress, energie: e.values.energie });
+    if (e.type === 'peau')    byDate[ds].peau = e.values.peau_etat;
+    if (e.type === 'transit') Object.assign(byDate[ds], { transit: e.values.transit_etat, ballonnements: e.values.ballonnements });
+  });
+
+  // Jours avec les deux indicateurs remplis pour chaque paire
+  const dates = Object.keys(byDate).sort();
+
+  const results = [];
+
+  // ── Paire 1 : Sommeil ↔ Peau ─────────────────────────────────────────────
+  const somPeau = dates.filter(d => byDate[d].sommeil != null && byDate[d].sommeil > 0 && byDate[d].peau != null);
+  if (somPeau.length >= 7) {
+    const xs = somPeau.map(d => byDate[d].sommeil);
+    const ys = somPeau.map(d => byDate[d].peau);
+    const rho = spearmanCorr(xs, ys);
+    if (rho !== null && Math.abs(rho) >= 0.35) {
+      const sens     = rho > 0 ? 'tendent à s\'améliorer ensemble' : 'évoluent en sens inverse';
+      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+      const svg       = renderBrique2Chart(xs, ys, 'Sommeil', 'Peau', somPeau);
+      const jours     = somPeau.length;
+      results.push(`
+        <div class="insight-real-card" style="border-left-color:#8a8ec4">
+          <div class="irc-tag">😴 ↔ ✨ Sommeil &amp; Peau — co-évolution ${intensite}</div>
+          <div class="irc-text">Sur ${jours} jours avec les deux données, ton sommeil et l'état de ta peau ${sens} (corrélation ${(rho*100).toFixed(0)}%). C'est une tendance observée — pas une relation de cause à effet établie.
+            <span style="font-size:0.68rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${jours} jour${jours>1?'s':''} communs</span>
+          </div>
+          ${svg ? `<div style="margin-top:10px;padding:0 4px">
+            <div style="display:flex;gap:12px;font-size:0.65rem;color:var(--text-light);margin-bottom:4px">
+              <span><span style="color:var(--avocado)">●</span> Sommeil /5</span>
+              <span><span style="color:var(--blush)">●</span> Peau (0=poussée→2=calme)</span>
+            </div>${svg}</div>` : ''}
+        </div>`);
+    }
+  }
+
+  // ── Paire 2 : Stress ↔ Transit ────────────────────────────────────────────
+  // Transit : 0=lent, 1=normal, 2=rapide → inverser pour corrélation (stress haut = transit perturbé)
+  const stressTrans = dates.filter(d => byDate[d].stress != null && byDate[d].stress > 0 && byDate[d].transit != null);
+  if (stressTrans.length >= 7) {
+    const xs = stressTrans.map(d => byDate[d].stress);
+    const ys = stressTrans.map(d => byDate[d].transit);
+    const rho = spearmanCorr(xs, ys);
+    if (rho !== null && Math.abs(rho) >= 0.35) {
+      const sens = rho < 0
+        ? 'ton transit semble plus perturbé quand ton stress monte'
+        : 'un stress plus élevé s\'accompagne d\'un transit plus rapide';
+      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+      const svg       = renderBrique2Chart(xs, ys, 'Stress', 'Transit', stressTrans);
+      const jours     = stressTrans.length;
+      results.push(`
+        <div class="insight-real-card" style="border-left-color:#f59e0b">
+          <div class="irc-tag">😮‍💨 ↔ 🌿 Stress &amp; Transit — co-évolution ${intensite}</div>
+          <div class="irc-text">Sur ${jours} jours communs, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). Une tendance à observer — le lien stress-intestin est documenté mais individuel.
+            <span style="font-size:0.68rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${jours} jour${jours>1?'s':''} communs · si cette tendance persiste, elle vaut d'en parler à ton gastro-entérologue</span>
+          </div>
+          ${svg ? `<div style="margin-top:10px;padding:0 4px">
+            <div style="display:flex;gap:12px;font-size:0.65rem;color:var(--text-light);margin-bottom:4px">
+              <span><span style="color:var(--avocado)">●</span> Stress /5</span>
+              <span><span style="color:var(--blush)">●</span> Transit (0=lent→2=rapide)</span>
+            </div>${svg}</div>` : ''}
+        </div>`);
+    }
+  }
+
+  // ── Paire 3 : Énergie ↔ Stress (bonus si données suffisantes) ────────────
+  const energieStress = dates.filter(d => byDate[d].energie != null && byDate[d].energie > 0 && byDate[d].stress != null && byDate[d].stress > 0);
+  if (energieStress.length >= 10) {
+    const xs = energieStress.map(d => byDate[d].energie);
+    const ys = energieStress.map(d => byDate[d].stress);
+    const rho = spearmanCorr(xs, ys);
+    if (rho !== null && rho <= -0.45) { // énergie haute = stress bas attendu
+      const jours = energieStress.length;
+      results.push(`
+        <div class="insight-real-card" style="border-left-color:#7c3aed">
+          <div class="irc-tag">⚡ ↔ 😮‍💨 Énergie &amp; Stress — lien observé</div>
+          <div class="irc-text">Sur ${jours} jours, tes journées à haute énergie correspondent souvent à un stress plus bas — et inversement (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). C'est un signal de régulation globale à surveiller.
+            <span style="font-size:0.68rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${jours} jour${jours>1?'s':''} communs</span>
+          </div>
+        </div>`);
+    }
+  }
+
+  if (results.length === 0) return null;
+  return `<div class="section-title" style="margin-top:4px">Co-évolutions détectées</div>` + results.join('');
 }
 
 // generateInsights — version simplifiée pour le home (les observations détaillées

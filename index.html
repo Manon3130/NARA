@@ -6676,18 +6676,54 @@ function renderInsightsPage() {
   }
 
   // ── Brique 1 : Nouveaux suivis × Journal (avant/après) ────────────────────
+  // Point 2 : lire TOUTES les données disponibles, pas seulement 30 jours
+  // (la comparaison avant/après a besoin de remonter avant la date du suivi)
+  const allEntries = (() => {
+    const result = [];
+    const seen   = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith('nara_journal_')) continue;
+      const dateStr = key.replace('nara_journal_', '');
+      if (seen.has(dateStr)) continue;
+      seen.add(dateStr);
+      try {
+        const j = JSON.parse(localStorage.getItem(key));
+        if (!j) continue;
+        if (j.transit !== null && j.transit !== undefined)
+          result.push({ type:'transit', dateStr, values:{
+            transit_etat: j.transit,
+            ballonnements: j.ballonnements || 0,
+            douleurs: j.douleurs !== undefined ? j.douleurs : null,
+          }});
+        if (j.peau !== null && j.peau !== undefined)
+          result.push({ type:'peau', dateStr, values:{ peau_etat: j.peau }});
+        if (j.stress > 0 || j.energie > 0 || j.sommeil > 0)
+          result.push({ type:'stress', dateStr, values:{
+            stress: j.stress||0, energie: j.energie||0, sommeil: j.sommeil||0,
+          }});
+      } catch {}
+    }
+    return result;
+  })();
+
   const suivis = getSuivisContext ? getSuivisContext() : [];
   if (suivis.length > 0) {
     const brique1 = [];
     suivis.forEach(suivi => {
       if (!suivi.date) return;
-      const cutoff = suivi.date; // YYYY-MM → compare avant/après ce mois
-      // Données AVANT le cutoff
-      const avant = entries.filter(e => (e.dateStr||e.date||'') < cutoff + '-32');
-      // Données APRÈS le cutoff
-      const apres = entries.filter(e => (e.dateStr||e.date||'') >= cutoff + '-01');
-      if (avant.length < 5 || apres.length < 5) return; // garde-fou min 5 jours chaque côté
-      const dim = suivi.problo; // Transit, Peau, Cycle menstruel…
+      // Point 1 : cutoff = premier jour du mois (YYYY-MM → YYYY-MM-01)
+      // avant = strictement avant ce jour, apres = ce jour et après. Aucun chevauchement.
+      const cutoffDay = suivi.date.length === 7 ? suivi.date + '-01' : suivi.date;
+
+      const avant = allEntries.filter(e => (e.dateStr||'') <  cutoffDay);
+      const apres = allEntries.filter(e => (e.dateStr||'') >= cutoffDay);
+
+      if (avant.length < 5 || apres.length < 5) return; // garde-fou min 5 entrées de chaque côté
+
+      const dim = suivi.problo;
+
+      // ── Peau ────────────────────────────────────────────────────────────────
       if (dim === 'Peau') {
         const peauAv = avant.filter(e=>e.type==='peau'&&e.values?.peau_etat!==undefined);
         const peauAp = apres.filter(e=>e.type==='peau'&&e.values?.peau_etat!==undefined);
@@ -6696,23 +6732,64 @@ function renderInsightsPage() {
         const positifAp = Math.round(peauAp.filter(e=>e.values.peau_etat>=1).length/peauAp.length*100);
         const diff = positifAp - positifAv;
         if (Math.abs(diff) >= 15) {
-          brique1.push({ icon:'✨', tag:`Peau — avant/après ${suivi.type}`,
-            text:`Depuis "${suivi.type}" (${cutoff}), les jours de peau stable/calme semblent ${diff>0?'plus fréquents':'moins fréquents'} : ${positifAp}% vs ${positifAv}% avant. C'est une tendance observée — pas une conclusion.` });
+          const dateLabel = new Date(cutoffDay+'T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+          brique1.push({ icon:'✨', tag:`Peau — depuis ${suivi.type || 'ce suivi'}`,
+            text:`Depuis ${dateLabel}, les jours de peau stable ou calme semblent <strong>${diff>0?'plus':'moins'} fréquents</strong> : ${positifAp}% après vs ${positifAv}% avant. Tendance observée sur ${peauAp.length + peauAv.length} entrées — pas une conclusion.` });
         }
       }
+
+      // ── Transit : état général + ballonnements + douleurs (Point 3) ────────
       if (dim === 'Transit') {
-        const tAv = avant.filter(e=>e.type==='transit'&&e.values?.transit_etat!==undefined);
-        const tAp = apres.filter(e=>e.type==='transit'&&e.values?.transit_etat!==undefined);
+        const tAv = avant.filter(e=>e.type==='transit');
+        const tAp = apres.filter(e=>e.type==='transit');
         if (tAv.length < 3 || tAp.length < 3) return;
-        const normAv = Math.round(tAv.filter(e=>e.values.transit_etat===1).length/tAv.length*100);
-        const normAp = Math.round(tAp.filter(e=>e.values.transit_etat===1).length/tAp.length*100);
-        const diff = normAp - normAv;
-        if (Math.abs(diff) >= 15) {
-          brique1.push({ icon:'🌿', tag:`Transit — avant/après ${suivi.type}`,
-            text:`Depuis "${suivi.type}" (${cutoff}), le transit normal semble ${diff>0?'plus fréquent':'moins fréquent'} : ${normAp}% vs ${normAv}% avant. Tendance à confirmer avec plus de données.` });
+        const dateLabel = new Date(cutoffDay+'T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+        const observations = [];
+
+        // État général (lent/normal/rapide)
+        const tAvDef = tAv.filter(e=>e.values?.transit_etat!==undefined);
+        const tApDef = tAp.filter(e=>e.values?.transit_etat!==undefined);
+        if (tAvDef.length >= 3 && tApDef.length >= 3) {
+          const normAv = Math.round(tAvDef.filter(e=>e.values.transit_etat===1).length/tAvDef.length*100);
+          const normAp = Math.round(tApDef.filter(e=>e.values.transit_etat===1).length/tApDef.length*100);
+          if (Math.abs(normAp - normAv) >= 15) {
+            observations.push(`transit normal <strong>${normAp}%</strong> vs <strong>${normAv}%</strong> avant`);
+          }
+        }
+
+        // Ballonnements (score moyen /5)
+        const balAv = tAv.filter(e=>e.values?.ballonnements!==undefined);
+        const balAp = tAp.filter(e=>e.values?.ballonnements!==undefined);
+        if (balAv.length >= 3 && balAp.length >= 3) {
+          const avgBalAv = (balAv.reduce((s,e)=>s+(e.values.ballonnements||0),0)/balAv.length).toFixed(1);
+          const avgBalAp = (balAp.reduce((s,e)=>s+(e.values.ballonnements||0),0)/balAp.length).toFixed(1);
+          const diffBal  = parseFloat(avgBalAp) - parseFloat(avgBalAv);
+          if (Math.abs(diffBal) >= 0.5) { // seuil : 0.5 point sur 5
+            const sens = diffBal > 0 ? 'en hausse' : 'en baisse';
+            observations.push(`ballonnements <strong>${sens}</strong> : ${avgBalAp}/5 vs ${avgBalAv}/5 avant`);
+          }
+        }
+
+        // Douleurs abdominales (0=aucune/1=légères/2=intenses → score moyen)
+        const dolAv = tAv.filter(e=>e.values?.douleurs!==null&&e.values?.douleurs!==undefined);
+        const dolAp = tAp.filter(e=>e.values?.douleurs!==null&&e.values?.douleurs!==undefined);
+        if (dolAv.length >= 3 && dolAp.length >= 3) {
+          const avgDolAv = (dolAv.reduce((s,e)=>s+(e.values.douleurs||0),0)/dolAv.length).toFixed(1);
+          const avgDolAp = (dolAp.reduce((s,e)=>s+(e.values.douleurs||0),0)/dolAp.length).toFixed(1);
+          const diffDol  = parseFloat(avgDolAp) - parseFloat(avgDolAv);
+          if (Math.abs(diffDol) >= 0.4) {
+            const sens = diffDol > 0 ? 'plus fréquentes' : 'moins fréquentes';
+            observations.push(`douleurs abdominales <strong>${sens}</strong> : ${avgDolAp}/2 vs ${avgDolAv}/2 avant`);
+          }
+        }
+
+        if (observations.length > 0) {
+          brique1.push({ icon:'🌿', tag:`Transit — depuis ${suivi.type || 'ce suivi'}`,
+            text:`Depuis ${dateLabel}, on observe sur ${tAp.length} entrées après vs ${tAv.length} avant : ${observations.join(' · ')}. Ces tendances méritent d'être mentionnées à ton gastro-entérologue — elles ne constituent pas un diagnostic.` });
         }
       }
     });
+
     if (brique1.length > 0) {
       html += `<div class="section-title" style="margin-top:4px">Avant / Après tes nouveaux suivis</div>`;
       html += brique1.map(ins => `

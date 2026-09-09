@@ -6549,7 +6549,42 @@ function renderInsightsPage() {
     return any ? v : null;
   }
 
-  // Construire les entries sur 30 jours
+  // ── SCAN COMPLET du localStorage (utilisé par Brique 1 ET stats de base) ──
+  // Fait EN PREMIER pour que la Brique 1 ait accès à toutes les données,
+  // même si la fenêtre 30 jours est insuffisante pour les stats de base.
+  const allEntries = (() => {
+    const result = [];
+    const seen   = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith('nara_journal_')) continue;
+      const dateStr = key.replace('nara_journal_', '');
+      // Valider le format YYYY-MM-DD
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+      if (seen.has(dateStr)) continue;
+      seen.add(dateStr);
+      try {
+        const j = JSON.parse(localStorage.getItem(key));
+        if (!j) continue;
+        if (j.transit !== null && j.transit !== undefined)
+          result.push({ type:'transit', dateStr, values:{
+            transit_etat: j.transit,
+            ballonnements: j.ballonnements || 0,
+            douleurs: j.douleurs !== undefined ? j.douleurs : null,
+          }});
+        if (j.peau !== null && j.peau !== undefined)
+          result.push({ type:'peau', dateStr, values:{ peau_etat: j.peau }});
+        if (j.stress > 0 || j.energie > 0 || j.sommeil > 0)
+          result.push({ type:'stress', dateStr, values:{
+            stress: j.stress||0, energie: j.energie||0, sommeil: j.sommeil||0,
+          }});
+      } catch {}
+    }
+    console.log('[Nara Insights] allEntries:', result.length, 'entrées au total');
+    return result;
+  })();
+
+  // Sous-ensemble 30 jours pour les statistiques de base
   const entries = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
@@ -6599,28 +6634,67 @@ function renderInsightsPage() {
     return;
   }
 
-  // ── Graphique 7 jours (transit + peau) ────────────────────────────────────
+  // ── Graphique 7 jours en COURBE (transit + peau) ──────────────────────────
   const jours = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const barsHtml = Array.from({length:7}, (_, i) => {
+  const chartW = 300, chartH = 80, padX = 20, padY = 8;
+  const days7 = Array.from({length:7}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6-i));
     const dateStr = d.toISOString().split('T')[0];
     const dayName = jours[d.getDay() === 0 ? 6 : d.getDay()-1];
     const v = getDayVals(dateStr) || {};
-    const transit = v.transit;
-    const peau    = v.peau;
-    const tH = transit !== null && transit !== undefined ? (transit===1?56:transit===0?24:40) : 0; // px sur 80px
-    const pH = peau    !== null && peau    !== undefined ? (peau===2?56:peau===1?36:16)        : 0; // px sur 80px
-    return `<div class="icr-col">
-      <div style="flex:1"></div>
-      ${tH>0?`<div class="icr-bar bar-gut"  style="height:${tH}px"></div>`:''}
-      ${pH>0?`<div class="icr-bar bar-skin" style="height:${pH}px;margin-top:2px"></div>`:''}
-      <div class="icr-label">${dayName}</div></div>`;
-  }).join('');
+    // Transit : 0=lent→20, 1=normal→70, 2=rapide→50; null→pas de point
+    const tVal = v.transit !== null && v.transit !== undefined
+      ? (v.transit===1 ? 70 : v.transit===0 ? 20 : 50) : null;
+    // Peau : 0=poussée→15, 1=stable→50, 2=calme→75; null→pas de point
+    const pVal = v.peau !== null && v.peau !== undefined
+      ? (v.peau===2 ? 75 : v.peau===1 ? 50 : 15) : null;
+    return { dayName, tVal, pVal };
+  });
+
+  const usable = chartW - padX * 2;
+  const stepX  = usable / 6; // 7 points, 6 intervalles
+
+  function toSvgY(val) { return padY + (100 - val) / 100 * (chartH - padY * 2); }
+  function toSvgX(i)   { return padX + i * stepX; }
+
+  // Construire les polylines (ne relier que les points non-null consécutifs)
+  function buildPath(arr, key) {
+    let d = '', inPath = false;
+    arr.forEach((pt, i) => {
+      if (pt[key] === null) { inPath = false; return; }
+      const x = toSvgX(i).toFixed(1);
+      const y = toSvgY(pt[key]).toFixed(1);
+      d += inPath ? ` L${x},${y}` : ` M${x},${y}`;
+      inPath = true;
+    });
+    return d.trim();
+  }
+
+  const pathTransit = buildPath(days7, 'tVal');
+  const pathPeau    = buildPath(days7, 'pVal');
+
+  // Points (cercles) aux données réelles
+  const dotTransit = days7.map((pt, i) => pt.tVal !== null
+    ? `<circle cx="${toSvgX(i).toFixed(1)}" cy="${toSvgY(pt.tVal).toFixed(1)}" r="4" fill="var(--avocado)" stroke="white" stroke-width="2"/>` : '').join('');
+  const dotPeau = days7.map((pt, i) => pt.pVal !== null
+    ? `<circle cx="${toSvgX(i).toFixed(1)}" cy="${toSvgY(pt.pVal).toFixed(1)}" r="4" fill="var(--blush)" stroke="white" stroke-width="2"/>` : '').join('');
+
+  // Labels des jours en bas
+  const labelsX = days7.map((pt, i) =>
+    `<text x="${toSvgX(i).toFixed(1)}" y="${chartH + 4}" text-anchor="middle" font-size="9" fill="var(--text-light)">${pt.dayName}</text>`
+  ).join('');
+
+  const svgChart = `<svg viewBox="0 0 ${chartW} ${chartH + 16}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
+    ${pathTransit ? `<path d="${pathTransit}" fill="none" stroke="var(--avocado)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+    ${pathPeau    ? `<path d="${pathPeau}"    fill="none" stroke="var(--blush)"   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+    ${dotTransit}${dotPeau}${labelsX}
+  </svg>`;
 
   let html = `<div class="insights-chart-real">
     <div class="icr-title">Évolution sur 7 jours</div>
     <div class="icr-sub">Transit <span style="color:var(--avocado)">●</span> · Peau <span style="color:var(--blush)">●</span></div>
-    <div class="icr-bars">${barsHtml}</div></div>`;
+    <div style="padding:4px 0 0">${svgChart}</div>
+  </div>`;
 
   // ── Observations textuelles ────────────────────────────────────────────────
   const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
@@ -6676,38 +6750,9 @@ function renderInsightsPage() {
   }
 
   // ── Brique 1 : Nouveaux suivis × Journal (avant/après) ────────────────────
-  // Point 2 : lire TOUTES les données disponibles, pas seulement 30 jours
-  // (la comparaison avant/après a besoin de remonter avant la date du suivi)
-  const allEntries = (() => {
-    const result = [];
-    const seen   = new Set();
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !key.startsWith('nara_journal_')) continue;
-      const dateStr = key.replace('nara_journal_', '');
-      if (seen.has(dateStr)) continue;
-      seen.add(dateStr);
-      try {
-        const j = JSON.parse(localStorage.getItem(key));
-        if (!j) continue;
-        if (j.transit !== null && j.transit !== undefined)
-          result.push({ type:'transit', dateStr, values:{
-            transit_etat: j.transit,
-            ballonnements: j.ballonnements || 0,
-            douleurs: j.douleurs !== undefined ? j.douleurs : null,
-          }});
-        if (j.peau !== null && j.peau !== undefined)
-          result.push({ type:'peau', dateStr, values:{ peau_etat: j.peau }});
-        if (j.stress > 0 || j.energie > 0 || j.sommeil > 0)
-          result.push({ type:'stress', dateStr, values:{
-            stress: j.stress||0, energie: j.energie||0, sommeil: j.sommeil||0,
-          }});
-      } catch {}
-    }
-    return result;
-  })();
-
+  // allEntries est défini en haut de la fonction (scan complet du localStorage)
   const suivis = getSuivisContext ? getSuivisContext() : [];
+  console.log('[Nara Insights] Brique 1 — suivis:', suivis.length, '| allEntries:', allEntries.length);
   if (suivis.length > 0) {
     const brique1 = [];
     suivis.forEach(suivi => {

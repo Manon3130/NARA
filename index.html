@@ -6709,7 +6709,10 @@ function renderInsightsPage() {
   });
 
   // ── Carrousel 4 panneaux — Évolution sur 7 jours ─────────────────────────
-  let html = buildInsightsCarousel(getDayVals, 7);
+  let html = buildInsightsCarousel(getDayVals, 7, 'semaine');
+
+  // ── Carrousel 30 jours ────────────────────────────────────────────────────
+  html += buildInsightsCarousel(getDayVals, 30, 'mois');
 
 
 
@@ -6848,7 +6851,13 @@ function renderInsightsPage() {
 // Panneau 4 : Peau seule (0=poussée 1=stable 2=calme)
 // ══════════════════════════════════════════════════════════════════════════════
 
-function buildInsightsCarousel(getDayVals, nDays) {
+function buildInsightsCarousel(getDayVals, nDays, periode) {
+  // periode : 'semaine' (défaut) | 'mois'
+  // Adapte les formulations des constats et conseils selon l'échelle temporelle
+  periode = periode || 'semaine';
+  const periodeLabel   = periode === 'mois' ? 'sur le mois' : 'cette semaine';
+  const carouselSuffix = periode === 'mois' ? '-30' : '';       // IDs uniques
+  const corrSeuil      = periode === 'mois' ? 14 : 7;           // seuil corrélations plus exigeant sur 30j
   const jours = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const days = Array.from({length: nDays}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (nDays - 1 - i));
@@ -7096,12 +7105,22 @@ function buildInsightsCarousel(getDayVals, nDays) {
       if (avg2) constat += (constat ? ' · ' : '') + `Énergie moyenne : <strong>${avg2}/5</strong>`;
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(n1,n2)} jour${Math.max(n1,n2)>1?'s':''})</span>`;
       const somMoy = parseFloat(avg1||0), enMoy = parseFloat(avg2||0);
-      if (somMoy < 2.5 || enMoy < 2.5) {
-        conseil = "Un sommeil court ou de mauvaise qualité coupe directement l'énergie du lendemain. Essaie de te coucher 30 min plus tôt cette semaine — même un léger décalage peut changer la donne.";
-      } else if (somMoy >= 4 && enMoy >= 4) {
-        conseil = "Ton sommeil et ton énergie sont solides en ce moment. Continue ce rythme — c'est souvent dans ces phases que le corps régule mieux le reste.";
+      if (periode === 'mois') {
+        if (somMoy < 2.5 || enMoy < 2.5) {
+          conseil = "Un mois avec peu de sommeil ou d'énergie est un signal à prendre au sérieux. Si ce rythme persiste, ça vaut le coup d'en parler à un professionnel — et d'auditer les charges qui pèsent le plus sur cette période.";
+        } else if (somMoy >= 4 && enMoy >= 4) {
+          conseil = "Un mois avec un bon niveau de sommeil et d'énergie : ton corps est en phase de régulation. C'est souvent dans ces fenêtres qu'on peut intégrer des changements durables plus facilement.";
+        } else {
+          conseil = "Sur un mois, un sommeil moyen autour de 3/5 suggère une régularité perfectible. La cohérence des horaires de lever — même le week-end — a un impact mesuré sur l'énergie de toute la semaine suivante.";
+        }
       } else {
-        conseil = "Essaie de garder un horaire de lever constant, même le week-end — c'est le levier le plus efficace pour stabiliser l'énergie sur la semaine.";
+        if (somMoy < 2.5 || enMoy < 2.5) {
+          conseil = "Un sommeil court ou de mauvaise qualité coupe directement l'énergie du lendemain. Essaie de te coucher 30 min plus tôt cette semaine — même un léger décalage peut changer la donne.";
+        } else if (somMoy >= 4 && enMoy >= 4) {
+          conseil = "Ton sommeil et ton énergie sont solides en ce moment. Continue ce rythme — c'est souvent dans ces phases que le corps régule mieux le reste.";
+        } else {
+          conseil = "Essaie de garder un horaire de lever constant, même le week-end — c'est le levier le plus efficace pour stabiliser l'énergie sur la semaine.";
+        }
       }
     }
 
@@ -7113,32 +7132,59 @@ function buildInsightsCarousel(getDayVals, nDays) {
       }
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(n1,n2)} jour${Math.max(n1,n2)>1?'s':''})</span>`;
       const sMoy = parseFloat(avg1||0);
-      if (sMoy >= 3.5) {
-        conseil = "Un stress chronique élevé épuise le magnésium et perturbe le cortisol. Intégrer 5 min de respiration lente après les repas peut réduire la charge perçue — c'est petit mais cumulatif.";
-      } else if (sMoy <= 1.5) {
-        conseil = "Ton niveau de stress semble maîtrisé cette semaine. C'est une bonne fenêtre pour introduire des changements d'habitudes — le corps les intègre mieux quand le système nerveux est calme.";
+      if (periode === 'mois') {
+        if (sMoy >= 3.5) {
+          conseil = "Un mois avec un stress chroniquement élevé a des effets documentés sur le microbiome, le sommeil et la perméabilité intestinale. C'est un signal à ne pas ignorer — si la charge ne baisse pas naturellement, envisage d'en parler à un médecin ou un psychologue.";
+        } else if (sMoy <= 1.5) {
+          conseil = "Un mois de stress bas, c'est rare. C'est une fenêtre précieuse pour ancrer de nouvelles habitudes — ton système nerveux est en conditions optimales pour les intégrer durablement.";
+        } else {
+          conseil = "Sur un mois, un stress moyen entre 2 et 3 est souvent le reflet d'une charge quotidienne prévisible. Identifier les 2 ou 3 déclencheurs récurrents — et les anticiper — a plus d'effet que les techniques génériques.";
+        }
       } else {
-        conseil = "Alterner des moments de haute stimulation et des pauses réelles (pas juste scroller) aide le système nerveux à récupérer. Quelques minutes dehors en journée font souvent la différence.";
+        if (sMoy >= 3.5) {
+          conseil = "Un stress chronique élevé épuise le magnésium et perturbe le cortisol. Intégrer 5 min de respiration lente après les repas peut réduire la charge perçue — c'est petit mais cumulatif.";
+        } else if (sMoy <= 1.5) {
+          conseil = "Ton niveau de stress semble maîtrisé cette semaine. C'est une bonne fenêtre pour introduire des changements d'habitudes — le corps les intègre mieux quand le système nerveux est calme.";
+        } else {
+          conseil = "Alterner des moments de haute stimulation et des pauses réelles (pas juste scroller) aide le système nerveux à récupérer. Quelques minutes dehors en journée font souvent la différence.";
+        }
       }
     }
 
     if (key1 === 'transit') {
-      // Cas Transit & Ballonnements — traitement spécial
-      const tAll = days.map(d=>d.transit).filter(v=>v!==null);
-      const bAll = days.map(d=>d.ballonnements).filter(v=>v!==null);
-      const normPct = tAll.length ? Math.round(tAll.filter(v=>v===1).length/tAll.length*100) : null;
+      const calData = days.map(d => {
+        try {
+          const raw = localStorage.getItem('nara_cal_' + d.ds);
+          if (!raw) return null;
+          const cal = JSON.parse(raw);
+          return cal && cal.yn === 'oui' ? (cal.freq || 1) : (cal && cal.yn === 'non' ? 0 : null);
+        } catch { return null; }
+      });
+      const tAll = calData.filter(v => v !== null);
+      const bAll = days.map(d => d.ballonnements).filter(v => v !== null);
+      const avgFreq = tAll.length ? (tAll.reduce((s,v)=>s+v,0)/tAll.length).toFixed(1) : null;
       const avgBal  = bAll.length ? (bAll.reduce((s,v)=>s+v,0)/bAll.length).toFixed(1) : null;
-      if (normPct !== null) constat += `Transit normal <strong>${normPct}%</strong> du temps`;
-      if (avgBal  !== null) constat += (constat?'  · ':'') + `Ballonnements moyens <strong>${avgBal}/5</strong>`;
+      if (avgFreq !== null) constat += `Fréquence moyenne : <strong>${avgFreq} passage${parseFloat(avgFreq)>1?'s':''}/jour</strong>`;
+      if (avgBal  !== null) constat += (constat?' · ':'') + `Ballonnements moyens <strong>${avgBal}/5</strong>`;
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(tAll.length,bAll.length)} jour${Math.max(tAll.length,bAll.length)>1?'s':''})</span>`;
-      if (parseFloat(avgBal||0) >= 3) {
-        conseil = "Des ballonnements fréquents peuvent indiquer une fermentation intestinale élevée. Manger plus lentement, bien mâcher et réduire temporairement les légumineuses et les choux aide souvent à les calmer. Si ça dure, c'est un point à aborder avec ton médecin.";
-      } else if (normPct !== null && normPct < 60) {
-        conseil = "Un transit irrégulier réagit souvent à l'hydratation et aux fibres — vise 1,5L d'eau par jour et varie les sources de légumes. Si la tendance persiste, parle-en à ton gastro-entérologue.";
+      if (periode === 'mois') {
+        if (parseFloat(avgBal||0) >= 3) {
+          conseil = "Des ballonnements élevés sur un mois entier méritent une attention particulière. C'est une donnée concrète à partager avec ton gastro-entérologue : la durée et la régularité du symptôme sont des informations diagnostiques précieuses.";
+        } else if (parseFloat(avgFreq||1) < 0.7) {
+          conseil = "Moins d'un passage par jour en moyenne sur un mois peut indiquer un transit lent chronique. Fibres variées, hydratation, et activité physique régulière sont les premiers leviers — mais si ça persiste, une consultation s'impose.";
+        } else {
+          conseil = "Un transit régulier sur un mois complet est un bon signe de santé intestinale globale. Continue à varier les fibres et les fermentés pour maintenir ce cap.";
+        }
       } else {
-        conseil = "Un transit régulier est l'un des meilleurs indicateurs de santé intestinale. Continue à varier ton alimentation et à rester bien hydratée.";
+        if (parseFloat(avgBal||0) >= 3) {
+          conseil = "Des ballonnements fréquents peuvent indiquer une fermentation intestinale élevée. Manger plus lentement, bien mâcher et réduire temporairement les légumineuses et les choux aide souvent à les calmer. Si ça dure, c'est un point à aborder avec ton médecin.";
+        } else if (avgFreq !== null && parseFloat(avgFreq) < 0.7) {
+          conseil = "Un transit irrégulier réagit souvent à l'hydratation et aux fibres — vise 1,5L d'eau par jour et varie les sources de légumes. Si la tendance persiste, parle-en à ton gastro-entérologue.";
+        } else {
+          conseil = "Un transit régulier est l'un des meilleurs indicateurs de santé intestinale. Continue à varier ton alimentation et à rester bien hydratée.";
+        }
       }
-      return `<div class="ichart-summary"><strong>Cette semaine</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+      return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
     }
 
     if (key1 === 'peau') {
@@ -7152,22 +7198,31 @@ function buildInsightsCarousel(getDayVals, nDays) {
       }
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${pAll.length} jour${pAll.length>1?'s':''})</span>`;
       const pctPoussee = pAll.length ? Math.round(pAll.filter(v=>v===0).length/pAll.length*100) : 0;
-      if (pctPoussee >= 40) {
-        conseil = "Des poussées fréquentes méritent d'être notées et partagées avec ton dermatologue — elles peuvent signaler une inflammation systémique ou une réaction alimentaire. La peau est souvent le dernier organe à exprimer ce que l'intestin vit en premier.";
-      } else if (pctPos !== null && pctPos >= 80) {
-        conseil = "Ta peau est dans une bonne phase. C'est un bon moment pour observer ce qui fonctionne — alimentation, routines, niveau de stress — pour en garder la trace.";
+      if (periode === 'mois') {
+        if (pctPoussee >= 40) {
+          conseil = "Plus de 40% de poussées sur un mois est une donnée significative à documenter et partager avec ton dermatologue. Un journal de bord sur cette durée — alimentation, stress, cycle — peut aider à identifier des déclencheurs récurrents.";
+        } else if (pctPos !== null && pctPos >= 80) {
+          conseil = "Un mois majoritairement stable ou calme pour ta peau : c'est un beau signal. Si tu as changé quelque chose récemment — alimentation, routine, traitement — c'est probablement la bonne direction.";
+        } else {
+          conseil = "Une peau qui fluctue sur un mois est souvent influencée par le cycle hormonal, le stress ou l'alimentation. Croiser ces données avec tes autres indicateurs peut révéler des patterns utiles.";
+        }
       } else {
-        conseil = "La peau réagit souvent avec un délai de 2 à 4 jours par rapport à ce qu'on mange ou vit. Regarder les journées d'avant une poussée peut révéler des déclencheurs.";
+        if (pctPoussee >= 40) {
+          conseil = "Des poussées fréquentes méritent d'être notées et partagées avec ton dermatologue — elles peuvent signaler une inflammation systémique ou une réaction alimentaire. La peau est souvent le dernier organe à exprimer ce que l'intestin vit en premier.";
+        } else if (pctPos !== null && pctPos >= 80) {
+          conseil = "Ta peau est dans une bonne phase. C'est un bon moment pour observer ce qui fonctionne — alimentation, routines, niveau de stress — pour en garder la trace.";
+        } else {
+          conseil = "La peau réagit souvent avec un délai de 2 à 4 jours par rapport à ce qu'on mange ou vit. Regarder les journées d'avant une poussée peut révéler des déclencheurs.";
+        }
       }
-      return `<div class="ichart-summary"><strong>Cette semaine</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+      return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
     }
 
-    return `<div class="ichart-summary"><strong>Cette semaine</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+    return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
   }
 
   // ── Panneau 5 : Synthèse globale (croisant les briques) ─────────────────
   function panel5Synthese(allEntriesForCorr) {
-    // Utiliser les résultats des corrélations déjà calculées par Brique 2
     const byDate = {};
     allEntriesForCorr.forEach(e => {
       if (!byDate[e.dateStr]) byDate[e.dateStr] = {};
@@ -7176,50 +7231,56 @@ function buildInsightsCarousel(getDayVals, nDays) {
       if (e.type==='transit') Object.assign(byDate[e.dateStr], {transit:e.values.transit_etat, ballonnements:e.values.ballonnements});
     });
     const dts = Object.keys(byDate).sort();
-
+    const titre = periode === 'mois' ? 'Synthèse du mois' : 'Synthèse de la semaine';
     const lines = [];
 
-    // Corrélation Sommeil ↔ Peau
+    // Corrélation Sommeil ↔ Peau — seuil adapté à la période
     const spDays = dts.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
-    if (spDays.length >= 7) {
+    if (spDays.length >= corrSeuil) {
       const rho = spearmanCorr(spDays.map(d=>byDate[d].sommeil), spDays.map(d=>byDate[d].peau));
       if (rho !== null && rho >= 0.35) {
-        lines.push(`😴 ↔ ✨ <strong>Sommeil & peau liés</strong> — Les nuits de meilleur sommeil coïncident avec des jours de peau plus calme (sur ${spDays.length} jours communs). Un lien observé, pas une certitude.`);
+        const conf = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+        const msg  = periode === 'mois'
+          ? `😴 ↔ ✨ <strong>Sommeil & peau liés sur le mois</strong> — Sur ${spDays.length} jours avec les deux données, les meilleures nuits coïncident avec un état de peau plus calme (corrélation ${conf}). Une tendance qui se confirme sur la durée.`
+          : `😴 ↔ ✨ <strong>Sommeil & peau liés</strong> — Les nuits de meilleur sommeil coïncident avec des jours de peau plus calme (sur ${spDays.length} jours communs). Un lien observé, pas une certitude.`;
+        lines.push(msg);
       }
     }
 
     // Corrélation Stress ↔ Transit
     const stDays = dts.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
-    if (stDays.length >= 7) {
+    if (stDays.length >= corrSeuil) {
       const rho = spearmanCorr(stDays.map(d=>byDate[d].stress), stDays.map(d=>byDate[d].transit));
       if (rho !== null && Math.abs(rho) >= 0.35) {
         const sens = rho < 0 ? "ton transit semble plus perturbé les jours de stress élevé" : "le stress élevé accompagne un transit plus rapide";
-        lines.push(`😮‍💨 ↔ 🌿 <strong>Stress & transit liés</strong> — Sur ${stDays.length} jours, ${sens}. L'axe cerveau-intestin : réel et bidirectionnel.`);
+        const msg  = periode === 'mois'
+          ? `😮‍💨 ↔ 🌿 <strong>Stress & transit liés sur le mois</strong> — Sur ${stDays.length} jours communs, ${sens}. Un pattern qui se répète sur un mois est un signal concret à mentionner à ton gastro-entérologue.`
+          : `😮‍💨 ↔ 🌿 <strong>Stress & transit liés</strong> — Sur ${stDays.length} jours, ${sens}. L'axe cerveau-intestin : réel et bidirectionnel.`;
+        lines.push(msg);
       }
     }
 
-    // Corrélation cycle si dispo
+    // Cycle si actif
     const settings = typeof cycleLoad === 'function' ? cycleLoad() : null;
     if (settings && settings.active && settings.startDate) {
-      lines.push(`🌸 <strong>Suivi cycle actif</strong> — Tes données de transit et de peau sont croisées avec ta phase de cycle dans la section "Cycle & corrélations" ci-dessous.`);
+      const msg = periode === 'mois'
+        ? `🌸 <strong>Suivi cycle actif</strong> — Sur un mois, les corrélations avec ton cycle peuvent être plus lisibles. Consulte la section "Cycle & corrélations" ci-dessous pour les observations croisées.`
+        : `🌸 <strong>Suivi cycle actif</strong> — Tes données de transit et de peau sont croisées avec ta phase de cycle dans la section "Cycle & corrélations" ci-dessous.`;
+      lines.push(msg);
     }
 
-    // Message d'attente si pas assez de données pour les corrélations
-    const totalCorrDays = Math.max(spDays.length, stDays.length);
     if (lines.length === 0) {
-      if (totalCorrDays < 7) {
-        return `<div class="ichart-panel"><div class="ichart-card">
-          <div class="ichart-header"><span class="ichart-title">Synthèse de la semaine</span></div>
-          <div class="ichart-empty" style="padding:24px 0 16px">
-            Continue à remplir ton journal chaque jour — les corrélations entre tes indicateurs apparaîtront ici dès 7 jours de données croisées.
-          </div>
-        </div></div>`;
-      }
-      lines.push("Pas de corrélation significative détectée sur la période — continue à noter pour affiner l'analyse.");
+      const seuilLabel = periode === 'mois' ? '14 jours' : '7 jours';
+      return `<div class="ichart-panel"><div class="ichart-card">
+        <div class="ichart-header"><span class="ichart-title">${titre}</span></div>
+        <div class="ichart-empty" style="padding:24px 0 16px">
+          Continue à remplir ton journal — les corrélations entre tes indicateurs apparaîtront ici dès ${seuilLabel} de données croisées.
+        </div>
+      </div></div>`;
     }
 
     return `<div class="ichart-panel"><div class="ichart-card">
-      <div class="ichart-header"><span class="ichart-title">Synthèse de la semaine</span></div>
+      <div class="ichart-header"><span class="ichart-title">${titre}</span></div>
       <div style="margin-top:4px">${lines.map(l =>
         `<div style="font-size:0.78rem;color:var(--text-dark);line-height:1.55;padding:8px 0;border-bottom:1px solid var(--oat)">${l}</div>`
       ).join('')}</div>
@@ -7258,37 +7319,41 @@ function buildInsightsCarousel(getDayVals, nDays) {
 
   return `
     <div class="section-title">Évolution sur ${nDays} jours</div>
-    <div class="ichart-carousel" id="ichart-carousel">
-      <div class="ichart-track" id="ichart-track" onscroll="ichartHandleScroll(this)">
+    <div class="ichart-carousel" id="ichart-carousel${carouselSuffix}">
+      <div class="ichart-track" id="ichart-track${carouselSuffix}" onscroll="ichartHandleScroll(this,'${carouselSuffix}')">
         ${p1s}${p2s}${p3s}${p4s}${p5}
       </div>
-      <div class="ichart-dots" id="ichart-dots">
-        <div class="ichart-dot active" onclick="ichartGoTo(0)"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(1)"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(2)"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(3)"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(4)"></div>
+      <div class="ichart-dots" id="ichart-dots${carouselSuffix}">
+        <div class="ichart-dot active" onclick="ichartGoTo(0,'${carouselSuffix}')"></div>
+        <div class="ichart-dot"        onclick="ichartGoTo(1,'${carouselSuffix}')"></div>
+        <div class="ichart-dot"        onclick="ichartGoTo(2,'${carouselSuffix}')"></div>
+        <div class="ichart-dot"        onclick="ichartGoTo(3,'${carouselSuffix}')"></div>
+        <div class="ichart-dot"        onclick="ichartGoTo(4,'${carouselSuffix}')"></div>
       </div>
     </div>`;
 }
 
-// Navigation carrousel Insights
-let _ichartIdx = 0;
-function ichartGoTo(idx) {
-  const track = document.getElementById('ichart-track');
+// Navigation carrousel Insights — gère les deux carrousels (7j et 30j) via suffix
+const _ichartIdx = {};
+function ichartGoTo(idx, suffix) {
+  suffix = suffix || '';
+  const track = document.getElementById('ichart-track' + suffix);
   if (!track) return;
-  _ichartIdx = idx;
+  _ichartIdx[suffix] = idx;
   track.scrollTo({ left: idx * track.offsetWidth, behavior: 'smooth' });
-  document.querySelectorAll('.ichart-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
+  document.querySelectorAll(`#ichart-dots${suffix} .ichart-dot`)
+    .forEach((d,i) => d.classList.toggle('active', i===idx));
 }
-let _ichartScrollTimer = null;
-function ichartHandleScroll(track) {
-  clearTimeout(_ichartScrollTimer);
-  _ichartScrollTimer = setTimeout(() => {
+let _ichartScrollTimers = {};
+function ichartHandleScroll(track, suffix) {
+  suffix = suffix || '';
+  clearTimeout(_ichartScrollTimers[suffix]);
+  _ichartScrollTimers[suffix] = setTimeout(() => {
     const idx = Math.round(track.scrollLeft / track.offsetWidth);
-    if (idx !== _ichartIdx) {
-      _ichartIdx = idx;
-      document.querySelectorAll('.ichart-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
+    if (idx !== _ichartIdx[suffix]) {
+      _ichartIdx[suffix] = idx;
+      document.querySelectorAll(`#ichart-dots${suffix} .ichart-dot`)
+        .forEach((d,i) => d.classList.toggle('active', i===idx));
     }
   }, 80);
 }

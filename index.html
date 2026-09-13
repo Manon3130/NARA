@@ -6978,54 +6978,73 @@ function buildInsightsCarousel(getDayVals, nDays) {
     </div></div>`;
   }
 
-  // ── Panneau 1 : Transit & Ballonnements — AXES Y DISTINCTS ──────────────
-  // Transit : 0=lent, 1=normal, 2=rapide (axe gauche, 0-2)
-  // Ballonnements : 0-5 (axe droit, 0-5) → normalisé dans le même espace visuel
+  // ── Panneau 1 : Transit (calendrier selles) & Ballonnements (journal) ──────
+  // Transit : fréquence quotidienne depuis nara_cal_YYYY-MM-DD
+  //   → yn === 'oui' : freq (nb passages), yn === 'non' : 0, absent : null (pas de point)
+  // Ballonnements : curseur 0-5 du Journal section Intestin & Transit (inchangé)
   function panel1Transit() {
-    const vT  = days.map(d => d.transit);      // 0-2
-    const vB  = days.map(d => d.ballonnements); // 0-5
+    // Lire les données calendrier pour chaque jour
+    const calData = days.map(d => {
+      try {
+        const raw = localStorage.getItem('nara_cal_' + d.ds);
+        if (!raw) return null;
+        const cal = JSON.parse(raw);
+        if (!cal || !cal.yn) return null;
+        return cal.yn === 'oui' ? (cal.freq || 1) : 0; // oui → freq, non → 0
+      } catch { return null; }
+    });
+    const vT = calData;      // null = pas de données ce jour-là
+    const vB = days.map(d => d.ballonnements); // du journal (inchangé)
+
     const hasT = vT.some(v=>v!==null);
     const hasB = vB.some(v=>v!==null);
 
-    // Normaliser chaque série indépendamment dans [0,1] puis projeter dans IH
+    const maxFreq = Math.max(...vT.filter(v=>v!==null), 3); // axe Y min 3 passages
+
     function pyNorm(v, min, max) {
       if (v === null) return null;
       if (max === min) return PAD_T + IH/2;
       return PAD_T + IH - ((v - min)/(max - min)) * IH;
     }
-    const ptsT = vT.map((v,i) => v === null ? null : { x: px(i, vT.length), y: pyNorm(v, 0, 2) });
+
+    const ptsT = vT.map((v,i) => v === null ? null : { x: px(i, vT.length), y: pyNorm(v, 0, maxFreq) });
     const ptsB = vB.map((v,i) => v === null ? null : { x: px(i, vB.length), y: pyNorm(v, 0, 5) });
 
-    const gridT = [0, 1, 2].map(t => {
-      const y = pyNorm(t, 0, 2).toFixed(1);
-      const lbl = t===0?'Lent':t===1?'Normal':'Rapide';
-      return `<text x="${PAD_L - 3}" y="${y}" text-anchor="end" font-size="6.5" fill="${COL.transit}" dominant-baseline="middle">${lbl}</text>`;
+    // Étiquettes axe gauche (fréquence selles) : 0, 1, 2, 3+
+    const gridT = [0, 1, 2, maxFreq].filter((v,i,a) => a.indexOf(v)===i).map(t => {
+      const y = pyNorm(t, 0, maxFreq);
+      if (y === null) return '';
+      return `<text x="${PAD_L - 3}" y="${y.toFixed(1)}" text-anchor="end" font-size="6.5" fill="${COL.transit}" dominant-baseline="middle">${t===0?'0':t+'×'}</text>`;
     }).join('');
+    // Étiquettes axe droit (ballonnements /5)
     const gridB = [0, 2.5, 5].map(t => {
-      const y = pyNorm(t, 0, 5).toFixed(1);
-      return `<text x="${SVG_W - PAD_R + 3}" y="${y}" text-anchor="start" font-size="6.5" fill="${COL.ballonnements}" dominant-baseline="middle">${t}</text>`;
+      const y = pyNorm(t, 0, 5);
+      if (y === null) return '';
+      return `<text x="${SVG_W - PAD_R + 3}" y="${y.toFixed(1)}" text-anchor="start" font-size="6.5" fill="${COL.ballonnements}" dominant-baseline="middle">${t}</text>`;
     }).join('');
+
     const axisL = `<line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
     const axisR = `<line x1="${SVG_W-PAD_R}" y1="${PAD_T}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8" opacity="0.6"/>`;
+    const axisX = `<line x1="${PAD_L}" y1="${PAD_T+IH}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
 
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
-        <span class="ichart-title">Transit & Ballonnements</span>
+        <span class="ichart-title">Transit &amp; Ballonnements</span>
         <div class="ichart-legend">
-          <span><span style="color:${COL.transit};font-size:1rem">●</span> Transit</span>
+          <span><span style="color:${COL.transit};font-size:1rem">●</span> Passages/jour</span>
           <span><span style="color:${COL.ballonnements};font-size:1rem">●</span> Ballonnements /5</span>
         </div>
       </div>
       <div class="ichart-svg-wrap">
         ${(hasT||hasB) ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
-          ${axisL}${axisR}
+          ${axisL}${axisR}${axisX}
           ${gridT}${gridB}
           ${dayLabels(vT.length)}
           ${hasT && smoothPath(ptsT) ? `<path d="${smoothPath(ptsT)}" fill="none" stroke="${COL.transit}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
           ${hasB && smoothPath(ptsB) ? `<path d="${smoothPath(ptsB)}" fill="none" stroke="${COL.ballonnements}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4,2"/>` : ''}
           ${hasT ? dots(ptsT, COL.transit) : ''}
           ${hasB ? dots(ptsB, COL.ballonnements) : ''}
-        </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
+        </svg>` : '<div class="ichart-empty">Pas encore de données — remplis le calendrier transit pour voir la courbe ici</div>'}
       </div>
     </div></div>`;
   }

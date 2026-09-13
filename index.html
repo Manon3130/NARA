@@ -6713,36 +6713,7 @@ function renderInsightsPage() {
 
 
 
-  // ── Observations textuelles ────────────────────────────────────────────────
-  const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
-  const pE = entries.filter(e => e.type==='peau'    && e.values?.peau_etat    !== undefined);
-  const sE = entries.filter(e => e.type==='stress'  && e.values?.stress       !== undefined);
 
-  html += '<div class="section-title">Observations</div>';
-
-  if (tE.length >= 3) {
-    const normal = tE.filter(e => e.values.transit_etat===1).length;
-    const pct = Math.round(normal/tE.length*100);
-    html += `<div class="insight-real-card"><div class="irc-tag">🌿 Transit · ${tE.length} entrées</div>
-      <div class="irc-text">Ton transit est <strong>normal ${pct}% du temps</strong> sur les données disponibles.</div></div>`;
-  }
-  if (pE.length >= 3) {
-    const calme  = pE.filter(e => e.values.peau_etat===2).length;
-    const stable = pE.filter(e => e.values.peau_etat===1).length;
-    const pctCalme  = Math.round(calme /pE.length*100);
-    const pctPositif = Math.round((calme+stable)/pE.length*100);
-    const label = calme > 0
-      ? `calme ${pctCalme}% du temps et stable ${Math.round(stable/pE.length*100)}% du temps`
-      : `stable ${pctPositif}% du temps`;
-    html += `<div class="insight-real-card" style="border-left-color:var(--blush)"><div class="irc-tag">✨ Peau · ${pE.length} entrées</div>
-      <div class="irc-text">Ta peau est <strong>${label}</strong> sur les données disponibles.</div></div>`;
-  }
-  if (sE.length >= 3) {
-    const avgS = (sE.reduce((s,e)=>s+(e.values.stress||0),0)/sE.length).toFixed(1);
-    const avgE = (sE.reduce((s,e)=>s+(e.values.energie||0),0)/sE.length).toFixed(1);
-    html += `<div class="insight-real-card" style="border-left-color:#8a8ec4"><div class="irc-tag">😮‍💨 Stress & Énergie · ${sE.length} entrées</div>
-      <div class="irc-text">Stress moyen : <strong>${avgS}/5</strong> · Énergie moyenne : <strong>${avgE}/5</strong>.</div></div>`;
-  }
   // Insights test alimentaire
   const foodTestInsights = getFoodTestInsights(entries);
   if (foodTestInsights.length > 0) {
@@ -7086,6 +7057,159 @@ function buildInsightsCarousel(getDayVals, nDays) {
     </div></div>`;
   }
 
+  // ── Constat + conseil par panneau ─────────────────────────────────────────
+  // Les conseils sont formulés comme recommandations directes, inspirés des
+  // notes et points-clés de la bibliothèque Nara — jamais cités comme source.
+
+  function panelSummary(key1, key2, icon1, icon2, col1, col2) {
+    const v1all = days.map(d => d[key1]).filter(v => v !== null);
+    const v2all = days.map(d => d[key2]).filter(v => v !== null);
+    const n1 = v1all.length, n2 = v2all.length;
+    if (n1 === 0 && n2 === 0) return '';
+
+    const avg1 = n1 ? (v1all.reduce((s,v)=>s+v,0)/n1).toFixed(1) : null;
+    const avg2 = n2 ? (v2all.reduce((s,v)=>s+v,0)/n2).toFixed(1) : null;
+
+    let constat = '', conseil = '';
+
+    if (key1 === 'sommeil' && key2 === 'energie') {
+      if (avg1) constat += `Sommeil moyen : <strong>${avg1}/5</strong>`;
+      if (avg2) constat += (constat ? ' · ' : '') + `Énergie moyenne : <strong>${avg2}/5</strong>`;
+      constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(n1,n2)} jour${Math.max(n1,n2)>1?'s':''})</span>`;
+      const somMoy = parseFloat(avg1||0), enMoy = parseFloat(avg2||0);
+      if (somMoy < 2.5 || enMoy < 2.5) {
+        conseil = "Un sommeil court ou de mauvaise qualité coupe directement l'énergie du lendemain. Essaie de te coucher 30 min plus tôt cette semaine — même un léger décalage peut changer la donne.";
+      } else if (somMoy >= 4 && enMoy >= 4) {
+        conseil = "Ton sommeil et ton énergie sont solides en ce moment. Continue ce rythme — c'est souvent dans ces phases que le corps régule mieux le reste.";
+      } else {
+        conseil = "Essaie de garder un horaire de lever constant, même le week-end — c'est le levier le plus efficace pour stabiliser l'énergie sur la semaine.";
+      }
+    }
+
+    if (key1 === 'stress' && key2 === 'humeur') {
+      if (avg1) constat += `Stress moyen : <strong>${avg1}/5</strong>`;
+      if (avg2) {
+        const humLbl = parseFloat(avg2) >= 2.5 ? 'plutôt bonne' : 'souvent basse';
+        constat += (constat ? ' · ' : '') + `Humeur <strong>${humLbl}</strong>`;
+      }
+      constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(n1,n2)} jour${Math.max(n1,n2)>1?'s':''})</span>`;
+      const sMoy = parseFloat(avg1||0);
+      if (sMoy >= 3.5) {
+        conseil = "Un stress chronique élevé épuise le magnésium et perturbe le cortisol. Intégrer 5 min de respiration lente après les repas peut réduire la charge perçue — c'est petit mais cumulatif.";
+      } else if (sMoy <= 1.5) {
+        conseil = "Ton niveau de stress semble maîtrisé cette semaine. C'est une bonne fenêtre pour introduire des changements d'habitudes — le corps les intègre mieux quand le système nerveux est calme.";
+      } else {
+        conseil = "Alterner des moments de haute stimulation et des pauses réelles (pas juste scroller) aide le système nerveux à récupérer. Quelques minutes dehors en journée font souvent la différence.";
+      }
+    }
+
+    if (key1 === 'transit') {
+      // Cas Transit & Ballonnements — traitement spécial
+      const tAll = days.map(d=>d.transit).filter(v=>v!==null);
+      const bAll = days.map(d=>d.ballonnements).filter(v=>v!==null);
+      const normPct = tAll.length ? Math.round(tAll.filter(v=>v===1).length/tAll.length*100) : null;
+      const avgBal  = bAll.length ? (bAll.reduce((s,v)=>s+v,0)/bAll.length).toFixed(1) : null;
+      if (normPct !== null) constat += `Transit normal <strong>${normPct}%</strong> du temps`;
+      if (avgBal  !== null) constat += (constat?'  · ':'') + `Ballonnements moyens <strong>${avgBal}/5</strong>`;
+      constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(tAll.length,bAll.length)} jour${Math.max(tAll.length,bAll.length)>1?'s':''})</span>`;
+      if (parseFloat(avgBal||0) >= 3) {
+        conseil = "Des ballonnements fréquents peuvent indiquer une fermentation intestinale élevée. Manger plus lentement, bien mâcher et réduire temporairement les légumineuses et les choux aide souvent à les calmer. Si ça dure, c'est un point à aborder avec ton médecin.";
+      } else if (normPct !== null && normPct < 60) {
+        conseil = "Un transit irrégulier réagit souvent à l'hydratation et aux fibres — vise 1,5L d'eau par jour et varie les sources de légumes. Si la tendance persiste, parle-en à ton gastro-entérologue.";
+      } else {
+        conseil = "Un transit régulier est l'un des meilleurs indicateurs de santé intestinale. Continue à varier ton alimentation et à rester bien hydratée.";
+      }
+      return `<div class="ichart-summary"><strong>Cette semaine</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+    }
+
+    if (key1 === 'peau') {
+      const pAll = days.map(d=>d.peau).filter(v=>v!==null);
+      const calme  = pAll.filter(v=>v===2).length;
+      const stable = pAll.filter(v=>v===1).length;
+      const pctPos = pAll.length ? Math.round((calme+stable)/pAll.length*100) : null;
+      if (pctPos !== null) {
+        const lbl = calme > stable ? `calme ${Math.round(calme/pAll.length*100)}% du temps` : `stable ou calme ${pctPos}% du temps`;
+        constat = `Peau <strong>${lbl}</strong>`;
+      }
+      constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${pAll.length} jour${pAll.length>1?'s':''})</span>`;
+      const pctPoussee = pAll.length ? Math.round(pAll.filter(v=>v===0).length/pAll.length*100) : 0;
+      if (pctPoussee >= 40) {
+        conseil = "Des poussées fréquentes méritent d'être notées et partagées avec ton dermatologue — elles peuvent signaler une inflammation systémique ou une réaction alimentaire. La peau est souvent le dernier organe à exprimer ce que l'intestin vit en premier.";
+      } else if (pctPos !== null && pctPos >= 80) {
+        conseil = "Ta peau est dans une bonne phase. C'est un bon moment pour observer ce qui fonctionne — alimentation, routines, niveau de stress — pour en garder la trace.";
+      } else {
+        conseil = "La peau réagit souvent avec un délai de 2 à 4 jours par rapport à ce qu'on mange ou vit. Regarder les journées d'avant une poussée peut révéler des déclencheurs.";
+      }
+      return `<div class="ichart-summary"><strong>Cette semaine</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+    }
+
+    return `<div class="ichart-summary"><strong>Cette semaine</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+  }
+
+  // ── Panneau 5 : Synthèse globale (croisant les briques) ─────────────────
+  function panel5Synthese(allEntriesForCorr) {
+    // Utiliser les résultats des corrélations déjà calculées par Brique 2
+    const byDate = {};
+    allEntriesForCorr.forEach(e => {
+      if (!byDate[e.dateStr]) byDate[e.dateStr] = {};
+      if (e.type==='stress')  Object.assign(byDate[e.dateStr], {sommeil:e.values.sommeil, stress:e.values.stress, energie:e.values.energie});
+      if (e.type==='peau')    byDate[e.dateStr].peau = e.values.peau_etat;
+      if (e.type==='transit') Object.assign(byDate[e.dateStr], {transit:e.values.transit_etat, ballonnements:e.values.ballonnements});
+    });
+    const dts = Object.keys(byDate).sort();
+
+    const lines = [];
+
+    // Corrélation Sommeil ↔ Peau
+    const spDays = dts.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
+    if (spDays.length >= 7) {
+      const rho = spearmanCorr(spDays.map(d=>byDate[d].sommeil), spDays.map(d=>byDate[d].peau));
+      if (rho !== null && rho >= 0.35) {
+        lines.push(`😴 ↔ ✨ <strong>Sommeil & peau liés</strong> — Les nuits de meilleur sommeil coïncident avec des jours de peau plus calme (sur ${spDays.length} jours communs). Un lien observé, pas une certitude.`);
+      }
+    }
+
+    // Corrélation Stress ↔ Transit
+    const stDays = dts.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
+    if (stDays.length >= 7) {
+      const rho = spearmanCorr(stDays.map(d=>byDate[d].stress), stDays.map(d=>byDate[d].transit));
+      if (rho !== null && Math.abs(rho) >= 0.35) {
+        const sens = rho < 0 ? "ton transit semble plus perturbé les jours de stress élevé" : "le stress élevé accompagne un transit plus rapide";
+        lines.push(`😮‍💨 ↔ 🌿 <strong>Stress & transit liés</strong> — Sur ${stDays.length} jours, ${sens}. L'axe cerveau-intestin : réel et bidirectionnel.`);
+      }
+    }
+
+    // Corrélation cycle si dispo
+    const settings = typeof cycleLoad === 'function' ? cycleLoad() : null;
+    if (settings && settings.active && settings.startDate) {
+      lines.push(`🌸 <strong>Suivi cycle actif</strong> — Tes données de transit et de peau sont croisées avec ta phase de cycle dans la section "Cycle & corrélations" ci-dessous.`);
+    }
+
+    // Message d'attente si pas assez de données pour les corrélations
+    const totalCorrDays = Math.max(spDays.length, stDays.length);
+    if (lines.length === 0) {
+      if (totalCorrDays < 7) {
+        return `<div class="ichart-panel"><div class="ichart-card">
+          <div class="ichart-header"><span class="ichart-title">Synthèse de la semaine</span></div>
+          <div class="ichart-empty" style="padding:24px 0 16px">
+            Continue à remplir ton journal chaque jour — les corrélations entre tes indicateurs apparaîtront ici dès 7 jours de données croisées.
+          </div>
+        </div></div>`;
+      }
+      lines.push("Pas de corrélation significative détectée sur la période — continue à noter pour affiner l'analyse.");
+    }
+
+    return `<div class="ichart-panel"><div class="ichart-card">
+      <div class="ichart-header"><span class="ichart-title">Synthèse de la semaine</span></div>
+      <div style="margin-top:4px">${lines.map(l =>
+        `<div style="font-size:0.78rem;color:var(--text-dark);line-height:1.55;padding:8px 0;border-bottom:1px solid var(--oat)">${l}</div>`
+      ).join('')}</div>
+      <div style="font-size:0.65rem;color:var(--text-light);margin-top:10px;font-style:italic">
+        Ces tendances sont des observations sur tes propres données — pas des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin ou gastro-entérologue.
+      </div>
+    </div></div>`;
+  }
+
   const p1 = panel1Transit();
   const p2 = panel2('Sommeil & Énergie', 'sommeil', 'energie', COL.sommeil, COL.energie,
                      'Sommeil /5', 'Énergie /5', 0, 5, [0, 2.5, 5]);
@@ -7093,17 +7217,38 @@ function buildInsightsCarousel(getDayVals, nDays) {
                      'Stress /5', 'Humeur (1=Basse→3=Bonne)', 0, 5, [0, 2.5, 5]);
   const p4 = panel4Peau();
 
+  // Récupérer allEntries pour le panneau synthèse (passé depuis renderInsightsPage)
+  const p5 = panel5Synthese(typeof allEntries !== 'undefined' ? allEntries : []);
+
+  // Ajouter résumés dans chaque panneau
+  const s1 = panelSummary('transit', 'ballonnements');
+  const s2 = panelSummary('sommeil', 'energie');
+  const s3 = panelSummary('stress', 'humeur');
+  const s4 = panelSummary('peau', 'peau');
+
+  // Injecter les résumés dans les panneaux
+  function injectSummary(panelHtml, summary) {
+    if (!summary) return panelHtml;
+    return panelHtml.replace('</div></div>', summary + '</div></div>');
+  }
+
+  const p1s = injectSummary(p1, s1);
+  const p2s = injectSummary(p2, s2);
+  const p3s = injectSummary(p3, s3);
+  const p4s = injectSummary(p4, s4);
+
   return `
     <div class="section-title">Évolution sur ${nDays} jours</div>
     <div class="ichart-carousel" id="ichart-carousel">
       <div class="ichart-track" id="ichart-track" onscroll="ichartHandleScroll(this)">
-        ${p1}${p2}${p3}${p4}
+        ${p1s}${p2s}${p3s}${p4s}${p5}
       </div>
       <div class="ichart-dots" id="ichart-dots">
         <div class="ichart-dot active" onclick="ichartGoTo(0)"></div>
         <div class="ichart-dot"        onclick="ichartGoTo(1)"></div>
         <div class="ichart-dot"        onclick="ichartGoTo(2)"></div>
         <div class="ichart-dot"        onclick="ichartGoTo(3)"></div>
+        <div class="ichart-dot"        onclick="ichartGoTo(4)"></div>
       </div>
     </div>`;
 }

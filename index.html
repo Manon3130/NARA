@@ -6899,10 +6899,9 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     return PAD_T + IH - ((val - min) / (max - min)) * IH;
   }
 
-  // Cubic bezier smooth path (contrôle horizontal)
+  // Cubic bezier smooth path — segments continus (données présentes)
   function smoothPath(pts) {
     if (!pts || pts.length === 0) return '';
-    // Grouper les pts consécutifs non-null
     const segments = [];
     let seg = [];
     pts.forEach(pt => {
@@ -6922,6 +6921,27 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     }).join(' ');
   }
 
+  // Chemin en pointillés reliant les "trous" (données manquantes) entre segments
+  // Relie le dernier point d'un segment au premier du segment suivant
+  function gapPath(pts) {
+    if (!pts || pts.length === 0) return '';
+    const segments = [];
+    let seg = [];
+    pts.forEach(pt => {
+      if (pt === null) { if (seg.length) { segments.push(seg); seg = []; } }
+      else seg.push(pt);
+    });
+    if (seg.length) segments.push(seg);
+    if (segments.length < 2) return ''; // pas de trou
+    let d = '';
+    for (let i = 0; i < segments.length - 1; i++) {
+      const last  = segments[i][segments[i].length - 1];
+      const first = segments[i + 1][0];
+      d += ` M${last.x.toFixed(1)},${last.y.toFixed(1)} L${first.x.toFixed(1)},${first.y.toFixed(1)}`;
+    }
+    return d.trim();
+  }
+
   // Construire une série de points {x,y} ou null si pas de données
   function series(vals, min, max, idx) {
     return vals.map((v, i) => v === null ? null : { x: px(i, vals.length), y: py(v, min, max) });
@@ -6936,30 +6956,34 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     }).join('');
   }
 
-  // Labels jours bas du graphique
+  // Labels axe temporel — adapté selon la période
+  // 7j  : initiales des jours (L M M J V S D)
+  // 30j : repères de semaine S1 S2 S3 S4 (S5 si nécessaire)
   function dayLabels(n) {
+    if (n > 14) {
+      // Calculer les débuts de semaines dans la période
+      // On cherche les lundis (ou le premier jour si lundi est hors période)
+      const labels = days.map((d, i) => {
+        const date = new Date(d.ds + 'T12:00:00');
+        const dayOfWeek = date.getDay(); // 0=dim, 1=lun…
+        // Afficher un label au premier jour et à chaque lundi
+        if (i === 0 || dayOfWeek === 1) return i;
+        return null;
+      }).filter(i => i !== null);
+      // Numéroter S1, S2… depuis le début
+      return labels.map((i, si) => {
+        const x = px(i, n);
+        return `<text x="${x.toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7.5" fill="var(--text-light)">S${si+1}</text>`;
+      }).join('');
+    }
+    // 7j : une initiale par jour
     return days.map((d, i) => {
       const x = px(i, n);
-      if (n > 14 && i % 7 !== 0 && i !== n-1) return '';
-      if (n <= 14 && n > 7  && i % 2 !== 0 && i !== n-1) return '';
       return `<text x="${x.toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7.5" fill="var(--text-light)">${d.dayLbl}</text>`;
     }).join('');
   }
 
-  // Cercles aux points réels
-  function dots(pts, col) {
-    return pts.map(pt => pt
-      ? `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="${col}" stroke="white" stroke-width="1.5"/>`
-      : '').join('');
-  }
-
-  // Axe Y droit pour une 2e série (transit + ballonnements — axes distincts)
-  function pyRight(val, min, max) {
-    if (max === min) return PAD_T + IH / 2;
-    return PAD_T + IH - ((val - min) / (max - min)) * IH;
-  }
-
-  // ── Panneau générique à 2 courbes (même axe) ────────────────────────────
+  // Panneau générique à 2 courbes (même axe)
   function panel2(title, key1, key2, col1, col2, lbl1, lbl2, min, max, gridTicks) {
     const v1 = days.map(d => d[key1]);
     const v2 = days.map(d => d[key2]);
@@ -6968,6 +6992,8 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const pts2 = series(v2, min, max);
     const g = grid(gridTicks);
     const dl = dayLabels(days.length);
+    const gap1 = gapPath(pts1);
+    const gap2 = gapPath(pts2);
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">${title}</span>
@@ -6980,8 +7006,10 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
         ${hasData ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
           ${g}
           ${smoothPath(pts1) ? `<path d="${smoothPath(pts1)}" fill="none" stroke="${col1}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
+          ${gap1 ? `<path d="${gap1}" fill="none" stroke="${col1}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
           ${smoothPath(pts2) ? `<path d="${smoothPath(pts2)}" fill="none" stroke="${col2}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-          ${dots(pts1,col1)}${dots(pts2,col2)}${dl}
+          ${gap2 ? `<path d="${gap2}" fill="none" stroke="${col2}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
+          ${dl}
         </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
       </div>
     </div></div>`;
@@ -7036,6 +7064,9 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const axisR = `<line x1="${SVG_W-PAD_R}" y1="${PAD_T}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8" opacity="0.6"/>`;
     const axisX = `<line x1="${PAD_L}" y1="${PAD_T+IH}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
 
+    const gapT = gapPath(ptsT);
+    const gapB = gapPath(ptsB);
+
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">Transit &amp; Ballonnements</span>
@@ -7050,9 +7081,9 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
           ${gridT}${gridB}
           ${dayLabels(vT.length)}
           ${hasT && smoothPath(ptsT) ? `<path d="${smoothPath(ptsT)}" fill="none" stroke="${COL.transit}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-          ${hasB && smoothPath(ptsB) ? `<path d="${smoothPath(ptsB)}" fill="none" stroke="${COL.ballonnements}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4,2"/>` : ''}
-          ${hasT ? dots(ptsT, COL.transit) : ''}
-          ${hasB ? dots(ptsB, COL.ballonnements) : ''}
+          ${hasT && gapT ? `<path d="${gapT}" fill="none" stroke="${COL.transit}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
+          ${hasB && smoothPath(ptsB) ? `<path d="${smoothPath(ptsB)}" fill="none" stroke="${COL.ballonnements}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="5,2"/>` : ''}
+          ${hasB && gapB ? `<path d="${gapB}" fill="none" stroke="${COL.ballonnements}" stroke-width="1.4" stroke-dasharray="2,4" opacity="0.35"/>` : ''}
         </svg>` : '<div class="ichart-empty">Pas encore de données — remplis le calendrier transit pour voir la courbe ici</div>'}
       </div>
     </div></div>`;
@@ -7070,6 +7101,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       return `<line x1="${PAD_L}" y1="${y}" x2="${SVG_W-PAD_R}" y2="${y}" stroke="var(--oat)" stroke-width="0.8"/>
         <text x="${PAD_L-3}" y="${y}" text-anchor="end" font-size="6.5" fill="${COL.peau}" dominant-baseline="middle">${lbl}</text>`;
     }).join('');
+    const gapP = gapPath(ptsP);
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">Peau</span>
@@ -7079,7 +7111,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
         ${has ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
           ${gridPeau}${dayLabels(vP.length)}
           ${smoothPath(ptsP) ? `<path d="${smoothPath(ptsP)}" fill="none" stroke="${COL.peau}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-          ${dots(ptsP, COL.peau)}
+          ${gapP ? `<path d="${gapP}" fill="none" stroke="${COL.peau}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
         </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
       </div>
     </div></div>`;

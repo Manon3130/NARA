@@ -6844,321 +6844,185 @@ function renderInsightsPage() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CARROUSEL GRAPHIQUES INSIGHTS — 4 panneaux glissables
-// Panneau 1 : Transit & Ballonnements (axes Y distincts)
-// Panneau 2 : Sommeil & Énergie (même échelle 0-5)
-// Panneau 3 : Stress & Humeur (0-5 / Bonne=3 Neutre=2 Basse=1)
-// Panneau 4 : Peau seule (0=poussée 1=stable 2=calme)
-// ══════════════════════════════════════════════════════════════════════════════
+// CARROUSEL GRAPHIQUES INSIGHTS — 4 panneaux glissables en BARRES
+// Panneau 1 : Transit & Ballonnements  Panneau 2 : Sommeil & Énergie
+// Panneau 3 : Stress & Humeur          Panneau 4 : Peau
+// Panneau 5 : Synthèse de période
+//
+// Palette couleurs fixe — cohérente partout dans l'app :
+//   Transit      → --avocado   #C2C395  (vert naturel)
+//   Ballonnements→ #B5845A              (brun terracotta)
+//   Sommeil      → --sage      #818263  (vert profond)
+//   Énergie      → #D4A843              (ambre doré)
+//   Stress       → --blush     #DDBAAE  (rose poudré)
+//   Humeur       → #A89BC2              (mauve lavande)
+//   Peau         → #C4907A              (rose terracotta chaud)
 
 function buildInsightsCarousel(getDayVals, nDays, periode) {
-  // periode : 'semaine' (défaut) | 'mois'
-  // Adapte les formulations des constats et conseils selon l'échelle temporelle
   periode = periode || 'semaine';
   const periodeLabel   = periode === 'mois' ? 'sur le mois' : 'cette semaine';
-  const carouselSuffix = periode === 'mois' ? '-30' : '';       // IDs uniques
-  const corrSeuil      = periode === 'mois' ? 14 : 7;           // seuil corrélations plus exigeant sur 30j
-  const jours = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const carouselSuffix = periode === 'mois' ? '-30' : '';
+  const corrSeuil      = periode === 'mois' ? 14 : 7;
+
+  const COL = {
+    transit:      'var(--avocado)',
+    ballonnements:'#B5845A',
+    sommeil:      'var(--sage)',
+    energie:      '#D4A843',
+    stress:       'var(--blush)',
+    humeur:       '#A89BC2',
+    peau:         '#C4907A',
+  };
+
+  const jours7 = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const days = Array.from({length: nDays}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (nDays - 1 - i));
     const ds = d.toISOString().split('T')[0];
     const v  = getDayVals(ds) || {};
-    const dayLbl = jours[d.getDay() === 0 ? 6 : d.getDay()-1];
     return {
-      ds, dayLbl,
-      transit:     v.transit     !== undefined && v.transit     !== null ? v.transit     : null,
-      ballonnements: (v.ballonnements !== undefined && v.ballonnements > 0) ? v.ballonnements : null,
-      sommeil:     (v.sommeil    > 0) ? v.sommeil    : null,
-      energie:     (v.energie    > 0) ? v.energie    : null,
-      stress:      (v.stress     > 0) ? v.stress     : null,
-      humeur:      v.humeur      !== undefined && v.humeur !== null
-                     ? (v.humeur === 0 ? 3 : v.humeur === 1 ? 2 : 1) : null, // Bonne→3 Neutre→2 Basse→1
-      peau:        v.peau        !== undefined && v.peau !== null ? v.peau : null,
+      ds,
+      dayLbl: jours7[d.getDay() === 0 ? 6 : d.getDay()-1],
+      transit:      (v.transit !== undefined && v.transit !== null) ? v.transit : null,
+      ballonnements:(v.ballonnements > 0) ? v.ballonnements : null,
+      sommeil:      (v.sommeil  > 0) ? v.sommeil  : null,
+      energie:      (v.energie  > 0) ? v.energie  : null,
+      stress:       (v.stress   > 0) ? v.stress   : null,
+      humeur:       (v.humeur !== undefined && v.humeur !== null)
+                      ? (v.humeur === 0 ? 3 : v.humeur === 1 ? 2 : 1) : null,
+      peau:         (v.peau !== undefined && v.peau !== null) ? v.peau : null,
     };
   });
 
-  // Palette couleurs cohérente avec le reste de l'app
-  const COL = {
-    transit:      'var(--avocado)',     // vert
-    ballonnements:'#f97316',            // orange
-    sommeil:      '#6366f1',            // indigo
-    energie:      '#f59e0b',            // ambre
-    stress:       '#ec4899',            // rose vif
-    humeur:       '#8b5cf6',            // violet
-    peau:         'var(--blush)',        // rose pâle Nara
-  };
-
-  // SVG cubic bezier — une série de points → path lisse
-  const SVG_W = 280, SVG_H = 72, PAD_L = 28, PAD_R = 8, PAD_T = 6, PAD_B = 16;
+  // ── Dimensions SVG ─────────────────────────────────────────────────────
+  const SVG_W = 288, SVG_H = 80, PAD_L = 30, PAD_R = 6, PAD_T = 4, PAD_B = 16;
   const IW = SVG_W - PAD_L - PAD_R;
   const IH = SVG_H - PAD_T - PAD_B;
+  const n  = days.length;
 
-  function px(i, n) { return PAD_L + (n < 2 ? IW/2 : (i / (n-1)) * IW); }
-  function py(val, min, max) {
-    if (max === min) return PAD_T + IH / 2;
-    return PAD_T + IH - ((val - min) / (max - min)) * IH;
-  }
+  function groupX(i) { return PAD_L + (i + 0.5) * (IW / n); }
+  function barH(v, max) { return (v === null || max === 0) ? 0 : Math.max(2, Math.round((v / max) * IH)); }
+  const axisX = `<line x1="${PAD_L}" y1="${PAD_T+IH}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
 
-  // Cubic bezier smooth path — segments continus (données présentes)
-  function smoothPath(pts) {
-    if (!pts || pts.length === 0) return '';
-    const segments = [];
-    let seg = [];
-    pts.forEach(pt => {
-      if (pt === null) { if (seg.length) { segments.push(seg); seg = []; } }
-      else seg.push(pt);
-    });
-    if (seg.length) segments.push(seg);
-    return segments.map(s => {
-      if (s.length < 2) return s.length === 1
-        ? `M${s[0].x.toFixed(1)},${s[0].y.toFixed(1)}` : '';
-      let d = `M${s[0].x.toFixed(1)},${s[0].y.toFixed(1)}`;
-      for (let i = 1; i < s.length; i++) {
-        const cp = (s[i-1].x + s[i].x) / 2;
-        d += ` C${cp.toFixed(1)},${s[i-1].y.toFixed(1)} ${cp.toFixed(1)},${s[i].y.toFixed(1)} ${s[i].x.toFixed(1)},${s[i].y.toFixed(1)}`;
-      }
-      return d;
-    }).join(' ');
-  }
-
-  // Chemin en pointillés pour les zones sans données :
-  // — entre segments (milieu de courbe)
-  // — AVANT le premier point réel (début de période vide)
-  // — APRÈS le dernier point réel (fin de période vide)
-  // L'axe s'étend de x=PAD_L (premier jour) à x=SVG_W-PAD_R (dernier jour)
-  function gapPath(pts) {
-    if (!pts || pts.length === 0) return '';
-
-    // Trouver premier et dernier point non-null
-    const firstIdx = pts.findIndex(p => p !== null);
-    const lastIdx  = [...pts].reverse().findIndex(p => p !== null);
-    const lastReal = firstIdx === -1 ? -1 : pts.length - 1 - lastIdx;
-    if (firstIdx === -1) return ''; // aucune donnée
-
-    const firstPt  = pts[firstIdx];
-    const lastPt   = pts[lastReal];
-    const xStart   = PAD_L;
-    const xEnd     = SVG_W - PAD_R;
-
-    let d = '';
-
-    // Trou en DÉBUT : du bord gauche de l'axe au premier point réel
-    if (firstIdx > 0) {
-      d += ` M${xStart.toFixed(1)},${firstPt.y.toFixed(1)} L${firstPt.x.toFixed(1)},${firstPt.y.toFixed(1)}`;
-    }
-
-    // Trous internes : entre segments consécutifs
-    const segments = [];
-    let seg = [];
-    pts.forEach(pt => {
-      if (pt === null) { if (seg.length) { segments.push(seg); seg = []; } }
-      else seg.push(pt);
-    });
-    if (seg.length) segments.push(seg);
-    for (let i = 0; i < segments.length - 1; i++) {
-      const last  = segments[i][segments[i].length - 1];
-      const first = segments[i + 1][0];
-      d += ` M${last.x.toFixed(1)},${last.y.toFixed(1)} L${first.x.toFixed(1)},${first.y.toFixed(1)}`;
-    }
-
-    // Trou en FIN : du dernier point réel au bord droit de l'axe
-    if (lastReal < pts.length - 1) {
-      d += ` M${lastPt.x.toFixed(1)},${lastPt.y.toFixed(1)} L${xEnd.toFixed(1)},${lastPt.y.toFixed(1)}`;
-    }
-
-    return d.trim();
-  }
-
-  // Construire une série de points {x,y} ou null si pas de données
-  function series(vals, min, max, idx) {
-    return vals.map((v, i) => v === null ? null : { x: px(i, vals.length), y: py(v, min, max) });
-  }
-
-  // Grille horizontale légère
-  function grid(ticks) {
-    return ticks.map(t => {
-      const y = (PAD_T + IH - t * IH).toFixed(1);
-      return `<line x1="${PAD_L}" y1="${y}" x2="${SVG_W - PAD_R}" y2="${y}" stroke="var(--oat)" stroke-width="0.8"/>
-        <text x="${PAD_L - 3}" y="${y}" text-anchor="end" font-size="7" fill="var(--text-light)" dominant-baseline="middle">${t}</text>`;
-    }).join('');
-  }
-
-  // Labels axe temporel — adapté selon la période
-  // 7j  : initiales des jours (L M M J V S D)
-  // 30j : repères de semaine S1 S2 S3 S4 (S5 si nécessaire)
-  function dayLabels(n) {
+  // Labels axe temporel
+  function dayLabels() {
     if (n > 14) {
-      // Repères de semaine S1…S5 sur 30 jours
-      // Règle : label au premier lundi rencontré, puis chaque lundi suivant
-      // Si le premier jour EST un lundi, il devient S1 directement
-      // Si le premier jour N'EST PAS un lundi, on ajoute "S1" sur le premier lundi,
-      // sauf si un lundi arrive dans les 2 premiers jours (le début non-lundi est alors ignoré)
-      const mondayIndices = days
-        .map((d, i) => ({ i, isMonday: new Date(d.ds+'T12:00:00').getDay() === 1 }))
-        .filter(x => x.isMonday)
-        .map(x => x.i);
-
-      // Premier jour si non-lundi et si le premier lundi est à plus de 2 jours
-      const startIdx = (mondayIndices.length === 0 || mondayIndices[0] > 2) ? [0] : [];
-      const indices = [...startIdx, ...mondayIndices].slice(0, 5); // max S5
-
-      return indices.map((idx, si) => {
-        const x = px(idx, n);
-        return `<text x="${x.toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7.5" fill="var(--text-light)">S${si+1}</text>`;
-      }).join('');
+      const mondays = days.map((d,i) => ({i, m: new Date(d.ds+'T12:00:00').getDay()===1}))
+                         .filter(x=>x.m).map(x=>x.i);
+      const start   = (!mondays.length || mondays[0] > 2) ? [0] : [];
+      const indices = [...start, ...mondays].slice(0, 5);
+      return indices.map((idx, si) =>
+        `<text x="${groupX(idx).toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7" fill="var(--text-light)">S${si+1}</text>`
+      ).join('');
     }
-    // 7j : une initiale par jour
+    return days.map((d, i) =>
+      `<text x="${groupX(i).toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7" fill="var(--text-light)">${d.dayLbl}</text>`
+    ).join('');
+  }
+
+  // Barres doubles côte à côte
+  function doubleBars(key1, col1, max1, key2, col2, max2) {
+    const bw = Math.max(2, Math.floor(IW / n / 2) - 1);
     return days.map((d, i) => {
-      const x = px(i, n);
-      return `<text x="${x.toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7.5" fill="var(--text-light)">${d.dayLbl}</text>`;
+      const v1 = d[key1], v2 = d[key2];
+      const cx = groupX(i);
+      const x1 = (cx - bw - 0.5).toFixed(1), x2 = (cx + 0.5).toFixed(1);
+      const h1 = barH(v1, max1), h2 = barH(v2, max2);
+      return (v1 !== null ? `<rect x="${x1}" y="${(PAD_T+IH-h1).toFixed(1)}" width="${bw}" height="${h1}" fill="${col1}" rx="2"/>` : '') +
+             (v2 !== null ? `<rect x="${x2}" y="${(PAD_T+IH-h2).toFixed(1)}" width="${bw}" height="${h2}" fill="${col2}" rx="2"/>` : '');
     }).join('');
   }
 
-  // Panneau générique à 2 courbes (même axe)
-  function panel2(title, key1, key2, col1, col2, lbl1, lbl2, min, max, gridTicks) {
-    const v1 = days.map(d => d[key1]);
-    const v2 = days.map(d => d[key2]);
-    const hasData = v1.some(v=>v!==null) || v2.some(v=>v!==null);
-    const pts1 = series(v1, min, max);
-    // Décalage vertical léger sur pts2 quand les valeurs sont proches de pts1
-    // pour éviter la superposition complète (2px vers le bas)
-    const pts2Raw = series(v2, min, max);
-    const JITTER = 2; // pixels
-    const pts2 = pts2Raw.map((pt, i) => {
-      if (!pt || !pts1[i]) return pt;
-      const dy = Math.abs(pt.y - pts1[i].y);
-      return dy < JITTER * 2 ? { ...pt, y: pt.y + JITTER } : pt;
-    });
-    const g = grid(gridTicks);
-    const dl = dayLabels(days.length);
-    const gap1 = gapPath(pts1);
-    const gap2 = gapPath(pts2);
-    return `<div class="ichart-panel"><div class="ichart-card">
-      <div class="ichart-header">
-        <span class="ichart-title">${title}</span>
-        <div class="ichart-legend">
-          <span><span style="color:${col1};font-size:1rem">●</span> ${lbl1}</span>
-          <span><span style="color:${col2};font-size:1rem">●</span> ${lbl2}</span>
-        </div>
-      </div>
-      <div class="ichart-svg-wrap">
-        ${hasData ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
-          ${g}
-          ${smoothPath(pts1) ? `<path d="${smoothPath(pts1)}" fill="none" stroke="${col1}" stroke-width="2.5" stroke-linecap="round"/>` : ''}
-          ${gap1 ? `<path d="${gap1}" fill="none" stroke="${col1}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
-          ${smoothPath(pts2) ? `<path d="${smoothPath(pts2)}" fill="none" stroke="${col2}" stroke-width="1.7" stroke-linecap="round"/>` : ''}
-          ${gap2 ? `<path d="${gap2}" fill="none" stroke="${col2}" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
-          ${dl}
-        </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
-      </div>
-    </div></div>`;
+  // Barre unique
+  function singleBars(key, col, max) {
+    const bw = Math.max(4, Math.floor(IW / n * 0.65));
+    return days.map((d, i) => {
+      const v = d[key]; if (v === null) return '';
+      const h = barH(v, max);
+      const x = (groupX(i) - bw/2).toFixed(1);
+      return `<rect x="${x}" y="${(PAD_T+IH-h).toFixed(1)}" width="${bw}" height="${h}" fill="${col}" rx="2"/>`;
+    }).join('');
   }
 
-  // ── Panneau 1 : Transit (calendrier selles) & Ballonnements (journal) ──────
-  // Transit : fréquence quotidienne depuis nara_cal_YYYY-MM-DD
-  //   → yn === 'oui' : freq (nb passages), yn === 'non' : 0, absent : null (pas de point)
-  // Ballonnements : curseur 0-5 du Journal section Intestin & Transit (inchangé)
+  const dl = dayLabels();
+
+  // ── Panneau 1 : Transit & Ballonnements ────────────────────────────────
   function panel1Transit() {
-    // Lire les données calendrier pour chaque jour
-    const calData = days.map(d => {
+    const calVals = days.map(d => {
       try {
         const raw = localStorage.getItem('nara_cal_' + d.ds);
         if (!raw) return null;
-        const cal = JSON.parse(raw);
-        if (!cal || !cal.yn) return null;
-        return cal.yn === 'oui' ? (cal.freq || 1) : 0; // oui → freq, non → 0
+        const c = JSON.parse(raw);
+        return c && c.yn === 'oui' ? (c.freq||1) : (c && c.yn === 'non' ? 0 : null);
       } catch { return null; }
     });
-    const vT = calData;      // null = pas de données ce jour-là
-    const vB = days.map(d => d.ballonnements); // du journal (inchangé)
-
-    const hasT = vT.some(v=>v!==null);
-    const hasB = vB.some(v=>v!==null);
-
-    const maxFreq = Math.max(...vT.filter(v=>v!==null), 3); // axe Y min 3 passages
-
-    function pyNorm(v, min, max) {
-      if (v === null) return null;
-      if (max === min) return PAD_T + IH/2;
-      return PAD_T + IH - ((v - min)/(max - min)) * IH;
-    }
-
-    const ptsT = vT.map((v,i) => v === null ? null : { x: px(i, vT.length), y: pyNorm(v, 0, maxFreq) });
-    const ptsB = vB.map((v,i) => v === null ? null : { x: px(i, vB.length), y: pyNorm(v, 0, 5) });
-
-    // Étiquettes axe gauche (fréquence selles) : 0, 1, 2, 3+
-    const gridT = [0, 1, 2, maxFreq].filter((v,i,a) => a.indexOf(v)===i).map(t => {
-      const y = pyNorm(t, 0, maxFreq);
-      if (y === null) return '';
-      return `<text x="${PAD_L - 3}" y="${y.toFixed(1)}" text-anchor="end" font-size="6.5" fill="${COL.transit}" dominant-baseline="middle">${t===0?'0':t+'×'}</text>`;
+    const maxCal = Math.max(...calVals.filter(v=>v!==null), 3);
+    const bw = Math.max(2, Math.floor(IW / n / 2) - 1);
+    const bars = days.map((d, i) => {
+      const v1 = calVals[i], v2 = d.ballonnements;
+      const cx = groupX(i);
+      const h1 = barH(v1, maxCal), h2 = barH(v2, 5);
+      return (v1 !== null ? `<rect x="${(cx-bw-0.5).toFixed(1)}" y="${(PAD_T+IH-h1).toFixed(1)}" width="${bw}" height="${h1}" fill="${COL.transit}" rx="2"/>` : '') +
+             (v2 !== null ? `<rect x="${(cx+0.5).toFixed(1)}" y="${(PAD_T+IH-h2).toFixed(1)}" width="${bw}" height="${h2}" fill="${COL.ballonnements}" rx="2"/>` : '');
     }).join('');
-    // Étiquettes axe droit (ballonnements /5)
-    const gridB = [0, 2.5, 5].map(t => {
-      const y = pyNorm(t, 0, 5);
-      if (y === null) return '';
-      return `<text x="${SVG_W - PAD_R + 3}" y="${y.toFixed(1)}" text-anchor="start" font-size="6.5" fill="${COL.ballonnements}" dominant-baseline="middle">${t}</text>`;
-    }).join('');
-
-    const axisL = `<line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
-    const axisR = `<line x1="${SVG_W-PAD_R}" y1="${PAD_T}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8" opacity="0.6"/>`;
-    const axisX = `<line x1="${PAD_L}" y1="${PAD_T+IH}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
-
-    const gapT = gapPath(ptsT);
-    const gapB = gapPath(ptsB);
-
+    const hasAny = calVals.some(v=>v!==null) || days.some(d=>d.ballonnements!==null);
+    const s1 = panelSummary('transit','ballonnements');
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">Transit &amp; Ballonnements</span>
         <div class="ichart-legend">
-          <span><span style="color:${COL.transit};font-size:1rem">●</span> Passages/jour</span>
-          <span><span style="color:${COL.ballonnements};font-size:1rem">●</span> Ballonnements /5</span>
+          <span style="color:${COL.transit}">■</span>&nbsp;Passages/j&nbsp;
+          <span style="color:${COL.ballonnements}">■</span>&nbsp;Ballonnements /5
         </div>
       </div>
       <div class="ichart-svg-wrap">
-        ${(hasT||hasB) ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
-          ${axisL}${axisR}${axisX}
-          ${gridT}${gridB}
-          ${dayLabels(vT.length)}
-          ${hasT && smoothPath(ptsT) ? `<path d="${smoothPath(ptsT)}" fill="none" stroke="${COL.transit}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-          ${hasT && gapT ? `<path d="${gapT}" fill="none" stroke="${COL.transit}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
-          ${hasB && smoothPath(ptsB) ? `<path d="${smoothPath(ptsB)}" fill="none" stroke="${COL.ballonnements}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="5,2"/>` : ''}
-          ${hasB && gapB ? `<path d="${gapB}" fill="none" stroke="${COL.ballonnements}" stroke-width="1.4" stroke-dasharray="2,4" opacity="0.35"/>` : ''}
-        </svg>` : '<div class="ichart-empty">Pas encore de données — remplis le calendrier transit pour voir la courbe ici</div>'}
-      </div>
+        ${hasAny ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
+          ${axisX}${bars}${dl}
+        </svg>` : '<div class="ichart-empty">Remplis le calendrier transit pour voir ce graphique</div>'}
+      </div>${s1}
     </div></div>`;
   }
 
-  // ── Panneau 4 : Peau seule ───────────────────────────────────────────────
+  // ── Panneaux doubles génériques ────────────────────────────────────────
+  function panelDouble(title, key1, key2, col1, col2, lbl1, lbl2, max1, max2) {
+    const hasAny = days.some(d=>d[key1]!==null||d[key2]!==null);
+    const bars   = doubleBars(key1, col1, max1, key2, col2, max2);
+    const s      = panelSummary(key1, key2);
+    return `<div class="ichart-panel"><div class="ichart-card">
+      <div class="ichart-header">
+        <span class="ichart-title">${title}</span>
+        <div class="ichart-legend">
+          <span style="color:${col1}">■</span>&nbsp;${lbl1}&nbsp;
+          <span style="color:${col2}">■</span>&nbsp;${lbl2}
+        </div>
+      </div>
+      <div class="ichart-svg-wrap">
+        ${hasAny ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
+          ${axisX}${bars}${dl}
+        </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
+      </div>${s}
+    </div></div>`;
+  }
+
+  // ── Panneau 4 : Peau ────────────────────────────────────────────────────
   function panel4Peau() {
-    const vP = days.map(d => d.peau);
-    const has = vP.some(v=>v!==null);
-    const ptsP = vP.map((v,i) => v===null ? null : {x: px(i, vP.length), y: pyNorm(v, 0, 2)});
-    function pyNorm(v,min,max){ if(max===min)return PAD_T+IH/2; return PAD_T+IH-((v-min)/(max-min))*IH; }
-    const gridPeau = [0,1,2].map(t=>{
-      const y = pyNorm(t,0,2).toFixed(1);
-      const lbl = t===0?'Poussée':t===1?'Stable':'Calme';
-      // Pas de ligne horizontale — libellé seul pour ne pas surcharger le graphique
-      return `<text x="${PAD_L-3}" y="${y}" text-anchor="end" font-size="6.5" fill="${COL.peau}" dominant-baseline="middle">${lbl}</text>`;
-    }).join('');
-    const gapP = gapPath(ptsP);
+    const hasAny = days.some(d=>d.peau!==null);
+    const bars   = singleBars('peau', COL.peau, 2);
+    const yLbl   = [[0,'Poussée'],[1,'Stable'],[2,'Calme']].map(([v,lbl]) =>
+      `<text x="${PAD_L-2}" y="${(PAD_T+IH-barH(v,2)).toFixed(1)}" text-anchor="end" font-size="6.5" fill="${COL.peau}" dominant-baseline="middle">${lbl}</text>`
+    ).join('');
+    const s = panelSummary('peau','peau');
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">Peau</span>
-        <div class="ichart-legend"><span><span style="color:${COL.peau};font-size:1rem">●</span> État peau</span></div>
+        <div class="ichart-legend"><span style="color:${COL.peau}">■</span>&nbsp;État peau</div>
       </div>
       <div class="ichart-svg-wrap">
-        ${has ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
-          ${gridPeau}${dayLabels(vP.length)}
-          ${smoothPath(ptsP) ? `<path d="${smoothPath(ptsP)}" fill="none" stroke="${COL.peau}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-          ${gapP ? `<path d="${gapP}" fill="none" stroke="${COL.peau}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
+        ${hasAny ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
+          ${axisX}${yLbl}${bars}${dl}
         </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
-      </div>
+      </div>${s}
     </div></div>`;
   }
-
-  // ── Constat + conseil par panneau ─────────────────────────────────────────
-  // Les conseils sont formulés comme recommandations directes, inspirés des
-  // notes et points-clés de la bibliothèque Nara — jamais cités comme source.
 
   function panelSummary(key1, key2, icon1, icon2, col1, col2) {
     const v1all = days.map(d => d[key1]).filter(v => v !== null);
@@ -7362,37 +7226,25 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   }
 
   const p1 = panel1Transit();
-  const p2 = panel2('Sommeil & Énergie', 'sommeil', 'energie', COL.sommeil, COL.energie,
-                     'Sommeil /5', 'Énergie /5', 0, 5, [0, 2.5, 5]);
-  const p3 = panel2('Stress & Humeur', 'stress', 'humeur', COL.stress, COL.humeur,
-                     'Stress /5', 'Humeur (1=Basse→3=Bonne)', 0, 5, [0, 2.5, 5]);
+  const p2 = panelDouble('Sommeil & Énergie', 'sommeil', 'energie', COL.sommeil, COL.energie,
+                          'Sommeil /5', 'Énergie /5', 5, 5);
+  const p3 = panelDouble('Stress & Humeur', 'stress', 'humeur', COL.stress, COL.humeur,
+                         'Stress /5', 'Humeur', 5, 3);
   const p4 = panel4Peau();
 
   // Récupérer allEntries pour le panneau synthèse (passé depuis renderInsightsPage)
   const p5 = panel5Synthese(typeof allEntries !== 'undefined' ? allEntries : []);
 
-  // Ajouter résumés dans chaque panneau
-  const s1 = panelSummary('transit', 'ballonnements');
-  const s2 = panelSummary('sommeil', 'energie');
-  const s3 = panelSummary('stress', 'humeur');
-  const s4 = panelSummary('peau', 'peau');
+
 
   // Injecter les résumés dans les panneaux
-  function injectSummary(panelHtml, summary) {
-    if (!summary) return panelHtml;
-    return panelHtml.replace('</div></div>', summary + '</div></div>');
-  }
 
-  const p1s = injectSummary(p1, s1);
-  const p2s = injectSummary(p2, s2);
-  const p3s = injectSummary(p3, s3);
-  const p4s = injectSummary(p4, s4);
 
   return `
     <div class="section-title">Évolution sur ${nDays} jours</div>
     <div class="ichart-carousel" id="ichart-carousel${carouselSuffix}">
       <div class="ichart-track" id="ichart-track${carouselSuffix}" onscroll="ichartHandleScroll(this,'${carouselSuffix}')">
-        ${p1s}${p2s}${p3s}${p4s}${p5}
+        ${p1}${p2}${p3}${p4}${p5}
       </div>
       <div class="ichart-dots" id="ichart-dots${carouselSuffix}">
         <div class="ichart-dot active" onclick="ichartGoTo(0,'${carouselSuffix}')"></div>

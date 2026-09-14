@@ -6881,11 +6881,29 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   const SVG_W = 288, SVG_H = 80, PAD_L = 30, PAD_R = 6, PAD_T = 4, PAD_B = 16;
   const IW = SVG_W - PAD_L - PAD_R;
   const IH = SVG_H - PAD_T - PAD_B;
-  const n  = days.length;
 
-  // Sur 30 jours : agréger par semaine pour la lisibilité
-  // → 4 ou 5 groupes au lieu de 30 barres de 3px
-  const useWeekly = n > 14;
+  // ── Tableau des jours de la période ──────────────────────────────────────
+  const jours7 = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const days = Array.from({length: nDays}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (nDays - 1 - i));
+    const ds = d.toISOString().split('T')[0];
+    const v  = getDayVals(ds) || {};
+    return {
+      ds,
+      dayLbl: jours7[d.getDay() === 0 ? 6 : d.getDay()-1],
+      transit:      (v.transit !== undefined && v.transit !== null) ? v.transit : null,
+      ballonnements:(v.ballonnements > 0) ? v.ballonnements : null,
+      sommeil:      (v.sommeil  > 0) ? v.sommeil  : null,
+      energie:      (v.energie  > 0) ? v.energie  : null,
+      stress:       (v.stress   > 0) ? v.stress   : null,
+      humeur:       (v.humeur !== undefined && v.humeur !== null)
+                      ? (v.humeur === 0 ? 3 : v.humeur === 1 ? 2 : 1) : null,
+      peau:         (v.peau !== undefined && v.peau !== null) ? v.peau : null,
+    };
+  });
+
+  const n          = days.length;
+  const useWeekly  = n > 14;
 
   // Groupes de données : semaines (30j) ou jours (7j)
   function buildGroups() {

@@ -6864,34 +6864,18 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   const carouselSuffix = periode === 'mois' ? '-30' : '';
   const corrSeuil      = periode === 'mois' ? 14 : 7;
 
+  // ── Palette officielle Nara ────────────────────────────────────────────
+  // Chaque donnée a une couleur fixe choisie dans la charte Nara
+  // Contraste suffisant entre les deux barres d'un même panneau
   const COL = {
-    transit:      'var(--avocado)',
-    ballonnements:'#B5845A',
-    sommeil:      'var(--sage)',
-    energie:      '#D4A843',
-    stress:       'var(--blush)',
-    humeur:       '#A89BC2',
-    peau:         '#C4907A',
+    transit:       '#818263',  // Savory Sage   — vert profond
+    ballonnements: '#DDBAAE',  // Blush Beet    — rose poudré (contraste avec sage)
+    sommeil:       '#818263',  // Savory Sage   — vert profond
+    energie:       '#C2C395',  // Avocado Smoothie — vert clair (contraste avec sage)
+    stress:        '#DDBAAE',  // Blush Beet    — rose poudré
+    humeur:        '#C2C395',  // Avocado Smoothie — vert clair (contraste avec blush)
+    peau:          '#DDBAAE',  // Blush Beet    — rose poudré chaud
   };
-
-  const jours7 = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const days = Array.from({length: nDays}, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (nDays - 1 - i));
-    const ds = d.toISOString().split('T')[0];
-    const v  = getDayVals(ds) || {};
-    return {
-      ds,
-      dayLbl: jours7[d.getDay() === 0 ? 6 : d.getDay()-1],
-      transit:      (v.transit !== undefined && v.transit !== null) ? v.transit : null,
-      ballonnements:(v.ballonnements > 0) ? v.ballonnements : null,
-      sommeil:      (v.sommeil  > 0) ? v.sommeil  : null,
-      energie:      (v.energie  > 0) ? v.energie  : null,
-      stress:       (v.stress   > 0) ? v.stress   : null,
-      humeur:       (v.humeur !== undefined && v.humeur !== null)
-                      ? (v.humeur === 0 ? 3 : v.humeur === 1 ? 2 : 1) : null,
-      peau:         (v.peau !== undefined && v.peau !== null) ? v.peau : null,
-    };
-  });
 
   // ── Dimensions SVG ─────────────────────────────────────────────────────
   const SVG_W = 288, SVG_H = 80, PAD_L = 30, PAD_R = 6, PAD_T = 4, PAD_B = 16;
@@ -6899,46 +6883,88 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   const IH = SVG_H - PAD_T - PAD_B;
   const n  = days.length;
 
-  function groupX(i) { return PAD_L + (i + 0.5) * (IW / n); }
+  // Sur 30 jours : agréger par semaine pour la lisibilité
+  // → 4 ou 5 groupes au lieu de 30 barres de 3px
+  const useWeekly = n > 14;
+
+  // Groupes de données : semaines (30j) ou jours (7j)
+  function buildGroups() {
+    if (!useWeekly) {
+      // 7j : un groupe par jour
+      return days.map((d, i) => ({ label: d.dayLbl, days: [d] }));
+    }
+    // 30j : grouper par semaine calendaire (lundi-dimanche)
+    const groups = [];
+    let current = [];
+    let si = 1;
+    days.forEach((d, i) => {
+      const dow = new Date(d.ds+'T12:00:00').getDay(); // 0=dim, 1=lun
+      if (i > 0 && dow === 1 && current.length) {
+        groups.push({ label: `S${si++}`, days: current });
+        current = [];
+      }
+      current.push(d);
+    });
+    if (current.length) groups.push({ label: `S${si}`, days: current });
+    return groups;
+  }
+
+  // Moyenne d'une clé sur un groupe de jours (ignore les null)
+  function avg(grpDays, key) {
+    const vals = grpDays.map(d => d[key]).filter(v => v !== null);
+    return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null;
+  }
+
+  // Moyenne calendrier transit pour un groupe
+  function avgCal(grpDays) {
+    const vals = grpDays.map(d => {
+      try {
+        const raw = localStorage.getItem('nara_cal_' + d.ds);
+        if (!raw) return null;
+        const c = JSON.parse(raw);
+        return c && c.yn === 'oui' ? (c.freq||1) : (c && c.yn === 'non' ? 0 : null);
+      } catch { return null; }
+    }).filter(v => v !== null);
+    return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null;
+  }
+
+  const groups = buildGroups();
+  const ng = groups.length;
+
+  function groupCX(i) { return PAD_L + (i + 0.5) * (IW / ng); }
   function barH(v, max) { return (v === null || max === 0) ? 0 : Math.max(2, Math.round((v / max) * IH)); }
   const axisX = `<line x1="${PAD_L}" y1="${PAD_T+IH}" x2="${SVG_W-PAD_R}" y2="${PAD_T+IH}" stroke="var(--oat)" stroke-width="0.8"/>`;
 
-  // Labels axe temporel
+  // Labels axe temporel (jours ou semaines)
   function dayLabels() {
-    if (n > 14) {
-      const mondays = days.map((d,i) => ({i, m: new Date(d.ds+'T12:00:00').getDay()===1}))
-                         .filter(x=>x.m).map(x=>x.i);
-      const start   = (!mondays.length || mondays[0] > 2) ? [0] : [];
-      const indices = [...start, ...mondays].slice(0, 5);
-      return indices.map((idx, si) =>
-        `<text x="${groupX(idx).toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7" fill="var(--text-light)">S${si+1}</text>`
-      ).join('');
-    }
-    return days.map((d, i) =>
-      `<text x="${groupX(i).toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7" fill="var(--text-light)">${d.dayLbl}</text>`
+    return groups.map((g, i) =>
+      `<text x="${groupCX(i).toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="${useWeekly?8:7}" fill="var(--text-light)">${g.label}</text>`
     ).join('');
   }
 
-  // Barres doubles côte à côte
-  function doubleBars(key1, col1, max1, key2, col2, max2) {
-    const bw = Math.max(2, Math.floor(IW / n / 2) - 1);
-    return days.map((d, i) => {
-      const v1 = d[key1], v2 = d[key2];
-      const cx = groupX(i);
-      const x1 = (cx - bw - 0.5).toFixed(1), x2 = (cx + 0.5).toFixed(1);
+  // Barres doubles côte à côte (par groupe)
+  function doubleBars(key1, col1, max1, key2, col2, max2, calKey1) {
+    // Largeur de barre : au moins 6px sur 7j, confortable sur 5 semaines
+    const bw = Math.max(6, Math.floor(IW / ng / 2) - 2);
+    return groups.map((g, i) => {
+      const v1 = calKey1 ? avgCal(g.days) : avg(g.days, key1);
+      const v2 = avg(g.days, key2);
+      const cx = groupCX(i);
       const h1 = barH(v1, max1), h2 = barH(v2, max2);
+      const x1 = (cx - bw - 1).toFixed(1), x2 = (cx + 1).toFixed(1);
       return (v1 !== null ? `<rect x="${x1}" y="${(PAD_T+IH-h1).toFixed(1)}" width="${bw}" height="${h1}" fill="${col1}" rx="2"/>` : '') +
              (v2 !== null ? `<rect x="${x2}" y="${(PAD_T+IH-h2).toFixed(1)}" width="${bw}" height="${h2}" fill="${col2}" rx="2"/>` : '');
     }).join('');
   }
 
-  // Barre unique
+  // Barre unique (par groupe)
   function singleBars(key, col, max) {
-    const bw = Math.max(4, Math.floor(IW / n * 0.65));
-    return days.map((d, i) => {
-      const v = d[key]; if (v === null) return '';
+    const bw = Math.max(8, Math.floor(IW / ng * 0.6));
+    return groups.map((g, i) => {
+      const v = avg(g.days, key);
+      if (v === null) return '';
       const h = barH(v, max);
-      const x = (groupX(i) - bw/2).toFixed(1);
+      const x = (groupCX(i) - bw/2).toFixed(1);
       return `<rect x="${x}" y="${(PAD_T+IH-h).toFixed(1)}" width="${bw}" height="${h}" fill="${col}" rx="2"/>`;
     }).join('');
   }
@@ -6947,25 +6973,16 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
 
   // ── Panneau 1 : Transit & Ballonnements ────────────────────────────────
   function panel1Transit() {
-    const calVals = days.map(d => {
+    const hasAny = days.some(d => {
       try {
         const raw = localStorage.getItem('nara_cal_' + d.ds);
-        if (!raw) return null;
-        const c = JSON.parse(raw);
-        return c && c.yn === 'oui' ? (c.freq||1) : (c && c.yn === 'non' ? 0 : null);
-      } catch { return null; }
-    });
-    const maxCal = Math.max(...calVals.filter(v=>v!==null), 3);
-    const bw = Math.max(2, Math.floor(IW / n / 2) - 1);
-    const bars = days.map((d, i) => {
-      const v1 = calVals[i], v2 = d.ballonnements;
-      const cx = groupX(i);
-      const h1 = barH(v1, maxCal), h2 = barH(v2, 5);
-      return (v1 !== null ? `<rect x="${(cx-bw-0.5).toFixed(1)}" y="${(PAD_T+IH-h1).toFixed(1)}" width="${bw}" height="${h1}" fill="${COL.transit}" rx="2"/>` : '') +
-             (v2 !== null ? `<rect x="${(cx+0.5).toFixed(1)}" y="${(PAD_T+IH-h2).toFixed(1)}" width="${bw}" height="${h2}" fill="${COL.ballonnements}" rx="2"/>` : '');
-    }).join('');
-    const hasAny = calVals.some(v=>v!==null) || days.some(d=>d.ballonnements!==null);
+        return raw && JSON.parse(raw)?.yn;
+      } catch { return false; }
+    }) || days.some(d=>d.ballonnements!==null);
+    // doubleBars avec calKey1=true → utilise avgCal() pour la première série
+    const bars = doubleBars('transit', COL.transit, 3, 'ballonnements', COL.ballonnements, 5, true);
     const s1 = panelSummary('transit','ballonnements');
+    const note = useWeekly ? '<div style="font-size:0.62rem;color:var(--text-light);text-align:center;padding:2px 0">Moyennes par semaine</div>' : '';
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">Transit &amp; Ballonnements</span>
@@ -6977,7 +6994,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       <div class="ichart-svg-wrap">
         ${hasAny ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
           ${axisX}${bars}${dl}
-        </svg>` : '<div class="ichart-empty">Remplis le calendrier transit pour voir ce graphique</div>'}
+        </svg>${note}` : '<div class="ichart-empty">Remplis le calendrier transit pour voir ce graphique</div>'}
       </div>${s1}
     </div></div>`;
   }
@@ -6987,6 +7004,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const hasAny = days.some(d=>d[key1]!==null||d[key2]!==null);
     const bars   = doubleBars(key1, col1, max1, key2, col2, max2);
     const s      = panelSummary(key1, key2);
+    const note   = useWeekly ? '<div style="font-size:0.62rem;color:var(--text-light);text-align:center;padding:2px 0">Moyennes par semaine</div>' : '';
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">${title}</span>
@@ -6998,7 +7016,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       <div class="ichart-svg-wrap">
         ${hasAny ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
           ${axisX}${bars}${dl}
-        </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
+        </svg>${note}` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
       </div>${s}
     </div></div>`;
   }
@@ -7010,7 +7028,8 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const yLbl   = [[0,'Poussée'],[1,'Stable'],[2,'Calme']].map(([v,lbl]) =>
       `<text x="${PAD_L-2}" y="${(PAD_T+IH-barH(v,2)).toFixed(1)}" text-anchor="end" font-size="6.5" fill="${COL.peau}" dominant-baseline="middle">${lbl}</text>`
     ).join('');
-    const s = panelSummary('peau','peau');
+    const s    = panelSummary('peau','peau');
+    const note = useWeekly ? '<div style="font-size:0.62rem;color:var(--text-light);text-align:center;padding:2px 0">Moyennes par semaine</div>' : '';
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header">
         <span class="ichart-title">Peau</span>
@@ -7019,7 +7038,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       <div class="ichart-svg-wrap">
         ${hasAny ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
           ${axisX}${yLbl}${bars}${dl}
-        </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
+        </svg>${note}` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
       </div>${s}
     </div></div>`;
   }

@@ -6964,6 +6964,8 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
 
   const n         = days.length;
   const useWeekly = isMois;
+  // Alias pour panelSummary (qui référence periodeLabel dans ses closures)
+  const periodeLabel = isMois ? 'sur le mois' : 'cette semaine';
 
   // Message si aucune donnée sur la période
   const hasAnyData = days.some(d =>

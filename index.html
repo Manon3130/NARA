@@ -6988,18 +6988,22 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   // 30j : repères de semaine S1 S2 S3 S4 (S5 si nécessaire)
   function dayLabels(n) {
     if (n > 14) {
-      // Calculer les débuts de semaines dans la période
-      // On cherche les lundis (ou le premier jour si lundi est hors période)
-      const labels = days.map((d, i) => {
-        const date = new Date(d.ds + 'T12:00:00');
-        const dayOfWeek = date.getDay(); // 0=dim, 1=lun…
-        // Afficher un label au premier jour et à chaque lundi
-        if (i === 0 || dayOfWeek === 1) return i;
-        return null;
-      }).filter(i => i !== null);
-      // Numéroter S1, S2… depuis le début
-      return labels.map((i, si) => {
-        const x = px(i, n);
+      // Repères de semaine S1…S5 sur 30 jours
+      // Règle : label au premier lundi rencontré, puis chaque lundi suivant
+      // Si le premier jour EST un lundi, il devient S1 directement
+      // Si le premier jour N'EST PAS un lundi, on ajoute "S1" sur le premier lundi,
+      // sauf si un lundi arrive dans les 2 premiers jours (le début non-lundi est alors ignoré)
+      const mondayIndices = days
+        .map((d, i) => ({ i, isMonday: new Date(d.ds+'T12:00:00').getDay() === 1 }))
+        .filter(x => x.isMonday)
+        .map(x => x.i);
+
+      // Premier jour si non-lundi et si le premier lundi est à plus de 2 jours
+      const startIdx = (mondayIndices.length === 0 || mondayIndices[0] > 2) ? [0] : [];
+      const indices = [...startIdx, ...mondayIndices].slice(0, 5); // max S5
+
+      return indices.map((idx, si) => {
+        const x = px(idx, n);
         return `<text x="${x.toFixed(1)}" y="${SVG_H}" text-anchor="middle" font-size="7.5" fill="var(--text-light)">S${si+1}</text>`;
       }).join('');
     }
@@ -7016,7 +7020,15 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const v2 = days.map(d => d[key2]);
     const hasData = v1.some(v=>v!==null) || v2.some(v=>v!==null);
     const pts1 = series(v1, min, max);
-    const pts2 = series(v2, min, max);
+    // Décalage vertical léger sur pts2 quand les valeurs sont proches de pts1
+    // pour éviter la superposition complète (2px vers le bas)
+    const pts2Raw = series(v2, min, max);
+    const JITTER = 2; // pixels
+    const pts2 = pts2Raw.map((pt, i) => {
+      if (!pt || !pts1[i]) return pt;
+      const dy = Math.abs(pt.y - pts1[i].y);
+      return dy < JITTER * 2 ? { ...pt, y: pt.y + JITTER } : pt;
+    });
     const g = grid(gridTicks);
     const dl = dayLabels(days.length);
     const gap1 = gapPath(pts1);
@@ -7034,7 +7046,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
           ${g}
           ${smoothPath(pts1) ? `<path d="${smoothPath(pts1)}" fill="none" stroke="${col1}" stroke-width="2.5" stroke-linecap="round"/>` : ''}
           ${gap1 ? `<path d="${gap1}" fill="none" stroke="${col1}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
-          ${smoothPath(pts2) ? `<path d="${smoothPath(pts2)}" fill="none" stroke="${col2}" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="6,2"/>` : ''}
+          ${smoothPath(pts2) ? `<path d="${smoothPath(pts2)}" fill="none" stroke="${col2}" stroke-width="1.7" stroke-linecap="round"/>` : ''}
           ${gap2 ? `<path d="${gap2}" fill="none" stroke="${col2}" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
           ${dl}
         </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}

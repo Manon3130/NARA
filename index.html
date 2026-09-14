@@ -1593,6 +1593,27 @@ if (typeof supabase === 'undefined') {
   }
 
 
+
+  /* ===== NAVIGATION TEMPORELLE INSIGHTS ===== */
+  .ichart-nav-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0 6px; margin-bottom: 6px;
+  }
+  .ichart-nav-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: white; border: 1.5px solid var(--oat);
+    font-size: 1.1rem; cursor: pointer; color: var(--text-mid);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .ichart-nav-btn:active { background: var(--honey); }
+  .ichart-nav-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .ichart-nav-label {
+    font-size: 0.72rem; color: var(--text-light);
+    letter-spacing: 0.03em;
+  }
+
   /* ===== CARROUSEL GRAPHIQUES INSIGHTS ===== */
   .ichart-carousel {
     position: relative; margin-bottom: 16px; overflow: hidden;
@@ -6843,8 +6864,21 @@ function renderInsightsPage() {
   content.innerHTML = html;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// CARROUSEL GRAPHIQUES INSIGHTS — 4 panneaux glissables en BARRES
+// ── État navigation temporelle Insights ────────────────────────────────────
+let _ichartWeekOffset  = 0;  // 0 = semaine courante, -1 = semaine précédente…
+let _ichartMonthOffset = 0;  // 0 = mois courant, -1 = mois précédent…
+
+function ichartNavigate(periode, delta) {
+  if (periode === 'semaine') _ichartWeekOffset  = Math.min(0, _ichartWeekOffset  + delta);
+  else                        _ichartMonthOffset = Math.min(0, _ichartMonthOffset + delta);
+  renderInsightsPage();
+  // Scroller jusqu'au bon carrousel
+  setTimeout(() => {
+    const id = periode === 'semaine' ? 'ichart-carousel' : 'ichart-carousel-30';
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 80);
+}
+
 // Panneau 1 : Transit & Ballonnements  Panneau 2 : Sommeil & Énergie
 // Panneau 3 : Stress & Humeur          Panneau 4 : Peau
 // Panneau 5 : Synthèse de période
@@ -6859,38 +6893,63 @@ function renderInsightsPage() {
 //   Peau         → #C4907A              (rose terracotta chaud)
 
 function buildInsightsCarousel(getDayVals, nDays, periode) {
-  periode = periode || 'semaine';
-  const periodeLabel   = periode === 'mois' ? 'sur le mois' : 'cette semaine';
-  const carouselSuffix = periode === 'mois' ? '-30' : '';
-  const corrSeuil      = periode === 'mois' ? 14 : 7;
+  periode      = periode || 'semaine';
+  const isMois = periode === 'mois';
+  const carouselSuffix = isMois ? '-30' : '';
+  const corrSeuil      = isMois ? 14 : 7;
+  const offset         = isMois ? _ichartMonthOffset : _ichartWeekOffset;
 
-  // ── Palette officielle Nara ────────────────────────────────────────────
-  // Chaque donnée a une couleur fixe choisie dans la charte Nara
-  // Contraste suffisant entre les deux barres d'un même panneau
   const COL = {
-    transit:       '#B6C687',  // Pistachio
-    ballonnements: '#F3EDBD',  // Pale Yellow
-    sommeil:       '#DAE9FA',  // Snow
-    energie:       '#BBB7E5',  // Lavender
-    stress:        '#F7DFDF',  // Light Rose
-    humeur:        '#EFBDBD',  // Baby Pink
-    peau:          '#EAC4AF',  // Peach
+    transit:       '#B6C687',
+    ballonnements: '#F3EDBD',
+    sommeil:       '#DAE9FA',
+    energie:       '#BBB7E5',
+    stress:        '#F7DFDF',
+    humeur:        '#EFBDBD',
+    peau:          '#EAC4AF',
   };
 
-  // ── Dimensions SVG ─────────────────────────────────────────────────────
   const SVG_W = 288, SVG_H = 80, PAD_L = 30, PAD_R = 6, PAD_T = 4, PAD_B = 16;
   const IW = SVG_W - PAD_L - PAD_R;
   const IH = SVG_H - PAD_T - PAD_B;
-
-  // ── Tableau des jours de la période ──────────────────────────────────────
   const jours7 = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const days = Array.from({length: nDays}, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (nDays - 1 - i));
-    const ds = d.toISOString().split('T')[0];
+  const moisFr = ['janvier','février','mars','avril','mai','juin',
+                  'juillet','août','septembre','octobre','novembre','décembre'];
+
+  // ── Période calendaire ────────────────────────────────────────────────────
+  let periodStart, periodEnd, periodLabel;
+
+  if (!isMois) {
+    // Semaine lundi→dimanche décalée de `offset` semaines
+    const today = new Date(); today.setHours(12,0,0,0);
+    const dow   = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const lundi = new Date(today); lundi.setDate(today.getDate() - dow + offset * 7);
+    const dim   = new Date(lundi); dim.setDate(lundi.getDate() + 6);
+    periodStart = lundi; periodEnd = dim;
+    const d1 = lundi.getDate(), m1 = moisFr[lundi.getMonth()];
+    const d2 = dim.getDate(),   m2 = moisFr[dim.getMonth()];
+    periodLabel = lundi.getMonth() === dim.getMonth()
+      ? `Semaine du ${d1} au ${d2} ${m1}`
+      : `Semaine du ${d1} ${m1} au ${d2} ${m2}`;
+  } else {
+    // Mois calendaire décalé de `offset` mois
+    const ref = new Date(); ref.setDate(1); ref.setHours(12,0,0,0);
+    ref.setMonth(ref.getMonth() + offset);
+    const year = ref.getFullYear(), month = ref.getMonth();
+    periodStart = new Date(year, month, 1, 12);
+    periodEnd   = new Date(year, month + 1, 0, 12);
+    periodLabel = `${moisFr[month].charAt(0).toUpperCase() + moisFr[month].slice(1)} ${year}`;
+  }
+
+  // ── Tableau de jours de la période ───────────────────────────────────────
+  const days = [];
+  const cur  = new Date(periodStart);
+  while (cur <= periodEnd) {
+    const ds = cur.toISOString().split('T')[0];
     const v  = getDayVals(ds) || {};
-    return {
+    days.push({
       ds,
-      dayLbl: jours7[d.getDay() === 0 ? 6 : d.getDay()-1],
+      dayLbl: jours7[cur.getDay() === 0 ? 6 : cur.getDay()-1],
       transit:      (v.transit !== undefined && v.transit !== null) ? v.transit : null,
       ballonnements:(v.ballonnements > 0) ? v.ballonnements : null,
       sommeil:      (v.sommeil  > 0) ? v.sommeil  : null,
@@ -6899,11 +6958,30 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       humeur:       (v.humeur !== undefined && v.humeur !== null)
                       ? (v.humeur === 0 ? 3 : v.humeur === 1 ? 2 : 1) : null,
       peau:         (v.peau !== undefined && v.peau !== null) ? v.peau : null,
-    };
-  });
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
 
-  const n          = days.length;
-  const useWeekly  = n > 14;
+  const n         = days.length;
+  const useWeekly = isMois;
+
+  // Message si aucune donnée sur la période
+  const hasAnyData = days.some(d =>
+    d.transit !== null || d.ballonnements !== null || d.sommeil !== null ||
+    d.energie !== null || d.stress !== null || d.humeur !== null || d.peau !== null
+  );
+
+  // ── En-tête navigation ────────────────────────────────────────────────────
+  const titreCarousel = isMois ? 'Évolution sur le mois' : 'Évolution sur 7 jours';
+  const navHtml = `
+    <div class="ichart-nav-header">
+      <button class="ichart-nav-btn" onclick="ichartNavigate('${periode}',-1)">‹</button>
+      <div style="flex:1;text-align:center">
+        <div class="section-title" style="margin:0 0 2px">${titreCarousel}</div>
+        <div class="ichart-nav-label">${periodLabel}</div>
+      </div>
+      <button class="ichart-nav-btn" onclick="ichartNavigate('${periode}',1)" ${offset < 0 ? '' : 'disabled'}>›</button>
+    </div>`;
 
   // Groupes de données : semaines (30j) ou jours (7j)
   function buildGroups() {
@@ -7277,8 +7355,14 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   // Injecter les résumés dans les panneaux
 
 
-  return `
-    <div class="section-title">Évolution sur ${nDays} jours</div>
+  // Message "pas de données" si période vide
+  if (!hasAnyData) {
+    return navHtml + `<div class="ichart-empty" style="padding:32px 16px;text-align:center;color:var(--text-light)">
+      Pas de données enregistrées pour cette période.
+    </div>`;
+  }
+
+  return navHtml + `
     <div class="ichart-carousel" id="ichart-carousel${carouselSuffix}">
       <div class="ichart-track" id="ichart-track${carouselSuffix}" onscroll="ichartHandleScroll(this,'${carouselSuffix}')">
         ${p1}${p2}${p3}${p4}${p5}

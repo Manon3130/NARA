@@ -6921,10 +6921,33 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     }).join(' ');
   }
 
-  // Chemin en pointillés reliant les "trous" (données manquantes) entre segments
-  // Relie le dernier point d'un segment au premier du segment suivant
+  // Chemin en pointillés pour les zones sans données :
+  // — entre segments (milieu de courbe)
+  // — AVANT le premier point réel (début de période vide)
+  // — APRÈS le dernier point réel (fin de période vide)
+  // L'axe s'étend de x=PAD_L (premier jour) à x=SVG_W-PAD_R (dernier jour)
   function gapPath(pts) {
     if (!pts || pts.length === 0) return '';
+
+    // Trouver premier et dernier point non-null
+    const firstIdx = pts.findIndex(p => p !== null);
+    const lastIdx  = [...pts].reverse().findIndex(p => p !== null);
+    const lastReal = firstIdx === -1 ? -1 : pts.length - 1 - lastIdx;
+    if (firstIdx === -1) return ''; // aucune donnée
+
+    const firstPt  = pts[firstIdx];
+    const lastPt   = pts[lastReal];
+    const xStart   = PAD_L;
+    const xEnd     = SVG_W - PAD_R;
+
+    let d = '';
+
+    // Trou en DÉBUT : du bord gauche de l'axe au premier point réel
+    if (firstIdx > 0) {
+      d += ` M${xStart.toFixed(1)},${firstPt.y.toFixed(1)} L${firstPt.x.toFixed(1)},${firstPt.y.toFixed(1)}`;
+    }
+
+    // Trous internes : entre segments consécutifs
     const segments = [];
     let seg = [];
     pts.forEach(pt => {
@@ -6932,13 +6955,17 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       else seg.push(pt);
     });
     if (seg.length) segments.push(seg);
-    if (segments.length < 2) return ''; // pas de trou
-    let d = '';
     for (let i = 0; i < segments.length - 1; i++) {
       const last  = segments[i][segments[i].length - 1];
       const first = segments[i + 1][0];
       d += ` M${last.x.toFixed(1)},${last.y.toFixed(1)} L${first.x.toFixed(1)},${first.y.toFixed(1)}`;
     }
+
+    // Trou en FIN : du dernier point réel au bord droit de l'axe
+    if (lastReal < pts.length - 1) {
+      d += ` M${lastPt.x.toFixed(1)},${lastPt.y.toFixed(1)} L${xEnd.toFixed(1)},${lastPt.y.toFixed(1)}`;
+    }
+
     return d.trim();
   }
 
@@ -7005,10 +7032,10 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       <div class="ichart-svg-wrap">
         ${hasData ? `<svg viewBox="0 0 ${SVG_W} ${SVG_H+4}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
           ${g}
-          ${smoothPath(pts1) ? `<path d="${smoothPath(pts1)}" fill="none" stroke="${col1}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
+          ${smoothPath(pts1) ? `<path d="${smoothPath(pts1)}" fill="none" stroke="${col1}" stroke-width="2.5" stroke-linecap="round"/>` : ''}
           ${gap1 ? `<path d="${gap1}" fill="none" stroke="${col1}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
-          ${smoothPath(pts2) ? `<path d="${smoothPath(pts2)}" fill="none" stroke="${col2}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-          ${gap2 ? `<path d="${gap2}" fill="none" stroke="${col2}" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
+          ${smoothPath(pts2) ? `<path d="${smoothPath(pts2)}" fill="none" stroke="${col2}" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="6,2"/>` : ''}
+          ${gap2 ? `<path d="${gap2}" fill="none" stroke="${col2}" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.45"/>` : ''}
           ${dl}
         </svg>` : '<div class="ichart-empty">Pas encore de données sur cette période</div>'}
       </div>
@@ -7098,8 +7125,8 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const gridPeau = [0,1,2].map(t=>{
       const y = pyNorm(t,0,2).toFixed(1);
       const lbl = t===0?'Poussée':t===1?'Stable':'Calme';
-      return `<line x1="${PAD_L}" y1="${y}" x2="${SVG_W-PAD_R}" y2="${y}" stroke="var(--oat)" stroke-width="0.8"/>
-        <text x="${PAD_L-3}" y="${y}" text-anchor="end" font-size="6.5" fill="${COL.peau}" dominant-baseline="middle">${lbl}</text>`;
+      // Pas de ligne horizontale — libellé seul pour ne pas surcharger le graphique
+      return `<text x="${PAD_L-3}" y="${y}" text-anchor="end" font-size="6.5" fill="${COL.peau}" dominant-baseline="middle">${lbl}</text>`;
     }).join('');
     const gapP = gapPath(ptsP);
     return `<div class="ichart-panel"><div class="ichart-card">

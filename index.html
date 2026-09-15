@@ -6776,7 +6776,15 @@ function renderInsightsPage() {
       const avant = allEntries.filter(e => (e.dateStr||'') <  cutoffDay);
       const apres = allEntries.filter(e => (e.dateStr||'') >= cutoffDay);
 
-      if (avant.length < 5 || apres.length < 5) return; // garde-fou min 5 entrées de chaque côté
+      if (avant.length < 5 || apres.length < 5) {
+        // Pas assez de données d'un côté → message explicite plutôt que silence
+        if (avant.length < 5 && apres.length >= 3) {
+          const dateLabel = new Date(cutoffDay+'T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+          brique1.push({ icon:'ℹ️', tag:`${suivi.type || 'Nouveau suivi'} — en attente`,
+            text:`Pas encore assez de données antérieures au ${dateLabel} pour établir une comparaison avant/après. Continue à remplir le journal — la comparaison s'activera automatiquement quand suffisamment de données des deux côtés seront disponibles.` });
+        }
+        return;
+      }
 
       const dim = suivi.problo;
 
@@ -7367,8 +7375,36 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
                          'Stress /5', 'Humeur', 5, 3);
   const p4 = panel4Peau();
 
-  // Récupérer allEntries pour le panneau synthèse (passé depuis renderInsightsPage)
-  const p5 = panel5Synthese(typeof allEntries !== 'undefined' ? allEntries : []);
+  // Récupérer allEntries (historique complet) pour le panneau synthèse.
+  // Le cycle a besoin de tout l'historique pour avoir assez de points par phase,
+  // indépendamment de la période affichée dans le carrousel (7j ou 30j).
+  // allEntries vient de renderInsightsPage via la closure (window scope) —
+  // si indisponible, on reconstruit depuis localStorage.
+  let _allEntriesForSynthese = [];
+  try {
+    if (typeof allEntries !== 'undefined' && allEntries.length > 0) {
+      _allEntriesForSynthese = allEntries;
+    } else {
+      // Reconstruction depuis localStorage si allEntries n'est pas dans le scope
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith('nara_journal_')) continue;
+        const ds = key.replace('nara_journal_', '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) continue;
+        try {
+          const j = JSON.parse(localStorage.getItem(key));
+          if (!j) continue;
+          if (j.transit !== null && j.transit !== undefined)
+            _allEntriesForSynthese.push({ type:'transit', dateStr:ds, values:{ transit_etat:j.transit, ballonnements:j.ballonnements||0 }});
+          if (j.peau !== null && j.peau !== undefined)
+            _allEntriesForSynthese.push({ type:'peau', dateStr:ds, values:{ peau_etat:j.peau }});
+          if (j.stress > 0 || j.energie > 0 || j.sommeil > 0)
+            _allEntriesForSynthese.push({ type:'stress', dateStr:ds, values:{ stress:j.stress||0, energie:j.energie||0, sommeil:j.sommeil||0 }});
+        } catch {}
+      }
+    }
+  } catch {}
+  const p5 = panel5Synthese(_allEntriesForSynthese);
 
 
 
@@ -7456,21 +7492,22 @@ function spearmanCorr(xs, ys) {
 }
 
 // Graphique SVG cubic bezier à deux courbes
-function renderBrique2Chart(seriesA, seriesB, labelsA, labelsB, days) {
+function renderBrique2Chart(seriesA, seriesB, labelsA, labelsB, days, colA, colB) {
+  // colA / colB : couleurs de la nouvelle palette Nara
+  // Défaut : Pistachio pour A, Snow pour B (évite l'import des vieilles vars)
+  colA = colA || '#B6C687';  // Pistachio
+  colB = colB || '#DAE9FA';  // Snow
   const W = 300, H = 80, padL = 8, padR = 8, padT = 6, padB = 18;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
   const n = days.length;
   if (n < 2) return '';
 
-  // Normalise une valeur sur son min/max vers [padT, padT+innerH]
   function norm(val, min, max) {
     if (max === min) return padT + innerH / 2;
     return padT + innerH - ((val - min) / (max - min)) * innerH;
   }
-
   function xPos(i) { return padL + (i / (n-1)) * innerW; }
-
   function cubicPath(pts) {
     if (pts.length < 2) return '';
     let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -7485,14 +7522,11 @@ function renderBrique2Chart(seriesA, seriesB, labelsA, labelsB, days) {
   const minA = Math.min(...seriesA), maxA = Math.max(...seriesA);
   const minB = Math.min(...seriesB), maxB = Math.max(...seriesB);
   const globalMin = Math.min(minA, minB), globalMax = Math.max(maxA, maxB);
-
   const ptsA = seriesA.map((v,i) => ({ x: xPos(i), y: norm(v, globalMin, globalMax) }));
   const ptsB = seriesB.map((v,i) => ({ x: xPos(i), y: norm(v, globalMin, globalMax) }));
-
   const pathA = cubicPath(ptsA);
   const pathB = cubicPath(ptsB);
 
-  // Étiquettes des jours (une sur deux pour lisibilité)
   const dayLabels = days.map((ds, i) => {
     if (n > 14 && i % 7 !== 0 && i !== n-1) return '';
     if (n <= 14 && i % 2 !== 0 && i !== n-1) return '';
@@ -7501,15 +7535,13 @@ function renderBrique2Chart(seriesA, seriesB, labelsA, labelsB, days) {
     return `<text x="${xPos(i).toFixed(1)}" y="${H}" text-anchor="middle" font-size="8" fill="var(--text-light)">${jours[d.getDay()]}</text>`;
   }).join('');
 
-  const dotsA = ptsA.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--avocado)" stroke="white" stroke-width="1.5"/>`).join('');
-  const dotsB = ptsB.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--blush)" stroke="white" stroke-width="1.5"/>`).join('');
-
+  // Pas de dots sur les courbes Brique 2 (lecture plus légère)
   return `<svg viewBox="0 0 ${W} ${H+2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible">
     <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="var(--oat)" stroke-width="1"/>
     <line x1="${padL}" y1="${padT+innerH}" x2="${W-padR}" y2="${padT+innerH}" stroke="var(--oat)" stroke-width="1"/>
-    ${pathA ? `<path d="${pathA}" fill="none" stroke="var(--avocado)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-    ${pathB ? `<path d="${pathB}" fill="none" stroke="var(--blush)"   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-    ${dotsA}${dotsB}${dayLabels}
+    ${pathA ? `<path d="${pathA}" fill="none" stroke="${colA}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+    ${pathB ? `<path d="${pathB}" fill="none" stroke="${colB}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+    ${dayLabels}
   </svg>`;
 }
 
@@ -7538,7 +7570,7 @@ function computeBrique2(allEntries) {
     if (rho !== null && Math.abs(rho) >= 0.35) {
       const sens     = rho > 0 ? 'tendent à s\'améliorer ensemble' : 'évoluent en sens inverse';
       const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
-      const svg       = renderBrique2Chart(xs, ys, 'Sommeil', 'Peau', somPeau);
+      const svg       = renderBrique2Chart(xs, ys, 'Sommeil', 'Peau', somPeau, '#DAE9FA', '#EAC4AF');
       const jours     = somPeau.length;
       results.push(`
         <div class="insight-real-card" style="border-left-color:#8a8ec4">
@@ -7548,8 +7580,8 @@ function computeBrique2(allEntries) {
           </div>
           ${svg ? `<div style="margin-top:10px;padding:0 4px">
             <div style="display:flex;gap:12px;font-size:0.65rem;color:var(--text-light);margin-bottom:4px">
-              <span><span style="color:var(--avocado)">●</span> Sommeil /5</span>
-              <span><span style="color:var(--blush)">●</span> Peau (0=poussée→2=calme)</span>
+              <span><span style="color:#DAE9FA">●</span> Sommeil /5</span>
+              <span><span style="color:#EAC4AF">●</span> Peau (0=poussée→2=calme)</span>
             </div>${svg}</div>` : ''}
         </div>`);
     }
@@ -7567,7 +7599,7 @@ function computeBrique2(allEntries) {
         ? 'ton transit semble plus perturbé quand ton stress monte'
         : 'un stress plus élevé s\'accompagne d\'un transit plus rapide';
       const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
-      const svg       = renderBrique2Chart(xs, ys, 'Stress', 'Transit', stressTrans);
+      const svg       = renderBrique2Chart(xs, ys, 'Stress', 'Transit', stressTrans, '#F7DFDF', '#B6C687');
       const jours     = stressTrans.length;
       results.push(`
         <div class="insight-real-card" style="border-left-color:#f59e0b">
@@ -7577,8 +7609,8 @@ function computeBrique2(allEntries) {
           </div>
           ${svg ? `<div style="margin-top:10px;padding:0 4px">
             <div style="display:flex;gap:12px;font-size:0.65rem;color:var(--text-light);margin-bottom:4px">
-              <span><span style="color:var(--avocado)">●</span> Stress /5</span>
-              <span><span style="color:var(--blush)">●</span> Transit (0=lent→2=rapide)</span>
+              <span><span style="color:#F7DFDF">●</span> Stress /5</span>
+              <span><span style="color:#B6C687">●</span> Transit (0=lent→2=rapide)</span>
             </div>${svg}</div>` : ''}
         </div>`);
     }

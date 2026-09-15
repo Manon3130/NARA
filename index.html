@@ -3084,6 +3084,13 @@ if (typeof supabase === 'undefined') {
           <!-- Rempli par renderInsightsPage() -->
         </div>
 
+        <!-- Diagnostic Brique 2 — bouton discret pour vérifier l'état des corrélations -->
+        <div style="text-align:center;padding:4px 0 8px">
+          <button onclick="diagBrique2()" style="font-size:0.68rem;color:var(--text-light);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">
+            Vérifier l'état des corrélations
+          </button>
+        </div>
+
         <!-- Bouton rapport PDF — toujours visible, désactivé si pas assez de données -->
         <div class="section-title" style="margin-top:8px">Rapport médecin</div>
         <div class="pdf-btn" id="pdf-btn-insights" onclick="handlePdfReport()" style="opacity:0.45;cursor:not-allowed;">
@@ -7638,8 +7645,105 @@ function computeBrique2(allEntries) {
   return `<div class="section-title" style="margin-top:4px">Co-évolutions détectées</div>` + results.join('');
 }
 
-// generateInsights — version simplifiée pour le home (les observations détaillées
-// sont dans renderInsightsPage). Prend des entries [{type, values, date}].
+// ── Diagnostic Brique 2 — accessible via console ou bouton dev ──────────────
+function diagBrique2() {
+  const result = { paires: [], verdict: '' };
+
+  // Reconstruire byDate depuis localStorage (même logique que computeBrique2)
+  const byDate = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('nara_journal_')) continue;
+    const ds = key.replace('nara_journal_', '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) continue;
+    try {
+      const j = JSON.parse(localStorage.getItem(key));
+      if (!j) continue;
+      if (!byDate[ds]) byDate[ds] = {};
+      if (j.sommeil > 0) byDate[ds].sommeil = j.sommeil;
+      if (j.stress  > 0) byDate[ds].stress  = j.stress;
+      if (j.energie > 0) byDate[ds].energie  = j.energie;
+      if (j.peau  !== null && j.peau  !== undefined) byDate[ds].peau    = j.peau;
+      if (j.transit !== null && j.transit !== undefined) byDate[ds].transit = j.transit;
+    } catch {}
+  }
+
+  const dates = Object.keys(byDate).sort();
+  const totalJours = dates.length;
+
+  // Paire 1 : Sommeil ↔ Peau
+  const sp = dates.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
+  const spRho = sp.length >= 7 ? spearmanCorr(sp.map(d=>byDate[d].sommeil), sp.map(d=>byDate[d].peau)) : null;
+  result.paires.push({
+    nom: 'Sommeil ↔ Peau',
+    jours: sp.length, seuil: 7,
+    rho: spRho, seuilRho: 0.35,
+    declenche: spRho !== null && Math.abs(spRho) >= 0.35,
+    raison: sp.length < 7
+      ? `${sp.length}/7 jours avec sommeil ET peau renseignés le même jour`
+      : spRho === null ? 'Calcul impossible (données identiques ?)'
+      : Math.abs(spRho) < 0.35 ? `Corrélation trop faible (${(spRho*100).toFixed(0)}% < seuil 35%)`
+      : `Corrélation détectée : ${(spRho*100).toFixed(0)}%`
+  });
+
+  // Paire 2 : Stress ↔ Transit
+  const st = dates.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
+  const stRho = st.length >= 7 ? spearmanCorr(st.map(d=>byDate[d].stress), st.map(d=>byDate[d].transit)) : null;
+  result.paires.push({
+    nom: 'Stress ↔ Transit',
+    jours: st.length, seuil: 7,
+    rho: stRho, seuilRho: 0.35,
+    declenche: stRho !== null && Math.abs(stRho) >= 0.35,
+    raison: st.length < 7
+      ? `${st.length}/7 jours avec stress ET transit renseignés le même jour`
+      : stRho === null ? 'Calcul impossible'
+      : Math.abs(stRho) < 0.35 ? `Corrélation trop faible (${(Math.abs(stRho)*100).toFixed(0)}% < seuil 35%)`
+      : `Corrélation détectée : ${(Math.abs(stRho)*100).toFixed(0)}%`
+  });
+
+  // Paire 3 : Énergie ↔ Stress (seuil plus élevé : 10 jours, rho ≤ -0.45)
+  const es = dates.filter(d => byDate[d].energie > 0 && byDate[d].stress > 0);
+  const esRho = es.length >= 10 ? spearmanCorr(es.map(d=>byDate[d].energie), es.map(d=>byDate[d].stress)) : null;
+  result.paires.push({
+    nom: 'Énergie ↔ Stress',
+    jours: es.length, seuil: 10,
+    rho: esRho, seuilRho: -0.45,
+    declenche: esRho !== null && esRho <= -0.45,
+    raison: es.length < 10
+      ? `${es.length}/10 jours avec énergie ET stress renseignés le même jour`
+      : esRho === null ? 'Calcul impossible'
+      : esRho > -0.45 ? `Corrélation inverse insuffisante (${(esRho*100).toFixed(0)}% > seuil -45%)`
+      : `Corrélation détectée : ${(esRho*100).toFixed(0)}%`
+  });
+
+  // Affichage dans une modale simple
+  const triggered = result.paires.filter(p => p.declenche).length;
+  const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:360px">
+    <div style="font-size:1rem;font-weight:600;margin-bottom:12px">Diagnostic Brique 2</div>
+    <div style="font-size:0.72rem;color:#666;margin-bottom:12px">Journal : ${totalJours} jours avec données</div>
+    ${result.paires.map(p => `
+      <div style="padding:10px 0;border-bottom:1px solid #eee">
+        <div style="font-weight:500;font-size:0.82rem">${p.nom}</div>
+        <div style="font-size:0.72rem;margin-top:3px;color:${p.declenche?'#4a7c4e':'#888'}">
+          ${p.declenche ? '✅' : (p.jours < p.seuil ? '⏳' : '➖')} ${p.raison}
+        </div>
+      </div>`).join('')}
+    <div style="margin-top:12px;font-size:0.75rem;color:${triggered>0?'#4a7c4e':'#888'}">
+      ${triggered > 0 ? `${triggered} corrélation(s) affichée(s) dans Insights` : 'Aucune corrélation déclenchée — pas de bug, seuils non atteints'}
+    </div>
+    <button onclick="this.closest('[data-diag]').remove()" style="margin-top:12px;padding:8px 16px;background:#818263;color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;cursor:pointer">Fermer</button>
+  </div>`;
+
+  const el = document.createElement('div');
+  el.setAttribute('data-diag', '1');
+  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:9999;max-width:90vw';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+
+  return result;
+}
+
+
 function generateInsights(entries) {
   const insights = [];
   const sE = entries.filter(e => e.type==='stress' && e.values?.stress !== undefined);

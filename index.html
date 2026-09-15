@@ -7312,13 +7312,31 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       }
     }
 
-    // Cycle si actif
+    // Corrélations cycle — calculées directement ici, affichées inline (pas de renvoi)
     const settings = typeof cycleLoad === 'function' ? cycleLoad() : null;
     if (settings && settings.active && settings.startDate) {
-      const msg = periode === 'mois'
-        ? `🌸 <strong>Suivi cycle actif</strong> — Sur un mois, les corrélations avec ton cycle peuvent être plus lisibles. Consulte la section "Cycle & corrélations" ci-dessous pour les observations croisées.`
-        : `🌸 <strong>Suivi cycle actif</strong> — Tes données de transit et de peau sont croisées avec ta phase de cycle dans la section "Cycle & corrélations" ci-dessous.`;
-      lines.push(msg);
+      // Construire les entries dans le format attendu par getCycleInsights
+      const cycleEntries = [];
+      dts.forEach(ds => {
+        const d = byDate[ds];
+        if (d.peau   != null) cycleEntries.push({ type:'peau',    dateStr:ds, values:{ peau_etat:d.peau } });
+        if (d.transit!= null) cycleEntries.push({ type:'transit', dateStr:ds, values:{ transit_etat:d.transit } });
+        if (d.stress  > 0)   cycleEntries.push({ type:'stress',  dateStr:ds, values:{ stress:d.stress } });
+      });
+
+      if (typeof getCycleInsights === 'function' && cycleEntries.length >= 4) {
+        const cycleIns = getCycleInsights(cycleEntries);
+        cycleIns.forEach(ins => {
+          // Reformuler inline sans mention d'une section externe
+          lines.push(`${ins.icon} <strong>${ins.tag}</strong> — ${ins.text}`);
+        });
+        if (cycleIns.length === 0) {
+          // Cycle actif mais pas encore assez de données par phase
+          lines.push(`🌸 <strong>Suivi cycle actif</strong> — Pas encore assez de données par phase pour identifier des tendances. Continue à noter jour par jour — les patterns apparaissent en général après un ou deux cycles complets.`);
+        }
+      } else {
+        lines.push(`🌸 <strong>Suivi cycle actif</strong> — Continue à remplir ton journal quotidiennement pour que Nara puisse croiser tes données avec les phases de ton cycle.`);
+      }
     }
 
     if (lines.length === 0) {

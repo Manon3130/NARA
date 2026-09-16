@@ -7489,7 +7489,7 @@ function computeBrique4() {
     const ds = d.toISOString().split('T')[0];
     byDate[ds] = { ds };
 
-    // Journal : ressenti transit, ballonnements, douleurs, peau, stress, énergie, sommeil
+    // Journal : ressenti transit, ballonnements, douleurs, peau, stress, énergie, sommeil, hydratation
     try {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (raw) {
@@ -7500,6 +7500,8 @@ function computeBrique4() {
         if (j.stress  > 0) byDate[ds].stress  = j.stress;
         if (j.energie > 0) byDate[ds].energie = j.energie;
         if (j.sommeil > 0) byDate[ds].sommeil = j.sommeil;
+        // Hydratation : 0=<1L, 1=1-2L, 2=>2L (ordinal croissant)
+        if (j.hydratation !== null && j.hydratation !== undefined) byDate[ds].hydratation = j.hydratation;
       }
     } catch {}
 
@@ -7593,6 +7595,34 @@ function computeBrique4() {
 
   if (alertes.length === 0) return null;
 
+  // ── Brique 5 : Hydratation → Ballonnements ──────────────────────────────────
+  // Si une dérive ou instabilité des ballonnements a été détectée,
+  // vérifier si l'hydratation a évolué dans la direction opposée sur la même période.
+  const alerteBallonnements = alertes.find(a => a.label === 'Ballonnements');
+  if (alerteBallonnements) {
+    const hydR = recentes.map(ds => byDate[ds]?.hydratation).filter(v => v !== undefined && v !== null);
+    const hydP = precedent.map(ds => byDate[ds]?.hydratation).filter(v => v !== undefined && v !== null);
+
+    if (hydR.length >= SEUIL_MIN && hydP.length >= SEUIL_MIN) {
+      const moyHydR = hydR.reduce((s,v)=>s+v,0)/hydR.length;
+      const moyHydP = hydP.reduce((s,v)=>s+v,0)/hydP.length;
+      const diffHyd = moyHydR - moyHydP;
+      // Labels lisibles pour la moyenne hydratation
+      const hydLabel = m => m < 0.7 ? '< 1L' : m < 1.4 ? '1-2L' : '> 2L';
+      // Coïncidence pertinente : ballonnements montent + hydratation baisse (ou inversement)
+      const balMonte = (alerteBallonnements.type === 'dérive' && alerteBallonnements.text.includes('hausse'))
+                    || (alerteBallonnements.type === 'instabilité' && alerteBallonnements.text.includes('hausse'));
+      const coïncidence = (balMonte && diffHyd < -0.2) || (!balMonte && diffHyd > 0.2);
+
+      if (coïncidence && Math.abs(diffHyd) >= 0.2) {
+        const sensHyd = diffHyd < 0 ? 'en baisse' : 'en hausse';
+        alerteBallonnements.hydroNote = `<div style="margin-top:8px;padding:8px 10px;background:var(--honey);border-radius:8px;font-size:0.75rem;color:var(--text-mid);line-height:1.55">
+          💧 <strong>Hydratation — coïncidence notable</strong> : sur la même période, ton hydratation moyenne semble ${sensHyd} (${hydLabel(moyHydR)} récemment vs ${hydLabel(moyHydP)} avant). Ces deux tendances coïncident — sans certitude de lien de cause à effet. Calculé sur ${hydR.length + hydP.length} jours.
+        </div>`;
+      }
+    }
+  }
+
   return `<div class="section-title" style="margin-top:4px">Évolution récente — tendances à surveiller</div>` +
     alertes.map(a => `
       <div class="insight-real-card" style="border-left-color:#c4a882">
@@ -7600,6 +7630,7 @@ function computeBrique4() {
         <div class="irc-text">${a.text}
           <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${a.jours} jours · observation, pas un diagnostic</span>
         </div>
+        ${a.hydroNote || ''}
       </div>`).join('');
 }
 
@@ -7885,7 +7916,29 @@ function diagBrique2() {
     };
   });
 
-  const allPaires = [...result.paires, ...b4Results];
+  // ── Brique 5 : Hydratation → Ballonnements ──────────────────────────────────
+  const b5Note = (() => {
+    const hydR = rec.map(ds => byDate[ds]?.hydratation).filter(v => v !== undefined && v !== null);
+    const hydP = prec.map(ds => byDate[ds]?.hydratation).filter(v => v !== undefined && v !== null);
+    const balR = rec.map(ds => byDate[ds]?.ballonnements).filter(v => v !== undefined && v !== null);
+    const balP = prec.map(ds => byDate[ds]?.ballonnements).filter(v => v !== undefined && v !== null);
+    if (hydR.length < SEUIL_MIN || hydP.length < SEUIL_MIN)
+      return `B5 — Hydratation→Ballonnements : ⏳ Données hydratation insuff. (récent: ${hydR.length}, précéd: ${hydP.length}, min: ${SEUIL_MIN})`;
+    if (balR.length < SEUIL_MIN || balP.length < SEUIL_MIN)
+      return `B5 — Hydratation→Ballonnements : ⏳ Données ballonnements insuff. (récent: ${balR.length}, précéd: ${balP.length}, min: ${SEUIL_MIN})`;
+    const moyHydR = hydR.reduce((s,v)=>s+v,0)/hydR.length;
+    const moyHydP = hydP.reduce((s,v)=>s+v,0)/hydP.length;
+    const moyBalR = balR.reduce((s,v)=>s+v,0)/balR.length;
+    const moyBalP = balP.reduce((s,v)=>s+v,0)/balP.length;
+    const diffHyd = moyHydR - moyHydP, diffBal = moyBalR - moyBalP;
+    const hydLabel = m => m < 0.7 ? '<1L' : m < 1.4 ? '1-2L' : '>2L';
+    const coïncide = (diffBal > 0 && diffHyd < -0.2) || (diffBal < 0 && diffHyd > 0.2);
+    if (!coïncide)
+      return `B5 — Hydratation→Ballonnements : ➖ Pas de coïncidence (hyd: ${diffHyd>0?'+':''}${diffHyd.toFixed(2)}, bal: ${diffBal>0?'+':''}${diffBal.toFixed(2)})`;
+    return `B5 — Hydratation→Ballonnements : ✅ Coïncidence détectée — bal ${diffBal>0?'↑':'↓'} (${moyBalP.toFixed(1)}→${moyBalR.toFixed(1)}) + hyd ${diffHyd>0?'↑':'↓'} (${hydLabel(moyHydP)}→${hydLabel(moyHydR)})`;
+  })();
+
+  const allPaires = [...result.paires, ...b4Results, { nom: b5Note, declenche: b5Note.includes('✅') }];
   const triggered = allPaires.filter(p => p.declenche).length;
 
   const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:380px;max-height:70vh;overflow-y:auto">

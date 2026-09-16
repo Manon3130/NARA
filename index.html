@@ -6876,6 +6876,10 @@ function renderInsightsPage() {
   const brique2Html = computeBrique2(allEntries);
   if (brique2Html) html += brique2Html;
 
+  // ── Brique 4 : Détection de fluctuations / instabilité croissante ──────────
+  const brique4Html = computeBrique4();
+  if (brique4Html) html += brique4Html;
+
   content.innerHTML = html;
 }
 
@@ -7466,6 +7470,140 @@ function ichartHandleScroll(track, suffix) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 4 — Détection de fluctuations / instabilité croissante dans le temps
+// Méthode : comparer la variance des 15 derniers jours vs les 15 jours précédents.
+// Si la variance récente est significativement plus élevée → instabilité signalée.
+// Sources : nara_journal_* (ressenti) + nara_cal_* (Suivi des selles — fréquence).
+// ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique4() {
+  const FENETRE = 15;       // jours par fenêtre
+  const SEUIL_MIN = 7;      // jours de données minimum par fenêtre
+  const SEUIL_RATIO = 2.0;  // variance récente doit être ≥ 2× variance ancienne
+  const SEUIL_ALERTE = 14;  // jours total pour qualifier l'instabilité de "persistante"
+
+  // Construire un index par date sur les 30 derniers jours
+  const byDate = {};
+  for (let i = 0; i < FENETRE * 2; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    byDate[ds] = { ds };
+
+    // Journal : ressenti transit, ballonnements, douleurs, peau, stress, énergie, sommeil
+    try {
+      const raw = localStorage.getItem(`nara_journal_${ds}`);
+      if (raw) {
+        const j = JSON.parse(raw);
+        if (j.ballonnements !== undefined) byDate[ds].ballonnements = j.ballonnements;
+        if (j.douleurs      !== undefined) byDate[ds].douleurs      = j.douleurs;
+        if (j.peau    !== null && j.peau    !== undefined) byDate[ds].peau    = j.peau;
+        if (j.stress  > 0) byDate[ds].stress  = j.stress;
+        if (j.energie > 0) byDate[ds].energie = j.energie;
+        if (j.sommeil > 0) byDate[ds].sommeil = j.sommeil;
+      }
+    } catch {}
+
+    // Suivi des selles : fréquence réelle (nara_cal_*)
+    try {
+      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
+      if (calRaw) {
+        const cal = JSON.parse(calRaw);
+        if (cal && cal.yn === 'oui') byDate[ds].sellesFreq = cal.freq || 1;
+        else if (cal && cal.yn === 'non') byDate[ds].sellesFreq = 0;
+      }
+    } catch {}
+  }
+
+  // Séparer les deux fenêtres (triées anti-chrono → récentes en premier)
+  const dates = Object.keys(byDate).sort().reverse();
+  const recentes  = dates.slice(0, FENETRE);   // 15 derniers jours
+  const precedent = dates.slice(FENETRE, FENETRE * 2); // 15 jours d'avant
+
+  // Variance d'un tableau de valeurs
+  function variance(vals) {
+    if (vals.length < 2) return 0;
+    const m = vals.reduce((s,v) => s+v, 0) / vals.length;
+    return vals.reduce((s,v) => s + (v-m)**2, 0) / vals.length;
+  }
+  function moyenne(vals) {
+    return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
+  }
+
+  // Analyser chaque indicateur
+  const indicateurs = [
+    { key:'ballonnements', label:'Ballonnements', icon:'🌀', max:5, professionnel:'gastro-entérologue' },
+    { key:'sellesFreq',    label:'Fréquence des selles', icon:'🌿', max:5, professionnel:'gastro-entérologue' },
+    { key:'douleurs',      label:'Douleurs abdominales', icon:'😣', max:2, professionnel:'gastro-entérologue' },
+    { key:'peau',          label:'État de la peau', icon:'✨', max:2, professionnel:'dermatologue' },
+    { key:'stress',        label:'Stress', icon:'😮‍💨', max:5, professionnel:'médecin' },
+    { key:'sommeil',       label:'Sommeil', icon:'😴', max:5, professionnel:null },
+    { key:'energie',       label:'Énergie', icon:'⚡', max:5, professionnel:null },
+  ];
+
+  const alertes = [];
+
+  indicateurs.forEach(ind => {
+    const vR = recentes.map(ds => byDate[ds]?.[ind.key]).filter(v => v !== undefined && v !== null);
+    const vP = precedent.map(ds => byDate[ds]?.[ind.key]).filter(v => v !== undefined && v !== null);
+    if (vR.length < SEUIL_MIN || vP.length < SEUIL_MIN) return;
+
+    const varR = variance(vR);
+    const varP = variance(vP);
+    const moyR = moyenne(vR);
+    const moyP = moyenne(vP);
+
+    // Cas 1 : instabilité croissante (variance récente >> variance ancienne)
+    if (varR >= SEUIL_RATIO * Math.max(varP, 0.1)) {
+      const nbJours = vR.length + vP.length;
+      const persistant = nbJours >= SEUIL_ALERTE;
+      const dirMoy = moyR > moyP + 0.3 ? 'à la hausse' : moyR < moyP - 0.3 ? 'à la baisse' : 'sans tendance claire';
+      const conseil = ind.professionnel && persistant
+        ? ` Si cette instabilité persiste, c'est un point à mentionner à ton ${ind.professionnel}.`
+        : '';
+      alertes.push({
+        icon: ind.icon, label: ind.label, type: 'instabilité',
+        text: `Les valeurs de "${ind.label}" semblent <strong>plus variables</strong> sur les 15 derniers jours que sur les 15 jours précédents (variation récente : ${(Math.sqrt(varR)).toFixed(1)} vs ${(Math.sqrt(varP)).toFixed(1)} écart-type), ${dirMoy}.${conseil}`,
+        jours: nbJours,
+      });
+    }
+
+    // Cas 2 : tendance à la hausse ou baisse franche (pas forcément variable — juste une dérive)
+    const diff = moyR - moyP;
+    const seuilDeriveAbs = ind.max * 0.2; // 20% de l'échelle = dérive significative
+    if (Math.abs(diff) >= seuilDeriveAbs && varR < SEUIL_RATIO * Math.max(varP, 0.1)) {
+      // Dérive stable (pas déjà signalée comme instable)
+      const sens = diff > 0 ? 'en hausse' : 'en baisse';
+      const nbJours = vR.length + vP.length;
+      const persistant = nbJours >= SEUIL_ALERTE;
+      // Pour stress et douleurs, hausse = signal ; pour sommeil/énergie, baisse = signal
+      const estSignal = (['stress','douleurs','ballonnements'].includes(ind.key) && diff > 0)
+                     || (['sommeil','energie','peau'].includes(ind.key) && diff < 0)
+                     || ind.key === 'sellesFreq'; // toujours signaler les changements de fréquence selles
+      if (!estSignal) return; // ne signaler que les évolutions préoccupantes
+      const conseil = ind.professionnel && persistant
+        ? ` Si cette tendance se confirme, parle-en à ton ${ind.professionnel}.`
+        : '';
+      alertes.push({
+        icon: ind.icon, label: ind.label, type: 'dérive',
+        text: `"${ind.label}" semble <strong>${sens}</strong> sur les 15 derniers jours (moyenne récente : ${moyR.toFixed(1)} vs ${moyP.toFixed(1)} sur les 15 jours précédents). Tendance calculée sur ${nbJours} jours — à observer.${conseil}`,
+        jours: nbJours,
+      });
+    }
+  });
+
+  if (alertes.length === 0) return null;
+
+  return `<div class="section-title" style="margin-top:4px">Évolution récente — tendances à surveiller</div>` +
+    alertes.map(a => `
+      <div class="insight-real-card" style="border-left-color:#c4a882">
+        <div class="irc-tag">${a.icon} ${a.label} — ${a.type}</div>
+        <div class="irc-text">${a.text}
+          <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${a.jours} jours · observation, pas un diagnostic</span>
+        </div>
+      </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // BRIQUE 2 — Co-évolution de deux indicateurs
 // Détecte les paires qui bougent ensemble : sommeil ↔ peau, stress ↔ transit
 // Méthode : corrélation de Spearman (robuste sur valeurs ordinales, petits n)
@@ -7645,11 +7783,10 @@ function computeBrique2(allEntries) {
   return `<div class="section-title" style="margin-top:4px">Co-évolutions détectées</div>` + results.join('');
 }
 
-// ── Diagnostic Brique 2 — accessible via console ou bouton dev ──────────────
+// ── Diagnostic Brique 2 + Brique 4 — accessible depuis Insights ──────────────
 function diagBrique2() {
   const result = { paires: [], verdict: '' };
 
-  // Reconstruire byDate depuis localStorage (même logique que computeBrique2)
   const byDate = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -7662,81 +7799,114 @@ function diagBrique2() {
       if (!byDate[ds]) byDate[ds] = {};
       if (j.sommeil > 0) byDate[ds].sommeil = j.sommeil;
       if (j.stress  > 0) byDate[ds].stress  = j.stress;
-      if (j.energie > 0) byDate[ds].energie  = j.energie;
+      if (j.energie > 0) byDate[ds].energie = j.energie;
       if (j.peau  !== null && j.peau  !== undefined) byDate[ds].peau    = j.peau;
       if (j.transit !== null && j.transit !== undefined) byDate[ds].transit = j.transit;
+      if (j.ballonnements > 0) byDate[ds].ballonnements = j.ballonnements;
     } catch {}
   }
 
   const dates = Object.keys(byDate).sort();
   const totalJours = dates.length;
 
-  // Paire 1 : Sommeil ↔ Peau
+  // ── Brique 2 ──────────────────────────────────────────────────────────────
   const sp = dates.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
   const spRho = sp.length >= 7 ? spearmanCorr(sp.map(d=>byDate[d].sommeil), sp.map(d=>byDate[d].peau)) : null;
   result.paires.push({
-    nom: 'Sommeil ↔ Peau',
+    nom: 'B2 — Sommeil ↔ Peau',
     jours: sp.length, seuil: 7,
-    rho: spRho, seuilRho: 0.35,
     declenche: spRho !== null && Math.abs(spRho) >= 0.35,
-    raison: sp.length < 7
-      ? `${sp.length}/7 jours avec sommeil ET peau renseignés le même jour`
-      : spRho === null ? 'Calcul impossible (données identiques ?)'
-      : Math.abs(spRho) < 0.35 ? `Corrélation trop faible (${(spRho*100).toFixed(0)}% < seuil 35%)`
-      : `Corrélation détectée : ${(spRho*100).toFixed(0)}%`
+    raison: sp.length < 7 ? `${sp.length}/7 jours communs` :
+      spRho === null ? 'Calcul impossible' :
+      Math.abs(spRho) < 0.35 ? `Corr. trop faible (${(spRho*100).toFixed(0)}%)` :
+      `✅ Corr. ${(spRho*100).toFixed(0)}%`
   });
 
-  // Paire 2 : Stress ↔ Transit
   const st = dates.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
   const stRho = st.length >= 7 ? spearmanCorr(st.map(d=>byDate[d].stress), st.map(d=>byDate[d].transit)) : null;
   result.paires.push({
-    nom: 'Stress ↔ Transit',
+    nom: 'B2 — Stress ↔ Transit',
     jours: st.length, seuil: 7,
-    rho: stRho, seuilRho: 0.35,
     declenche: stRho !== null && Math.abs(stRho) >= 0.35,
-    raison: st.length < 7
-      ? `${st.length}/7 jours avec stress ET transit renseignés le même jour`
-      : stRho === null ? 'Calcul impossible'
-      : Math.abs(stRho) < 0.35 ? `Corrélation trop faible (${(Math.abs(stRho)*100).toFixed(0)}% < seuil 35%)`
-      : `Corrélation détectée : ${(Math.abs(stRho)*100).toFixed(0)}%`
+    raison: st.length < 7 ? `${st.length}/7 jours communs` :
+      stRho === null ? 'Calcul impossible' :
+      Math.abs(stRho) < 0.35 ? `Corr. trop faible (${(Math.abs(stRho)*100).toFixed(0)}%)` :
+      `✅ Corr. ${(Math.abs(stRho)*100).toFixed(0)}%`
   });
 
-  // Paire 3 : Énergie ↔ Stress (seuil plus élevé : 10 jours, rho ≤ -0.45)
   const es = dates.filter(d => byDate[d].energie > 0 && byDate[d].stress > 0);
   const esRho = es.length >= 10 ? spearmanCorr(es.map(d=>byDate[d].energie), es.map(d=>byDate[d].stress)) : null;
   result.paires.push({
-    nom: 'Énergie ↔ Stress',
+    nom: 'B2 — Énergie ↔ Stress',
     jours: es.length, seuil: 10,
-    rho: esRho, seuilRho: -0.45,
     declenche: esRho !== null && esRho <= -0.45,
-    raison: es.length < 10
-      ? `${es.length}/10 jours avec énergie ET stress renseignés le même jour`
-      : esRho === null ? 'Calcul impossible'
-      : esRho > -0.45 ? `Corrélation inverse insuffisante (${(esRho*100).toFixed(0)}% > seuil -45%)`
-      : `Corrélation détectée : ${(esRho*100).toFixed(0)}%`
+    raison: es.length < 10 ? `${es.length}/10 jours communs` :
+      esRho === null ? 'Calcul impossible' :
+      esRho > -0.45 ? `Corr. inverse insuff. (${(esRho*100).toFixed(0)}%)` :
+      `✅ Corr. ${(esRho*100).toFixed(0)}%`
   });
 
-  // Affichage dans une modale simple
-  const triggered = result.paires.filter(p => p.declenche).length;
-  const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:360px">
-    <div style="font-size:1rem;font-weight:600;margin-bottom:12px">Diagnostic Brique 2</div>
-    <div style="font-size:0.72rem;color:#666;margin-bottom:12px">Journal : ${totalJours} jours avec données</div>
-    ${result.paires.map(p => `
-      <div style="padding:10px 0;border-bottom:1px solid #eee">
-        <div style="font-weight:500;font-size:0.82rem">${p.nom}</div>
-        <div style="font-size:0.72rem;margin-top:3px;color:${p.declenche?'#4a7c4e':'#888'}">
-          ${p.declenche ? '✅' : (p.jours < p.seuil ? '⏳' : '➖')} ${p.raison}
+  // ── Brique 4 ──────────────────────────────────────────────────────────────
+  const FENETRE = 15, SEUIL_MIN = 7, SEUIL_RATIO = 2.0;
+  const allDates30 = Array.from({length:30}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    return d.toISOString().split('T')[0];
+  }).reverse();
+  const rec  = allDates30.slice(15); // 15 récents
+  const prec = allDates30.slice(0,15); // 15 précédents
+
+  function vrnc(vals) {
+    if (vals.length < 2) return 0;
+    const m = vals.reduce((s,v)=>s+v,0)/vals.length;
+    return vals.reduce((s,v)=>s+(v-m)**2,0)/vals.length;
+  }
+
+  const b4Indicateurs = [
+    { key:'ballonnements', label:'Ballonnements' },
+    { key:'peau',          label:'Peau' },
+    { key:'stress',        label:'Stress' },
+    { key:'sommeil',       label:'Sommeil' },
+    { key:'energie',       label:'Énergie' },
+  ];
+  const b4Results = b4Indicateurs.map(ind => {
+    const vR = rec.map(ds=>byDate[ds]?.[ind.key]).filter(v=>v!==undefined&&v!==null);
+    const vP = prec.map(ds=>byDate[ds]?.[ind.key]).filter(v=>v!==undefined&&v!==null);
+    const varR = vrnc(vR), varP = vrnc(vP);
+    const declenche = vR.length >= SEUIL_MIN && vP.length >= SEUIL_MIN && varR >= SEUIL_RATIO * Math.max(varP, 0.1);
+    return {
+      nom: `B4 — ${ind.label}`,
+      jours: vR.length + '/' + vP.length,
+      seuil: SEUIL_MIN,
+      declenche,
+      raison: vR.length < SEUIL_MIN || vP.length < SEUIL_MIN
+        ? `Données insuff. (récent: ${vR.length}, précéd: ${vP.length}, min: ${SEUIL_MIN} chacun)`
+        : declenche ? `✅ Instabilité (écart-type récent: ${Math.sqrt(varR).toFixed(2)} vs ${Math.sqrt(varP).toFixed(2)})`
+        : `Stable (écart-type: ${Math.sqrt(varR).toFixed(2)} vs ${Math.sqrt(varP).toFixed(2)})`
+    };
+  });
+
+  const allPaires = [...result.paires, ...b4Results];
+  const triggered = allPaires.filter(p => p.declenche).length;
+
+  const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:380px;max-height:70vh;overflow-y:auto">
+    <div style="font-size:1rem;font-weight:600;margin-bottom:8px">Diagnostic Briques 2 & 4</div>
+    <div style="font-size:0.7rem;color:#666;margin-bottom:10px">Journal : ${totalJours} jours · 30j comparaison pour B4</div>
+    ${allPaires.map(p => `
+      <div style="padding:8px 0;border-bottom:1px solid #eee">
+        <div style="font-weight:500;font-size:0.78rem">${p.nom}</div>
+        <div style="font-size:0.68rem;margin-top:2px;color:${p.declenche?'#4a7c4e':'#888'}">
+          ${p.declenche ? '✅' : (p.raison.includes('insuff') || p.raison.includes('/') && parseInt(p.raison) < p.seuil ? '⏳' : '➖')} ${p.raison}
         </div>
       </div>`).join('')}
-    <div style="margin-top:12px;font-size:0.75rem;color:${triggered>0?'#4a7c4e':'#888'}">
-      ${triggered > 0 ? `${triggered} corrélation(s) affichée(s) dans Insights` : 'Aucune corrélation déclenchée — pas de bug, seuils non atteints'}
+    <div style="margin-top:10px;font-size:0.72rem;color:${triggered>0?'#4a7c4e':'#888'}">
+      ${triggered > 0 ? `${triggered} résultat(s) affiché(s) dans Insights` : 'Aucun résultat — seuils non atteints'}
     </div>
-    <button onclick="this.closest('[data-diag]').remove()" style="margin-top:12px;padding:8px 16px;background:#818263;color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;cursor:pointer">Fermer</button>
+    <button onclick="this.closest('[data-diag]').remove()" style="margin-top:10px;padding:7px 14px;background:#818263;color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;cursor:pointer;font-size:0.8rem">Fermer</button>
   </div>`;
 
   const el = document.createElement('div');
   el.setAttribute('data-diag', '1');
-  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:9999;max-width:90vw';
+  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:9999;max-width:92vw';
   el.innerHTML = html;
   document.body.appendChild(el);
 

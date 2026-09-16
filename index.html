@@ -2393,7 +2393,7 @@ if (typeof supabase === 'undefined') {
     margin-bottom: 8px;
   }
 
-  /* ===== CALENDRIER TRANSIT ===== */
+  /* ===== SUIVI DES SELLES ===== */
 
   /* Modale enrichie */
   .cal-modal-overlay {
@@ -2968,7 +2968,7 @@ if (typeof supabase === 'undefined') {
           <div class="home-greeting"><span id="home-user-name">Manon</span> ✨</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button class="cal-access-btn" onclick="go('calendar')" title="Calendrier transit">🗓️</button>
+          <button class="cal-access-btn" onclick="go('calendar')" title="Suivi des selles">🗓️</button>
           <button class="user-menu-btn" onclick="toggleUserMenu()" id="user-menu-btn">🌸</button>
         </div>
         <div class="user-dropdown" id="user-dropdown">
@@ -9683,7 +9683,7 @@ function getCycleInsights(entries) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CALENDRIER TRANSIT
+// SUIVI DES SELLES
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── Persistence calendrier ───────────────────────────────────────────────────
@@ -10073,7 +10073,7 @@ try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); hideBo
       </div>
     </div>
 
-    <!-- SCREEN CALENDRIER TRANSIT -->
+    <!-- SCREEN SUIVI DES SELLES -->
     <div class="screen" id="screen-calendar">
       <div class="cal-header">
         <div class="cal-nav">
@@ -10081,7 +10081,7 @@ try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); hideBo
           <div class="cal-month-label" id="cal-month-label">Août <span class="cal-year">2026</span></div>
           <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
         </div>
-        <div style="font-size:0.7rem;color:var(--text-light);letter-spacing:0.06em">Transit 🌿</div>
+        <div style="font-size:0.7rem;color:var(--text-light);letter-spacing:0.06em">Suivi des selles 🌿</div>
       </div>
 
       <div class="cal-scroll">

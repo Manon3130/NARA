@@ -7947,9 +7947,9 @@ function diagBrique2() {
     ${allPaires.map(p => `
       <div style="padding:8px 0;border-bottom:1px solid #eee">
         <div style="font-weight:500;font-size:0.78rem">${p.nom}</div>
-        <div style="font-size:0.68rem;margin-top:2px;color:${p.declenche?'#4a7c4e':'#888'}">
-          ${p.declenche ? '✅' : (p.raison.includes('insuff') || p.raison.includes('/') && parseInt(p.raison) < p.seuil ? '⏳' : '➖')} ${p.raison}
-        </div>
+        ${p.raison !== undefined ? `<div style="font-size:0.68rem;margin-top:2px;color:${p.declenche?'#4a7c4e':'#888'}">
+          ${p.declenche ? '✅' : ((p.raison||'').includes('insuff') ? '⏳' : '➖')} ${p.raison}
+        </div>` : ''}
       </div>`).join('')}
     <div style="margin-top:10px;font-size:0.72rem;color:${triggered>0?'#4a7c4e':'#888'}">
       ${triggered > 0 ? `${triggered} résultat(s) affiché(s) dans Insights` : 'Aucun résultat — seuils non atteints'}

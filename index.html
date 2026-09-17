@@ -7644,12 +7644,12 @@ function computeBrique4() {
 
 function computeBrique6(byDate, seuilMin) {
   seuilMin = seuilMin || 7;
-  const HYD_MAP = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
   const results = [];
 
-  // Construire les paires (hydratation, selles) sur les 30 derniers jours
-  const pairesFreq    = []; // hydratation ↔ fréquence (0 si non, freq si oui)
+  // Construire les paires sur les 30 derniers jours
+  const pairesFreq    = []; // hydratation ↔ fréquence selles
   const pairesBristol = []; // hydratation ↔ type Bristol
+  const pairesPeau    = []; // hydratation ↔ état peau (Brique 7)
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
@@ -7659,31 +7659,28 @@ function computeBrique6(byDate, seuilMin) {
     const hyd = byDate[ds]?.hydratation;
     if (hyd === undefined || hyd === null) continue;
 
-    // Calendrier des selles
+    // ── Brique 6 : Calendrier des selles ──────────────────────────────────
     try {
-      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
-      if (!calRaw) continue;
-      const cal = JSON.parse(calRaw);
-      if (!cal || !cal.yn) continue;
-
-      // Lien 1 : fréquence (0 si non, nb passages si oui)
-      const freq = cal.yn === 'oui' ? (cal.freq || 1) : 0;
-      pairesFreq.push({ hyd, freq, ds });
-
-      // Lien 2 : Bristol (uniquement si selle et bristol renseigné)
-      if (cal.yn === 'oui' && cal.bristol !== null && cal.bristol !== undefined) {
-        pairesBristol.push({ hyd, bristol: cal.bristol, ds });
+      const cal = JSON.parse(localStorage.getItem(`nara_cal_${ds}`) || 'null');
+      if (cal && cal.yn) {
+        pairesFreq.push({ hyd, freq: cal.yn === 'oui' ? (cal.freq || 1) : 0 });
+        if (cal.yn === 'oui' && cal.bristol != null)
+          pairesBristol.push({ hyd, bristol: cal.bristol });
       }
     } catch {}
+
+    // ── Brique 7 : État de la peau ─────────────────────────────────────────
+    // j.peau : 0=Poussée, 1=Stable, 2=Calme — déjà numérique, pas de conversion
+    const peau = byDate[ds]?.peau;
+    if (peau !== undefined && peau !== null)
+      pairesPeau.push({ hyd, peau });
   }
 
   // ── Lien 1 : Hydratation ↔ Fréquence des selles ─────────────────────────
   if (pairesFreq.length >= seuilMin) {
-    const xs = pairesFreq.map(p => p.hyd);
-    const ys = pairesFreq.map(p => p.freq);
-    const rho = spearmanCorr(xs, ys);
+    const rho = spearmanCorr(pairesFreq.map(p=>p.hyd), pairesFreq.map(p=>p.freq));
     if (rho !== null && Math.abs(rho) >= 0.30) {
-      const n  = pairesFreq.length;
+      const n = pairesFreq.length;
       const sens = rho > 0
         ? 'une hydratation plus élevée coïncide avec plus de passages aux selles'
         : 'une hydratation plus faible coïncide avec moins de passages aux selles';
@@ -7700,12 +7697,9 @@ function computeBrique6(byDate, seuilMin) {
 
   // ── Lien 2 : Hydratation ↔ Type Bristol ─────────────────────────────────
   if (pairesBristol.length >= seuilMin) {
-    const xs = pairesBristol.map(p => p.hyd);
-    const ys = pairesBristol.map(p => p.bristol);
-    const rho = spearmanCorr(xs, ys);
+    const rho = spearmanCorr(pairesBristol.map(p=>p.hyd), pairesBristol.map(p=>p.bristol));
     if (rho !== null && Math.abs(rho) >= 0.30) {
-      const n  = pairesBristol.length;
-      // Bristol 1-2 = durs (constipation), 6-7 = liquides ; corrélation positive = hyd élevée → selles plus fluides
+      const n = pairesBristol.length;
       const sens = rho > 0
         ? 'une meilleure hydratation coïncide avec des selles de type plus fluide (Bristol plus élevé)'
         : 'une hydratation plus faible coïncide avec des selles de type plus dur (Bristol plus bas)';
@@ -7715,6 +7709,30 @@ function computeBrique6(byDate, seuilMin) {
           <div class="irc-tag">💧 ↔ 🔬 Hydratation &amp; Type de selle (Bristol) — corrélation ${intensite}</div>
           <div class="irc-text">Sur ${n} jours avec Bristol renseigné, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). L'hydratation est un facteur connu de la consistance des selles — cette tendance mérite attention si elle persiste.
             <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · observation, pas un diagnostic · à mentionner à ton gastro-entérologue si persistant</span>
+          </div>
+        </div>`);
+    }
+  }
+
+  // ── Lien 3 (Brique 7) : Hydratation ↔ État de la peau ────────────────────
+  // peau 0=Poussée, 1=Stable, 2=Calme — ordinal croissant → Spearman direct
+  // Corrélation positive : hyd élevée → peau plus calme
+  if (pairesPeau.length >= seuilMin) {
+    const rho = spearmanCorr(pairesPeau.map(p=>p.hyd), pairesPeau.map(p=>p.peau));
+    if (rho !== null && Math.abs(rho) >= 0.30) {
+      const n = pairesPeau.length;
+      const sens = rho > 0
+        ? 'une hydratation plus élevée coïncide avec des jours de peau plus calme'
+        : 'une hydratation plus faible coïncide avec des jours de peau plus en difficulté';
+      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+      const oriente = Math.abs(rho) >= 0.45
+        ? " Ce pattern régulier mérite d'être mentionné à ton dermatologue."
+        : '';
+      results.push(`
+        <div class="insight-real-card" style="border-left-color:#c4a882">
+          <div class="irc-tag">💧 ↔ ✨ Hydratation &amp; État de la peau — corrélation ${intensite}</div>
+          <div class="irc-text">Sur ${n} jours avec les deux données renseignées, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). C'est une coïncidence observée sur tes données — pas un lien de causalité établi.${oriente}
+            <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · observation, pas un diagnostic</span>
           </div>
         </div>`);
     }
@@ -8065,6 +8083,24 @@ function diagBrique2() {
       lines.push(rhoB !== null && Math.abs(rhoB) >= 0.30
         ? `B6 — Hydratation↔Bristol : ✅ Corr. ${(Math.abs(rhoB)*100).toFixed(0)}% sur ${pairesBristol.length}j (${rhoB>0?'hyd élevée→selles+fluides':'hyd faible→selles+dures'})`
         : `B6 — Hydratation↔Bristol : ➖ Corr. insuff. (${rhoB!==null?(Math.abs(rhoB)*100).toFixed(0)+'%':'N/A'}) sur ${pairesBristol.length}j`);
+    }
+    // Brique 7 : Hydratation ↔ Peau
+    const pairesPeau7 = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const hyd = byDate[ds]?.hydratation;
+      const peau = byDate[ds]?.peau;
+      if (hyd !== undefined && hyd !== null && peau !== undefined && peau !== null)
+        pairesPeau7.push({ hyd, peau });
+    }
+    if (pairesPeau7.length < SEUIL_MIN) {
+      lines.push(`B7 — Hydratation↔Peau : ⏳ Jours communs insuff. (${pairesPeau7.length}/${SEUIL_MIN})`);
+    } else {
+      const rhoP = spearmanCorr(pairesPeau7.map(p=>p.hyd), pairesPeau7.map(p=>p.peau));
+      lines.push(rhoP !== null && Math.abs(rhoP) >= 0.30
+        ? `B7 — Hydratation↔Peau : ✅ Corr. ${(Math.abs(rhoP)*100).toFixed(0)}% sur ${pairesPeau7.length}j (${rhoP>0?'hyd élevée→peau+calme':'hyd faible→peau+difficile'})`
+        : `B7 — Hydratation↔Peau : ➖ Corr. insuff. (${rhoP!==null?(Math.abs(rhoP)*100).toFixed(0)+'%':'N/A'}) sur ${pairesPeau7.length}j`);
     }
     return lines;
   })();

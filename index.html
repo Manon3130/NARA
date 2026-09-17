@@ -7500,8 +7500,10 @@ function computeBrique4() {
         if (j.stress  > 0) byDate[ds].stress  = j.stress;
         if (j.energie > 0) byDate[ds].energie = j.energie;
         if (j.sommeil > 0) byDate[ds].sommeil = j.sommeil;
-        // Hydratation : 0=<1L, 1=1-2L, 2=>2L (ordinal croissant)
-        if (j.hydratation !== null && j.hydratation !== undefined) byDate[ds].hydratation = j.hydratation;
+        // Hydratation : stockée comme 'lt1'|'1to2'|'gt2', convertie en 0|1|2 pour le calcul
+        const HYD_MAP = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
+        if (j.hydratation !== null && j.hydratation !== undefined && HYD_MAP[j.hydratation] !== undefined)
+          byDate[ds].hydratation = HYD_MAP[j.hydratation];
       }
     } catch {}
 
@@ -7834,6 +7836,9 @@ function diagBrique2() {
       if (j.peau  !== null && j.peau  !== undefined) byDate[ds].peau    = j.peau;
       if (j.transit !== null && j.transit !== undefined) byDate[ds].transit = j.transit;
       if (j.ballonnements > 0) byDate[ds].ballonnements = j.ballonnements;
+      // Hydratation : 'lt1'→0, '1to2'→1, 'gt2'→2
+      const HYD = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
+      if (j.hydratation != null && HYD[j.hydratation] !== undefined) byDate[ds].hydratation = HYD[j.hydratation];
     } catch {}
   }
 

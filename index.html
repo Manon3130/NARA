@@ -7646,20 +7646,20 @@ function computeBrique6(byDate, seuilMin) {
   seuilMin = seuilMin || 7;
   const results = [];
 
-  // Construire les paires sur les 30 derniers jours
-  const pairesFreq    = []; // hydratation ↔ fréquence selles
-  const pairesBristol = []; // hydratation ↔ type Bristol
-  const pairesPeau    = []; // hydratation ↔ état peau (Brique 7)
+  // Construire toutes les paires hyd × indicateur sur les 30 derniers jours
+  const pairesFreq     = []; // hyd ↔ fréquence selles      (B6)
+  const pairesBristol  = []; // hyd ↔ Bristol                (B6)
+  const pairesPeau     = []; // hyd ↔ peau                   (B7)
+  const pairesTransit  = []; // hyd ↔ transit ressenti       (B8a)
+  const pairesDouleurs = []; // hyd ↔ douleurs abdominales   (B8b)
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
-
-    // Hydratation depuis byDate (déjà converti en 0/1/2 par computeBrique4)
     const hyd = byDate[ds]?.hydratation;
     if (hyd === undefined || hyd === null) continue;
 
-    // ── Brique 6 : Calendrier des selles ──────────────────────────────────
+    // B6 : calendrier des selles
     try {
       const cal = JSON.parse(localStorage.getItem(`nara_cal_${ds}`) || 'null');
       if (cal && cal.yn) {
@@ -7669,79 +7669,100 @@ function computeBrique6(byDate, seuilMin) {
       }
     } catch {}
 
-    // ── Brique 7 : État de la peau ─────────────────────────────────────────
-    // j.peau : 0=Poussée, 1=Stable, 2=Calme — déjà numérique, pas de conversion
+    // B7 : peau (0=Poussée, 1=Stable, 2=Calme — déjà numérique)
     const peau = byDate[ds]?.peau;
-    if (peau !== undefined && peau !== null)
-      pairesPeau.push({ hyd, peau });
+    if (peau !== undefined && peau !== null) pairesPeau.push({ hyd, peau });
+
+    // B8a : transit ressenti (0=Lent, 1=Normal, 2=Rapide)
+    const transit = byDate[ds]?.transit;
+    if (transit !== undefined && transit !== null) pairesTransit.push({ hyd, transit });
+
+    // B8b : douleurs abdominales (0-2)
+    const douleurs = byDate[ds]?.douleurs;
+    if (douleurs !== undefined && douleurs !== null) pairesDouleurs.push({ hyd, douleurs });
   }
 
-  // ── Lien 1 : Hydratation ↔ Fréquence des selles ─────────────────────────
+  // Helper : bloc insight à partir d'un rho Spearman
+  function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
+    if (rho === null || Math.abs(rho) < 0.30) return null;
+    const sens      = rho > 0 ? sensPos : sensNeg;
+    const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+    return `<div class="insight-real-card" style="border-left-color:${couleur}">
+      <div class="irc-tag">${emoji} — corrélation ${intensite}</div>
+      <div class="irc-text">${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}% · ${n} jours communs). Tendance observée — pas un lien de cause à effet établi.
+        <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">${note}</span>
+      </div>
+    </div>`;
+  }
+
+  // ── B6 Lien 1 : Hydratation ↔ Fréquence des selles ──────────────────────
   if (pairesFreq.length >= seuilMin) {
     const rho = spearmanCorr(pairesFreq.map(p=>p.hyd), pairesFreq.map(p=>p.freq));
-    if (rho !== null && Math.abs(rho) >= 0.30) {
-      const n = pairesFreq.length;
-      const sens = rho > 0
-        ? 'une hydratation plus élevée coïncide avec plus de passages aux selles'
-        : 'une hydratation plus faible coïncide avec moins de passages aux selles';
-      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
-      results.push(`
-        <div class="insight-real-card" style="border-left-color:#8ab4c4">
-          <div class="irc-tag">💧 ↔ 🌿 Hydratation &amp; Fréquence des selles — corrélation ${intensite}</div>
-          <div class="irc-text">Sur ${n} jours avec les deux données renseignées, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). Tendance observée — pas un lien de cause à effet établi.
-            <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · si ce pattern persiste, parle-en à ton gastro-entérologue</span>
-          </div>
-        </div>`);
-    }
+    const b = bloc(
+      '💧 ↔ 🌿 Hydratation & Fréquence des selles', pairesFreq.length, rho,
+      `Sur ${pairesFreq.length} jours, une hydratation plus élevée coïncide avec plus de passages aux selles`,
+      `Sur ${pairesFreq.length} jours, une hydratation plus faible coïncide avec moins de passages aux selles`,
+      'Si ce pattern persiste, parle-en à ton gastro-entérologue', '#8ab4c4'
+    );
+    if (b) results.push(b);
   }
 
-  // ── Lien 2 : Hydratation ↔ Type Bristol ─────────────────────────────────
+  // ── B6 Lien 2 : Hydratation ↔ Bristol ────────────────────────────────────
   if (pairesBristol.length >= seuilMin) {
     const rho = spearmanCorr(pairesBristol.map(p=>p.hyd), pairesBristol.map(p=>p.bristol));
-    if (rho !== null && Math.abs(rho) >= 0.30) {
-      const n = pairesBristol.length;
-      const sens = rho > 0
-        ? 'une meilleure hydratation coïncide avec des selles de type plus fluide (Bristol plus élevé)'
-        : 'une hydratation plus faible coïncide avec des selles de type plus dur (Bristol plus bas)';
-      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
-      results.push(`
-        <div class="insight-real-card" style="border-left-color:#8ab4c4">
-          <div class="irc-tag">💧 ↔ 🔬 Hydratation &amp; Type de selle (Bristol) — corrélation ${intensite}</div>
-          <div class="irc-text">Sur ${n} jours avec Bristol renseigné, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). L'hydratation est un facteur connu de la consistance des selles — cette tendance mérite attention si elle persiste.
-            <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · observation, pas un diagnostic · à mentionner à ton gastro-entérologue si persistant</span>
-          </div>
-        </div>`);
-    }
+    const b = bloc(
+      '💧 ↔ 🔬 Hydratation & Type de selle (Bristol)', pairesBristol.length, rho,
+      `Sur ${pairesBristol.length} jours, une meilleure hydratation coïncide avec des selles de type plus fluide (Bristol plus élevé)`,
+      `Sur ${pairesBristol.length} jours, une hydratation plus faible coïncide avec des selles de type plus dur (Bristol plus bas)`,
+      'Observation, pas un diagnostic · à mentionner à ton gastro-entérologue si persistant', '#8ab4c4'
+    );
+    if (b) results.push(b);
   }
 
-  // ── Lien 3 (Brique 7) : Hydratation ↔ État de la peau ────────────────────
-  // peau 0=Poussée, 1=Stable, 2=Calme — ordinal croissant → Spearman direct
-  // Corrélation positive : hyd élevée → peau plus calme
+  // ── B7 : Hydratation ↔ Peau ───────────────────────────────────────────────
   if (pairesPeau.length >= seuilMin) {
     const rho = spearmanCorr(pairesPeau.map(p=>p.hyd), pairesPeau.map(p=>p.peau));
-    if (rho !== null && Math.abs(rho) >= 0.30) {
-      const n = pairesPeau.length;
-      const sens = rho > 0
-        ? 'une hydratation plus élevée coïncide avec des jours de peau plus calme'
-        : 'une hydratation plus faible coïncide avec des jours de peau plus en difficulté';
-      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
-      const oriente = Math.abs(rho) >= 0.45
-        ? " Ce pattern régulier mérite d'être mentionné à ton dermatologue."
-        : '';
-      results.push(`
-        <div class="insight-real-card" style="border-left-color:#c4a882">
-          <div class="irc-tag">💧 ↔ ✨ Hydratation &amp; État de la peau — corrélation ${intensite}</div>
-          <div class="irc-text">Sur ${n} jours avec les deux données renseignées, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). C'est une coïncidence observée sur tes données — pas un lien de causalité établi.${oriente}
-            <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · observation, pas un diagnostic</span>
-          </div>
-        </div>`);
-    }
+    const pro = rho !== null && Math.abs(rho) >= 0.45
+      ? ' Pattern notable — parle-en à ton dermatologue.' : '';
+    const b = bloc(
+      '💧 ↔ ✨ Hydratation & État de la peau', pairesPeau.length, rho,
+      `Sur ${pairesPeau.length} jours, une hydratation plus élevée coïncide avec des jours de peau plus calme.${pro}`,
+      `Sur ${pairesPeau.length} jours, une hydratation plus faible coïncide avec des jours de peau plus en difficulté.${pro}`,
+      'Observation, pas un diagnostic', '#c4a882'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── B8a : Hydratation ↔ Transit ressenti ─────────────────────────────────
+  // 0=Lent, 1=Normal, 2=Rapide → corrélation positive = hyd élevée → transit fluide
+  if (pairesTransit.length >= seuilMin) {
+    const rho = spearmanCorr(pairesTransit.map(p=>p.hyd), pairesTransit.map(p=>p.transit));
+    const b = bloc(
+      '💧 ↔ 🌿 Hydratation & Transit (ressenti)', pairesTransit.length, rho,
+      `Sur ${pairesTransit.length} jours, une hydratation plus élevée coïncide avec un transit perçu plus fluide`,
+      `Sur ${pairesTransit.length} jours, une hydratation plus faible coïncide avec un transit perçu plus lent`,
+      'Ressenti subjectif — à croiser avec le calendrier des selles. Si persistant, parle-en à ton gastro-entérologue', '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── B8b : Hydratation ↔ Douleurs abdominales ─────────────────────────────
+  // Corrélation négative attendue : hyd faible → plus de douleurs
+  if (pairesDouleurs.length >= seuilMin) {
+    const rho = spearmanCorr(pairesDouleurs.map(p=>p.hyd), pairesDouleurs.map(p=>p.douleurs));
+    const pro = rho !== null && rho < -0.40
+      ? ' Pattern notable — parle-en à ton médecin ou gastro-entérologue.' : '';
+    const b = bloc(
+      '💧 ↔ 😣 Hydratation & Douleurs abdominales', pairesDouleurs.length, rho,
+      `Sur ${pairesDouleurs.length} jours, une hydratation plus élevée coïncide avec moins de douleurs abdominales.${pro}`,
+      `Sur ${pairesDouleurs.length} jours, une hydratation plus faible coïncide avec plus de douleurs abdominales.${pro}`,
+      'Observation, pas un diagnostic', '#DDBAAE'
+    );
+    if (b) results.push(b);
   }
 
   return results.length ? results.join('') : null;
 }
-// Détecte les paires qui bougent ensemble : sommeil ↔ peau, stress ↔ transit
-// Méthode : corrélation de Spearman (robuste sur valeurs ordinales, petits n)
 // ══════════════════════════════════════════════════════════════════════════════
 
 // Corrélation de Spearman sur deux tableaux de valeurs numériques alignées
@@ -8101,6 +8122,40 @@ function diagBrique2() {
       lines.push(rhoP !== null && Math.abs(rhoP) >= 0.30
         ? `B7 — Hydratation↔Peau : ✅ Corr. ${(Math.abs(rhoP)*100).toFixed(0)}% sur ${pairesPeau7.length}j (${rhoP>0?'hyd élevée→peau+calme':'hyd faible→peau+difficile'})`
         : `B7 — Hydratation↔Peau : ➖ Corr. insuff. (${rhoP!==null?(Math.abs(rhoP)*100).toFixed(0)+'%':'N/A'}) sur ${pairesPeau7.length}j`);
+    }
+    // B8a : Transit ressenti
+    const pairesTransit7 = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const hyd = byDate[ds]?.hydratation, tr = byDate[ds]?.transit;
+      if (hyd !== undefined && hyd !== null && tr !== undefined && tr !== null)
+        pairesTransit7.push({ hyd, transit: tr });
+    }
+    if (pairesTransit7.length < SEUIL_MIN) {
+      lines.push(`B8a — Hydratation↔Transit ressenti : ⏳ Jours communs insuff. (${pairesTransit7.length}/${SEUIL_MIN})`);
+    } else {
+      const rhoT = spearmanCorr(pairesTransit7.map(p=>p.hyd), pairesTransit7.map(p=>p.transit));
+      lines.push(rhoT !== null && Math.abs(rhoT) >= 0.30
+        ? `B8a — Hydratation↔Transit ressenti : ✅ Corr. ${(Math.abs(rhoT)*100).toFixed(0)}% sur ${pairesTransit7.length}j (${rhoT>0?'hyd↑→transit+fluide':'hyd↓→transit+lent'})`
+        : `B8a — Hydratation↔Transit ressenti : ➖ Corr. insuff. (${rhoT!==null?(Math.abs(rhoT)*100).toFixed(0)+'%':'N/A'}) sur ${pairesTransit7.length}j`);
+    }
+    // B8b : Douleurs abdominales
+    const pairesDoul7 = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const hyd = byDate[ds]?.hydratation, doul = byDate[ds]?.douleurs;
+      if (hyd !== undefined && hyd !== null && doul !== undefined && doul !== null)
+        pairesDoul7.push({ hyd, douleurs: doul });
+    }
+    if (pairesDoul7.length < SEUIL_MIN) {
+      lines.push(`B8b — Hydratation↔Douleurs : ⏳ Jours communs insuff. (${pairesDoul7.length}/${SEUIL_MIN})`);
+    } else {
+      const rhoD = spearmanCorr(pairesDoul7.map(p=>p.hyd), pairesDoul7.map(p=>p.douleurs));
+      lines.push(rhoD !== null && Math.abs(rhoD) >= 0.30
+        ? `B8b — Hydratation↔Douleurs : ✅ Corr. ${(Math.abs(rhoD)*100).toFixed(0)}% sur ${pairesDoul7.length}j (${rhoD<0?'hyd↑→moins douleurs':'hyd↓→plus douleurs'})`
+        : `B8b — Hydratation↔Douleurs : ➖ Corr. insuff. (${rhoD!==null?(Math.abs(rhoD)*100).toFixed(0)+'%':'N/A'}) sur ${pairesDoul7.length}j`);
     }
     return lines;
   })();

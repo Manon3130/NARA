@@ -7633,11 +7633,95 @@ function computeBrique4() {
           <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${a.jours} jours · observation, pas un diagnostic</span>
         </div>
         ${a.hydroNote || ''}
-      </div>`).join('');
+      </div>`).join('') + computeBrique6(byDate, SEUIL_MIN);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// BRIQUE 2 — Co-évolution de deux indicateurs
+// BRIQUE 6 — Hydratation → Calendrier des selles (fréquence + type Bristol)
+// Sources : nara_journal_*.hydratation (0/1/2) × nara_cal_*.{yn,freq,bristol}
+// Méthode : Spearman sur les jours où les deux données sont présentes.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique6(byDate, seuilMin) {
+  seuilMin = seuilMin || 7;
+  const HYD_MAP = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
+  const results = [];
+
+  // Construire les paires (hydratation, selles) sur les 30 derniers jours
+  const pairesFreq    = []; // hydratation ↔ fréquence (0 si non, freq si oui)
+  const pairesBristol = []; // hydratation ↔ type Bristol
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+
+    // Hydratation depuis byDate (déjà converti en 0/1/2 par computeBrique4)
+    const hyd = byDate[ds]?.hydratation;
+    if (hyd === undefined || hyd === null) continue;
+
+    // Calendrier des selles
+    try {
+      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
+      if (!calRaw) continue;
+      const cal = JSON.parse(calRaw);
+      if (!cal || !cal.yn) continue;
+
+      // Lien 1 : fréquence (0 si non, nb passages si oui)
+      const freq = cal.yn === 'oui' ? (cal.freq || 1) : 0;
+      pairesFreq.push({ hyd, freq, ds });
+
+      // Lien 2 : Bristol (uniquement si selle et bristol renseigné)
+      if (cal.yn === 'oui' && cal.bristol !== null && cal.bristol !== undefined) {
+        pairesBristol.push({ hyd, bristol: cal.bristol, ds });
+      }
+    } catch {}
+  }
+
+  // ── Lien 1 : Hydratation ↔ Fréquence des selles ─────────────────────────
+  if (pairesFreq.length >= seuilMin) {
+    const xs = pairesFreq.map(p => p.hyd);
+    const ys = pairesFreq.map(p => p.freq);
+    const rho = spearmanCorr(xs, ys);
+    if (rho !== null && Math.abs(rho) >= 0.30) {
+      const n  = pairesFreq.length;
+      const sens = rho > 0
+        ? 'une hydratation plus élevée coïncide avec plus de passages aux selles'
+        : 'une hydratation plus faible coïncide avec moins de passages aux selles';
+      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+      results.push(`
+        <div class="insight-real-card" style="border-left-color:#8ab4c4">
+          <div class="irc-tag">💧 ↔ 🌿 Hydratation &amp; Fréquence des selles — corrélation ${intensite}</div>
+          <div class="irc-text">Sur ${n} jours avec les deux données renseignées, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). Tendance observée — pas un lien de cause à effet établi.
+            <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · si ce pattern persiste, parle-en à ton gastro-entérologue</span>
+          </div>
+        </div>`);
+    }
+  }
+
+  // ── Lien 2 : Hydratation ↔ Type Bristol ─────────────────────────────────
+  if (pairesBristol.length >= seuilMin) {
+    const xs = pairesBristol.map(p => p.hyd);
+    const ys = pairesBristol.map(p => p.bristol);
+    const rho = spearmanCorr(xs, ys);
+    if (rho !== null && Math.abs(rho) >= 0.30) {
+      const n  = pairesBristol.length;
+      // Bristol 1-2 = durs (constipation), 6-7 = liquides ; corrélation positive = hyd élevée → selles plus fluides
+      const sens = rho > 0
+        ? 'une meilleure hydratation coïncide avec des selles de type plus fluide (Bristol plus élevé)'
+        : 'une hydratation plus faible coïncide avec des selles de type plus dur (Bristol plus bas)';
+      const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+      results.push(`
+        <div class="insight-real-card" style="border-left-color:#8ab4c4">
+          <div class="irc-tag">💧 ↔ 🔬 Hydratation &amp; Type de selle (Bristol) — corrélation ${intensite}</div>
+          <div class="irc-text">Sur ${n} jours avec Bristol renseigné, ${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}%). L'hydratation est un facteur connu de la consistance des selles — cette tendance mérite attention si elle persiste.
+            <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · observation, pas un diagnostic · à mentionner à ton gastro-entérologue si persistant</span>
+          </div>
+        </div>`);
+    }
+  }
+
+  return results.length ? results.join('') : null;
+}
 // Détecte les paires qui bougent ensemble : sommeil ↔ peau, stress ↔ transit
 // Méthode : corrélation de Spearman (robuste sur valeurs ordinales, petits n)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -7944,6 +8028,47 @@ function diagBrique2() {
   })();
 
   const allPaires = [...result.paires, ...b4Results, { nom: b5Note, declenche: b5Note.includes('✅') }];
+
+  // ── Brique 6 : Hydratation → Calendrier des selles ────────────────────────
+  const b6Lines = (() => {
+    const pairesFreq = [], pairesBristol = [];
+    const HYD_MAP = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
+    for (let i = 0; i < 30; i++) {
+      const d  = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const j  = byDate[ds]; if (!j) continue;
+      const hyd = j.hydratation;
+      if (hyd === undefined || hyd === null) continue;
+      try {
+        const cal = JSON.parse(localStorage.getItem(`nara_cal_${ds}`) || 'null');
+        if (!cal || !cal.yn) continue;
+        pairesFreq.push({ hyd, freq: cal.yn === 'oui' ? (cal.freq||1) : 0 });
+        if (cal.yn === 'oui' && cal.bristol != null)
+          pairesBristol.push({ hyd, bristol: cal.bristol });
+      } catch {}
+    }
+    const lines = [];
+    // Fréquence
+    if (pairesFreq.length < SEUIL_MIN) {
+      lines.push(`B6 — Hydratation↔Fréquence selles : ⏳ Jours communs insuff. (${pairesFreq.length}/${SEUIL_MIN})`);
+    } else {
+      const rhoF = spearmanCorr(pairesFreq.map(p=>p.hyd), pairesFreq.map(p=>p.freq));
+      lines.push(rhoF !== null && Math.abs(rhoF) >= 0.30
+        ? `B6 — Hydratation↔Fréquence selles : ✅ Corr. ${(Math.abs(rhoF)*100).toFixed(0)}% sur ${pairesFreq.length}j (${rhoF>0?'hyd↑→selles+':'hyd↓→selles-'})`
+        : `B6 — Hydratation↔Fréquence selles : ➖ Corr. insuff. (${rhoF!==null?(Math.abs(rhoF)*100).toFixed(0)+'%':'N/A'}) sur ${pairesFreq.length}j`);
+    }
+    // Bristol
+    if (pairesBristol.length < SEUIL_MIN) {
+      lines.push(`B6 — Hydratation↔Bristol : ⏳ Jours communs insuff. (${pairesBristol.length}/${SEUIL_MIN}, pense à renseigner l'échelle Bristol)`);
+    } else {
+      const rhoB = spearmanCorr(pairesBristol.map(p=>p.hyd), pairesBristol.map(p=>p.bristol));
+      lines.push(rhoB !== null && Math.abs(rhoB) >= 0.30
+        ? `B6 — Hydratation↔Bristol : ✅ Corr. ${(Math.abs(rhoB)*100).toFixed(0)}% sur ${pairesBristol.length}j (${rhoB>0?'hyd élevée→selles+fluides':'hyd faible→selles+dures'})`
+        : `B6 — Hydratation↔Bristol : ➖ Corr. insuff. (${rhoB!==null?(Math.abs(rhoB)*100).toFixed(0)+'%':'N/A'}) sur ${pairesBristol.length}j`);
+    }
+    return lines;
+  })();
+  b6Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
   const triggered = allPaires.filter(p => p.declenche).length;
 
   const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:380px;max-height:70vh;overflow-y:auto">

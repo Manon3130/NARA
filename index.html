@@ -7651,8 +7651,11 @@ function computeBrique9() {
   const results   = [];
 
   // Construire les paires sur les 30 derniers jours depuis localStorage
-  const pairesSommeil = []; // stress ↔ sommeil   (0-5 chacun)
-  const pairesHumeur  = []; // stress ↔ humeur     (stress 0-5, humeur converti 1-3)
+  const pairesSommeil     = []; // stress ↔ sommeil       (0-5)
+  const pairesHumeur      = []; // stress ↔ humeur         (converti 1-3)
+  const pairesPeau9       = []; // stress ↔ peau           (0-2)
+  const pairesBallons9    = []; // stress ↔ ballonnements  (0-5)
+  const pairesDouleurs9   = []; // stress ↔ douleurs       (0-2)
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
@@ -7671,6 +7674,18 @@ function computeBrique9() {
         const humNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
         pairesHumeur.push({ stress: j.stress, humeur: humNum });
       }
+
+      // Stress ↔ Peau (0=Poussée, 1=Stable, 2=Calme)
+      if (j.peau !== null && j.peau !== undefined)
+        pairesPeau9.push({ stress: j.stress, peau: j.peau });
+
+      // Stress ↔ Ballonnements (0-5)
+      if (j.ballonnements > 0)
+        pairesBallons9.push({ stress: j.stress, ballonnements: j.ballonnements });
+
+      // Stress ↔ Douleurs abdominales (0-2)
+      if (j.douleurs !== undefined && j.douleurs !== null)
+        pairesDouleurs9.push({ stress: j.stress, douleurs: j.douleurs });
     } catch {}
   }
 
@@ -7713,6 +7728,54 @@ function computeBrique9() {
       `Sur ${pairesHumeur.length} jours, un stress plus élevé coïncide avec une humeur plus basse`,
       `Calculé sur ${pairesHumeur.length} jours communs · observation, pas un diagnostic · si persistant, parle-en à ton médecin`,
       '#EFBDBD'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── Lien 3 : Stress ↔ Peau ───────────────────────────────────────────────
+  // Corrélation négative attendue : stress ↑ → peau ↓ (plus de poussées)
+  if (pairesPeau9.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesPeau9.map(p => p.stress), pairesPeau9.map(p => p.peau));
+    const pro = rho !== null && rho < -0.40
+      ? ' Ce pattern mérite attention — parle-en à ton dermatologue.' : '';
+    const b = bloc(
+      '😮‍💨 ↔ ✨ Stress & État de la peau', pairesPeau9.length, rho,
+      `Sur ${pairesPeau9.length} jours, un stress plus élevé coïncide paradoxalement avec une peau plus calme — pattern inhabituel à observer dans la durée`,
+      `Sur ${pairesPeau9.length} jours, un stress plus élevé coïncide avec un état de peau plus en difficulté.${pro}`,
+      `Calculé sur ${pairesPeau9.length} jours communs · observation, pas un diagnostic`,
+      '#EAC4AF'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── Lien 4 : Stress ↔ Ballonnements ──────────────────────────────────────
+  // Corrélation positive attendue : stress ↑ → ballonnements ↑
+  if (pairesBallons9.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesBallons9.map(p => p.stress), pairesBallons9.map(p => p.ballonnements));
+    const pro = rho !== null && rho > 0.40
+      ? ' Ce pattern persistant vaut la peine d\'en parler à ton gastro-entérologue.' : '';
+    const b = bloc(
+      '😮‍💨 ↔ 🌀 Stress & Ballonnements', pairesBallons9.length, rho,
+      `Sur ${pairesBallons9.length} jours, un stress plus élevé coïncide avec plus de ballonnements.${pro}`,
+      `Sur ${pairesBallons9.length} jours, un stress plus élevé coïncide paradoxalement avec moins de ballonnements — pattern inhabituel à observer`,
+      `Calculé sur ${pairesBallons9.length} jours communs · observation, pas un diagnostic`,
+      '#F3EDBD'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── Lien 5 : Stress ↔ Douleurs abdominales ───────────────────────────────
+  // Corrélation positive attendue : stress ↑ → douleurs ↑
+  if (pairesDouleurs9.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesDouleurs9.map(p => p.stress), pairesDouleurs9.map(p => p.douleurs));
+    const pro = rho !== null && rho > 0.40
+      ? ' Pattern significatif — parle-en à ton médecin ou gastro-entérologue.' : '';
+    const b = bloc(
+      '😮‍💨 ↔ 😣 Stress & Douleurs abdominales', pairesDouleurs9.length, rho,
+      `Sur ${pairesDouleurs9.length} jours, un stress plus élevé coïncide avec plus de douleurs abdominales.${pro}`,
+      `Sur ${pairesDouleurs9.length} jours, un stress plus élevé coïncide paradoxalement avec moins de douleurs — pattern inhabituel`,
+      `Calculé sur ${pairesDouleurs9.length} jours communs · observation, pas un diagnostic`,
+      '#DDBAAE'
     );
     if (b) results.push(b);
   }
@@ -8272,6 +8335,54 @@ function diagBrique2() {
       lines.push(rho !== null && Math.abs(rho) >= 0.30
         ? 'B9 — Stress↔Humeur : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pH.length + 'j (' + (rho<0?'stress↑→humeur↓':'stress↑→humeur↑ (inattendu)') + ')'
         : 'B9 — Stress↔Humeur : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pH.length + 'j');
+    }
+    // Peau
+    const pPeau9 = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
+      if (j.peau !== null && j.peau !== undefined) pPeau9.push({ stress: j.stress, peau: j.peau });
+    }
+    if (pPeau9.length < 7) {
+      lines.push('B9 — Stress↔Peau : ⏳ Jours communs insuff. (' + pPeau9.length + '/7)');
+    } else {
+      const rho = spearmanCorr(pPeau9.map(p=>p.stress), pPeau9.map(p=>p.peau));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Peau : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pPeau9.length + 'j (' + (rho<0?'stress↑→peau↓':'stress↑→peau↑ (inattendu)') + ')'
+        : 'B9 — Stress↔Peau : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pPeau9.length + 'j');
+    }
+    // Ballonnements
+    const pBal9 = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
+      if (j.ballonnements > 0) pBal9.push({ stress: j.stress, ballonnements: j.ballonnements });
+    }
+    if (pBal9.length < 7) {
+      lines.push('B9 — Stress↔Ballonnements : ⏳ Jours communs insuff. (' + pBal9.length + '/7)');
+    } else {
+      const rho = spearmanCorr(pBal9.map(p=>p.stress), pBal9.map(p=>p.ballonnements));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Ballonnements : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pBal9.length + 'j (' + (rho>0?'stress↑→bal↑':'stress↑→bal↓ (inattendu)') + ')'
+        : 'B9 — Stress↔Ballonnements : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pBal9.length + 'j');
+    }
+    // Douleurs
+    const pDoul9 = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
+      if (j.douleurs !== undefined && j.douleurs !== null) pDoul9.push({ stress: j.stress, douleurs: j.douleurs });
+    }
+    if (pDoul9.length < 7) {
+      lines.push('B9 — Stress↔Douleurs : ⏳ Jours communs insuff. (' + pDoul9.length + '/7)');
+    } else {
+      const rho = spearmanCorr(pDoul9.map(p=>p.stress), pDoul9.map(p=>p.douleurs));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Douleurs : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pDoul9.length + 'j (' + (rho>0?'stress↑→douleurs↑':'stress↑→douleurs↓ (inattendu)') + ')'
+        : 'B9 — Stress↔Douleurs : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pDoul9.length + 'j');
     }
     return lines;
   })();

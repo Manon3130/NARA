@@ -7780,6 +7780,81 @@ function computeBrique9() {
     if (b) results.push(b);
   }
 
+  // ── Liens 6-8 : Stress ↔ Calendrier des selles ───────────────────────────
+  // Source : nara_cal_YYYY-MM-DD — distinct du ressenti "Transit" du Journal
+  const pairesCalOui     = []; // stress ↔ oui/non (0=non, 1=oui)
+  const pairesCalBristol = []; // stress ↔ Bristol (1-7)
+  const pairesCalFreq    = []; // stress ↔ nombre de passages
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const jRaw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!jRaw) continue;
+      const j = JSON.parse(jRaw);
+      if (!j || j.stress <= 0) continue;
+
+      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
+      if (!calRaw) continue;
+      const cal = JSON.parse(calRaw);
+      if (!cal || !cal.yn) continue;
+
+      // Lien 6 : oui/non (0 ou 1)
+      pairesCalOui.push({ stress: j.stress, selle: cal.yn === 'oui' ? 1 : 0 });
+
+      if (cal.yn === 'oui') {
+        // Lien 7 : Bristol (1-7) si renseigné
+        if (cal.bristol !== null && cal.bristol !== undefined)
+          pairesCalBristol.push({ stress: j.stress, bristol: cal.bristol });
+        // Lien 8 : nombre de passages
+        pairesCalFreq.push({ stress: j.stress, freq: cal.freq || 1 });
+      }
+    } catch {}
+  }
+
+  // Lien 6 : Stress ↔ Présence de selle (oui/non)
+  // Corrélation négative attendue : stress ↑ → pas de selle (côlon inhibé ou au contraire aucune)
+  if (pairesCalOui.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesCalOui.map(p => p.stress), pairesCalOui.map(p => p.selle));
+    const b = bloc(
+      '😮‍💨 ↔ 🌿 Stress & Présence de selle (calendrier)', pairesCalOui.length, rho,
+      `Sur ${pairesCalOui.length} jours communs, un stress plus élevé coïncide avec une selle plus probable — pattern observé, pas une certitude`,
+      `Sur ${pairesCalOui.length} jours communs, un stress plus élevé coïncide avec moins de jours où une selle est notée`,
+      `Calculé sur ${pairesCalOui.length} jours · données du calendrier des selles · si persistant, parle-en à ton gastro-entérologue`,
+      '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
+  // Lien 7 : Stress ↔ Consistance Bristol (1-7)
+  // Bristol 1-2 = durs, 6-7 = liquides — stress peut aller dans les deux sens
+  if (pairesCalBristol.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesCalBristol.map(p => p.stress), pairesCalBristol.map(p => p.bristol));
+    const b = bloc(
+      '😮‍💨 ↔ 🔬 Stress & Consistance des selles (Bristol)', pairesCalBristol.length, rho,
+      `Sur ${pairesCalBristol.length} jours avec Bristol renseigné, un stress plus élevé coïncide avec des selles de type plus fluide (Bristol plus élevé)`,
+      `Sur ${pairesCalBristol.length} jours avec Bristol renseigné, un stress plus élevé coïncide avec des selles de type plus dur (Bristol plus bas)`,
+      `Calculé sur ${pairesCalBristol.length} jours · données du calendrier des selles · observation, pas un diagnostic · à mentionner à ton gastro-entérologue si persistant`,
+      '#8ab4c4'
+    );
+    if (b) results.push(b);
+  }
+
+  // Lien 8 : Stress ↔ Nombre de passages
+  // Corrélation positive ou négative selon le profil individuel
+  if (pairesCalFreq.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesCalFreq.map(p => p.stress), pairesCalFreq.map(p => p.freq));
+    const b = bloc(
+      '😮‍💨 ↔ 🌿 Stress & Nombre de passages aux selles', pairesCalFreq.length, rho,
+      `Sur ${pairesCalFreq.length} jours avec une selle notée, un stress plus élevé coïncide avec plus de passages dans la journée`,
+      `Sur ${pairesCalFreq.length} jours avec une selle notée, un stress plus élevé coïncide avec moins de passages dans la journée`,
+      `Calculé sur ${pairesCalFreq.length} jours · données du calendrier des selles · si ce pattern persiste, parle-en à ton gastro-entérologue`,
+      '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
   if (results.length === 0) return null;
   return `<div class="section-title" style="margin-top:4px">Stress & bien-être — co-évolutions</div>` + results.join('');
 }
@@ -8383,6 +8458,49 @@ function diagBrique2() {
       lines.push(rho !== null && Math.abs(rho) >= 0.30
         ? 'B9 — Stress↔Douleurs : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pDoul9.length + 'j (' + (rho>0?'stress↑→douleurs↑':'stress↑→douleurs↓ (inattendu)') + ')'
         : 'B9 — Stress↔Douleurs : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pDoul9.length + 'j');
+    }
+    // Calendrier des selles × Stress
+    const csOui = [], csBristol = [], csFreq = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
+      try {
+        const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
+        if (!cal || !cal.yn) continue;
+        csOui.push({ stress: j.stress, selle: cal.yn === 'oui' ? 1 : 0 });
+        if (cal.yn === 'oui') {
+          if (cal.bristol != null) csBristol.push({ stress: j.stress, bristol: cal.bristol });
+          csFreq.push({ stress: j.stress, freq: cal.freq || 1 });
+        }
+      } catch {}
+    }
+    // Présence selle
+    if (csOui.length < 7) {
+      lines.push('B9 — Stress↔Présence selle : ⏳ Jours communs insuff. (' + csOui.length + '/7)');
+    } else {
+      const rho = spearmanCorr(csOui.map(p=>p.stress), csOui.map(p=>p.selle));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Présence selle : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + csOui.length + 'j (' + (rho>0?'stress↑→selle+probable':'stress↑→selle-probable') + ')'
+        : 'B9 — Stress↔Présence selle : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + csOui.length + 'j');
+    }
+    // Bristol
+    if (csBristol.length < 7) {
+      lines.push('B9 — Stress↔Bristol : ⏳ Jours communs insuff. (' + csBristol.length + '/7, pense à renseigner l\'échelle Bristol)');
+    } else {
+      const rho = spearmanCorr(csBristol.map(p=>p.stress), csBristol.map(p=>p.bristol));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Bristol : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + csBristol.length + 'j (' + (rho>0?'stress↑→selles+fluides':'stress↑→selles+dures') + ')'
+        : 'B9 — Stress↔Bristol : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + csBristol.length + 'j');
+    }
+    // Nombre de passages
+    if (csFreq.length < 7) {
+      lines.push('B9 — Stress↔Nb passages : ⏳ Jours communs insuff. (' + csFreq.length + '/7)');
+    } else {
+      const rho = spearmanCorr(csFreq.map(p=>p.stress), csFreq.map(p=>p.freq));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Nb passages : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + csFreq.length + 'j (' + (rho>0?'stress↑→plus de passages':'stress↑→moins de passages') + ')'
+        : 'B9 — Stress↔Nb passages : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + csFreq.length + 'j');
     }
     return lines;
   })();

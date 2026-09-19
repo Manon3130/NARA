@@ -6884,6 +6884,10 @@ function renderInsightsPage() {
   const brique9Html = computeBrique9();
   if (brique9Html) html += brique9Html;
 
+  // ── Brique 10 : Transit ressenti × Indicateurs multiples ──────────────────
+  const brique10Html = computeBrique10();
+  if (brique10Html) html += brique10Html;
+
   content.innerHTML = html;
 }
 
@@ -7638,6 +7642,128 @@ function computeBrique4() {
         </div>
         ${a.hydroNote || ''}
       </div>`).join('') + computeBrique6(byDate, SEUIL_MIN);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 10 — Transit ressenti × Indicateurs multiples
+// Source : nara_journal_*.transit (0=Lent, 1=Normal, 2=Rapide) — ressenti Journal
+// ⚠️  Distinct du calendrier des selles (nara_cal_*) qui mesure la fréquence réelle
+// Méthode : Spearman sur jours communs (30 derniers jours)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique10() {
+  const SEUIL_MIN = 7;
+  const results   = [];
+
+  // Construire les paires sur les 30 derniers jours
+  const paires = { bal:[], doul:[], peau:[], som:[], ener:[] };
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!raw) continue;
+      const j = JSON.parse(raw);
+      // j.transit : 0=Lent, 1=Normal, 2=Rapide (ressenti Journal)
+      if (j.transit === null || j.transit === undefined) continue;
+      const t = j.transit;
+
+      if (j.ballonnements > 0)                           paires.bal.push({t, v: j.ballonnements});
+      if (j.douleurs !== undefined && j.douleurs !== null) paires.doul.push({t, v: j.douleurs});
+      if (j.peau !== null && j.peau !== undefined)         paires.peau.push({t, v: j.peau});
+      if (j.sommeil > 0)                                   paires.som.push({t, v: j.sommeil});
+      if (j.energie > 0)                                   paires.ener.push({t, v: j.energie});
+    } catch {}
+  }
+
+  // Helper commun (même signature que computeBrique9)
+  function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
+    if (rho === null || Math.abs(rho) < 0.30) return null;
+    const sens      = rho > 0 ? sensPos : sensNeg;
+    const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+    return `<div class="insight-real-card" style="border-left-color:${couleur}">
+      <div class="irc-tag">${emoji} — corrélation ${intensite}</div>
+      <div class="irc-text">${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}% · ${n} jours communs). Tendance observée — pas un lien de cause à effet établi.
+        <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">${note}</span>
+      </div>
+    </div>`;
+  }
+
+  // ── 1. Transit ↔ Ballonnements ───────────────────────────────────────────
+  // Corrélation négative attendue : transit Rapide → moins de ballonnements
+  if (paires.bal.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(paires.bal.map(p=>p.t), paires.bal.map(p=>p.v));
+    const b = bloc(
+      '🌿 ↔ 🌀 Transit (ressenti) & Ballonnements', paires.bal.length, rho,
+      `Sur ${paires.bal.length} jours, un transit plus fluide coïncide paradoxalement avec plus de ballonnements — pattern inhabituel à observer`,
+      `Sur ${paires.bal.length} jours, un transit plus lent coïncide avec plus de ballonnements`,
+      `Calculé sur ${paires.bal.length} jours · ressenti transit du Journal · si persistant, parle-en à ton gastro-entérologue`,
+      '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 2. Transit ↔ Douleurs ────────────────────────────────────────────────
+  // Corrélation négative attendue : transit Rapide → moins de douleurs ?
+  if (paires.doul.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(paires.doul.map(p=>p.t), paires.doul.map(p=>p.v));
+    const pro = rho !== null && Math.abs(rho) >= 0.40
+      ? ' Pattern notable — parle-en à ton gastro-entérologue.' : '';
+    const b = bloc(
+      '🌿 ↔ 😣 Transit (ressenti) & Douleurs abdominales', paires.doul.length, rho,
+      `Sur ${paires.doul.length} jours, un transit plus fluide coïncide avec plus de douleurs abdominales — pattern inhabituel`,
+      `Sur ${paires.doul.length} jours, un transit plus lent coïncide avec plus de douleurs abdominales.${pro}`,
+      `Calculé sur ${paires.doul.length} jours · ressenti transit du Journal · observation, pas un diagnostic`,
+      '#DDBAAE'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 3. Transit ↔ Peau ────────────────────────────────────────────────────
+  // Corrélation positive attendue : transit Rapide → peau plus calme (axe gut-skin)
+  if (paires.peau.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(paires.peau.map(p=>p.t), paires.peau.map(p=>p.v));
+    const pro = rho !== null && rho >= 0.40
+      ? ' Ce lien gut-skin mérite attention — parle-en à ton dermatologue.' : '';
+    const b = bloc(
+      '🌿 ↔ ✨ Transit (ressenti) & État de la peau', paires.peau.length, rho,
+      `Sur ${paires.peau.length} jours, un transit plus fluide coïncide avec une peau plus calme.${pro}`,
+      `Sur ${paires.peau.length} jours, un transit plus lent coïncide avec une peau plus en difficulté.${pro}`,
+      `Calculé sur ${paires.peau.length} jours · axe intestin-peau observé sur tes données · observation, pas un diagnostic`,
+      '#EAC4AF'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 4. Transit ↔ Sommeil ─────────────────────────────────────────────────
+  if (paires.som.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(paires.som.map(p=>p.t), paires.som.map(p=>p.v));
+    const b = bloc(
+      '🌿 ↔ 😴 Transit (ressenti) & Sommeil', paires.som.length, rho,
+      `Sur ${paires.som.length} jours, un transit plus fluide coïncide avec un meilleur sommeil`,
+      `Sur ${paires.som.length} jours, un transit plus lent coïncide avec une moins bonne qualité de sommeil`,
+      `Calculé sur ${paires.som.length} jours · observation, pas un diagnostic`,
+      '#DAE9FA'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 5. Transit ↔ Énergie ─────────────────────────────────────────────────
+  if (paires.ener.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(paires.ener.map(p=>p.t), paires.ener.map(p=>p.v));
+    const b = bloc(
+      '🌿 ↔ ⚡ Transit (ressenti) & Niveau d\'énergie', paires.ener.length, rho,
+      `Sur ${paires.ener.length} jours, un transit plus fluide coïncide avec un meilleur niveau d'énergie`,
+      `Sur ${paires.ener.length} jours, un transit plus lent coïncide avec moins d'énergie`,
+      `Calculé sur ${paires.ener.length} jours · observation, pas un diagnostic`,
+      '#BBB7E5'
+    );
+    if (b) results.push(b);
+  }
+
+  if (results.length === 0) return null;
+  return `<div class="section-title" style="margin-top:4px">Transit ressenti — co-évolutions</div>` + results.join('');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -8505,6 +8631,38 @@ function diagBrique2() {
     return lines;
   })();
   b9Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
+  // ── Brique 10 : Transit ressenti × Indicateurs ────────────────────────────
+  const b10Lines = (() => {
+    const p = { bal:[], doul:[], peau:[], som:[], ener:[] };
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds];
+      if (!j || j.transit === null || j.transit === undefined) continue;
+      const t = j.transit;
+      if (j.ballonnements > 0)                              p.bal.push({t, v:j.ballonnements});
+      if (j.douleurs !== undefined && j.douleurs !== null)  p.doul.push({t, v:j.douleurs});
+      if (j.peau !== null && j.peau !== undefined)          p.peau.push({t, v:j.peau});
+      if (j.sommeil > 0)                                    p.som.push({t, v:j.sommeil});
+      if (j.energie > 0)                                    p.ener.push({t, v:j.energie});
+    }
+    const lines = [];
+    const diagLine = (label, arr, pos, neg) => {
+      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      const rho = spearmanCorr(arr.map(p=>p.t), arr.map(p=>p.v));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
+        : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
+    };
+    diagLine('B10 — Transit↔Ballonnements', p.bal,  'transit↑→bal+ (inattendu)', 'transit↓→bal↑');
+    diagLine('B10 — Transit↔Douleurs',      p.doul, 'transit↑→douleurs+ (inattendu)', 'transit↓→douleurs↑');
+    diagLine('B10 — Transit↔Peau',          p.peau, 'transit↑→peau+calme', 'transit↓→peau+difficile');
+    diagLine('B10 — Transit↔Sommeil',       p.som,  'transit↑→sommeil↑', 'transit↓→sommeil↓');
+    diagLine('B10 — Transit↔Énergie',       p.ener, 'transit↑→énergie↑', 'transit↓→énergie↓');
+    return lines;
+  })();
+  b10Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
 
   const triggered = allPaires.filter(p => p.declenche).length;
 

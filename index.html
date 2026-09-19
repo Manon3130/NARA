@@ -6876,9 +6876,13 @@ function renderInsightsPage() {
   const brique2Html = computeBrique2(allEntries);
   if (brique2Html) html += brique2Html;
 
-  // ── Brique 4 : Détection de fluctuations / instabilité croissante ──────────
+  // ── Briques 4–8 : Fluctuations + liens Hydratation ────────────────────────
   const brique4Html = computeBrique4();
   if (brique4Html) html += brique4Html;
+
+  // ── Brique 9 : Stress → Sommeil & Humeur ─────────────────────────────────
+  const brique9Html = computeBrique9();
+  if (brique9Html) html += brique9Html;
 
   content.innerHTML = html;
 }
@@ -7637,10 +7641,88 @@ function computeBrique4() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// BRIQUE 6 — Hydratation → Calendrier des selles (fréquence + type Bristol)
-// Sources : nara_journal_*.hydratation (0/1/2) × nara_cal_*.{yn,freq,bristol}
-// Méthode : Spearman sur les jours où les deux données sont présentes.
+// BRIQUE 9 — Stress → Sommeil & Humeur
+// Sources : nara_journal_*.stress (0-5), .sommeil (0-5), .humeur (0=Bonne/1=Neutre/2=Basse)
+// Méthode : Spearman sur jours communs (30 derniers jours).
 // ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique9() {
+  const SEUIL_MIN = 7;
+  const results   = [];
+
+  // Construire les paires sur les 30 derniers jours depuis localStorage
+  const pairesSommeil = []; // stress ↔ sommeil   (0-5 chacun)
+  const pairesHumeur  = []; // stress ↔ humeur     (stress 0-5, humeur converti 1-3)
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!raw) continue;
+      const j = JSON.parse(raw);
+      if (!j || j.stress <= 0) continue; // stress non renseigné → pas de paire
+
+      // Stress ↔ Sommeil
+      if (j.sommeil > 0) pairesSommeil.push({ stress: j.stress, sommeil: j.sommeil });
+
+      // Stress ↔ Humeur — conversion : 0=Bonne→3, 1=Neutre→2, 2=Basse→1
+      if (j.humeur !== null && j.humeur !== undefined) {
+        const humNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
+        pairesHumeur.push({ stress: j.stress, humeur: humNum });
+      }
+    } catch {}
+  }
+
+  // Helper réutilisé depuis computeBrique6 (même pattern)
+  function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
+    if (rho === null || Math.abs(rho) < 0.30) return null;
+    const sens      = rho > 0 ? sensPos : sensNeg;
+    const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+    return `<div class="insight-real-card" style="border-left-color:${couleur}">
+      <div class="irc-tag">${emoji} — corrélation ${intensite}</div>
+      <div class="irc-text">${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}% · ${n} jours communs). Tendance observée — pas un lien de cause à effet établi.
+        <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">${note}</span>
+      </div>
+    </div>`;
+  }
+
+  // ── Lien 1 : Stress ↔ Sommeil ────────────────────────────────────────────
+  // Corrélation négative attendue : stress ↑ → sommeil ↓
+  if (pairesSommeil.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesSommeil.map(p => p.stress), pairesSommeil.map(p => p.sommeil));
+    const pro = rho !== null && rho < -0.45
+      ? ' Ce pattern persistant mérite attention — parle-en à ton médecin.' : '';
+    const b = bloc(
+      '😮‍💨 ↔ 😴 Stress & Qualité du sommeil', pairesSommeil.length, rho,
+      `Sur ${pairesSommeil.length} jours, un stress plus élevé coïncide paradoxalement avec un meilleur sommeil — pattern inhabituel à observer dans la durée`,
+      `Sur ${pairesSommeil.length} jours, un stress plus élevé coïncide avec une moins bonne qualité de sommeil.${pro}`,
+      `Calculé sur ${pairesSommeil.length} jours communs · observation, pas un diagnostic`,
+      '#F7DFDF'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── Lien 2 : Stress ↔ Humeur ─────────────────────────────────────────────
+  // Corrélation négative attendue : stress ↑ → humeur numérique ↓ (1=Basse)
+  if (pairesHumeur.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pairesHumeur.map(p => p.stress), pairesHumeur.map(p => p.humeur));
+    const b = bloc(
+      '😮‍💨 ↔ 😊 Stress & Humeur', pairesHumeur.length, rho,
+      `Sur ${pairesHumeur.length} jours, un stress plus élevé coïncide avec une meilleure humeur — pattern contre-intuitif à observer dans la durée`,
+      `Sur ${pairesHumeur.length} jours, un stress plus élevé coïncide avec une humeur plus basse`,
+      `Calculé sur ${pairesHumeur.length} jours communs · observation, pas un diagnostic · si persistant, parle-en à ton médecin`,
+      '#EFBDBD'
+    );
+    if (b) results.push(b);
+  }
+
+  if (results.length === 0) return null;
+  return `<div class="section-title" style="margin-top:4px">Stress & bien-être — co-évolutions</div>` + results.join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 6/7/8 — Hydratation × Indicateurs multiples
 
 function computeBrique6(byDate, seuilMin) {
   seuilMin = seuilMin || 7;
@@ -8160,6 +8242,41 @@ function diagBrique2() {
     return lines;
   })();
   b6Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
+  // ── Brique 9 : Stress → Sommeil & Humeur ──────────────────────────────────
+  const b9Lines = (() => {
+    const pS = [], pH = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
+      if (j.sommeil > 0) pS.push({ stress: j.stress, sommeil: j.sommeil });
+      if (j.humeur != null) {
+        const hNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
+        pH.push({ stress: j.stress, humeur: hNum });
+      }
+    }
+    const lines = [];
+    if (pS.length < 7) {
+      lines.push('B9 — Stress↔Sommeil : ⏳ Jours communs insuff. (' + pS.length + '/7)');
+    } else {
+      const rho = spearmanCorr(pS.map(p=>p.stress), pS.map(p=>p.sommeil));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Sommeil : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pS.length + 'j (' + (rho<0?'stress↑→sommeil↓':'stress↑→sommeil↑ (inattendu)') + ')'
+        : 'B9 — Stress↔Sommeil : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pS.length + 'j');
+    }
+    if (pH.length < 7) {
+      lines.push('B9 — Stress↔Humeur : ⏳ Jours communs insuff. (' + pH.length + '/7)');
+    } else {
+      const rho = spearmanCorr(pH.map(p=>p.stress), pH.map(p=>p.humeur));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? 'B9 — Stress↔Humeur : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pH.length + 'j (' + (rho<0?'stress↑→humeur↓':'stress↑→humeur↑ (inattendu)') + ')'
+        : 'B9 — Stress↔Humeur : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pH.length + 'j');
+    }
+    return lines;
+  })();
+  b9Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
   const triggered = allPaires.filter(p => p.declenche).length;
 
   const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:380px;max-height:70vh;overflow-y:auto">

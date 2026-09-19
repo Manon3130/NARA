@@ -7762,6 +7762,79 @@ function computeBrique10() {
     if (b) results.push(b);
   }
 
+  // ── Liens 6-8 : Transit ressenti × Calendrier des selles ─────────────────
+  // Source croisée : j.transit (Journal, ressenti) × nara_cal_* (faits réels)
+  // Objectif : vérifier si le ressenti subjectif correspond aux données factuelles
+  const calPairesOui    = []; // transit ↔ présence selle (0/1)
+  const calPairesBristol= []; // transit ↔ Bristol (1-7)
+  const calPairesFreq   = []; // transit ↔ nombre de passages
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const jRaw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!jRaw) continue;
+      const j = JSON.parse(jRaw);
+      if (j.transit === null || j.transit === undefined) continue;
+      const t = j.transit; // 0=Lent, 1=Normal, 2=Rapide
+
+      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
+      if (!calRaw) continue;
+      const cal = JSON.parse(calRaw);
+      if (!cal || !cal.yn) continue;
+
+      calPairesOui.push({ t, selle: cal.yn === 'oui' ? 1 : 0 });
+      if (cal.yn === 'oui') {
+        if (cal.bristol !== null && cal.bristol !== undefined)
+          calPairesBristol.push({ t, bristol: cal.bristol });
+        calPairesFreq.push({ t, freq: cal.freq || 1 });
+      }
+    } catch {}
+  }
+
+  // Lien 6 : Transit ressenti ↔ Présence de selle
+  // Corrélation positive attendue : ressenti Rapide → selle présente ce jour-là
+  if (calPairesOui.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(calPairesOui.map(p=>p.t), calPairesOui.map(p=>p.selle));
+    const b = bloc(
+      '🌿 ↔ 📅 Transit ressenti & Présence de selle (calendrier)', calPairesOui.length, rho,
+      `Sur ${calPairesOui.length} jours communs, un ressenti de transit fluide coïncide bien avec une selle notée dans le calendrier — ressenti et faits concordent`,
+      `Sur ${calPairesOui.length} jours communs, un ressenti de transit lent coïncide avec des jours sans selle notée dans le calendrier`,
+      `Calculé sur ${calPairesOui.length} jours · croisement ressenti Journal × calendrier des selles`,
+      '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
+  // Lien 7 : Transit ressenti ↔ Bristol
+  // Corrélation positive attendue : ressenti Rapide → Bristol élevé (selles plus fluides)
+  if (calPairesBristol.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(calPairesBristol.map(p=>p.t), calPairesBristol.map(p=>p.bristol));
+    const b = bloc(
+      '🌿 ↔ 🔬 Transit ressenti & Consistance des selles (Bristol)', calPairesBristol.length, rho,
+      `Sur ${calPairesBristol.length} jours avec Bristol renseigné, un ressenti Rapide coïncide avec des selles de type plus fluide (Bristol plus élevé) — ressenti et faits concordent`,
+      `Sur ${calPairesBristol.length} jours avec Bristol renseigné, un ressenti Lent coïncide avec des selles de type plus dur (Bristol plus bas)`,
+      `Calculé sur ${calPairesBristol.length} jours · croisement ressenti Journal × calendrier des selles`,
+      '#8ab4c4'
+    );
+    if (b) results.push(b);
+  }
+
+  // Lien 8 : Transit ressenti ↔ Nombre de passages
+  // Corrélation positive attendue : ressenti Rapide → plus de passages
+  if (calPairesFreq.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(calPairesFreq.map(p=>p.t), calPairesFreq.map(p=>p.freq));
+    const b = bloc(
+      '🌿 ↔ 📅 Transit ressenti & Nombre de passages (calendrier)', calPairesFreq.length, rho,
+      `Sur ${calPairesFreq.length} jours avec une selle notée, un ressenti Rapide coïncide avec plus de passages dans la journée`,
+      `Sur ${calPairesFreq.length} jours avec une selle notée, un ressenti Lent coïncide avec moins de passages`,
+      `Calculé sur ${calPairesFreq.length} jours · croisement ressenti Journal × calendrier des selles · si persistant, parle-en à ton gastro-entérologue`,
+      '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
   if (results.length === 0) return null;
   return `<div class="section-title" style="margin-top:4px">Transit ressenti — co-évolutions</div>` + results.join('');
 }
@@ -8660,6 +8733,27 @@ function diagBrique2() {
     diagLine('B10 — Transit↔Peau',          p.peau, 'transit↑→peau+calme', 'transit↓→peau+difficile');
     diagLine('B10 — Transit↔Sommeil',       p.som,  'transit↑→sommeil↑', 'transit↓→sommeil↓');
     diagLine('B10 — Transit↔Énergie',       p.ener, 'transit↑→énergie↑', 'transit↓→énergie↓');
+    // Transit ressenti × Calendrier des selles
+    const cOui = [], cBristol = [], cFreq = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds];
+      if (!j || j.transit === null || j.transit === undefined) continue;
+      const t = j.transit;
+      try {
+        const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
+        if (!cal || !cal.yn) continue;
+        cOui.push({ t, selle: cal.yn === 'oui' ? 1 : 0 });
+        if (cal.yn === 'oui') {
+          if (cal.bristol != null) cBristol.push({ t, bristol: cal.bristol });
+          cFreq.push({ t, freq: cal.freq || 1 });
+        }
+      } catch {}
+    }
+    diagLine('B10 — Transit↔PrésSelle(cal)', cOui,    'ressenti↑→selle présente', 'ressenti↓→selle absente');
+    diagLine('B10 — Transit↔Bristol(cal)',    cBristol,'ressenti↑→Bristol↑(fluide)', 'ressenti↓→Bristol↓(dur)');
+    diagLine('B10 — Transit↔NbPassages(cal)', cFreq,   'ressenti↑→+passages', 'ressenti↓→-passages');
     return lines;
   })();
   b10Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));

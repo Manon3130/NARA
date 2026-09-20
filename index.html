@@ -6888,6 +6888,10 @@ function renderInsightsPage() {
   const brique10Html = computeBrique10();
   if (brique10Html) html += brique10Html;
 
+  // ── Brique 11 : Ballonnements × Indicateurs ────────────────────────────────
+  const brique11Html = computeBrique11();
+  if (brique11Html) html += brique11Html;
+
   content.innerHTML = html;
 }
 
@@ -7642,6 +7646,109 @@ function computeBrique4() {
         </div>
         ${a.hydroNote || ''}
       </div>`).join('') + computeBrique6(byDate, SEUIL_MIN);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 11 — Ballonnements × Indicateurs
+// Source : nara_journal_*.ballonnements (0-5)
+// Liens : Douleurs · Peau · Sommeil · Énergie
+// (Stress↔Bal et Transit↔Bal déjà couverts dans B9 et B10 — pas de doublon)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique11() {
+  const SEUIL_MIN = 7;
+  const results   = [];
+  const p = { doul:[], peau:[], som:[], ener:[] };
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!raw) continue;
+      const j = JSON.parse(raw);
+      if (j.ballonnements <= 0 || j.ballonnements === undefined) continue;
+      const b = j.ballonnements;
+      if (j.douleurs !== undefined && j.douleurs !== null) p.doul.push({b, v: j.douleurs});
+      if (j.peau     !== null     && j.peau     !== undefined) p.peau.push({b, v: j.peau});
+      if (j.sommeil  > 0)  p.som.push({b, v: j.sommeil});
+      if (j.energie  > 0)  p.ener.push({b, v: j.energie});
+    } catch {}
+  }
+
+  function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
+    if (rho === null || Math.abs(rho) < 0.30) return null;
+    const sens      = rho > 0 ? sensPos : sensNeg;
+    const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+    return `<div class="insight-real-card" style="border-left-color:${couleur}">
+      <div class="irc-tag">${emoji} — corrélation ${intensite}</div>
+      <div class="irc-text">${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}% · ${n} jours communs). Tendance observée — pas un lien de cause à effet établi.
+        <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">${note}</span>
+      </div>
+    </div>`;
+  }
+
+  // ── 1. Ballonnements ↔ Douleurs ─────────────────────────────────────────
+  if (p.doul.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(p.doul.map(x=>x.b), p.doul.map(x=>x.v));
+    const pro = rho !== null && rho >= 0.40
+      ? ' Pattern notable — parle-en à ton gastro-entérologue.' : '';
+    const b = bloc(
+      '🌀 ↔ 😣 Ballonnements & Douleurs abdominales', p.doul.length, rho,
+      `Sur ${p.doul.length} jours, les jours de ballonnements plus intenses coïncident avec plus de douleurs abdominales.${pro}`,
+      `Sur ${p.doul.length} jours, les ballonnements élevés coïncident paradoxalement avec moins de douleurs — pattern inhabituel`,
+      `Calculé sur ${p.doul.length} jours communs · observation, pas un diagnostic`,
+      '#F3EDBD'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 2. Ballonnements ↔ Peau ─────────────────────────────────────────────
+  // Axe gut-skin : ballonnements (inflammation intestinale) ↔ état de la peau
+  if (p.peau.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(p.peau.map(x=>x.b), p.peau.map(x=>x.v));
+    const pro = rho !== null && rho <= -0.40
+      ? ' Lien gut-skin notable — parle-en à ton dermatologue.' : '';
+    const b = bloc(
+      '🌀 ↔ ✨ Ballonnements & État de la peau', p.peau.length, rho,
+      `Sur ${p.peau.length} jours, des ballonnements plus importants coïncident paradoxalement avec une peau plus calme — pattern inhabituel`,
+      `Sur ${p.peau.length} jours, des ballonnements plus importants coïncident avec un état de peau plus en difficulté.${pro}`,
+      `Calculé sur ${p.peau.length} jours · axe intestin-peau · observation, pas un diagnostic`,
+      '#EAC4AF'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 3. Ballonnements ↔ Sommeil ──────────────────────────────────────────
+  // Corrélation négative attendue : ballonnements ↑ → sommeil perturbé
+  if (p.som.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(p.som.map(x=>x.b), p.som.map(x=>x.v));
+    const b = bloc(
+      '🌀 ↔ 😴 Ballonnements & Qualité du sommeil', p.som.length, rho,
+      `Sur ${p.som.length} jours, des ballonnements plus importants coïncident paradoxalement avec un meilleur sommeil — pattern inhabituel`,
+      `Sur ${p.som.length} jours, des ballonnements plus importants coïncident avec une moins bonne qualité de sommeil`,
+      `Calculé sur ${p.som.length} jours communs · observation, pas un diagnostic`,
+      '#DAE9FA'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 4. Ballonnements ↔ Énergie ──────────────────────────────────────────
+  // Corrélation négative attendue : ballonnements ↑ → énergie ↓
+  if (p.ener.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(p.ener.map(x=>x.b), p.ener.map(x=>x.v));
+    const b = bloc(
+      '🌀 ↔ ⚡ Ballonnements & Niveau d\'énergie', p.ener.length, rho,
+      `Sur ${p.ener.length} jours, des ballonnements plus importants coïncident paradoxalement avec plus d'énergie — pattern inhabituel`,
+      `Sur ${p.ener.length} jours, des ballonnements plus importants coïncident avec un niveau d'énergie plus bas`,
+      `Calculé sur ${p.ener.length} jours communs · observation, pas un diagnostic`,
+      '#BBB7E5'
+    );
+    if (b) results.push(b);
+  }
+
+  if (results.length === 0) return null;
+  return `<div class="section-title" style="margin-top:4px">Ballonnements — co-évolutions</div>` + results.join('');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -8757,6 +8864,35 @@ function diagBrique2() {
     return lines;
   })();
   b10Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
+  // ── Brique 11 : Ballonnements × Indicateurs ───────────────────────────────
+  const b11Lines = (() => {
+    const p = { doul:[], peau:[], som:[], ener:[] };
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.ballonnements > 0)) continue;
+      const b = j.ballonnements;
+      if (j.douleurs !== undefined && j.douleurs !== null) p.doul.push({b, v:j.douleurs});
+      if (j.peau !== null && j.peau !== undefined)         p.peau.push({b, v:j.peau});
+      if (j.sommeil > 0)                                   p.som.push({b, v:j.sommeil});
+      if (j.energie > 0)                                   p.ener.push({b, v:j.energie});
+    }
+    const lines = [];
+    const dl = (label, arr, pos, neg) => {
+      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      const rho = spearmanCorr(arr.map(x=>x.b), arr.map(x=>x.v));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
+        : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
+    };
+    dl('B11 — Bal↔Douleurs', p.doul, 'bal↑→doul↑', 'bal↑→doul↓ (inattendu)');
+    dl('B11 — Bal↔Peau',     p.peau, 'bal↑→peau↑ (inattendu)', 'bal↑→peau↓');
+    dl('B11 — Bal↔Sommeil',  p.som,  'bal↑→som↑ (inattendu)', 'bal↑→som↓');
+    dl('B11 — Bal↔Énergie',  p.ener, 'bal↑→ener↑ (inattendu)', 'bal↑→ener↓');
+    return lines;
+  })();
+  b11Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
 
   const triggered = allPaires.filter(p => p.declenche).length;
 

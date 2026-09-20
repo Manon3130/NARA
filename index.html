@@ -6896,6 +6896,10 @@ function renderInsightsPage() {
   const brique12Html = computeBrique12();
   if (brique12Html) html += brique12Html;
 
+  // ── Brique 13 : Sommeil ↔ Humeur ──────────────────────────────────────────
+  const brique13Html = computeBrique13();
+  if (brique13Html) html += brique13Html;
+
   content.innerHTML = html;
 }
 
@@ -7650,6 +7654,51 @@ function computeBrique4() {
         </div>
         ${a.hydroNote || ''}
       </div>`).join('') + computeBrique6(byDate, SEUIL_MIN);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 13 — Sommeil ↔ Humeur (dernier lien de la série)
+// Source : nara_journal_*.sommeil (0-5) × .humeur (0=Bonne→3, 1=Neutre→2, 2=Basse→1)
+// Stress↔Sommeil (B9) déjà couvert — pas de doublon.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique13() {
+  const SEUIL_MIN = 7;
+  const paires    = [];
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!raw) continue;
+      const j = JSON.parse(raw);
+      if (j.sommeil <= 0 || j.humeur === null || j.humeur === undefined) continue;
+      const humNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
+      paires.push({ som: j.sommeil, hum: humNum });
+    } catch {}
+  }
+
+  if (paires.length < SEUIL_MIN) return null;
+
+  const rho = spearmanCorr(paires.map(p => p.som), paires.map(p => p.hum));
+  if (rho === null || Math.abs(rho) < 0.30) return null;
+
+  const n         = paires.length;
+  const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+  const pro       = Math.abs(rho) >= 0.45
+    ? ' Si ce pattern est persistant, parle-en à ton médecin.' : '';
+  const sens = rho > 0
+    ? `Sur ${n} jours, les nuits de meilleur sommeil coïncident avec une humeur plus positive.${pro}`
+    : `Sur ${n} jours, les nuits de meilleur sommeil coïncident paradoxalement avec une humeur plus basse — pattern inhabituel à observer dans la durée`;
+
+  return `<div class="section-title" style="margin-top:4px">Sommeil & Humeur — co-évolution</div>
+    <div class="insight-real-card" style="border-left-color:#EFBDBD">
+      <div class="irc-tag">😴 ↔ 😊 Sommeil & Humeur générale — corrélation ${intensite}</div>
+      <div class="irc-text">${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}% · ${n} jours communs). Tendance observée — pas un lien de cause à effet établi.
+        <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${n} jours communs · observation, pas un diagnostic</span>
+      </div>
+    </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -9147,6 +9196,26 @@ function diagBrique2() {
     return lines;
   })();
   b12Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
+  // ── Brique 13 : Sommeil ↔ Humeur ─────────────────────────────────────────
+  const b13Line = (() => {
+    const p = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds];
+      if (!j || !(j.sommeil > 0) || j.humeur === null || j.humeur === undefined) continue;
+      const hNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
+      p.push({ som: j.sommeil, hum: hNum });
+    }
+    if (p.length < 7) return 'B13 — Sommeil↔Humeur : ⏳ Jours communs insuff. (' + p.length + '/7)';
+    const rho = spearmanCorr(p.map(x=>x.som), p.map(x=>x.hum));
+    if (rho === null) return 'B13 — Sommeil↔Humeur : ➖ Calcul impossible';
+    return Math.abs(rho) >= 0.30
+      ? 'B13 — Sommeil↔Humeur : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + p.length + 'j (' + (rho>0?'som↑→humeur+positive':'som↑→humeur↓ (inattendu)') + ')'
+      : 'B13 — Sommeil↔Humeur : ➖ Corr. insuff. (' + (Math.abs(rho)*100).toFixed(0) + '%) sur ' + p.length + 'j';
+  })();
+  allPaires.push({ nom: b13Line, declenche: b13Line.includes('✅') });
 
   const triggered = allPaires.filter(p => p.declenche).length;
 

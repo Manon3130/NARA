@@ -7720,6 +7720,65 @@ function computeBrique12() {
     if (b) results.push(b);
   }
 
+  // ── Douleurs × Calendrier des selles ─────────────────────────────────────
+  const cDOui = [], cDBristol = [], cDFreq = [];
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const jRaw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!jRaw) continue;
+      const j = JSON.parse(jRaw);
+      if (j.douleurs === undefined || j.douleurs === null) continue;
+      const doul = j.douleurs;
+      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
+      if (!calRaw) continue;
+      const cal = JSON.parse(calRaw);
+      if (!cal || !cal.yn) continue;
+      cDOui.push({ doul, selle: cal.yn === 'oui' ? 1 : 0 });
+      if (cal.yn === 'oui') {
+        if (cal.bristol !== null && cal.bristol !== undefined)
+          cDBristol.push({ doul, bristol: cal.bristol });
+        cDFreq.push({ doul, freq: cal.freq || 1 });
+      }
+    } catch {}
+  }
+
+  if (cDOui.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(cDOui.map(p=>p.doul), cDOui.map(p=>p.selle));
+    const b = bloc(
+      '😣 ↔ 📅 Douleurs abdominales & Fréquence des selles (calendrier)', cDOui.length, rho,
+      `Sur ${cDOui.length} jours communs, plus de douleurs coïncident paradoxalement avec une selle présente — pattern inhabituel`,
+      `Sur ${cDOui.length} jours communs, plus de douleurs abdominales coïncident avec des jours sans selle notée`,
+      `Journal × calendrier des selles · si persistant, parle-en à ton gastro-entérologue`, '#F3EDBD'
+    );
+    if (b) results.push(b);
+  }
+
+  if (cDBristol.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(cDBristol.map(p=>p.doul), cDBristol.map(p=>p.bristol));
+    const pro = rho !== null && rho <= -0.40
+      ? ' Pattern notable — parle-en à ton gastro-entérologue.' : '';
+    const b = bloc(
+      '😣 ↔ 🔬 Douleurs abdominales & Consistance Bristol (calendrier)', cDBristol.length, rho,
+      `Sur ${cDBristol.length} jours avec Bristol renseigné, plus de douleurs coïncident avec des selles plus fluides — pattern inhabituel`,
+      `Sur ${cDBristol.length} jours avec Bristol renseigné, plus de douleurs coïncident avec des selles plus dures.${pro}`,
+      `Journal × calendrier des selles · observation, pas un diagnostic`, '#8ab4c4'
+    );
+    if (b) results.push(b);
+  }
+
+  if (cDFreq.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(cDFreq.map(p=>p.doul), cDFreq.map(p=>p.freq));
+    const b = bloc(
+      '😣 ↔ 📅 Douleurs abdominales & Nombre de passages (calendrier)', cDFreq.length, rho,
+      `Sur ${cDFreq.length} jours avec une selle notée, plus de douleurs coïncident avec plus de passages dans la journée`,
+      `Sur ${cDFreq.length} jours avec une selle notée, plus de douleurs coïncident avec moins de passages`,
+      `Journal × calendrier des selles · si persistant, parle-en à ton gastro-entérologue`, '#B6C687'
+    );
+    if (b) results.push(b);
+  }
+
   if (results.length === 0) return null;
   return `<div class="section-title" style="margin-top:4px">Douleurs abdominales — co-évolutions</div>` + results.join('');
 }
@@ -9057,6 +9116,34 @@ function diagBrique2() {
     };
     dl('B12 — Doul↔Sommeil', pS, 'doul↑→som↑ (inattendu)', 'doul↑→som↓');
     dl('B12 — Doul↔Énergie', pE, 'doul↑→ener↑ (inattendu)', 'doul↑→ener↓');
+    // Douleurs × Calendrier des selles
+    const cD = { oui:[], bristol:[], freq:[] };
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds];
+      if (!j || j.douleurs === undefined || j.douleurs === null) continue;
+      const doul = j.douleurs;
+      try {
+        const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
+        if (!cal || !cal.yn) continue;
+        cD.oui.push({ doul, selle: cal.yn === 'oui' ? 1 : 0 });
+        if (cal.yn === 'oui') {
+          if (cal.bristol != null) cD.bristol.push({ doul, bristol: cal.bristol });
+          cD.freq.push({ doul, freq: cal.freq || 1 });
+        }
+      } catch {}
+    }
+    const dlC = (label, arr, keyA, keyB, pos, neg) => {
+      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      const rho = spearmanCorr(arr.map(p=>p[keyA]), arr.map(p=>p[keyB]));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
+        : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
+    };
+    dlC('B12 — Doul↔Fréq.selles(cal)', cD.oui,     'doul','selle',  'doul↑→selle (inattendu)', 'doul↑→pas de selle');
+    dlC('B12 — Doul↔Bristol(cal)',      cD.bristol,  'doul','bristol','doul↑→Bristol↑ (inattendu)', 'doul↑→Bristol↓(dur)');
+    dlC('B12 — Doul↔NbPassages(cal)',   cD.freq,     'doul','freq',   'doul↑→+passages', 'doul↑→-passages');
     return lines;
   })();
   b12Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));

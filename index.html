@@ -6892,6 +6892,10 @@ function renderInsightsPage() {
   const brique11Html = computeBrique11();
   if (brique11Html) html += brique11Html;
 
+  // ── Brique 12 : Douleurs × Sommeil & Énergie ──────────────────────────────
+  const brique12Html = computeBrique12();
+  if (brique12Html) html += brique12Html;
+
   content.innerHTML = html;
 }
 
@@ -7646,6 +7650,78 @@ function computeBrique4() {
         </div>
         ${a.hydroNote || ''}
       </div>`).join('') + computeBrique6(byDate, SEUIL_MIN);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 12 — Douleurs abdominales × Sommeil & Énergie
+// Source : nara_journal_*.douleurs (0-2)
+// Liens : Sommeil · Énergie
+// (Stress↔Doul, Transit↔Doul, Hyd↔Doul, Bal↔Doul déjà couverts — pas de doublon)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function computeBrique12() {
+  const SEUIL_MIN = 7;
+  const results   = [];
+  const pSom = [], pEner = [];
+
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!raw) continue;
+      const j = JSON.parse(raw);
+      if (j.douleurs === undefined || j.douleurs === null) continue;
+      const doul = j.douleurs;
+      if (j.sommeil > 0) pSom.push({ doul, v: j.sommeil });
+      if (j.energie > 0) pEner.push({ doul, v: j.energie });
+    } catch {}
+  }
+
+  function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
+    if (rho === null || Math.abs(rho) < 0.30) return null;
+    const sens      = rho > 0 ? sensPos : sensNeg;
+    const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
+    return `<div class="insight-real-card" style="border-left-color:${couleur}">
+      <div class="irc-tag">${emoji} — corrélation ${intensite}</div>
+      <div class="irc-text">${sens} (corrélation ${(Math.abs(rho)*100).toFixed(0)}% · ${n} jours communs). Tendance observée — pas un lien de cause à effet établi.
+        <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">${note}</span>
+      </div>
+    </div>`;
+  }
+
+  // ── 1. Douleurs ↔ Sommeil ────────────────────────────────────────────────
+  if (pSom.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pSom.map(p=>p.doul), pSom.map(p=>p.v));
+    const pro = rho !== null && rho <= -0.40
+      ? ' Si ce pattern persiste, parle-en à ton médecin.' : '';
+    const b = bloc(
+      '😣 ↔ 😴 Douleurs abdominales & Qualité du sommeil', pSom.length, rho,
+      `Sur ${pSom.length} jours, plus de douleurs abdominales coïncident paradoxalement avec un meilleur sommeil — pattern inhabituel à observer`,
+      `Sur ${pSom.length} jours, plus de douleurs abdominales coïncident avec une moins bonne qualité de sommeil.${pro}`,
+      `Calculé sur ${pSom.length} jours communs · observation, pas un diagnostic`,
+      '#DAE9FA'
+    );
+    if (b) results.push(b);
+  }
+
+  // ── 2. Douleurs ↔ Énergie ────────────────────────────────────────────────
+  if (pEner.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(pEner.map(p=>p.doul), pEner.map(p=>p.v));
+    const pro = rho !== null && rho <= -0.40
+      ? ' Pattern notable — parle-en à ton médecin ou gastro-entérologue.' : '';
+    const b = bloc(
+      '😣 ↔ ⚡ Douleurs abdominales & Niveau d\'énergie', pEner.length, rho,
+      `Sur ${pEner.length} jours, plus de douleurs abdominales coïncident paradoxalement avec plus d'énergie — pattern inhabituel`,
+      `Sur ${pEner.length} jours, plus de douleurs abdominales coïncident avec un niveau d'énergie plus bas.${pro}`,
+      `Calculé sur ${pEner.length} jours communs · observation, pas un diagnostic`,
+      '#BBB7E5'
+    );
+    if (b) results.push(b);
+  }
+
+  if (results.length === 0) return null;
+  return `<div class="section-title" style="margin-top:4px">Douleurs abdominales — co-évolutions</div>` + results.join('');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -8958,6 +9034,32 @@ function diagBrique2() {
     return lines;
   })();
   b11Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
+  // ── Brique 12 : Douleurs × Sommeil & Énergie ─────────────────────────────
+  const b12Lines = (() => {
+    const pS = [], pE = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds];
+      if (!j || j.douleurs === undefined || j.douleurs === null) continue;
+      const doul = j.douleurs;
+      if (j.sommeil > 0) pS.push({ doul, v: j.sommeil });
+      if (j.energie > 0) pE.push({ doul, v: j.energie });
+    }
+    const lines = [];
+    const dl = (label, arr, pos, neg) => {
+      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      const rho = spearmanCorr(arr.map(p=>p.doul), arr.map(p=>p.v));
+      lines.push(rho !== null && Math.abs(rho) >= 0.30
+        ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
+        : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
+    };
+    dl('B12 — Doul↔Sommeil', pS, 'doul↑→som↑ (inattendu)', 'doul↑→som↓');
+    dl('B12 — Doul↔Énergie', pE, 'doul↑→ener↑ (inattendu)', 'doul↑→ener↓');
+    return lines;
+  })();
+  b12Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
 
   const triggered = allPaires.filter(p => p.declenche).length;
 

@@ -7748,15 +7748,60 @@ function computeBrique11() {
   }
 
   if (results.length === 0) return null;
+
+  // ── Ballonnements × Calendrier des selles ─────────────────────────────────
+  const calBOui = [], calBBristol = [], calBFreq = [];
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    try {
+      const jRaw = localStorage.getItem(`nara_journal_${ds}`);
+      if (!jRaw) continue;
+      const j = JSON.parse(jRaw);
+      if (!(j.ballonnements > 0)) continue;
+      const bVal = j.ballonnements;
+      const calRaw = localStorage.getItem(`nara_cal_${ds}`);
+      if (!calRaw) continue;
+      const cal = JSON.parse(calRaw);
+      if (!cal || !cal.yn) continue;
+      calBOui.push({ b: bVal, selle: cal.yn === 'oui' ? 1 : 0 });
+      if (cal.yn === 'oui') {
+        if (cal.bristol !== null && cal.bristol !== undefined)
+          calBBristol.push({ b: bVal, bristol: cal.bristol });
+        calBFreq.push({ b: bVal, freq: cal.freq || 1 });
+      }
+    } catch {}
+  }
+  if (calBOui.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(calBOui.map(x=>x.b), calBOui.map(x=>x.selle));
+    const bl = bloc('🌀 ↔ 📅 Ballonnements & Fréquence des selles (calendrier)', calBOui.length, rho,
+      `Sur ${calBOui.length} jours, des ballonnements plus importants coïncident paradoxalement avec une selle présente — pattern inhabituel`,
+      `Sur ${calBOui.length} jours, des ballonnements plus importants coïncident avec des jours sans selle notée`,
+      `Journal × calendrier des selles · si persistant, parle-en à ton gastro-entérologue`, '#F3EDBD');
+    if (bl) results.push(bl);
+  }
+  if (calBBristol.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(calBBristol.map(x=>x.b), calBBristol.map(x=>x.bristol));
+    const bl = bloc('🌀 ↔ 🔬 Ballonnements & Consistance Bristol (calendrier)', calBBristol.length, rho,
+      `Sur ${calBBristol.length} jours avec Bristol renseigné, des ballonnements plus importants coïncident avec des selles plus fluides — pattern inhabituel`,
+      `Sur ${calBBristol.length} jours avec Bristol renseigné, des ballonnements plus importants coïncident avec des selles plus dures`,
+      `Journal × calendrier des selles · observation, pas un diagnostic`, '#8ab4c4');
+    if (bl) results.push(bl);
+  }
+  if (calBFreq.length >= SEUIL_MIN) {
+    const rho = spearmanCorr(calBFreq.map(x=>x.b), calBFreq.map(x=>x.freq));
+    const bl = bloc('🌀 ↔ 📅 Ballonnements & Nombre de passages (calendrier)', calBFreq.length, rho,
+      `Sur ${calBFreq.length} jours avec une selle notée, des ballonnements plus importants coïncident avec plus de passages`,
+      `Sur ${calBFreq.length} jours avec une selle notée, des ballonnements plus importants coïncident avec moins de passages`,
+      `Journal × calendrier des selles · si persistant, parle-en à ton gastro-entérologue`, '#B6C687');
+    if (bl) results.push(bl);
+  }
+  if (results.length === 0) return null;
   return `<div class="section-title" style="margin-top:4px">Ballonnements — co-évolutions</div>` + results.join('');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // BRIQUE 10 — Transit ressenti × Indicateurs multiples
-// Source : nara_journal_*.transit (0=Lent, 1=Normal, 2=Rapide) — ressenti Journal
-// ⚠️  Distinct du calendrier des selles (nara_cal_*) qui mesure la fréquence réelle
-// Méthode : Spearman sur jours communs (30 derniers jours)
-// ══════════════════════════════════════════════════════════════════════════════
 
 function computeBrique10() {
   const SEUIL_MIN = 7;
@@ -8890,6 +8935,26 @@ function diagBrique2() {
     dl('B11 — Bal↔Peau',     p.peau, 'bal↑→peau↑ (inattendu)', 'bal↑→peau↓');
     dl('B11 — Bal↔Sommeil',  p.som,  'bal↑→som↑ (inattendu)', 'bal↑→som↓');
     dl('B11 — Bal↔Énergie',  p.ener, 'bal↑→ener↑ (inattendu)', 'bal↑→ener↓');
+    // Bal × Calendrier des selles
+    const cBOui = [], cBBristol = [], cBFreq = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().split('T')[0];
+      const j = byDate[ds]; if (!j || !(j.ballonnements > 0)) continue;
+      const bVal = j.ballonnements;
+      try {
+        const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
+        if (!cal || !cal.yn) continue;
+        cBOui.push({ b: bVal, selle: cal.yn === 'oui' ? 1 : 0 });
+        if (cal.yn === 'oui') {
+          if (cal.bristol != null) cBBristol.push({ b: bVal, bristol: cal.bristol });
+          cBFreq.push({ b: bVal, freq: cal.freq || 1 });
+        }
+      } catch {}
+    }
+    dl('B11 — Bal↔Fréq.selles(cal)',  cBOui,     'bal↑→selle présente (inattendu)', 'bal↑→selle absente');
+    dl('B11 — Bal↔Bristol(cal)',       cBBristol,  'bal↑→Bristol↑ (inattendu)', 'bal↑→Bristol↓(dur)');
+    dl('B11 — Bal↔NbPassages(cal)',    cBFreq,     'bal↑→+passages', 'bal↑→-passages');
     return lines;
   })();
   b11Lines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));

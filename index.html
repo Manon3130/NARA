@@ -9217,6 +9217,28 @@ function diagBrique2() {
   })();
   allPaires.push({ nom: b13Line, declenche: b13Line.includes('✅') });
 
+  // ── Cycle × Indicateurs ───────────────────────────────────────────────────
+  const cycleLines = (() => {
+    const lines = [];
+    const settings = typeof cycleLoad === 'function' ? cycleLoad() : null;
+    if (!settings || !settings.active) {
+      lines.push('Cycle : ⏸ Suivi cycle non activé');
+      return lines;
+    }
+    const PHASES = ['regles','preovul','ovulation','luteale'];
+    const SEUIL  = 3;
+    // Compter les jours par phase dans byDate
+    const nParPhase = {};
+    PHASES.forEach(ph => { nParPhase[ph] = Object.values(byDate).filter(d=>d && d.phase===ph).length; });
+    lines.push('Cycle : Jours/phase — 🩸Règles:' + nParPhase.regles + ' 🌱Follic.:' + nParPhase.preovul + ' ✨Ovul.:' + nParPhase.ovulation + ' 🌙Lutéale:' + nParPhase.luteale + ' (seuil min: ' + SEUIL + ')');
+    // Calculer les insights
+    const ins = typeof getCycleInsights === 'function' ? getCycleInsights([]) : [];
+    const insCount = ins.filter(i => i.type === 'cycle' && i.icon !== '🩺').length;
+    lines.push('Cycle : ' + (insCount > 0 ? '✅ ' + insCount + ' tendance(s) détectée(s) par phase' : '➖ Pas encore de tendance significative par phase'));
+    return lines;
+  })();
+  cycleLines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
+
   const triggered = allPaires.filter(p => p.declenche).length;
 
   const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:380px;max-height:70vh;overflow-y:auto">
@@ -11115,68 +11137,184 @@ function getCycleInsights(entries) {
   const settings = cycleLoad();
   if (!settings || !settings.active || !settings.startDate) return [];
 
-  const insights = [];
-  const cycleDuration = settings.cycleDuration || 28;
-  const regDuration   = settings.regDuration   || 5;
+  const insights       = [];
+  const cycleDuration  = settings.cycleDuration || 28;
+  const regDuration    = settings.regDuration   || 5;
+  const SEUIL_PHASE    = 3; // minimum d'entrées par phase pour afficher un résultat
 
-  // Enrichir chaque entrée avec sa phase
-  const enriched = entries.map(e => {
-    const info = getCyclePhase(e.dateStr || e.date);
-    return { ...e, cyclePhase: info?.phase || null, cycleDay: info?.dayInCycle || null };
+  // ── Construire un index dateStr → phase ───────────────────────────────────
+  // On scanne tout le localStorage pour récupérer toutes les dates disponibles
+  const allDates = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('nara_journal_')) {
+      const ds = k.replace('nara_journal_', '');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(ds)) allDates.push(ds);
+    }
+  }
+
+  // Construire byDate : date → { phase, valeurs journal, valeurs calendrier }
+  const byDate = {};
+  allDates.forEach(ds => {
+    const info = getCyclePhase(ds);
+    if (!info) return;
+    const phase = info.phase; // 'regles' | 'preovul' | 'ovulation' | 'luteale'
+
+    try {
+      const j = JSON.parse(localStorage.getItem('nara_journal_' + ds) || 'null');
+      if (!j) return;
+      const HYD_MAP = { 'lt1':0, '1to2':1, 'gt2':2 };
+      byDate[ds] = {
+        phase,
+        transit:      (j.transit !== null && j.transit !== undefined) ? j.transit : null,
+        ballonnements:(j.ballonnements > 0) ? j.ballonnements : null,
+        douleurs:     (j.douleurs !== undefined && j.douleurs !== null) ? j.douleurs : null,
+        peau:         (j.peau !== null && j.peau !== undefined) ? j.peau : null,
+        sommeil:      (j.sommeil > 0) ? j.sommeil : null,
+        energie:      (j.energie > 0) ? j.energie : null,
+        humeur:       (j.humeur !== null && j.humeur !== undefined)
+                        ? (j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1) : null,
+        stress:       (j.stress > 0) ? j.stress : null,
+        hydratation:  (j.hydratation !== null && HYD_MAP[j.hydratation] !== undefined)
+                        ? HYD_MAP[j.hydratation] : null,
+      };
+      // Données calendrier des selles
+      try {
+        const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
+        if (cal && cal.yn) {
+          byDate[ds].selleOui     = cal.yn === 'oui' ? 1 : 0;
+          byDate[ds].selleFreq    = cal.yn === 'oui' ? (cal.freq || 1) : 0;
+          byDate[ds].selleBristol = (cal.yn === 'oui' && cal.bristol != null) ? cal.bristol : null;
+        }
+      } catch {}
+    } catch {}
   });
 
-  // ── Peau en phase lutéale ────────────────────────────────────────────────
-  const peauLuteale  = enriched.filter(e => e.type === 'peau' && e.cyclePhase === 'luteale' && e.values?.peau_etat !== undefined);
-  const peauAutres   = enriched.filter(e => e.type === 'peau' && e.cyclePhase && e.cyclePhase !== 'luteale' && e.values?.peau_etat !== undefined);
+  const dates = Object.keys(byDate);
+  if (dates.length < SEUIL_PHASE * 2) return [];
 
-  if (peauLuteale.length >= 2 && peauAutres.length >= 2) {
-    const poussLuteale = peauLuteale.filter(e => e.values.peau_etat === 0).length / peauLuteale.length;
-    const poussAutres  = peauAutres.filter(e => e.values.peau_etat === 0).length / peauAutres.length;
-    if (poussLuteale > poussAutres + 0.15) {
-      insights.push({
-        type: 'skin', icon: '🌙', tag: 'Cycle · Peau — tendance observée',
-        text: `Chez toi, les poussées de peau semblent plus fréquentes en phase lutéale (avant les règles) que sur le reste du cycle. C'est une tendance observée — pas une certitude, mais ça vaut la peine d'y prêter attention.`
-      });
-    }
+  // ── Calcul des moyennes par phase ─────────────────────────────────────────
+  const PHASES = ['regles', 'preovul', 'ovulation', 'luteale'];
+  const PHASE_LABELS = {
+    regles:    { name: 'Règles',           icon: '🩸' },
+    preovul:   { name: 'Phase folliculaire', icon: '🌱' },
+    ovulation: { name: 'Ovulation',        icon: '✨' },
+    luteale:   { name: 'Phase lutéale',    icon: '🌙' },
+  };
+
+  function moyParPhase(key) {
+    const result = {};
+    PHASES.forEach(ph => {
+      const vals = dates.map(ds => byDate[ds]).filter(d => d.phase === ph && d[key] !== null).map(d => d[key]);
+      result[ph] = { n: vals.length, moy: vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null };
+    });
+    return result;
   }
 
-  // ── Transit plus stable en phase folliculaire ────────────────────────────
-  const transitFollic = enriched.filter(e => e.type === 'transit' && e.cyclePhase === 'preovul' && e.values?.transit_etat !== undefined);
-  const transitRegles = enriched.filter(e => e.type === 'transit' && e.cyclePhase === 'regles'  && e.values?.transit_etat !== undefined);
-
-  if (transitFollic.length >= 2 && transitRegles.length >= 2) {
-    const stableFollic = transitFollic.filter(e => e.values.transit_etat === 1).length / transitFollic.length;
-    const stableRegles = transitRegles.filter(e => e.values.transit_etat === 1).length / transitRegles.length;
-    if (stableFollic > stableRegles + 0.2) {
-      insights.push({
-        type: 'gut', icon: '🌱', tag: 'Cycle · Transit — tendance observée',
-        text: `Ton transit semble plus régulier en phase folliculaire (après tes règles) qu'en période de règles. C'est une tendance que l'on observe parfois — continue à noter pour affiner ce pattern.`
-      });
-    }
+  // Trouver la phase max et min (avec suffisamment de données)
+  function phaseExtremes(moyMap) {
+    const valid = PHASES.filter(ph => moyMap[ph].n >= SEUIL_PHASE && moyMap[ph].moy !== null);
+    if (valid.length < 2) return null;
+    const sorted = [...valid].sort((a,b) => moyMap[b].moy - moyMap[a].moy);
+    const phMax = sorted[0], phMin = sorted[sorted.length - 1];
+    const diff = moyMap[phMax].moy - moyMap[phMin].moy;
+    return { phMax, phMin, diff, moyMap };
   }
 
-  // ── Stress plus élevé en phase prémenstruelle ────────────────────────────
-  const stressLuteale = enriched.filter(e => e.type === 'stress' && e.cyclePhase === 'luteale' && e.values?.stress !== undefined);
-  const stressAutres  = enriched.filter(e => e.type === 'stress' && e.cyclePhase && e.cyclePhase !== 'luteale' && e.values?.stress !== undefined);
-
-  if (stressLuteale.length >= 2 && stressAutres.length >= 2) {
-    const avgStressLuteale = stressLuteale.reduce((s,e) => s + e.values.stress, 0) / stressLuteale.length;
-    const avgStressAutres  = stressAutres.reduce((s,e) => s + e.values.stress, 0)  / stressAutres.length;
-    if (avgStressLuteale > avgStressAutres + 0.5) {
-      insights.push({
-        type: 'gut', icon: '😮‍💨', tag: 'Cycle · Stress — tendance observée',
-        text: `Tes niveaux de stress semblent un peu plus élevés en phase lutéale. On note une différence de ${(avgStressLuteale - avgStressAutres).toFixed(1)}/5 par rapport au reste du cycle — une tendance à surveiller.`
-      });
-    }
+  // Générer un insight si la différence entre phases est significative
+  function addInsight(key, label, icon, seuilDiff, couleur, sensMax, sensMin, proStr) {
+    const moy = moyParPhase(key);
+    const ext = phaseExtremes(moy);
+    if (!ext || ext.diff < seuilDiff) return;
+    const { phMax, phMin, moyMap } = ext;
+    const nTotal = PHASES.reduce((s,ph) => s + moyMap[ph].n, 0);
+    const lMax = PHASE_LABELS[phMax], lMin = PHASE_LABELS[phMin];
+    const texte = `${lMax.icon} ${lMax.name} : moy. ${moyMap[phMax].moy.toFixed(1)} · `
+      + `${lMin.icon} ${lMin.name} : moy. ${moyMap[phMin].moy.toFixed(1)}. `
+      + `${sensMax.replace('{phase}', lMax.name)} — `
+      + `${sensMin.replace('{phase}', lMin.name)}. `
+      + (proStr ? proStr + ' ' : '')
+      + `Calculé sur ${nTotal} jours répartis sur plusieurs phases.`;
+    insights.push({ type:'cycle', icon, tag:`Cycle · ${label} — tendance observée`, text: texte });
   }
 
-  // Garde-fou : cycles très irréguliers (écart > 45j depuis le début déclaré)
+  // ── Indicateurs Journal ───────────────────────────────────────────────────
+  addInsight('transit', 'Transit ressenti', '🌱', 0.4,
+    '#B6C687',
+    'Transit plus fluide en {phase}',
+    'Transit plus lent en {phase}',
+    null
+  );
+  addInsight('ballonnements', 'Ballonnements', '🌀', 0.5,
+    '#F3EDBD',
+    'Ballonnements plus importants en {phase}',
+    'Moins de ballonnements en {phase}',
+    'Si ce pattern est régulier, parle-en à ton gastro-entérologue.'
+  );
+  addInsight('douleurs', 'Douleurs abdominales', '😣', 0.4,
+    '#DDBAAE',
+    'Douleurs plus fréquentes en {phase}',
+    'Moins de douleurs en {phase}',
+    'Si ce pattern est persistant, parle-en à ton médecin ou gynécologue.'
+  );
+  addInsight('peau', 'Peau', '✨', 0.4,
+    '#EAC4AF',
+    'Peau plus en difficulté en {phase}',
+    'Peau plus calme en {phase}',
+    'Tendance gut-skin observée — à mentionner à ton dermatologue si persistant.'
+  );
+  addInsight('sommeil', 'Sommeil', '😴', 0.5,
+    '#DAE9FA',
+    'Sommeil moins bon en {phase}',
+    'Meilleur sommeil en {phase}',
+    null
+  );
+  addInsight('energie', 'Énergie', '⚡', 0.5,
+    '#BBB7E5',
+    'Énergie plus basse en {phase}',
+    'Énergie plus haute en {phase}',
+    null
+  );
+  addInsight('humeur', 'Humeur', '😊', 0.4,
+    '#EFBDBD',
+    'Humeur plus basse en {phase}',
+    'Humeur plus positive en {phase}',
+    null
+  );
+  addInsight('stress', 'Stress', '😮‍💨', 0.5,
+    '#F7DFDF',
+    'Stress plus élevé en {phase}',
+    'Stress plus bas en {phase}',
+    'Si ce pattern persiste, parle-en à ton médecin.'
+  );
+
+  // ── Calendrier des selles ─────────────────────────────────────────────────
+  addInsight('selleOui', 'Présence de selle (calendrier)', '🌿', 0.2,
+    '#B6C687',
+    'Plus de jours avec selle notée en {phase}',
+    'Moins de jours avec selle notée en {phase}',
+    'À mentionner à ton gastro-entérologue si ce pattern est régulier.'
+  );
+  addInsight('selleFreq', 'Fréquence des selles (calendrier)', '🌿', 0.4,
+    '#B6C687',
+    'Plus de passages aux selles en {phase}',
+    'Moins de passages aux selles en {phase}',
+    null
+  );
+  addInsight('selleBristol', 'Consistance Bristol (calendrier)', '🔬', 0.5,
+    '#8ab4c4',
+    'Selles plus fluides (Bristol plus élevé) en {phase}',
+    'Selles plus dures (Bristol plus bas) en {phase}',
+    'À mentionner à ton gastro-entérologue si ce pattern est régulier.'
+  );
+
+  // ── Garde-fou cycle décalé ────────────────────────────────────────────────
   const startDate = new Date(settings.startDate + 'T12:00:00');
-  const daysSince = Math.round((new Date() - startDate) / (1000 * 60 * 60 * 24));
+  const daysSince = Math.round((new Date() - startDate) / (1000*60*60*24));
   if (daysSince > cycleDuration + 14) {
     insights.push({
-      type: 'gut', icon: '🩺', tag: 'Cycle · À noter',
-      text: `Tes données de cycle semblent décalées — il peut être utile de les mettre à jour si ton cycle a changé. Si tu observes des irrégularités persistantes, une consultation gynécologique peut être utile.`
+      type:'cycle', icon:'🩺', tag:'Cycle · À noter',
+      text:`Tes données de cycle semblent décalées — il peut être utile de les mettre à jour si ton cycle a changé. Si tu observes des irrégularités persistantes, une consultation gynécologique peut être utile.`
     });
   }
 

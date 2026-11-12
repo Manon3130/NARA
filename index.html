@@ -1639,6 +1639,10 @@ if (typeof supabase === 'undefined') {
     font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--text-light); margin-bottom: 12px;
   }
+  .ins-summary-sub {
+    font-size: 0.68rem; color: var(--text-light); line-height: 1.4;
+    margin: -8px 0 12px;
+  }
   .ins-summary-item {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 0; border-bottom: 1px solid var(--oat);
@@ -1710,11 +1714,14 @@ if (typeof supabase === 'undefined') {
   }
   .ichart-track {
     display: flex;
+    align-items: flex-start;        /* chaque panneau garde sa hauteur naturelle (plus d'étirement à la hauteur de la Synthèse) */
     overflow-x: scroll;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     gap: 0;
+    transition: height 0.25s ease;  /* hauteur pilotée par ichartFitHeight() : = hauteur du panneau affiché */
   }
   .ichart-track::-webkit-scrollbar { display: none; }
   .ichart-panel {
@@ -6928,10 +6935,12 @@ function renderInsightsPage() {
   })();
 
   // ── Niveau 1 : Résumé gros titres ─────────────────────────────────────────
-  const summaryItems = buildInsightsSummary(getDayVals);
+  const summary = buildInsightsSummary(getDayVals, _ichartWeekOffset);
+  const summaryItems = summary.items;
   const summaryHtml = summaryItems.length ? `
     <div class="ins-summary-block">
-      <div class="ins-summary-title">Cette semaine en résumé</div>
+      <div class="ins-summary-title">${summary.title}</div>
+      <div class="ins-summary-sub">${summary.subtitle}</div>
       ${summaryItems.map((item, idx) => `
         <div class="ins-summary-item" onclick="document.getElementById('ins-detail-${idx}')?.scrollIntoView({behavior:'smooth',block:'start'})">
           <span class="ins-summary-kw">${item.indicator} ${item.keyword}</span>
@@ -6957,58 +6966,165 @@ function renderInsightsPage() {
   html += `<div class="ins-disclaimer">Ces observations sont calculées sur tes données personnelles — jamais des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin, gastro-entérologue ou dermatologue.</div>`;
 
   content.innerHTML = html;
+
+  // Hauteur de chaque carrousel = hauteur du panneau affiché (recalculée aussi après chargement des polices)
+  _ichartIdx[''] = 0; _ichartIdx['-30'] = 0;       // le rendu repart sur le 1er panneau
+  ichartFitAll();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(ichartFitAll);
+  setTimeout(ichartFitAll, 300);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(ichartFitAll);
 }
 
-// ── Niveau 1 : calcul du résumé hebdomadaire ─────────────────────────────────
-function buildInsightsSummary(getDayVals) {
-  const items = [];
-  // Lire les 7 derniers jours
-  const vals7 = Array.from({length:7}, (_,i) => {
-    const d = new Date(); d.setDate(d.getDate()-i);
-    return getDayVals(d.toISOString().split('T')[0]) || {};
-  });
-  // Lire les 7 jours d'avant (pour comparaison)
-  const vals14 = Array.from({length:7}, (_,i) => {
-    const d = new Date(); d.setDate(d.getDate()-7-i);
-    return getDayVals(d.toISOString().split('T')[0]) || {};
-  });
+// ══════════════════════════════════════════════════════════════════════════════
+// RÈGLES PARTAGÉES DE LA PAGE INSIGHTS
+// ══════════════════════════════════════════════════════════════════════════════
 
-  function avg(arr, key) {
-    const vals = arr.map(v=>v[key]).filter(v=>v!==null&&v!==undefined&&v>0);
-    return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null;
+// ── Corrélations : une seule règle d'affichage pour toutes les cartes ──────────
+// Une corrélation n'est affichée que si elle repose sur au moins 14 jours communs
+// ET qu'elle atteint le seuil max(0,40 ; valeur critique de Spearman à p<0,05) :
+//   14 j → 0,53 · 16 j → 0,50 · 18 j → 0,47 · 20 j → 0,44 · 25 j et plus → 0,40
+// (0,40 = bas de la zone « modérée » ; avant 25 jours il faut en plus que le lien soit
+// statistiquement significatif, sinon un 0,40 apparaît par hasard environ 1 fois sur 6.)
+const CORR_MIN_JOURS = 14;
+function corrSeuilRho(n) {
+  const df = n - 2;
+  if (df < 1) return 1;
+  const t = 1.96 + 2.4 / df;                  // valeur critique de t (p<0,05, bilatéral), approximation
+  return Math.max(0.40, t / Math.sqrt(df + t * t));
+}
+function corrAffichable(n, rho) {
+  if (rho === null || rho === undefined || isNaN(rho)) return false;
+  return n >= CORR_MIN_JOURS && Math.abs(rho) >= corrSeuilRho(n);
+}
+
+// ── Niveaux : mêmes seuils pour les conseils des cartes et pour le résumé ─────
+const INS_LIBELLES = {
+  sommeil:       ['faible', 'moyen', 'bon'],
+  energie:       ['faible', 'moyenne', 'bonne'],
+  stress:        ['bas', 'modéré', 'élevé'],
+  ballonnements: ['légers', 'modérés', 'élevés'],
+  douleurs:      ['absentes', 'légères', 'intenses'],
+  transit:       ['lent', 'régulier', 'rapide'],
+  peau:          ['en poussée', 'stable', 'calme']
+};
+// Bande d'une moyenne : 0 = bas · 1 = intermédiaire · 2 = haut · null = pas de donnée
+function insBande(key, v) {
+  if (v === null || v === undefined || isNaN(v)) return null;
+  switch (key) {
+    case 'sommeil': case 'energie': return v < 2.5 ? 0 : (v < 4 ? 1 : 2);          // faible < 2,5 · bon ≥ 4
+    case 'stress':        return v <= 1.5 ? 0 : (v < 3.5 ? 1 : 2);                  // bas ≤ 1,5 · élevé ≥ 3,5
+    case 'ballonnements': return v < 2 ? 0 : (v < 3 ? 1 : 2);                       // élevés ≥ 3
+    case 'douleurs':      return v < 0.25 ? 0 : (v < 1.5 ? 1 : 2);                  // échelle 0 (aucune) – 2 (intenses)
+    case 'transit':       return v < 0.5 ? 0 : (v <= 3 ? 1 : 2);                    // passages/jour : lent < 0,5 · rapide > 3
+  }
+  return null;
+}
+// Peau : même règle que la carte (≥ 40 % de poussées → en poussée ; sinon calme si plus de jours calmes que stables)
+function insBandePeau(valeurs) {
+  if (!valeurs || !valeurs.length) return null;
+  const pous = valeurs.filter(v => v === 0).length;
+  const stab = valeurs.filter(v => v === 1).length;
+  const calm = valeurs.filter(v => v === 2).length;
+  if (Math.round(pous / valeurs.length * 100) >= 40) return 0;
+  return calm > stab ? 2 : 1;
+}
+
+// ── Niveau 1 : résumé de la semaine affichée ─────────────────────────────────
+// Suit la semaine affichée dans le carrousel (flèches ‹ ›) et la compare à la précédente.
+// Les valeurs sont extraites comme dans le carrousel (mêmes règles, mêmes sources) :
+// ballonnements/sommeil/énergie/stress > 0, peau et douleurs renseignées, transit = passages/jour du calendrier.
+function buildInsightsSummary(getDayVals, weekOffset) {
+  weekOffset = weekOffset || 0;
+  const moisFr = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+  function semaine(off) {
+    const today = new Date(); today.setHours(12, 0, 0, 0);
+    const dow   = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const lundi = new Date(today); lundi.setDate(today.getDate() - dow + off * 7);
+    const dim   = new Date(lundi); dim.setDate(lundi.getDate() + 6);
+    const jours = [];
+    for (const d = new Date(lundi); d <= dim; d.setDate(d.getDate() + 1)) jours.push(d.toISOString().split('T')[0]);
+    return { lundi, dim, jours };
+  }
+  function libelle(w, premierLe) {            // « du 9 au 15 novembre » · « du 26 octobre au 1er novembre »
+    const j = d => (premierLe && d.getDate() === 1) ? '1er' : d.getDate();
+    return w.lundi.getMonth() === w.dim.getMonth()
+      ? `du ${j(w.lundi)} au ${j(w.dim)} ${moisFr[w.dim.getMonth()]}`
+      : `du ${j(w.lundi)} ${moisFr[w.lundi.getMonth()]} au ${j(w.dim)} ${moisFr[w.dim.getMonth()]}`;
+  }
+  function valeurs(jours) {
+    const o = { transit: [], ballonnements: [], douleurs: [], sommeil: [], energie: [], stress: [], peau: [] };
+    jours.forEach(ds => {
+      const v = getDayVals(ds) || {};
+      if (v.ballonnements > 0) o.ballonnements.push(v.ballonnements);
+      if (v.douleurs !== undefined && v.douleurs !== null) o.douleurs.push(v.douleurs);
+      if (v.sommeil > 0) o.sommeil.push(v.sommeil);
+      if (v.energie > 0) o.energie.push(v.energie);
+      if (v.stress  > 0) o.stress.push(v.stress);
+      if (v.peau !== undefined && v.peau !== null) o.peau.push(v.peau);
+      try {
+        const raw = localStorage.getItem('nara_cal_' + ds);
+        if (raw) {
+          const c = JSON.parse(raw);
+          if (c && c.yn === 'oui') o.transit.push(c.freq || 1);
+          else if (c && c.yn === 'non') o.transit.push(0);
+        }
+      } catch (e) {}
+    });
+    return o;
   }
 
-  // Sémantique : true = hausse est positive, false = hausse est négative
-  const INDICATORS = [
-    { key:'ballonnements', label:'🌀 Ballonnements', haussePos:false },
-    { key:'sommeil',       label:'😴 Sommeil',       haussePos:true  },
-    { key:'energie',       label:'⚡ Énergie',        haussePos:true  },
-    { key:'stress',        label:'😮‍💨 Stress',         haussePos:false },
-    { key:'transit',       label:'🌿 Transit',        haussePos:true  },
+  const wCur = semaine(weekOffset), wPrev = semaine(weekOffset - 1);
+  const cur = valeurs(wCur.jours), prev = valeurs(wPrev.jours);
+  const moy = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const r1  = v => Math.round(v * 10) / 10;       // niveau calculé sur la valeur arrondie, comme sur les cartes
+
+  // goodUp : true = une hausse est positive (flèche verte) · false = une baisse est positive
+  // stable : écart minimal (sur l'échelle de l'indicateur) pour parler de hausse ou de baisse
+  const IND = [
+    { key: 'transit',       icon: '🌿', label: 'Transit',       goodUp: true,  stable: 0.15 },
+    { key: 'ballonnements', icon: '🌀', label: 'Ballonnements', goodUp: false, stable: 0.3  },
+    { key: 'douleurs',      icon: '😣', label: 'Douleurs',      goodUp: false, stable: 0.15 },
+    { key: 'sommeil',       icon: '😴', label: 'Sommeil',       goodUp: true,  stable: 0.3  },
+    { key: 'energie',       icon: '⚡', label: 'Énergie',       goodUp: true,  stable: 0.3  },
+    { key: 'stress',        icon: '😮‍💨', label: 'Stress',        goodUp: false, stable: 0.3  },
+    { key: 'peau',          icon: '✨', label: 'Peau',          goodUp: true,  stable: 0.15 }
   ];
 
-  INDICATORS.forEach(ind => {
-    const rec  = avg(vals7,  ind.key);
-    const prec = avg(vals14, ind.key);
-    if (rec === null || prec === null) return;
-    const diff = rec - prec;
-    const SEUIL_STABLE = 0.3;
-    let arrow, keyword;
-    if (Math.abs(diff) < SEUIL_STABLE) {
-      arrow   = `<span class="ins-wave-stable">〰</span>`;
-      keyword = 'stable';
-    } else if (diff > 0) {
-      const pos = ind.haussePos;
-      arrow   = `<span class="${pos?'ins-arrow-up-pos':'ins-arrow-up-neg'}">${pos?'↑':'↑'}</span>`;
-      keyword = pos ? 'en hausse ✓' : 'en hausse';
-    } else {
-      const pos = !ind.haussePos; // baisse = positif si hausse était négatif
-      arrow   = `<span class="${pos?'ins-arrow-down-pos':'ins-arrow-down-neg'}">${pos?'↓':'↓'}</span>`;
-      keyword = pos ? 'en baisse ✓' : 'en baisse';
+  const items = [];
+  IND.forEach(ind => {
+    const a = cur[ind.key], b = prev[ind.key];
+    if (!a.length) return;                                    // pas de donnée cette semaine → pas de ligne
+    const bande  = ind.key === 'peau' ? insBandePeau(a) : insBande(ind.key, r1(moy(a)));
+    const niveau = INS_LIBELLES[ind.key][bande];
+    let tendance = '', arrow = '';
+    if (a.length >= 3 && b.length >= 3) {                     // tendance : au moins 3 jours dans chaque semaine
+      const diff = moy(a) - moy(b);
+      if (Math.abs(diff) < ind.stable) {
+        tendance = niveau === 'stable' ? 'sans changement' : 'stable';
+        arrow = '<span class="ins-wave-stable">〰</span>';
+      } else if (diff > 0) {
+        tendance = 'en hausse';
+        arrow = `<span class="${ind.goodUp ? 'ins-arrow-up-pos' : 'ins-arrow-up-neg'}">↑</span>`;
+      } else {
+        tendance = 'en baisse';
+        arrow = `<span class="${ind.goodUp ? 'ins-arrow-down-neg' : 'ins-arrow-down-pos'}">↓</span>`;
+      }
     }
-    items.push({ indicator: ind.label, keyword, arrow });
+    items.push({
+      indicator: `${ind.icon} ${ind.label}`,
+      keyword: tendance ? `${niveau}, ${tendance}` : niveau,
+      arrow,
+      key: ind.key, niveau, tendance,
+      valeur: moy(a), precedente: b.length ? moy(b) : null, nJours: a.length, nJoursPrec: b.length
+    });
   });
-  return items;
+
+  return {
+    title: weekOffset === 0 ? 'Cette semaine en résumé' : `Semaine ${libelle(wCur, false)} en résumé`,
+    subtitle: `par rapport à la semaine précédente (${libelle(wPrev, true)})`,
+    items
+  };
 }
 
 // ── Niveau 3 : regroupement des briques par thème ────────────────────────────
@@ -7084,7 +7200,6 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   periode      = periode || 'semaine';
   const isMois = periode === 'mois';
   const carouselSuffix = isMois ? '-30' : '';
-  const corrSeuil      = isMois ? 14 : 7;
   const offset         = isMois ? _ichartMonthOffset : _ichartWeekOffset;
 
   const COL = {
@@ -7338,28 +7453,46 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     const avg1 = n1 ? (v1all.reduce((s,v)=>s+v,0)/n1).toFixed(1) : null;
     const avg2 = n2 ? (v2all.reduce((s,v)=>s+v,0)/n2).toFixed(1) : null;
 
+    // Un conseil n'est affiché que si la mesure concernée a assez de jours renseignés,
+    // et il est choisi d'après la valeur AFFICHÉE (moyenne arrondie à 1 décimale) —
+    // jamais d'après une donnée absente, et sans chiffre écrit en dur dans le texte.
+    const mois     = periode === 'mois';
+    const minJours = mois ? 7 : 3;
+    const connu    = (avg, n) => (avg !== null && n >= minJours) ? parseFloat(avg) : null;
+
     let constat = '', conseil = '';
 
     if (key1 === 'sommeil' && key2 === 'energie') {
       if (avg1) constat += `Sommeil moyen : <strong>${avg1}/5</strong>`;
       if (avg2) constat += (constat ? ' · ' : '') + `Énergie moyenne : <strong>${avg2}/5</strong>`;
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(n1,n2)} jour${Math.max(n1,n2)>1?'s':''})</span>`;
-      const somMoy = parseFloat(avg1||0), enMoy = parseFloat(avg2||0);
-      if (periode === 'mois') {
-        if (somMoy < 2.5 || enMoy < 2.5) {
+      const som = connu(avg1, n1), en = connu(avg2, n2);
+      const bs = insBande('sommeil', som), be = insBande('energie', en);       // 0 faible · 1 moyen · 2 bon
+      const conseilEnergie = () => {
+        const clause = som === null ? '' : ` alors que ton sommeil est ${bs === 2 ? 'bon' : 'correct'} (${som.toFixed(1)}/5)`;
+        return `Ton énergie est ${be === 0 ? 'basse' : 'moyenne'} (${en.toFixed(1)}/5)${clause} : regarde aussi l'hydratation, la régularité des repas et le mouvement dans la journée.`;
+      };
+      if (mois) {
+        if (bs === 0 || be === 0) {
           conseil = "Un mois avec peu de sommeil ou d'énergie est un signal à prendre au sérieux. Si ce rythme persiste, ça vaut le coup d'en parler à un professionnel — et d'auditer les charges qui pèsent le plus sur cette période.";
-        } else if (somMoy >= 4 && enMoy >= 4) {
+        } else if (bs === 2 && be === 2) {
           conseil = "Un mois avec un bon niveau de sommeil et d'énergie : ton corps est en phase de régulation. C'est souvent dans ces fenêtres qu'on peut intégrer des changements durables plus facilement.";
-        } else {
-          conseil = "Sur un mois, un sommeil moyen autour de 3/5 suggère une régularité perfectible. La cohérence des horaires de lever — même le week-end — a un impact mesuré sur l'énergie de toute la semaine suivante.";
+        } else if (bs === 1) {
+          conseil = `Sur le mois, un sommeil moyen à ${som.toFixed(1)}/5 suggère une régularité perfectible. La cohérence des horaires de lever — même le week-end — a un impact mesuré sur l'énergie de toute la semaine suivante.`;
+        } else if (be === 1) {
+          conseil = conseilEnergie();
         }
       } else {
-        if (somMoy < 2.5 || enMoy < 2.5) {
+        if (bs === 0) {
           conseil = "Un sommeil court ou de mauvaise qualité coupe directement l'énergie du lendemain. Essaie de te coucher 30 min plus tôt cette semaine — même un léger décalage peut changer la donne.";
-        } else if (somMoy >= 4 && enMoy >= 4) {
+        } else if (be === 0) {
+          conseil = conseilEnergie();
+        } else if (bs === 2 && be === 2) {
           conseil = "Ton sommeil et ton énergie sont solides en ce moment. Continue ce rythme — c'est souvent dans ces phases que le corps régule mieux le reste.";
-        } else {
+        } else if (bs === 1) {
           conseil = "Essaie de garder un horaire de lever constant, même le week-end — c'est le levier le plus efficace pour stabiliser l'énergie sur la semaine.";
+        } else if (be === 1) {
+          conseil = conseilEnergie();
         }
       }
     }
@@ -7367,25 +7500,27 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     if (key1 === 'stress' && key2 === 'humeur') {
       if (avg1) constat += `Stress moyen : <strong>${avg1}/5</strong>`;
       if (avg2) {
-        const humLbl = parseFloat(avg2) >= 2.5 ? 'plutôt bonne' : 'souvent basse';
+        const hv = parseFloat(avg2);                                              // 3 = bonne · 2 = neutre · 1 = basse
+        const humLbl = hv >= 2.5 ? 'plutôt bonne' : (hv >= 1.75 ? 'neutre' : 'souvent basse');
         constat += (constat ? ' · ' : '') + `Humeur <strong>${humLbl}</strong>`;
       }
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(n1,n2)} jour${Math.max(n1,n2)>1?'s':''})</span>`;
-      const sMoy = parseFloat(avg1||0);
-      if (periode === 'mois') {
-        if (sMoy >= 3.5) {
+      const st  = connu(avg1, n1);
+      const bst = insBande('stress', st);                                         // 0 bas · 1 modéré · 2 élevé
+      if (mois) {
+        if (bst === 2) {
           conseil = "Un mois avec un stress chroniquement élevé a des effets documentés sur le microbiome, le sommeil et la perméabilité intestinale. C'est un signal à ne pas ignorer — si la charge ne baisse pas naturellement, envisage d'en parler à un médecin ou un psychologue.";
-        } else if (sMoy <= 1.5) {
+        } else if (bst === 0) {
           conseil = "Un mois de stress bas, c'est rare. C'est une fenêtre précieuse pour ancrer de nouvelles habitudes — ton système nerveux est en conditions optimales pour les intégrer durablement.";
-        } else {
-          conseil = "Sur un mois, un stress moyen entre 2 et 3 est souvent le reflet d'une charge quotidienne prévisible. Identifier les 2 ou 3 déclencheurs récurrents — et les anticiper — a plus d'effet que les techniques génériques.";
+        } else if (bst === 1) {
+          conseil = `Sur le mois, un stress moyen à ${st.toFixed(1)}/5 est souvent le reflet d'une charge quotidienne prévisible. Identifier les 2 ou 3 déclencheurs récurrents — et les anticiper — a plus d'effet que les techniques génériques.`;
         }
       } else {
-        if (sMoy >= 3.5) {
+        if (bst === 2) {
           conseil = "Un stress chronique élevé épuise le magnésium et perturbe le cortisol. Intégrer 5 min de respiration lente après les repas peut réduire la charge perçue — c'est petit mais cumulatif.";
-        } else if (sMoy <= 1.5) {
+        } else if (bst === 0) {
           conseil = "Ton niveau de stress semble maîtrisé cette semaine. C'est une bonne fenêtre pour introduire des changements d'habitudes — le corps les intègre mieux quand le système nerveux est calme.";
-        } else {
+        } else if (bst === 1) {
           conseil = "Alterner des moments de haute stimulation et des pauses réelles (pas juste scroller) aide le système nerveux à récupérer. Quelques minutes dehors en journée font souvent la différence.";
         }
       }
@@ -7398,7 +7533,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
           if (!raw) return null;
           const cal = JSON.parse(raw);
           return cal && cal.yn === 'oui' ? (cal.freq || 1) : (cal && cal.yn === 'non' ? 0 : null);
-        } catch { return null; }
+        } catch (e) { return null; }
       });
       const tAll = calData.filter(v => v !== null);
       const bAll = days.map(d => d.ballonnements).filter(v => v !== null);
@@ -7407,24 +7542,31 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       if (avgFreq !== null) constat += `Fréquence moyenne : <strong>${avgFreq} passage${parseFloat(avgFreq)>1?'s':''}/jour</strong>`;
       if (avgBal  !== null) constat += (constat?' · ':'') + `Ballonnements moyens <strong>${avgBal}/5</strong>`;
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${Math.max(tAll.length,bAll.length)} jour${Math.max(tAll.length,bAll.length)>1?'s':''})</span>`;
-      if (periode === 'mois') {
-        if (parseFloat(avgBal||0) >= 3) {
-          conseil = "Des ballonnements élevés sur un mois entier méritent une attention particulière. C'est une donnée concrète à partager avec ton gastro-entérologue : la durée et la régularité du symptôme sont des informations diagnostiques précieuses.";
-        } else if (parseFloat(avgFreq||1) < 0.7) {
-          conseil = "Moins d'un passage par jour en moyenne sur un mois peut indiquer un transit lent chronique. Fibres variées, hydratation, et activité physique régulière sont les premiers leviers — mais si ça persiste, une consultation s'impose.";
-        } else {
-          conseil = "Un transit régulier sur un mois complet est un bon signe de santé intestinale globale. Continue à varier les fibres et les fermentés pour maintenir ce cap.";
+      const fr = connu(avgFreq, tAll.length), bl = connu(avgBal, bAll.length);
+      const bF = insBande('transit', fr);                                         // 0 lent (< 0,5/j) · 1 régulier · 2 rapide (> 3/j)
+      const bB = insBande('ballonnements', bl);                                   // 2 = élevés (≥ 3)
+      const conseilRapide = () => `Plus de 3 passages par jour en moyenne (${fr.toFixed(1)}/jour) : si cela se répète, note ce que tu as mangé ces jours-là et parle-en à ton gastro-entérologue.`;
+      if (mois) {
+        if (bB === 2) {
+          conseil = "Des ballonnements élevés sur le mois méritent une attention particulière. C'est une donnée concrète à partager avec ton gastro-entérologue : la durée et la régularité du symptôme sont des informations diagnostiques précieuses.";
+        } else if (bF === 0) {
+          conseil = `Moins d'un passage tous les deux jours en moyenne (${fr.toFixed(1)}/jour) sur le mois peut indiquer un transit lent chronique. Fibres variées, hydratation, et activité physique régulière sont les premiers leviers — mais si ça persiste, une consultation s'impose.`;
+        } else if (bF === 2) {
+          conseil = conseilRapide();
+        } else if (bF === 1) {
+          conseil = "Un transit régulier sur le mois est un bon signe de santé intestinale globale. Continue à varier les fibres et les fermentés pour maintenir ce cap.";
         }
       } else {
-        if (parseFloat(avgBal||0) >= 3) {
+        if (bB === 2) {
           conseil = "Des ballonnements fréquents peuvent indiquer une fermentation intestinale élevée. Manger plus lentement, bien mâcher et réduire temporairement les légumineuses et les choux aide souvent à les calmer. Si ça dure, c'est un point à aborder avec ton médecin.";
-        } else if (avgFreq !== null && parseFloat(avgFreq) < 0.7) {
+        } else if (bF === 0) {
           conseil = "Un transit irrégulier réagit souvent à l'hydratation et aux fibres — vise 1,5L d'eau par jour et varie les sources de légumes. Si la tendance persiste, parle-en à ton gastro-entérologue.";
-        } else {
+        } else if (bF === 2) {
+          conseil = conseilRapide();
+        } else if (bF === 1) {
           conseil = "Un transit régulier est l'un des meilleurs indicateurs de santé intestinale. Continue à varier ton alimentation et à rester bien hydratée.";
         }
       }
-      return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
     }
 
     if (key1 === 'peau') {
@@ -7438,27 +7580,30 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       }
       constat += ` <span style="font-size:0.65rem;color:var(--text-light)">(${pAll.length} jour${pAll.length>1?'s':''})</span>`;
       const pctPoussee = pAll.length ? Math.round(pAll.filter(v=>v===0).length/pAll.length*100) : 0;
-      if (periode === 'mois') {
-        if (pctPoussee >= 40) {
-          conseil = "Plus de 40% de poussées sur un mois est une donnée significative à documenter et partager avec ton dermatologue. Un journal de bord sur cette durée — alimentation, stress, cycle — peut aider à identifier des déclencheurs récurrents.";
-        } else if (pctPos !== null && pctPos >= 80) {
-          conseil = "Un mois majoritairement stable ou calme pour ta peau : c'est un beau signal. Si tu as changé quelque chose récemment — alimentation, routine, traitement — c'est probablement la bonne direction.";
+      if (pAll.length >= minJours) {
+        if (mois) {
+          if (pctPoussee >= 40) {
+            conseil = `Avec ${pctPoussee}% de poussées sur le mois, c'est une donnée significative à documenter et partager avec ton dermatologue. Un journal de bord sur cette durée — alimentation, stress, cycle — peut aider à identifier des déclencheurs récurrents.`;
+          } else if (pctPos !== null && pctPos >= 80) {
+            conseil = "Un mois majoritairement stable ou calme pour ta peau : c'est un beau signal. Si tu as changé quelque chose récemment — alimentation, routine, traitement — c'est probablement la bonne direction.";
+          } else {
+            conseil = "Une peau qui fluctue sur un mois est souvent influencée par le cycle hormonal, le stress ou l'alimentation. Croiser ces données avec tes autres indicateurs peut révéler des patterns utiles.";
+          }
         } else {
-          conseil = "Une peau qui fluctue sur un mois est souvent influencée par le cycle hormonal, le stress ou l'alimentation. Croiser ces données avec tes autres indicateurs peut révéler des patterns utiles.";
-        }
-      } else {
-        if (pctPoussee >= 40) {
-          conseil = "Des poussées fréquentes méritent d'être notées et partagées avec ton dermatologue — elles peuvent signaler une inflammation systémique ou une réaction alimentaire. La peau est souvent le dernier organe à exprimer ce que l'intestin vit en premier.";
-        } else if (pctPos !== null && pctPos >= 80) {
-          conseil = "Ta peau est dans une bonne phase. C'est un bon moment pour observer ce qui fonctionne — alimentation, routines, niveau de stress — pour en garder la trace.";
-        } else {
-          conseil = "La peau réagit souvent avec un délai de 2 à 4 jours par rapport à ce qu'on mange ou vit. Regarder les journées d'avant une poussée peut révéler des déclencheurs.";
+          if (pctPoussee >= 40) {
+            conseil = "Des poussées fréquentes méritent d'être notées et partagées avec ton dermatologue — elles peuvent signaler une inflammation systémique ou une réaction alimentaire. La peau est souvent le dernier organe à exprimer ce que l'intestin vit en premier.";
+          } else if (pctPos !== null && pctPos >= 80) {
+            conseil = "Ta peau est dans une bonne phase. C'est un bon moment pour observer ce qui fonctionne — alimentation, routines, niveau de stress — pour en garder la trace.";
+          } else {
+            conseil = "La peau réagit souvent avec un délai de 2 à 4 jours par rapport à ce qu'on mange ou vit. Regarder les journées d'avant une poussée peut révéler des déclencheurs.";
+          }
         }
       }
-      return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
     }
 
-    return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}<br><span style="color:var(--text-mid)">💡 ${conseil}</span></div>`;
+    return `<div class="ichart-summary"><strong>${periodeLabel.charAt(0).toUpperCase() + periodeLabel.slice(1)}</strong> : ${constat}`
+      + (conseil ? `<br><span style="color:var(--text-mid)">💡 ${conseil}</span>` : '')
+      + `</div>`;
   }
 
   // ── Panneau 5 : Synthèse globale (croisant les briques) ─────────────────
@@ -7476,9 +7621,9 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
 
     // Corrélation Sommeil ↔ Peau — seuil adapté à la période
     const spDays = dts.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
-    if (spDays.length >= corrSeuil) {
+    if (spDays.length >= CORR_MIN_JOURS) {
       const rho = spearmanCorr(spDays.map(d=>byDate[d].sommeil), spDays.map(d=>byDate[d].peau));
-      if (rho !== null && rho >= 0.35) {
+      if (corrAffichable(spDays.length, rho) && rho > 0) {
         const conf = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
         const msg  = periode === 'mois'
           ? `😴 ↔ ✨ <strong>Sommeil & peau liés sur le mois</strong> — Sur ${spDays.length} jours avec les deux données, les meilleures nuits coïncident avec un état de peau plus calme (corrélation ${conf}). Une tendance qui se confirme sur la durée.`
@@ -7489,9 +7634,9 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
 
     // Corrélation Stress ↔ Transit
     const stDays = dts.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
-    if (stDays.length >= corrSeuil) {
+    if (stDays.length >= CORR_MIN_JOURS) {
       const rho = spearmanCorr(stDays.map(d=>byDate[d].stress), stDays.map(d=>byDate[d].transit));
-      if (rho !== null && Math.abs(rho) >= 0.35) {
+      if (corrAffichable(stDays.length, rho)) {
         const sens = rho < 0 ? "ton transit semble plus perturbé les jours de stress élevé" : "le stress élevé accompagne un transit plus rapide";
         const msg  = periode === 'mois'
           ? `😮‍💨 ↔ 🌿 <strong>Stress & transit liés sur le mois</strong> — Sur ${stDays.length} jours communs, ${sens}. Un pattern qui se répète sur un mois est un signal concret à mentionner à ton gastro-entérologue.`
@@ -7500,48 +7645,31 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       }
     }
 
-    // Corrélations cycle — calculées directement ici, affichées inline (pas de renvoi)
-    const settings = typeof cycleLoad === 'function' ? cycleLoad() : null;
-    if (settings && settings.active && settings.startDate) {
-      // Construire les entries dans le format attendu par getCycleInsights
-      const cycleEntries = [];
-      dts.forEach(ds => {
-        const d = byDate[ds];
-        if (d.peau   != null) cycleEntries.push({ type:'peau',    dateStr:ds, values:{ peau_etat:d.peau } });
-        if (d.transit!= null) cycleEntries.push({ type:'transit', dateStr:ds, values:{ transit_etat:d.transit } });
-        if (d.stress  > 0)   cycleEntries.push({ type:'stress',  dateStr:ds, values:{ stress:d.stress } });
-      });
-
-      if (typeof getCycleInsights === 'function' && cycleEntries.length >= 4) {
-        const cycleIns = getCycleInsights(cycleEntries);
-        cycleIns.forEach(ins => {
-          // Reformuler inline sans mention d'une section externe
-          lines.push(`${ins.icon} <strong>${ins.tag}</strong> — ${ins.text}`);
-        });
-        if (cycleIns.length === 0) {
-          // Cycle actif mais pas encore assez de données par phase
-          lines.push(`🌸 <strong>Suivi cycle actif</strong> — Pas encore assez de données par phase pour identifier des tendances. Continue à noter jour par jour — les patterns apparaissent en général après un ou deux cycles complets.`);
-        }
-      } else {
-        lines.push(`🌸 <strong>Suivi cycle actif</strong> — Continue à remplir ton journal quotidiennement pour que Nara puisse croiser tes données avec les phases de ton cycle.`);
+    // Cycle : simple renvoi vers la section dédiée « Cycle & corrélations »
+    // (ses tendances par phase sont calculées sur tout l'historique, pas sur le mois affiché).
+    let cycleRenvoi = '';
+    try {
+      const settingsC = typeof cycleLoad === 'function' ? cycleLoad() : null;
+      if (settingsC && settingsC.active && settingsC.startDate
+          && typeof getCycleInsights === 'function' && getCycleInsights([]).length > 0) {
+        cycleRenvoi = `🌸 <strong>Suivi du cycle</strong> — Les tendances par phase de cycle sont dans la section « Cycle &amp; corrélations », calculées sur tout ton historique.`;
       }
-    }
+    } catch (e) {}
+
+    const ligne = l => `<div style="font-size:0.78rem;color:var(--text-dark);line-height:1.55;padding:8px 0;border-bottom:1px solid var(--oat)">${l}</div>`;
 
     if (lines.length === 0) {
-      const seuilLabel = periode === 'mois' ? '14 jours' : '7 jours';
       return `<div class="ichart-panel"><div class="ichart-card">
         <div class="ichart-header"><span class="ichart-title">${titre}</span></div>
         <div class="ichart-empty" style="padding:24px 0 16px">
-          Continue à remplir ton journal — les corrélations entre tes indicateurs apparaîtront ici dès ${seuilLabel} de données croisées.
-        </div>
+          Continue à remplir ton journal — les corrélations entre tes indicateurs apparaîtront ici dès ${CORR_MIN_JOURS} jours de données croisées.
+        </div>${cycleRenvoi ? `<div style="margin-top:4px">${ligne(cycleRenvoi)}</div>` : ''}
       </div></div>`;
     }
 
     return `<div class="ichart-panel"><div class="ichart-card">
       <div class="ichart-header"><span class="ichart-title">${titre}</span></div>
-      <div style="margin-top:4px">${lines.map(l =>
-        `<div style="font-size:0.78rem;color:var(--text-dark);line-height:1.55;padding:8px 0;border-bottom:1px solid var(--oat)">${l}</div>`
-      ).join('')}</div>
+      <div style="margin-top:4px">${lines.concat(cycleRenvoi ? [cycleRenvoi] : []).map(ligne).join('')}</div>
       <div style="font-size:0.65rem;color:var(--text-light);margin-top:10px;font-style:italic">
         Ces tendances sont des observations sur tes propres données — pas des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin ou gastro-entérologue.
       </div>
@@ -7555,41 +7683,22 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
                          'Stress /5', 'Humeur', 5, 3);
   const p4 = panel4Peau();
 
-  // Récupérer allEntries (historique complet) pour le panneau synthèse.
-  // Le cycle a besoin de tout l'historique pour avoir assez de points par phase,
-  // indépendamment de la période affichée dans le carrousel (7j ou 30j).
-  // allEntries vient de renderInsightsPage via la closure (window scope) —
-  // si indisponible, on reconstruit depuis localStorage.
-  let _allEntriesForSynthese = [];
-  try {
-    if (typeof allEntries !== 'undefined' && allEntries.length > 0) {
-      _allEntriesForSynthese = allEntries;
-    } else {
-      // Reconstruction depuis localStorage si allEntries n'est pas dans le scope
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (!key || !key.startsWith('nara_journal_')) continue;
-        const ds = key.replace('nara_journal_', '');
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) continue;
-        try {
-          const j = JSON.parse(localStorage.getItem(key));
-          if (!j) continue;
-          if (j.transit !== null && j.transit !== undefined)
-            _allEntriesForSynthese.push({ type:'transit', dateStr:ds, values:{ transit_etat:j.transit, ballonnements:j.ballonnements||0 }});
-          if (j.peau !== null && j.peau !== undefined)
-            _allEntriesForSynthese.push({ type:'peau', dateStr:ds, values:{ peau_etat:j.peau }});
-          if (j.stress > 0 || j.energie > 0 || j.sommeil > 0)
-            _allEntriesForSynthese.push({ type:'stress', dateStr:ds, values:{ stress:j.stress||0, energie:j.energie||0, sommeil:j.sommeil||0 }});
-        } catch {}
-      }
-    }
-  } catch {}
-  const p5 = panel5Synthese(_allEntriesForSynthese);
-
-
-
-  // Injecter les résumés dans les panneaux
-
+  // Synthèse : uniquement en vue Mois, calculée sur les SEULS jours du mois affiché.
+  // (La vue Semaine n'a plus de panneau Synthèse : le bloc « Cette semaine en résumé » la remplace.)
+  let p5 = '';
+  if (isMois) {
+    const entriesPeriode = [];
+    days.forEach(d => {
+      if (d.stress !== null || d.energie !== null || d.sommeil !== null)
+        entriesPeriode.push({ type:'stress',  dateStr:d.ds, values:{ stress:d.stress||0, energie:d.energie||0, sommeil:d.sommeil||0 }});
+      if (d.peau !== null)
+        entriesPeriode.push({ type:'peau',    dateStr:d.ds, values:{ peau_etat:d.peau }});
+      if (d.transit !== null)
+        entriesPeriode.push({ type:'transit', dateStr:d.ds, values:{ transit_etat:d.transit, ballonnements:d.ballonnements||0 }});
+    });
+    p5 = panel5Synthese(entriesPeriode);
+  }
+  const panneaux = [p1, p2, p3, p4].concat(isMois ? [p5] : []);
 
   // Message "pas de données" si période vide
   if (!hasAnyData) {
@@ -7598,28 +7707,47 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
     </div>`;
   }
 
+  const dots = panneaux.map((_, i) =>
+    `<div class="ichart-dot${i === 0 ? ' active' : ''}" onclick="ichartGoTo(${i},'${carouselSuffix}')"></div>`).join('');
+
   return navHtml + `
     <div class="ichart-carousel" id="ichart-carousel${carouselSuffix}">
       <div class="ichart-track" id="ichart-track${carouselSuffix}" onscroll="ichartHandleScroll(this,'${carouselSuffix}')">
-        ${p1}${p2}${p3}${p4}${p5}
+        ${panneaux.join('')}
       </div>
       <div class="ichart-dots" id="ichart-dots${carouselSuffix}">
-        <div class="ichart-dot active" onclick="ichartGoTo(0,'${carouselSuffix}')"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(1,'${carouselSuffix}')"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(2,'${carouselSuffix}')"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(3,'${carouselSuffix}')"></div>
-        <div class="ichart-dot"        onclick="ichartGoTo(4,'${carouselSuffix}')"></div>
+        ${dots}
       </div>
     </div>`;
 }
 
 // Navigation carrousel Insights — gère les deux carrousels (7j et 30j) via suffix
 const _ichartIdx = {};
+
+// Hauteur de la piste = hauteur du panneau affiché
+// (sans cela, tous les panneaux prennent la hauteur du plus grand et un grand vide apparaît sous les cartes courtes).
+function ichartFitHeight(suffix, idx) {
+  suffix = suffix || '';
+  const track = document.getElementById('ichart-track' + suffix);
+  if (!track || !track.children || !track.children.length) return;
+  if (idx === undefined || idx === null) {
+    const w = track.offsetWidth;
+    idx = w ? Math.round(track.scrollLeft / w) : 0;
+  }
+  idx = Math.max(0, Math.min(track.children.length - 1, idx));
+  const panel = track.children[idx];
+  const h = panel ? panel.offsetHeight : 0;
+  if (h > 0) track.style.height = h + 'px';
+}
+function ichartFitAll() { ichartFitHeight(''); ichartFitHeight('-30'); }
+window.addEventListener('resize', ichartFitAll);
+
 function ichartGoTo(idx, suffix) {
   suffix = suffix || '';
   const track = document.getElementById('ichart-track' + suffix);
   if (!track) return;
   _ichartIdx[suffix] = idx;
+  ichartFitHeight(suffix, idx);
   track.scrollTo({ left: idx * track.offsetWidth, behavior: 'smooth' });
   document.querySelectorAll(`#ichart-dots${suffix} .ichart-dot`)
     .forEach((d,i) => d.classList.toggle('active', i===idx));
@@ -7630,6 +7758,7 @@ function ichartHandleScroll(track, suffix) {
   clearTimeout(_ichartScrollTimers[suffix]);
   _ichartScrollTimers[suffix] = setTimeout(() => {
     const idx = Math.round(track.scrollLeft / track.offsetWidth);
+    ichartFitHeight(suffix, idx);
     if (idx !== _ichartIdx[suffix]) {
       _ichartIdx[suffix] = idx;
       document.querySelectorAll(`#ichart-dots${suffix} .ichart-dot`)
@@ -7812,7 +7941,7 @@ function computeBrique4() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function computeBrique13() {
-  const SEUIL_MIN = 7;
+  const SEUIL_MIN = CORR_MIN_JOURS;
   const paires    = [];
 
   for (let i = 0; i < 30; i++) {
@@ -7831,7 +7960,7 @@ function computeBrique13() {
   if (paires.length < SEUIL_MIN) return null;
 
   const rho = spearmanCorr(paires.map(p => p.som), paires.map(p => p.hum));
-  if (rho === null || Math.abs(rho) < 0.30) return null;
+  if (!corrAffichable(paires.length, rho)) return null;
 
   const n         = paires.length;
   const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
@@ -7858,7 +7987,7 @@ function computeBrique13() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function computeBrique12() {
-  const SEUIL_MIN = 7;
+  const SEUIL_MIN = CORR_MIN_JOURS;
   const results   = [];
   const pSom = [], pEner = [];
 
@@ -7877,7 +8006,7 @@ function computeBrique12() {
   }
 
   function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
-    if (rho === null || Math.abs(rho) < 0.30) return null;
+    if (!corrAffichable(n, rho)) return null;
     const sens      = rho > 0 ? sensPos : sensNeg;
     const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
     return `<div class="insight-real-card" style="border-left-color:${couleur}">
@@ -7989,7 +8118,7 @@ function computeBrique12() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function computeBrique11() {
-  const SEUIL_MIN = 7;
+  const SEUIL_MIN = CORR_MIN_JOURS;
   const results   = [];
   const p = { doul:[], peau:[], som:[], ener:[] };
 
@@ -8010,7 +8139,7 @@ function computeBrique11() {
   }
 
   function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
-    if (rho === null || Math.abs(rho) < 0.30) return null;
+    if (!corrAffichable(n, rho)) return null;
     const sens      = rho > 0 ? sensPos : sensNeg;
     const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
     return `<div class="insight-real-card" style="border-left-color:${couleur}">
@@ -8137,7 +8266,7 @@ function computeBrique11() {
 // BRIQUE 10 — Transit ressenti × Indicateurs multiples
 
 function computeBrique10() {
-  const SEUIL_MIN = 7;
+  const SEUIL_MIN = CORR_MIN_JOURS;
   const results   = [];
 
   // Construire les paires sur les 30 derniers jours
@@ -8164,7 +8293,7 @@ function computeBrique10() {
 
   // Helper commun (même signature que computeBrique9)
   function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
-    if (rho === null || Math.abs(rho) < 0.30) return null;
+    if (!corrAffichable(n, rho)) return null;
     const sens      = rho > 0 ? sensPos : sensNeg;
     const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
     return `<div class="insight-real-card" style="border-left-color:${couleur}">
@@ -8331,7 +8460,7 @@ function computeBrique10() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function computeBrique9() {
-  const SEUIL_MIN = 7;
+  const SEUIL_MIN = CORR_MIN_JOURS;
   const results   = [];
 
   // Construire les paires sur les 30 derniers jours depuis localStorage
@@ -8375,7 +8504,7 @@ function computeBrique9() {
 
   // Helper réutilisé depuis computeBrique6 (même pattern)
   function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
-    if (rho === null || Math.abs(rho) < 0.30) return null;
+    if (!corrAffichable(n, rho)) return null;
     const sens      = rho > 0 ? sensPos : sensNeg;
     const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
     return `<div class="insight-real-card" style="border-left-color:${couleur}">
@@ -8547,7 +8676,7 @@ function computeBrique9() {
 // BRIQUE 6/7/8 — Hydratation × Indicateurs multiples
 
 function computeBrique6(byDate, seuilMin) {
-  seuilMin = seuilMin || 7;
+  seuilMin = CORR_MIN_JOURS;      // règle unique (le paramètre reçu est ignoré)
   const results = [];
 
   // Construire toutes les paires hyd × indicateur sur les 30 derniers jours
@@ -8588,7 +8717,7 @@ function computeBrique6(byDate, seuilMin) {
 
   // Helper : bloc insight à partir d'un rho Spearman
   function bloc(emoji, n, rho, sensPos, sensNeg, note, couleur) {
-    if (rho === null || Math.abs(rho) < 0.30) return null;
+    if (!corrAffichable(n, rho)) return null;
     const sens      = rho > 0 ? sensPos : sensNeg;
     const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
     return `<div class="insight-real-card" style="border-left-color:${couleur}">
@@ -8768,11 +8897,11 @@ function computeBrique2(allEntries) {
 
   // ── Paire 1 : Sommeil ↔ Peau ─────────────────────────────────────────────
   const somPeau = dates.filter(d => byDate[d].sommeil != null && byDate[d].sommeil > 0 && byDate[d].peau != null);
-  if (somPeau.length >= 7) {
+  if (somPeau.length >= CORR_MIN_JOURS) {
     const xs = somPeau.map(d => byDate[d].sommeil);
     const ys = somPeau.map(d => byDate[d].peau);
     const rho = spearmanCorr(xs, ys);
-    if (rho !== null && Math.abs(rho) >= 0.35) {
+    if (corrAffichable(somPeau.length, rho)) {
       const sens     = rho > 0 ? 'tendent à s\'améliorer ensemble' : 'évoluent en sens inverse';
       const intensite = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
       const svg       = renderBrique2Chart(xs, ys, 'Sommeil', 'Peau', somPeau, '#DAE9FA', '#EAC4AF');
@@ -8795,11 +8924,11 @@ function computeBrique2(allEntries) {
   // ── Paire 2 : Stress ↔ Transit ────────────────────────────────────────────
   // Transit : 0=lent, 1=normal, 2=rapide → inverser pour corrélation (stress haut = transit perturbé)
   const stressTrans = dates.filter(d => byDate[d].stress != null && byDate[d].stress > 0 && byDate[d].transit != null);
-  if (stressTrans.length >= 7) {
+  if (stressTrans.length >= CORR_MIN_JOURS) {
     const xs = stressTrans.map(d => byDate[d].stress);
     const ys = stressTrans.map(d => byDate[d].transit);
     const rho = spearmanCorr(xs, ys);
-    if (rho !== null && Math.abs(rho) >= 0.35) {
+    if (corrAffichable(stressTrans.length, rho)) {
       const sens = rho < 0
         ? 'ton transit semble plus perturbé quand ton stress monte'
         : 'un stress plus élevé s\'accompagne d\'un transit plus rapide';
@@ -8823,11 +8952,11 @@ function computeBrique2(allEntries) {
 
   // ── Paire 3 : Énergie ↔ Stress (bonus si données suffisantes) ────────────
   const energieStress = dates.filter(d => byDate[d].energie != null && byDate[d].energie > 0 && byDate[d].stress != null && byDate[d].stress > 0);
-  if (energieStress.length >= 10) {
+  if (energieStress.length >= CORR_MIN_JOURS) {
     const xs = energieStress.map(d => byDate[d].energie);
     const ys = energieStress.map(d => byDate[d].stress);
     const rho = spearmanCorr(xs, ys);
-    if (rho !== null && rho <= -0.45) { // énergie haute = stress bas attendu
+    if (corrAffichable(energieStress.length, rho) && rho < 0) { // énergie haute = stress bas attendu
       const jours = energieStress.length;
       results.push(`
         <div class="insight-real-card" style="border-left-color:#7c3aed">
@@ -8863,6 +8992,8 @@ function diagBrique2() {
       if (j.peau  !== null && j.peau  !== undefined) byDate[ds].peau    = j.peau;
       if (j.transit !== null && j.transit !== undefined) byDate[ds].transit = j.transit;
       if (j.ballonnements > 0) byDate[ds].ballonnements = j.ballonnements;
+      if (j.douleurs !== undefined && j.douleurs !== null) byDate[ds].douleurs = j.douleurs;   // 0 = Aucune, 1 = Légères, 2 = Intenses
+      if (j.humeur !== undefined && j.humeur !== null) byDate[ds].humeur = j.humeur;           // 0 = Bonne, 1 = Neutre, 2 = Basse
       // Hydratation : 'lt1'→0, '1to2'→1, 'gt2'→2
       const HYD = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
       if (j.hydratation != null && HYD[j.hydratation] !== undefined) byDate[ds].hydratation = HYD[j.hydratation];
@@ -8874,39 +9005,40 @@ function diagBrique2() {
 
   // ── Brique 2 ──────────────────────────────────────────────────────────────
   const sp = dates.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
-  const spRho = sp.length >= 7 ? spearmanCorr(sp.map(d=>byDate[d].sommeil), sp.map(d=>byDate[d].peau)) : null;
+  const spRho = sp.length >= CORR_MIN_JOURS ? spearmanCorr(sp.map(d=>byDate[d].sommeil), sp.map(d=>byDate[d].peau)) : null;
   result.paires.push({
     nom: 'B2 — Sommeil ↔ Peau',
-    jours: sp.length, seuil: 7,
-    declenche: spRho !== null && Math.abs(spRho) >= 0.35,
-    raison: sp.length < 7 ? `${sp.length}/7 jours communs` :
+    jours: sp.length, seuil: CORR_MIN_JOURS,
+    declenche: corrAffichable(sp.length, spRho),
+    raison: sp.length < CORR_MIN_JOURS ? `Jours communs insuff. : ${sp.length} sur ${CORR_MIN_JOURS} requis — masquée` :
       spRho === null ? 'Calcul impossible' :
-      Math.abs(spRho) < 0.35 ? `Corr. trop faible (${(spRho*100).toFixed(0)}%)` :
-      `✅ Corr. ${(spRho*100).toFixed(0)}%`
+      !corrAffichable(sp.length, spRho) ? `Corr. ${(Math.abs(spRho)*100).toFixed(0)}% sous le seuil ${Math.round(corrSeuilRho(sp.length)*100)}% (${sp.length}j) — masquée` :
+      `Corr. ${(Math.abs(spRho)*100).toFixed(0)}% sur ${sp.length}j — affichée`
   });
 
   const st = dates.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
-  const stRho = st.length >= 7 ? spearmanCorr(st.map(d=>byDate[d].stress), st.map(d=>byDate[d].transit)) : null;
+  const stRho = st.length >= CORR_MIN_JOURS ? spearmanCorr(st.map(d=>byDate[d].stress), st.map(d=>byDate[d].transit)) : null;
   result.paires.push({
     nom: 'B2 — Stress ↔ Transit',
-    jours: st.length, seuil: 7,
-    declenche: stRho !== null && Math.abs(stRho) >= 0.35,
-    raison: st.length < 7 ? `${st.length}/7 jours communs` :
+    jours: st.length, seuil: CORR_MIN_JOURS,
+    declenche: corrAffichable(st.length, stRho),
+    raison: st.length < CORR_MIN_JOURS ? `Jours communs insuff. : ${st.length} sur ${CORR_MIN_JOURS} requis — masquée` :
       stRho === null ? 'Calcul impossible' :
-      Math.abs(stRho) < 0.35 ? `Corr. trop faible (${(Math.abs(stRho)*100).toFixed(0)}%)` :
-      `✅ Corr. ${(Math.abs(stRho)*100).toFixed(0)}%`
+      !corrAffichable(st.length, stRho) ? `Corr. ${(Math.abs(stRho)*100).toFixed(0)}% sous le seuil ${Math.round(corrSeuilRho(st.length)*100)}% (${st.length}j) — masquée` :
+      `Corr. ${(Math.abs(stRho)*100).toFixed(0)}% sur ${st.length}j — affichée`
   });
 
   const es = dates.filter(d => byDate[d].energie > 0 && byDate[d].stress > 0);
-  const esRho = es.length >= 10 ? spearmanCorr(es.map(d=>byDate[d].energie), es.map(d=>byDate[d].stress)) : null;
+  const esRho = es.length >= CORR_MIN_JOURS ? spearmanCorr(es.map(d=>byDate[d].energie), es.map(d=>byDate[d].stress)) : null;
   result.paires.push({
     nom: 'B2 — Énergie ↔ Stress',
-    jours: es.length, seuil: 10,
-    declenche: esRho !== null && esRho <= -0.45,
-    raison: es.length < 10 ? `${es.length}/10 jours communs` :
+    jours: es.length, seuil: CORR_MIN_JOURS,
+    declenche: corrAffichable(es.length, esRho) && esRho < 0,
+    raison: es.length < CORR_MIN_JOURS ? `Jours communs insuff. : ${es.length} sur ${CORR_MIN_JOURS} requis — masquée` :
       esRho === null ? 'Calcul impossible' :
-      esRho > -0.45 ? `Corr. inverse insuff. (${(esRho*100).toFixed(0)}%)` :
-      `✅ Corr. ${(esRho*100).toFixed(0)}%`
+      !corrAffichable(es.length, esRho) ? `Corr. ${(Math.abs(esRho)*100).toFixed(0)}% sous le seuil ${Math.round(corrSeuilRho(es.length)*100)}% (${es.length}j) — masquée` :
+      esRho >= 0 ? `Corr. positive (${(esRho*100).toFixed(0)}%) — non affichée (seul le lien inverse est présenté)` :
+      `Corr. ${(Math.abs(esRho)*100).toFixed(0)}% sur ${es.length}j — affichée`
   });
 
   // ── Brique 4 ──────────────────────────────────────────────────────────────
@@ -8992,20 +9124,20 @@ function diagBrique2() {
     }
     const lines = [];
     // Fréquence
-    if (pairesFreq.length < SEUIL_MIN) {
-      lines.push(`B6 — Hydratation↔Fréquence selles : ⏳ Jours communs insuff. (${pairesFreq.length}/${SEUIL_MIN})`);
+    if (pairesFreq.length < CORR_MIN_JOURS) {
+      lines.push(`B6 — Hydratation↔Fréquence selles : ⏳ Jours communs insuff. (${pairesFreq.length}/${CORR_MIN_JOURS})`);
     } else {
       const rhoF = spearmanCorr(pairesFreq.map(p=>p.hyd), pairesFreq.map(p=>p.freq));
-      lines.push(rhoF !== null && Math.abs(rhoF) >= 0.30
+      lines.push(rhoF !== null && corrAffichable(pairesFreq.length, rhoF)
         ? `B6 — Hydratation↔Fréquence selles : ✅ Corr. ${(Math.abs(rhoF)*100).toFixed(0)}% sur ${pairesFreq.length}j (${rhoF>0?'hyd↑→selles+':'hyd↓→selles-'})`
         : `B6 — Hydratation↔Fréquence selles : ➖ Corr. insuff. (${rhoF!==null?(Math.abs(rhoF)*100).toFixed(0)+'%':'N/A'}) sur ${pairesFreq.length}j`);
     }
     // Bristol
-    if (pairesBristol.length < SEUIL_MIN) {
-      lines.push(`B6 — Hydratation↔Bristol : ⏳ Jours communs insuff. (${pairesBristol.length}/${SEUIL_MIN}, pense à renseigner l'échelle Bristol)`);
+    if (pairesBristol.length < CORR_MIN_JOURS) {
+      lines.push(`B6 — Hydratation↔Bristol : ⏳ Jours communs insuff. (${pairesBristol.length}/${CORR_MIN_JOURS}, pense à renseigner l'échelle Bristol)`);
     } else {
       const rhoB = spearmanCorr(pairesBristol.map(p=>p.hyd), pairesBristol.map(p=>p.bristol));
-      lines.push(rhoB !== null && Math.abs(rhoB) >= 0.30
+      lines.push(rhoB !== null && corrAffichable(pairesBristol.length, rhoB)
         ? `B6 — Hydratation↔Bristol : ✅ Corr. ${(Math.abs(rhoB)*100).toFixed(0)}% sur ${pairesBristol.length}j (${rhoB>0?'hyd élevée→selles+fluides':'hyd faible→selles+dures'})`
         : `B6 — Hydratation↔Bristol : ➖ Corr. insuff. (${rhoB!==null?(Math.abs(rhoB)*100).toFixed(0)+'%':'N/A'}) sur ${pairesBristol.length}j`);
     }
@@ -9019,11 +9151,11 @@ function diagBrique2() {
       if (hyd !== undefined && hyd !== null && peau !== undefined && peau !== null)
         pairesPeau7.push({ hyd, peau });
     }
-    if (pairesPeau7.length < SEUIL_MIN) {
-      lines.push(`B7 — Hydratation↔Peau : ⏳ Jours communs insuff. (${pairesPeau7.length}/${SEUIL_MIN})`);
+    if (pairesPeau7.length < CORR_MIN_JOURS) {
+      lines.push(`B7 — Hydratation↔Peau : ⏳ Jours communs insuff. (${pairesPeau7.length}/${CORR_MIN_JOURS})`);
     } else {
       const rhoP = spearmanCorr(pairesPeau7.map(p=>p.hyd), pairesPeau7.map(p=>p.peau));
-      lines.push(rhoP !== null && Math.abs(rhoP) >= 0.30
+      lines.push(rhoP !== null && corrAffichable(pairesPeau7.length, rhoP)
         ? `B7 — Hydratation↔Peau : ✅ Corr. ${(Math.abs(rhoP)*100).toFixed(0)}% sur ${pairesPeau7.length}j (${rhoP>0?'hyd élevée→peau+calme':'hyd faible→peau+difficile'})`
         : `B7 — Hydratation↔Peau : ➖ Corr. insuff. (${rhoP!==null?(Math.abs(rhoP)*100).toFixed(0)+'%':'N/A'}) sur ${pairesPeau7.length}j`);
     }
@@ -9036,11 +9168,11 @@ function diagBrique2() {
       if (hyd !== undefined && hyd !== null && tr !== undefined && tr !== null)
         pairesTransit7.push({ hyd, transit: tr });
     }
-    if (pairesTransit7.length < SEUIL_MIN) {
-      lines.push(`B8a — Hydratation↔Transit ressenti : ⏳ Jours communs insuff. (${pairesTransit7.length}/${SEUIL_MIN})`);
+    if (pairesTransit7.length < CORR_MIN_JOURS) {
+      lines.push(`B8a — Hydratation↔Transit ressenti : ⏳ Jours communs insuff. (${pairesTransit7.length}/${CORR_MIN_JOURS})`);
     } else {
       const rhoT = spearmanCorr(pairesTransit7.map(p=>p.hyd), pairesTransit7.map(p=>p.transit));
-      lines.push(rhoT !== null && Math.abs(rhoT) >= 0.30
+      lines.push(rhoT !== null && corrAffichable(pairesTransit7.length, rhoT)
         ? `B8a — Hydratation↔Transit ressenti : ✅ Corr. ${(Math.abs(rhoT)*100).toFixed(0)}% sur ${pairesTransit7.length}j (${rhoT>0?'hyd↑→transit+fluide':'hyd↓→transit+lent'})`
         : `B8a — Hydratation↔Transit ressenti : ➖ Corr. insuff. (${rhoT!==null?(Math.abs(rhoT)*100).toFixed(0)+'%':'N/A'}) sur ${pairesTransit7.length}j`);
     }
@@ -9053,11 +9185,11 @@ function diagBrique2() {
       if (hyd !== undefined && hyd !== null && doul !== undefined && doul !== null)
         pairesDoul7.push({ hyd, douleurs: doul });
     }
-    if (pairesDoul7.length < SEUIL_MIN) {
-      lines.push(`B8b — Hydratation↔Douleurs : ⏳ Jours communs insuff. (${pairesDoul7.length}/${SEUIL_MIN})`);
+    if (pairesDoul7.length < CORR_MIN_JOURS) {
+      lines.push(`B8b — Hydratation↔Douleurs : ⏳ Jours communs insuff. (${pairesDoul7.length}/${CORR_MIN_JOURS})`);
     } else {
       const rhoD = spearmanCorr(pairesDoul7.map(p=>p.hyd), pairesDoul7.map(p=>p.douleurs));
-      lines.push(rhoD !== null && Math.abs(rhoD) >= 0.30
+      lines.push(rhoD !== null && corrAffichable(pairesDoul7.length, rhoD)
         ? `B8b — Hydratation↔Douleurs : ✅ Corr. ${(Math.abs(rhoD)*100).toFixed(0)}% sur ${pairesDoul7.length}j (${rhoD<0?'hyd↑→moins douleurs':'hyd↓→plus douleurs'})`
         : `B8b — Hydratation↔Douleurs : ➖ Corr. insuff. (${rhoD!==null?(Math.abs(rhoD)*100).toFixed(0)+'%':'N/A'}) sur ${pairesDoul7.length}j`);
     }
@@ -9079,19 +9211,19 @@ function diagBrique2() {
       }
     }
     const lines = [];
-    if (pS.length < 7) {
-      lines.push('B9 — Stress↔Sommeil : ⏳ Jours communs insuff. (' + pS.length + '/7)');
+    if (pS.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Sommeil : ⏳ Jours communs insuff. (' + pS.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(pS.map(p=>p.stress), pS.map(p=>p.sommeil));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(pS.length, rho)
         ? 'B9 — Stress↔Sommeil : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pS.length + 'j (' + (rho<0?'stress↑→sommeil↓':'stress↑→sommeil↑ (inattendu)') + ')'
         : 'B9 — Stress↔Sommeil : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pS.length + 'j');
     }
-    if (pH.length < 7) {
-      lines.push('B9 — Stress↔Humeur : ⏳ Jours communs insuff. (' + pH.length + '/7)');
+    if (pH.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Humeur : ⏳ Jours communs insuff. (' + pH.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(pH.map(p=>p.stress), pH.map(p=>p.humeur));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(pH.length, rho)
         ? 'B9 — Stress↔Humeur : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pH.length + 'j (' + (rho<0?'stress↑→humeur↓':'stress↑→humeur↑ (inattendu)') + ')'
         : 'B9 — Stress↔Humeur : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pH.length + 'j');
     }
@@ -9103,11 +9235,11 @@ function diagBrique2() {
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.peau !== null && j.peau !== undefined) pPeau9.push({ stress: j.stress, peau: j.peau });
     }
-    if (pPeau9.length < 7) {
-      lines.push('B9 — Stress↔Peau : ⏳ Jours communs insuff. (' + pPeau9.length + '/7)');
+    if (pPeau9.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Peau : ⏳ Jours communs insuff. (' + pPeau9.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(pPeau9.map(p=>p.stress), pPeau9.map(p=>p.peau));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(pPeau9.length, rho)
         ? 'B9 — Stress↔Peau : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pPeau9.length + 'j (' + (rho<0?'stress↑→peau↓':'stress↑→peau↑ (inattendu)') + ')'
         : 'B9 — Stress↔Peau : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pPeau9.length + 'j');
     }
@@ -9119,11 +9251,11 @@ function diagBrique2() {
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.ballonnements > 0) pBal9.push({ stress: j.stress, ballonnements: j.ballonnements });
     }
-    if (pBal9.length < 7) {
-      lines.push('B9 — Stress↔Ballonnements : ⏳ Jours communs insuff. (' + pBal9.length + '/7)');
+    if (pBal9.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Ballonnements : ⏳ Jours communs insuff. (' + pBal9.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(pBal9.map(p=>p.stress), pBal9.map(p=>p.ballonnements));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(pBal9.length, rho)
         ? 'B9 — Stress↔Ballonnements : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pBal9.length + 'j (' + (rho>0?'stress↑→bal↑':'stress↑→bal↓ (inattendu)') + ')'
         : 'B9 — Stress↔Ballonnements : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pBal9.length + 'j');
     }
@@ -9135,11 +9267,11 @@ function diagBrique2() {
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.douleurs !== undefined && j.douleurs !== null) pDoul9.push({ stress: j.stress, douleurs: j.douleurs });
     }
-    if (pDoul9.length < 7) {
-      lines.push('B9 — Stress↔Douleurs : ⏳ Jours communs insuff. (' + pDoul9.length + '/7)');
+    if (pDoul9.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Douleurs : ⏳ Jours communs insuff. (' + pDoul9.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(pDoul9.map(p=>p.stress), pDoul9.map(p=>p.douleurs));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(pDoul9.length, rho)
         ? 'B9 — Stress↔Douleurs : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + pDoul9.length + 'j (' + (rho>0?'stress↑→douleurs↑':'stress↑→douleurs↓ (inattendu)') + ')'
         : 'B9 — Stress↔Douleurs : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + pDoul9.length + 'j');
     }
@@ -9160,29 +9292,29 @@ function diagBrique2() {
       } catch {}
     }
     // Présence selle
-    if (csOui.length < 7) {
-      lines.push('B9 — Stress↔Présence selle : ⏳ Jours communs insuff. (' + csOui.length + '/7)');
+    if (csOui.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Présence selle : ⏳ Jours communs insuff. (' + csOui.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(csOui.map(p=>p.stress), csOui.map(p=>p.selle));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(csOui.length, rho)
         ? 'B9 — Stress↔Présence selle : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + csOui.length + 'j (' + (rho>0?'stress↑→selle+probable':'stress↑→selle-probable') + ')'
         : 'B9 — Stress↔Présence selle : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + csOui.length + 'j');
     }
     // Bristol
-    if (csBristol.length < 7) {
-      lines.push('B9 — Stress↔Bristol : ⏳ Jours communs insuff. (' + csBristol.length + '/7, pense à renseigner l\'échelle Bristol)');
+    if (csBristol.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Bristol : ⏳ Jours communs insuff. (' + csBristol.length + '/' + CORR_MIN_JOURS + ', pense à renseigner l\'échelle Bristol)');
     } else {
       const rho = spearmanCorr(csBristol.map(p=>p.stress), csBristol.map(p=>p.bristol));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(csBristol.length, rho)
         ? 'B9 — Stress↔Bristol : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + csBristol.length + 'j (' + (rho>0?'stress↑→selles+fluides':'stress↑→selles+dures') + ')'
         : 'B9 — Stress↔Bristol : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + csBristol.length + 'j');
     }
     // Nombre de passages
-    if (csFreq.length < 7) {
-      lines.push('B9 — Stress↔Nb passages : ⏳ Jours communs insuff. (' + csFreq.length + '/7)');
+    if (csFreq.length < CORR_MIN_JOURS) {
+      lines.push('B9 — Stress↔Nb passages : ⏳ Jours communs insuff. (' + csFreq.length + '/' + CORR_MIN_JOURS + ')');
     } else {
       const rho = spearmanCorr(csFreq.map(p=>p.stress), csFreq.map(p=>p.freq));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(csFreq.length, rho)
         ? 'B9 — Stress↔Nb passages : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + csFreq.length + 'j (' + (rho>0?'stress↑→plus de passages':'stress↑→moins de passages') + ')'
         : 'B9 — Stress↔Nb passages : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + csFreq.length + 'j');
     }
@@ -9207,9 +9339,9 @@ function diagBrique2() {
     }
     const lines = [];
     const diagLine = (label, arr, pos, neg) => {
-      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      if (arr.length < CORR_MIN_JOURS) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/' + CORR_MIN_JOURS + ')'); return; }
       const rho = spearmanCorr(arr.map(p=>p.t), arr.map(p=>p.v));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(arr.length, rho)
         ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
         : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
     };
@@ -9229,10 +9361,10 @@ function diagBrique2() {
       try {
         const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
         if (!cal || !cal.yn) continue;
-        cOui.push({ t, selle: cal.yn === 'oui' ? 1 : 0 });
+        cOui.push({ t, v: cal.yn === 'oui' ? 1 : 0 });
         if (cal.yn === 'oui') {
-          if (cal.bristol != null) cBristol.push({ t, bristol: cal.bristol });
-          cFreq.push({ t, freq: cal.freq || 1 });
+          if (cal.bristol != null) cBristol.push({ t, v: cal.bristol });
+          cFreq.push({ t, v: cal.freq || 1 });
         }
       } catch {}
     }
@@ -9258,9 +9390,9 @@ function diagBrique2() {
     }
     const lines = [];
     const dl = (label, arr, pos, neg) => {
-      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      if (arr.length < CORR_MIN_JOURS) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/' + CORR_MIN_JOURS + ')'); return; }
       const rho = spearmanCorr(arr.map(x=>x.b), arr.map(x=>x.v));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(arr.length, rho)
         ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
         : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
     };
@@ -9278,10 +9410,10 @@ function diagBrique2() {
       try {
         const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
         if (!cal || !cal.yn) continue;
-        cBOui.push({ b: bVal, selle: cal.yn === 'oui' ? 1 : 0 });
+        cBOui.push({ b: bVal, v: cal.yn === 'oui' ? 1 : 0 });
         if (cal.yn === 'oui') {
-          if (cal.bristol != null) cBBristol.push({ b: bVal, bristol: cal.bristol });
-          cBFreq.push({ b: bVal, freq: cal.freq || 1 });
+          if (cal.bristol != null) cBBristol.push({ b: bVal, v: cal.bristol });
+          cBFreq.push({ b: bVal, v: cal.freq || 1 });
         }
       } catch {}
     }
@@ -9306,9 +9438,9 @@ function diagBrique2() {
     }
     const lines = [];
     const dl = (label, arr, pos, neg) => {
-      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      if (arr.length < CORR_MIN_JOURS) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/' + CORR_MIN_JOURS + ')'); return; }
       const rho = spearmanCorr(arr.map(p=>p.doul), arr.map(p=>p.v));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(arr.length, rho)
         ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
         : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
     };
@@ -9333,9 +9465,9 @@ function diagBrique2() {
       } catch {}
     }
     const dlC = (label, arr, keyA, keyB, pos, neg) => {
-      if (arr.length < 7) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/7)'); return; }
+      if (arr.length < CORR_MIN_JOURS) { lines.push(label + ' : ⏳ Jours insuff. (' + arr.length + '/' + CORR_MIN_JOURS + ')'); return; }
       const rho = spearmanCorr(arr.map(p=>p[keyA]), arr.map(p=>p[keyB]));
-      lines.push(rho !== null && Math.abs(rho) >= 0.30
+      lines.push(rho !== null && corrAffichable(arr.length, rho)
         ? label + ' : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + arr.length + 'j (' + (rho>0?pos:neg) + ')'
         : label + ' : ➖ Corr. insuff. (' + (rho!==null?(Math.abs(rho)*100).toFixed(0)+'%':'N/A') + ') sur ' + arr.length + 'j');
     };
@@ -9357,10 +9489,10 @@ function diagBrique2() {
       const hNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
       p.push({ som: j.sommeil, hum: hNum });
     }
-    if (p.length < 7) return 'B13 — Sommeil↔Humeur : ⏳ Jours communs insuff. (' + p.length + '/7)';
+    if (p.length < CORR_MIN_JOURS) return 'B13 — Sommeil↔Humeur : ⏳ Jours communs insuff. (' + p.length + '/' + CORR_MIN_JOURS + ')';
     const rho = spearmanCorr(p.map(x=>x.som), p.map(x=>x.hum));
     if (rho === null) return 'B13 — Sommeil↔Humeur : ➖ Calcul impossible';
-    return Math.abs(rho) >= 0.30
+    return corrAffichable(p.length, rho)
       ? 'B13 — Sommeil↔Humeur : ✅ Corr. ' + (Math.abs(rho)*100).toFixed(0) + '% sur ' + p.length + 'j (' + (rho>0?'som↑→humeur+positive':'som↑→humeur↓ (inattendu)') + ')'
       : 'B13 — Sommeil↔Humeur : ➖ Corr. insuff. (' + (Math.abs(rho)*100).toFixed(0) + '%) sur ' + p.length + 'j';
   })();
@@ -9388,14 +9520,20 @@ function diagBrique2() {
   })();
   cycleLines.forEach(l => allPaires.push({ nom: l, declenche: l.includes('✅') }));
 
+  // Mise en forme des lignes de corrélation : « masquée » + raison
+  const diagFmt = (str) => String(str)
+    .replace(/⏳ Jours (?:communs )?insuff\. \((\d+)\/(\d+)(?:,\s*([^)]*))?\)/, (m, n, req, hint) => `⏳ masquée : ${n} jours sur ${req} requis` + (hint ? ` (${hint})` : ''))
+    .replace(/➖ Corr\. insuff\. \((\d+)%\) sur (\d+)j/, (m, pct, n) => `➖ masquée : corr. ${pct}% sous le seuil ${Math.round(corrSeuilRho(+n) * 100)}% (${n}j)`);
+
   const triggered = allPaires.filter(p => p.declenche).length;
 
   const html = `<div style="font-family:'DM Sans',sans-serif;padding:16px;max-width:380px;max-height:70vh;overflow-y:auto">
-    <div style="font-size:1rem;font-weight:600;margin-bottom:8px">Diagnostic Briques 2 & 4</div>
+    <div style="font-size:1rem;font-weight:600;margin-bottom:8px">Diagnostic des corrélations</div>
+    <div style="font-size:0.68rem;color:#666;margin-bottom:8px;line-height:1.5">Règle d'affichage : au moins ${CORR_MIN_JOURS} jours communs et une corrélation ≥ seuil (${[14,18,20,25].map(n => n + ' j : ' + Math.round(corrSeuilRho(n)*100) + '%').join(' · ')}). ✅ affichée · ⏳ masquée (pas assez de jours) · ➖ masquée (corrélation sous le seuil).</div>
     <div style="font-size:0.7rem;color:#666;margin-bottom:10px">Journal : ${totalJours} jours · 30j comparaison pour B4</div>
     ${allPaires.map(p => `
       <div style="padding:8px 0;border-bottom:1px solid #eee">
-        <div style="font-weight:500;font-size:0.78rem">${p.nom}</div>
+        <div style="font-weight:500;font-size:0.78rem">${diagFmt(p.nom)}</div>
         ${p.raison !== undefined ? `<div style="font-size:0.68rem;margin-top:2px;color:${p.declenche?'#4a7c4e':'#888'}">
           ${p.declenche ? '✅' : ((p.raison||'').includes('insuff') ? '⏳' : '➖')} ${p.raison}
         </div>` : ''}

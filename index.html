@@ -1577,6 +1577,7 @@ if (typeof supabase === 'undefined') {
   .suivi-date-required {
     font-size: 0.7rem; color: #dc2626; margin-left: 4px;
   }
+  .suivi-form-hint { font-size: 0.72rem; color: var(--text-light); line-height: 1.5; margin-top: 6px; }
   .suivi-form-actions {
     display: flex; gap: 8px; margin-top: 16px;
   }
@@ -1659,6 +1660,17 @@ if (typeof supabase === 'undefined') {
   .ins-arrow-down-pos { color: #4a9960; font-size: 0.9rem; } /* baisse positive (stress↓) */
   .ins-arrow-down-neg { color: #c0392b; font-size: 0.9rem; } /* baisse négative (énergie↓) */
   .ins-wave-stable    { color: #5b9bd5; font-size: 0.88rem; } /* stable */
+  .ins-arrow-soft     { color: #c88756; font-size: 0.9rem; } /* « moins bien » : orange doux de la palette (pas de rouge) */
+
+  /* Comparaison avant / après « Mes nouveaux suivis » */
+  .b1-what  { font-size: 0.74rem; color: var(--text-light); margin-bottom: 6px; line-height: 1.4; }
+  .b1-rows  { margin-top: 2px; }
+  .b1-row   { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+              padding: 7px 0; border-bottom: 1px solid var(--oat); font-size: 0.82rem;
+              color: var(--text-dark); line-height: 1.4; }
+  .b1-rows .b1-row:last-child { border-bottom: none; }
+  .b1-none  { font-size: 0.82rem; color: var(--text-mid); line-height: 1.5; padding: 4px 0; }
+  .b1-note  { font-size: 0.68rem; color: var(--text-light); margin-top: 8px; }
 
   /* Niveau 3 — Blocs thématiques */
   .ins-theme-block {
@@ -6758,6 +6770,234 @@ function handlePdfReport() {
   showToast('Rapport PDF en pr\u00e9paration\u2026 \uD83D\uDCC4');
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// BRIQUE 1 — Comparaison avant / après « Mes nouveaux suivis »
+// • Fenêtre : jusqu'à 56 jours (8 semaines) avant et après le début du suivi.
+//     - suivi daté au jour (YYYY-MM-DD) : « avant » jusqu'à la veille, « après » à partir du jour de début ;
+//     - ancien suivi (YYYY-MM)          : le mois de démarrage est exclu des deux côtés.
+// • Minimum : 14 jours renseignés de chaque côté, pour chaque indicateur.
+// • Un écart n'est présenté que s'il est notable ET peu probable par hasard (Mann-Whitney, p < 0,01).
+// • 11 indicateurs : transit (ressenti), passages/jour, Bristol, ballonnements, douleurs, peau,
+//   sommeil, énergie, stress, humeur, hydratation.
+// • Pas assez de données → rien n'est affiché (aucun message d'attente).
+// ══════════════════════════════════════════════════════════════════════════════
+const B1_FENETRE = 56, B1_MIN_JOURS = 14, B1_P_MAX = 0.01;
+
+// kind : 'pct' (part de jours / de selles) · 'avg' (moyenne) ; good : 'up' · 'down' · 'normal'
+// seuil : écart minimal « notable » (points de % pour 'pct', unités de l'échelle pour 'avg')
+const B1_IND = [
+  { key: 'transit',       label: 'Transit',           kind: 'pct', seuil: 15,   good: 'up',     suffixe: ' de jours « normal »' },
+  { key: 'passages',      label: 'Passages par jour', kind: 'avg', seuil: 0.25, good: 'normal', suffixe: '' },
+  { key: 'bristol',       label: 'Bristol',           kind: 'pct', seuil: 15,   good: 'up',     suffixe: ' de selles de type 3-4' },
+  { key: 'ballonnements', label: 'Ballonnements',     kind: 'avg', seuil: 0.5,  good: 'down',   suffixe: ' /5' },
+  { key: 'douleurs',      label: 'Douleurs',          kind: 'avg', seuil: 0.25, good: 'down',   suffixe: ' /2' },
+  { key: 'peau',          label: 'Peau',              kind: 'pct', seuil: 15,   good: 'up',     suffixe: ' de jours stable ou calme' },
+  { key: 'sommeil',       label: 'Sommeil',           kind: 'avg', seuil: 0.5,  good: 'up',     suffixe: ' /5' },
+  { key: 'energie',       label: 'Énergie',           kind: 'avg', seuil: 0.5,  good: 'up',     suffixe: ' /5' },
+  { key: 'stress',        label: 'Stress',            kind: 'avg', seuil: 0.5,  good: 'down',   suffixe: ' /5' },
+  { key: 'humeur',        label: 'Humeur',            kind: 'avg', seuil: 0.25, good: 'up',     suffixe: ' /3' },
+  { key: 'hydratation',   label: 'Hydratation',       kind: 'avg', seuil: 0.25, good: 'up',     suffixe: ' /2' }
+];
+
+function b1AddDays(ds, n) {
+  const p = ds.split('-');
+  return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().split('T')[0];
+}
+function b1MonthEnd(ym) {
+  const p = ym.split('-');
+  return new Date(Date.UTC(+p[0], +p[1], 0)).toISOString().split('T')[0];
+}
+function b1DaysBetween(a, b) {
+  const x = a.split('-'), y = b.split('-');
+  return Math.round((Date.UTC(+y[0], +y[1] - 1, +y[2]) - Date.UTC(+x[0], +x[1] - 1, +x[2])) / 86400000);
+}
+function b1Mean(a) { return a.reduce((s, v) => s + v, 0) / a.length; }
+function b1Num(v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ','); }
+
+// ── Test de Mann-Whitney (somme des rangs, ex-aequo corrigés, approximation normale) ──
+function b1NormCdf(z) {
+  const x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return z >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y);
+}
+function b1MannWhitneyP(a, b) {
+  const n1 = a.length, n2 = b.length, N = n1 + n2;
+  if (!n1 || !n2) return 1;
+  const all = [];
+  a.forEach(v => all.push([v, 0]));
+  b.forEach(v => all.push([v, 1]));
+  all.sort((x, y) => x[0] - y[0]);
+  const rk = new Array(N);
+  let i = 0, T = 0;
+  while (i < N) {
+    let j = i;
+    while (j + 1 < N && all[j + 1][0] === all[i][0]) j++;
+    const r = (i + j) / 2 + 1;
+    for (let k = i; k <= j; k++) rk[k] = r;
+    const t = j - i + 1;
+    T += t * t * t - t;
+    i = j + 1;
+  }
+  let R1 = 0;
+  for (let k = 0; k < N; k++) if (all[k][1] === 0) R1 += rk[k];
+  const U = R1 - n1 * (n1 + 1) / 2, mu = n1 * n2 / 2;
+  const sd = Math.sqrt(n1 * n2 / 12 * ((N + 1) - T / (N * (N - 1))));
+  if (!(sd > 0)) return 1;
+  const z = (Math.abs(U - mu) - 0.5) / sd;
+  return 2 * (1 - b1NormCdf(Math.max(0, z)));
+}
+
+// ── Lecture des données : un objet par jour, mêmes règles que les carrousels ────────
+// (0 = non renseigné pour ballonnements/sommeil/énergie/stress ; transit, peau, douleurs, humeur, hydratation : valeur ou rien ;
+//  passages et Bristol viennent du calendrier des selles)
+function b1BuildDayIndex() {
+  const idx = {}, HYD = { lt1: 0, '1to2': 1, gt2: 2 };
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    let ds = null, cal = false;
+    if (k.indexOf('nara_journal_') === 0) ds = k.slice(13);
+    else if (k.indexOf('nara_cal_') === 0) { ds = k.slice(9); cal = true; }
+    if (!ds || !/^\d{4}-\d{2}-\d{2}$/.test(ds)) continue;
+    let o;
+    try { o = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+    if (!o) continue;
+    const d = idx[ds] || (idx[ds] = {});
+    if (cal) {
+      if (o.yn === 'oui') {
+        d.passages = o.freq || 1;
+        if (o.bristol !== null && o.bristol !== undefined) d.bristol = (o.bristol >= 3 && o.bristol <= 4) ? 1 : 0;
+      } else if (o.yn === 'non') {
+        d.passages = 0;
+      }
+    } else {
+      if (o.transit !== null && o.transit !== undefined) d.transit = o.transit === 1 ? 1 : 0;
+      if (o.ballonnements > 0) d.ballonnements = o.ballonnements;
+      if (o.douleurs !== null && o.douleurs !== undefined) d.douleurs = o.douleurs;
+      if (o.peau !== null && o.peau !== undefined) d.peau = o.peau >= 1 ? 1 : 0;
+      if (o.sommeil > 0) d.sommeil = o.sommeil;
+      if (o.energie > 0) d.energie = o.energie;
+      if (o.stress > 0) d.stress = o.stress;
+      if (o.humeur !== null && o.humeur !== undefined) d.humeur = o.humeur === 0 ? 3 : (o.humeur === 1 ? 2 : 1);
+      if (o.hydratation !== null && o.hydratation !== undefined && HYD[o.hydratation] !== undefined) d.hydratation = HYD[o.hydratation];
+    }
+  }
+  return idx;
+}
+
+// ── Regroupement des suivis en « événements » ───────────────────────────────────────
+// Même jour → un seul événement. Un suivi « mois seul » : tout le mois est une zone d'incertitude
+// (les suivis datés au jour de ce mois y sont rattachés).
+function b1Groups(suivis) {
+  const valid = suivis.filter(s => s && typeof s.date === 'string' && /^\d{4}-\d{2}(-\d{2})?$/.test(s.date));
+  const mois = {};
+  valid.forEach(s => { if (s.date.length === 7) mois[s.date] = true; });
+  const map = {}, list = [];
+  valid.forEach(s => {
+    const mk = s.date.slice(0, 7);
+    const parMois = !!mois[mk];
+    const key = parMois ? 'M' + mk : 'D' + s.date;
+    if (!map[key]) {
+      map[key] = parMois
+        ? { precision: 'mois', date: mk, zoneStart: mk + '-01', afterStart: b1AddDays(b1MonthEnd(mk), 1), suivis: [] }
+        : { precision: 'jour', date: s.date, zoneStart: s.date, afterStart: s.date, suivis: [] };
+      list.push(map[key]);
+    }
+    map[key].suivis.push(s);
+  });
+  list.sort((x, y) => x.zoneStart < y.zoneStart ? -1 : (x.zoneStart > y.zoneStart ? 1 : 0));
+  return list;
+}
+
+// ── Fenêtres de comparaison d'un événement ─────────────────────────────────────────
+// avant : jusqu'à 56 jours avant la zone de début (jamais avant le suivi précédent : base « propre »)
+// après : jusqu'à 56 jours à partir du début (jamais au-delà du suivi suivant ni d'aujourd'hui)
+function b1Windows(groups, i, today) {
+  const g = groups[i], prev = i > 0 ? groups[i - 1] : null, next = i < groups.length - 1 ? groups[i + 1] : null;
+  const avantEnd = b1AddDays(g.zoneStart, -1);
+  let avantStart = b1AddDays(g.zoneStart, -B1_FENETRE);
+  if (prev && prev.afterStart > avantStart) avantStart = prev.afterStart;
+  const apresStart = g.afterStart;
+  let apresEnd = b1AddDays(apresStart, B1_FENETRE - 1);
+  if (next) { const lim = b1AddDays(next.zoneStart, -1); if (lim < apresEnd) apresEnd = lim; }
+  if (today < apresEnd) apresEnd = today;
+  return { avantStart, avantEnd, apresStart, apresEnd };
+}
+
+function b1Collect(idx, from, to, key) {
+  const out = [];
+  if (from > to) return out;
+  for (let ds = from; ds <= to; ds = b1AddDays(ds, 1)) {
+    const d = idx[ds];
+    if (d && d[key] !== undefined) out.push(d[key]);
+  }
+  return out;
+}
+
+// Compare un indicateur : null si pas assez de jours ; sinon { change, mieux, avant, apres, p }
+function b1Compare(ind, a, b) {
+  if (a.length < B1_MIN_JOURS || b.length < B1_MIN_JOURS) return null;
+  const ma = b1Mean(a), mb = b1Mean(b);
+  let notable, mieux;
+  if (ind.good === 'normal') {
+    // passages/jour : plus de passages = mieux, jusqu'au niveau normal (0,5 à 3 par jour) ; au-delà, c'est l'inverse
+    const dist = x => x < 0.5 ? 0.5 - x : (x > 3 ? x - 3 : 0);
+    const gain = dist(ma) - dist(mb);
+    notable = Math.abs(gain) >= ind.seuil;
+    mieux = gain > 0;
+  } else {
+    const delta = ind.kind === 'pct' ? (mb - ma) * 100 : (mb - ma);
+    notable = Math.abs(delta) >= ind.seuil;
+    mieux = ind.good === 'up' ? mb > ma : mb < ma;
+  }
+  const p = b1MannWhitneyP(a, b);
+  return { change: notable && p < B1_P_MAX, mieux, avant: ma, apres: mb, p };
+}
+
+function b1GroupResult(idx, w) {
+  const rows = [];
+  let comparables = 0;
+  B1_IND.forEach(ind => {
+    const c = b1Compare(ind, b1Collect(idx, w.avantStart, w.avantEnd, ind.key), b1Collect(idx, w.apresStart, w.apresEnd, ind.key));
+    if (!c) return;
+    comparables++;
+    if (c.change) rows.push({ ind, mieux: c.mieux, avant: c.avant, apres: c.apres, p: c.p });
+  });
+  return { comparables, rows };
+}
+
+function b1Render() {
+  let suivis = [];
+  try { suivis = (typeof getSuivisContext === 'function') ? getSuivisContext() : []; } catch (e) { suivis = []; }
+  if (!suivis.length) return '';
+  const groups = b1Groups(suivis);
+  if (!groups.length) return '';
+  const idx = b1BuildDayIndex(), today = getTodayStr();
+  const fmt = (ind, v) => ind.kind === 'pct' ? Math.round(v * 100) + ' %' : b1Num(v);
+  const cards = [];
+  groups.forEach((g, i) => {
+    const w = b1Windows(groups, i, today);
+    const res = b1GroupResult(idx, w);
+    if (!res.comparables) return;                              // pas assez de données : on n'affiche rien
+    const quand = (g.precision === 'jour' ? 'le ' : '') + suivisDateLabel(g.date);
+    const quoi = g.suivis.map(s => escHtml(s.type || 'Suivi') + (s.problo ? ' · ' + escHtml(s.problo) : '')).join(' + ');
+    const semaines = Math.max(2, Math.round((b1DaysBetween(w.avantStart, w.avantEnd) + 1) / 7));
+    const rows = res.rows.map(r => {
+      const hausse = r.apres > r.avant;
+      const cls = r.mieux ? (hausse ? 'ins-arrow-up-pos' : 'ins-arrow-down-pos') : 'ins-arrow-soft';
+      return '<div class="b1-row"><span>' + r.ind.label + ' : ' + fmt(r.ind, r.avant) + ' → ' + fmt(r.ind, r.apres) + r.ind.suffixe
+        + '</span><span class="' + cls + '">' + (hausse ? '↑' : '↓') + '</span></div>';
+    }).join('');
+    cards.push('<div class="insight-real-card" style="border-left-color:var(--sage);margin-bottom:16px">'
+      + '<div class="irc-tag">📅 Depuis ' + quand + '</div>'
+      + '<div class="irc-text"><div class="b1-what">' + quoi + '</div>'
+      + (rows ? '<div class="b1-rows">' + rows + '</div>' : '<div class="b1-none">Pas de changement net depuis ' + quand + '.</div>')
+      + '<div class="b1-note">Comparé aux ' + semaines + ' semaines précédentes</div></div></div>');
+  });
+  if (!cards.length) return '';
+  return '<div class="section-title insights-section">Avant / Après tes nouveaux suivis</div>' + cards.join('');
+}
+
 function renderInsightsPage() {
   const content = document.getElementById('insights-page-content');
   if (!content) return;
@@ -6829,6 +7069,11 @@ function renderInsightsPage() {
     }
   }
 
+  // Brique 1 (avant / après « Mes nouveaux suivis ») : calculée AVANT la garde « page vide » —
+  // elle ne dépend pas des 30 derniers jours et s'affiche dès qu'elle a un résultat.
+  const brique1Html = b1Render();
+  const disclaimerHtml = `<div class="ins-disclaimer">Ces observations sont calculées sur tes données personnelles — jamais des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin, gastro-entérologue ou dermatologue.</div>`;
+
   if (totalEntries < SEUIL_INSIGHTS) {
     const types = { transit:false, repas:false, peau:false, stress:false };
     entries.forEach(e => { if (types[e.type] !== undefined) types[e.type] = true; });
@@ -6843,7 +7088,7 @@ function renderInsightsPage() {
         </div>
         <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px">Ce que tu as déjà noté</div>
         <div class="insights-progress-pills">${pills}</div>
-      </div>`;
+      </div>` + (brique1Html ? brique1Html + disclaimerHtml : '');
     return;
   }
 
@@ -6878,61 +7123,6 @@ function renderInsightsPage() {
         </div>`).join('')
     : '';
 
-  // Brique 1 — silencieuse si pas assez de données (pas de message d'attente)
-  const brique1Html = (() => {
-    const suivis = getSuivisContext ? getSuivisContext() : [];
-    if (!suivis.length) return '';
-    const brique1 = [];
-    suivis.forEach(suivi => {
-      if (!suivi.date) return;
-      const cutoffDay = suivi.date.length === 7 ? suivi.date + '-01' : suivi.date;
-      const avant = allEntries.filter(e => (e.dateStr||'') < cutoffDay);
-      const apres = allEntries.filter(e => (e.dateStr||'') >= cutoffDay);
-      // SILENCE si pas assez de données (pas de message d'attente)
-      if (avant.length < 5 || apres.length < 5) return;
-      const dim = suivi.problo;
-      if (dim === 'Peau') {
-        const peauAv = avant.filter(e=>e.type==='peau'&&e.values?.peau_etat!==undefined);
-        const peauAp = apres.filter(e=>e.type==='peau'&&e.values?.peau_etat!==undefined);
-        if (peauAv.length < 3 || peauAp.length < 3) return;
-        const positifAv = Math.round(peauAv.filter(e=>e.values.peau_etat>=1).length/peauAv.length*100);
-        const positifAp = Math.round(peauAp.filter(e=>e.values.peau_etat>=1).length/peauAp.length*100);
-        const diff = positifAp - positifAv;
-        if (Math.abs(diff) >= 15) {
-          const dateLabel = new Date(cutoffDay+'T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-          brique1.push({ icon:'✨', tag:`Peau — depuis ${suivi.type||'ce suivi'}`,
-            text:`Depuis ${dateLabel}, les jours de peau stable ou calme semblent <strong>${diff>0?'plus':'moins'} fréquents</strong> : ${positifAp}% après vs ${positifAv}% avant. Tendance observée sur ${peauAp.length+peauAv.length} entrées — pas une conclusion.` });
-        }
-      }
-      if (dim === 'Transit') {
-        const tAv = avant.filter(e=>e.type==='transit');
-        const tAp = apres.filter(e=>e.type==='transit');
-        if (tAv.length < 3 || tAp.length < 3) return;
-        const dateLabel = new Date(cutoffDay+'T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-        const obs = [];
-        const tAvD = tAv.filter(e=>e.values?.transit_etat!==undefined);
-        const tApD = tAp.filter(e=>e.values?.transit_etat!==undefined);
-        if (tAvD.length>=3&&tApD.length>=3) {
-          const nAv=Math.round(tAvD.filter(e=>e.values.transit_etat===1).length/tAvD.length*100);
-          const nAp=Math.round(tApD.filter(e=>e.values.transit_etat===1).length/tApD.length*100);
-          if (Math.abs(nAp-nAv)>=15) obs.push(`transit normal <strong>${nAp}%</strong> vs <strong>${nAv}%</strong> avant`);
-        }
-        const bAv=tAv.filter(e=>e.values?.ballonnements!==undefined);
-        const bAp=tAp.filter(e=>e.values?.ballonnements!==undefined);
-        if (bAv.length>=3&&bAp.length>=3) {
-          const avgAv=(bAv.reduce((s,e)=>s+(e.values.ballonnements||0),0)/bAv.length).toFixed(1);
-          const avgAp=(bAp.reduce((s,e)=>s+(e.values.ballonnements||0),0)/bAp.length).toFixed(1);
-          if (Math.abs(parseFloat(avgAp)-parseFloat(avgAv))>=0.5)
-            obs.push(`ballonnements <strong>${parseFloat(avgAp)>parseFloat(avgAv)?'en hausse':'en baisse'}</strong> : ${avgAp}/5`);
-        }
-        if (obs.length) brique1.push({ icon:'🌿', tag:`Transit — depuis ${suivi.type||'ce suivi'}`,
-          text:`Depuis ${dateLabel}, on observe : ${obs.join(' · ')}. (${tAp.length} entrées après vs ${tAv.length} avant — à mentionner à ton gastro-entérologue)` });
-      }
-    });
-    if (!brique1.length) return '';
-    return `<div class="section-title insights-section">Avant / Après tes nouveaux suivis</div>` +
-      brique1.map(i=>`<div class="insight-real-card" style="border-left-color:var(--sage);margin-bottom:16px"><div class="irc-tag">${i.icon} ${i.tag}</div><div class="irc-text">${i.text}</div></div>`).join('');
-  })();
 
   // ── Niveau 1 : Résumé gros titres ─────────────────────────────────────────
   const summary = buildInsightsSummary(getDayVals, _ichartWeekOffset);
@@ -10519,6 +10709,29 @@ const SUIVI_TYPES  = ['Nouveau suivi médical démarré','Nouveau traitement dé
 const SUIVI_PROBLO = ['Transit','Peau','Cycle menstruel','Alimentation','\xC9nergie / stress','Autre'];
 const SUIVI_PROS   = ['Gastro-ent\xE9rologue','Dermatologue','Gyn\xE9cologue','M\xE9decin g\xE9n\xE9raliste','Naturopathe','Endocrinologue','Di\xE9t\xE9ticien\xB7ne','Autre'];
 
+// ── Date de début d'un suivi : jour complet (YYYY-MM-DD) pour les nouveaux suivis,
+//    mois seul (YYYY-MM) pour les anciens — les deux formats restent valides, sans migration. ──
+function suivisTodayLocal() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function suivisDateLabel(date) {
+  if (!date) return '\u2014';
+  const jour = date.length === 10;
+  const d = new Date(date + (jour ? 'T12:00:00' : '-01T12:00:00'));
+  if (isNaN(d.getTime())) return '\u2014';
+  const txt = d.toLocaleDateString('fr-FR', jour ? { day:'numeric', month:'long', year:'numeric' } : { month:'long', year:'numeric' });
+  return jour ? txt.replace(/^1 /, '1er ') : txt;
+}
+function suivisSetDate(v) {
+  if (!_suiviForm) return;
+  const orig = _suiviForm.dateOrigine;
+  // champ vidé : un ancien suivi (mois seul) garde son mois ; un nouveau suivi redevient « date manquante »
+  _suiviForm.date = v ? v : ((orig && orig.length === 7) ? orig : '');
+  const h = document.getElementById('suivi-date-hint');
+  if (h) h.style.display = v ? 'none' : '';
+}
+
 function renderSuivis() {
   const scroll = document.getElementById('suivis-scroll');
   if (!scroll) return;
@@ -10538,9 +10751,7 @@ function renderSuivis() {
 }
 
 function renderSuiviCard(entry, idx) {
-  const dateDisplay = entry.date
-    ? new Date(entry.date + '-01T12:00:00').toLocaleDateString('fr-FR', { month:'long', year:'numeric' })
-    : '\u2014';
+  const dateDisplay = suivisDateLabel(entry.date);
   const tags = [entry.problo, entry.pro].filter(Boolean);
   return `<div class="suivi-card">
     <div class="suivi-card-header">
@@ -10557,7 +10768,10 @@ function renderSuiviCard(entry, idx) {
 }
 
 function renderSuivisForm(f) {
-  const maxMonth = new Date().toISOString().slice(0,7);
+  const maxJour  = suivisTodayLocal();
+  const jourVal  = (f.date && f.date.length === 10) ? f.date : '';
+  const hintHtml = (f.dateOrigine && f.dateOrigine.length === 7)
+    ? '<div class="suivi-form-hint" id="suivi-date-hint">Jour non pr\xE9cis\xE9 (' + suivisDateLabel(f.dateOrigine) + '). Choisis le jour pour une comparaison plus pr\xE9cise.</div>' : '';
   const isEdit   = f.idx !== undefined;
   const typeHtml = SUIVI_TYPES.map(t =>
     `<div class="suivi-form-chip${f.type===t?' selected':''}" onclick="suivisSetField('type','${escHtml(t)}',this)">${escHtml(t)}</div>`).join('');
@@ -10577,8 +10791,9 @@ function renderSuivisForm(f) {
     <input class="suivi-form-input" type="text" placeholder="Ex\u00A0: probiotiques prescrits par gastro\u2026"
            value="${escHtml(f.note||'')}" oninput="_suiviForm.note=this.value">
     <div class="suivi-form-label">Date de d\xE9but <span class="suivi-date-required">*</span></div>
-    <input class="suivi-form-input" type="month" max="${maxMonth}"
-           value="${f.date||''}" oninput="_suiviForm.date=this.value" style="max-width:200px">
+    <input class="suivi-form-input" type="date" max="${maxJour}"
+           value="${jourVal}" oninput="suivisSetDate(this.value)" style="max-width:220px">
+    ${hintHtml}
     <div class="suivi-form-actions">
       <button class="suivi-form-save" onclick="suivisSaveForm()">Enregistrer \u2713</button>
       <button class="suivi-form-cancel" onclick="suivisCancelForm()">Annuler</button>
@@ -10587,13 +10802,13 @@ function renderSuivisForm(f) {
 }
 
 function suivisStartAdd() {
-  _suiviForm = { type:'', problo:'', pro:'', note:'', date:'' };
+  _suiviForm = { type:'', problo:'', pro:'', note:'', date: suivisTodayLocal() };
   renderSuivis();
   document.getElementById('suivis-scroll')?.scrollTo({ top:0, behavior:'smooth' });
 }
 function suivisStartEdit(idx) {
   const list = suivisLoad();
-  _suiviForm = { ...list[idx], idx };
+  _suiviForm = { ...list[idx], idx, dateOrigine: list[idx].date };
   renderSuivis();
   document.getElementById('suivis-scroll')?.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -10608,7 +10823,8 @@ function suivisSetField(key, val, el) {
 
 function suivisSaveForm() {
   if (!_suiviForm) return;
-  if (!_suiviForm.date) { showToast('La date de d\xE9but est obligatoire'); return; }
+  if (!_suiviForm.date || !/^\d{4}-\d{2}(-\d{2})?$/.test(_suiviForm.date)) { showToast('La date de d\xE9but est obligatoire'); return; }
+  if (_suiviForm.date > suivisTodayLocal().slice(0, _suiviForm.date.length)) { showToast('La date de d\xE9but ne peut pas \xEAtre dans le futur'); return; }
   if (!_suiviForm.type) { showToast('Choisis un type d\u2019\xE9v\xE9nement'); return; }
   const list  = suivisLoad();
   const entry = { type:_suiviForm.type, problo:_suiviForm.problo||'', pro:_suiviForm.pro||'',

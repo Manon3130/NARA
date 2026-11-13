@@ -1663,7 +1663,9 @@ if (typeof supabase === 'undefined') {
   .ins-arrow-soft     { color: #c88756; font-size: 0.9rem; } /* « moins bien » : orange doux de la palette (pas de rouge) */
 
   /* Comparaison avant / après « Mes nouveaux suivis » */
-  .b1-what  { font-size: 0.74rem; color: var(--text-light); margin-bottom: 6px; line-height: 1.4; }
+  .b1-titre { font-size: 0.92rem; font-weight: 600; color: var(--text-dark); line-height: 1.4; }
+  .b1-depuis { font-size: 0.72rem; color: var(--text-light); margin: 2px 0 8px; }
+  .b1-more  { display: none; border-top: 1px solid var(--oat); }
   .b1-rows  { margin-top: 2px; }
   .b1-row   { display: flex; align-items: center; justify-content: space-between; gap: 10px;
               padding: 7px 0; border-bottom: 1px solid var(--oat); font-size: 0.82rem;
@@ -1671,6 +1673,63 @@ if (typeof supabase === 'undefined') {
   .b1-rows .b1-row:last-child { border-bottom: none; }
   .b1-none  { font-size: 0.82rem; color: var(--text-mid); line-height: 1.5; padding: 4px 0; }
   .b1-note  { font-size: 0.68rem; color: var(--text-light); margin-top: 8px; }
+
+  /* ── Page Insights : bulles d'onglets (défilables si l'écran est étroit) ───────────── */
+  .ins-tabs { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 2px 14px; margin: 0 -2px; }
+  .ins-tabs::-webkit-scrollbar { display: none; }
+  .ins-tab  { flex: 0 0 auto; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-family: 'DM Sans', sans-serif; white-space: nowrap;
+              border: 1.5px solid var(--oat); background: white; color: var(--text-mid); cursor: pointer;
+              transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .ins-tab.active { background: var(--sage); border-color: var(--sage); color: white; }
+
+  /* Synthèse du mois (sous le carrousel du mois) */
+  .ins-synth { background: white; border-radius: 18px; padding: 16px 18px; margin: 4px 0 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .ins-synth-sub { font-size: 0.7rem; color: var(--text-light); margin: -2px 0 4px; }
+  .ins-synth-lignes { margin-top: 4px; }
+  .ins-synth-ligne { font-size: 0.8rem; color: var(--text-dark); line-height: 1.55; padding: 9px 0; border-bottom: 1px solid var(--oat); }
+  .ins-synth-lignes .ins-synth-ligne:last-child { border-bottom: none; padding-bottom: 2px; }
+  .ins-synth-det { display: none; margin-top: 10px; padding-top: 2px; border-top: 1px solid var(--oat); }
+  .ins-synth-sous { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); margin: 12px 0 2px; }
+  .ins-synth-cycle { font-size: 0.78rem; color: var(--text-mid); padding-top: 12px; cursor: pointer; }
+  .ins-dots { color: var(--sage); letter-spacing: 0.08em; font-size: 0.78rem; white-space: nowrap; }
+  .ins-link-btn { background: none; border: none; padding: 10px 0 0; font-size: 0.76rem; color: var(--sage); font-family: 'DM Sans', sans-serif; text-decoration: underline; cursor: pointer; }
+
+  /* Vue d'ensemble : les 3 liens les plus forts */
+  .ins-liens { background: white; border-radius: 18px; padding: 16px 18px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .ins-liens-titre { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); margin-bottom: 4px; }
+  .ins-lien { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--oat); font-size: 0.82rem; color: var(--text-dark); line-height: 1.45; }
+  .ins-liens-liste .ins-lien:last-child { border-bottom: none; }
+  .ins-liens-pied { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .ins-liens-pied .ins-link-btn { padding: 0; }
+  .ins-liens-legende { font-size: 0.66rem; color: var(--text-light); }
+
+  /* Alertes (Vue d'ensemble et onglet Cycle) */
+  .ins-alerte { background: var(--honey); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; }
+  .ins-alerte-titre { font-size: 0.84rem; font-weight: 600; color: var(--text-dark); line-height: 1.4; }
+  .ins-alerte-txt { font-size: 0.78rem; color: var(--text-mid); line-height: 1.5; margin-top: 4px; }
+  .ins-alerte-btn { margin-top: 10px; padding: 8px 14px; border-radius: 18px; border: none; background: var(--sage); color: white; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; cursor: pointer; }
+
+  /* Onglet Cycle : tableau par phase */
+  .cy-bloc { background: white; border-radius: 18px; padding: 16px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-bottom: 14px; }
+  .cy-scroll { overflow-x: auto; }
+  .cy-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  .cy-table th { font-weight: 500; color: var(--text-light); font-size: 0.68rem; padding: 0 2px 8px; text-align: center; }
+  .cy-table td { padding: 8px 2px; border-bottom: 1px solid var(--oat); text-align: center; }
+  .cy-table tbody tr:last-child td { border-bottom: none; }
+  .cy-table td.cy-label { text-align: left; color: var(--text-dark); padding-right: 8px; white-space: nowrap; }
+  .cy-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; }
+  .cy-vert { background: #4a9960; }
+  .cy-beige { background: var(--oat); }
+  .cy-orange { background: #c88756; }
+  .cy-none { color: var(--text-light); }
+  .cy-legende { font-size: 0.68rem; color: var(--text-light); margin-top: 12px; line-height: 1.8; }
+  .cy-legende .cy-dot { width: 10px; height: 10px; margin: 0 2px 1px 4px; }
+  .cy-prudence { font-size: 0.74rem; color: var(--text-mid); font-style: italic; margin-bottom: 10px; line-height: 1.5; }
+  .cy-phrases { margin-top: 14px; font-size: 0.82rem; color: var(--text-dark); line-height: 1.6; }
+  .cy-phrases p { margin: 0 0 8px; }
+  .cy-phrases p:last-child { margin-bottom: 0; }
+  .cy-base { font-size: 0.68rem; color: var(--text-light); margin-top: 12px; }
+  .cy-vide { font-size: 0.78rem; color: var(--text-light); font-style: italic; text-align: center; padding: 32px 16px; line-height: 1.6; }
 
   /* Niveau 3 — Blocs thématiques */
   .ins-theme-block {
@@ -1732,7 +1791,9 @@ if (typeof supabase === 'undefined') {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    gap: 0;
+    padding: 0 2px;                 /* marge intérieure : la bordure des cartes ne touche jamais le bord rogné de la piste */
+       scroll-padding: 0 2px;          /* le point d'accroche tient compte de cette marge */
+       gap: 12px;                     /* espace entre les cartes : un décalage de quelques fractions de pixel ne montre que du fond, jamais le bord de la carte voisine */
     transition: height 0.25s ease;  /* hauteur pilotée par ichartFitHeight() : = hauteur du panneau affiché */
   }
   .ichart-track::-webkit-scrollbar { display: none; }
@@ -2495,12 +2556,6 @@ if (typeof supabase === 'undefined') {
   .cycle-medical-alert.show { display: block; }
 
   /* Badge phase dans insights */
-  .insight-cycle-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border-radius: 20px; font-size: 0.68rem;
-    background: #faf5ff; color: #7c3aed; border: 1px solid #d8b4fe55;
-    margin-bottom: 8px;
-  }
 
   /* ===== SUIVI DES SELLES ===== */
 
@@ -3184,31 +3239,13 @@ if (typeof supabase === 'undefined') {
     <div class="screen" id="screen-insights">
       <div class="screen-header">
         <div class="back-btn" onclick="go('home')">←</div>
-        <div class="screen-title">Mes insights</div>
+        <div class="screen-title" onclick="insightsTitleTap()">Mes insights</div>
       </div>
       <div class="insights-scroll" id="insights-page-scroll">
 
         <!-- Zone principale — vide ou remplie selon les données réelles -->
         <div id="insights-page-content">
           <!-- Rempli par renderInsightsPage() -->
-        </div>
-
-        <!-- Diagnostic Brique 2 — bouton discret pour vérifier l'état des corrélations -->
-        <div style="text-align:center;padding:4px 0 8px">
-          <button onclick="diagBrique2()" style="font-size:0.68rem;color:var(--text-light);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">
-            Vérifier l'état des corrélations
-          </button>
-        </div>
-
-        <!-- Bouton rapport PDF — toujours visible, désactivé si pas assez de données -->
-        <div class="section-title" style="margin-top:8px">Rapport médecin</div>
-        <div class="pdf-btn" id="pdf-btn-insights" onclick="handlePdfReport()" style="opacity:0.45;cursor:not-allowed;">
-          <div class="pdf-icon">📄</div>
-          <div>
-            <div class="pdf-title">Générer mon rapport PDF</div>
-            <div class="pdf-sub" id="pdf-btn-sub">Disponible après 7 jours de suivi</div>
-          </div>
-          <span style="color:var(--text-light);font-size:1.1rem;margin-left:auto">→</span>
         </div>
 
       </div>
@@ -6938,20 +6975,22 @@ function b1Collect(idx, from, to, key) {
 function b1Compare(ind, a, b) {
   if (a.length < B1_MIN_JOURS || b.length < B1_MIN_JOURS) return null;
   const ma = b1Mean(a), mb = b1Mean(b);
-  let notable, mieux;
+  let notable, mieux, ecart;
   if (ind.good === 'normal') {
     // passages/jour : plus de passages = mieux, jusqu'au niveau normal (0,5 à 3 par jour) ; au-delà, c'est l'inverse
     const dist = x => x < 0.5 ? 0.5 - x : (x > 3 ? x - 3 : 0);
     const gain = dist(ma) - dist(mb);
-    notable = Math.abs(gain) >= ind.seuil;
+    ecart = Math.abs(gain);
+    notable = ecart >= ind.seuil;
     mieux = gain > 0;
   } else {
     const delta = ind.kind === 'pct' ? (mb - ma) * 100 : (mb - ma);
-    notable = Math.abs(delta) >= ind.seuil;
+    ecart = Math.abs(delta);
+    notable = ecart >= ind.seuil;
     mieux = ind.good === 'up' ? mb > ma : mb < ma;
   }
   const p = b1MannWhitneyP(a, b);
-  return { change: notable && p < B1_P_MAX, mieux, avant: ma, apres: mb, p };
+  return { change: notable && p < B1_P_MAX, mieux, avant: ma, apres: mb, p, ratio: ecart / ind.seuil };
 }
 
 function b1GroupResult(idx, w) {
@@ -6961,9 +7000,18 @@ function b1GroupResult(idx, w) {
     const c = b1Compare(ind, b1Collect(idx, w.avantStart, w.avantEnd, ind.key), b1Collect(idx, w.apresStart, w.apresEnd, ind.key));
     if (!c) return;
     comparables++;
-    if (c.change) rows.push({ ind, mieux: c.mieux, avant: c.avant, apres: c.apres, p: c.p });
+    if (c.change) rows.push({ ind, mieux: c.mieux, avant: c.avant, apres: c.apres, p: c.p, ratio: c.ratio });
   });
   return { comparables, rows };
+}
+
+function b1Fmt(ind, v) { return ind.kind === 'pct' ? Math.round(v * 100) + ' %' : b1Num(v); }
+// Une ligne « indicateur : avant → après » avec flèche verte (mieux) ou orange doux (moins bien)
+function b1RowHtml(r) {
+  const hausse = r.apres > r.avant;
+  const cls = r.mieux ? (hausse ? 'ins-arrow-up-pos' : 'ins-arrow-down-pos') : 'ins-arrow-soft';
+  return '<div class="b1-row"><span>' + r.ind.label + ' : ' + b1Fmt(r.ind, r.avant) + ' → ' + b1Fmt(r.ind, r.apres) + r.ind.suffixe
+    + '</span><span class="' + cls + '">' + (hausse ? '↑' : '↓') + '</span></div>';
 }
 
 function b1Render() {
@@ -6973,29 +7021,332 @@ function b1Render() {
   const groups = b1Groups(suivis);
   if (!groups.length) return '';
   const idx = b1BuildDayIndex(), today = getTodayStr();
-  const fmt = (ind, v) => ind.kind === 'pct' ? Math.round(v * 100) + ' %' : b1Num(v);
   const cards = [];
   groups.forEach((g, i) => {
     const w = b1Windows(groups, i, today);
     const res = b1GroupResult(idx, w);
     if (!res.comparables) return;                              // pas assez de données : on n'affiche rien
     const quand = (g.precision === 'jour' ? 'le ' : '') + suivisDateLabel(g.date);
-    const quoi = g.suivis.map(s => escHtml(s.type || 'Suivi') + (s.problo ? ' · ' + escHtml(s.problo) : '')).join(' + ');
+    // Titre : le nom du suivi (champ « Précision libre ») s'il en a un, sinon son type
+    const titre = g.suivis.map(sv => escHtml(sv.note && String(sv.note).trim() ? String(sv.note).trim() : (sv.type || 'Suivi')) + (sv.problo ? ' · ' + escHtml(sv.problo) : '')).join(' + ');
     const semaines = Math.max(2, Math.round((b1DaysBetween(w.avantStart, w.avantEnd) + 1) / 7));
-    const rows = res.rows.map(r => {
-      const hausse = r.apres > r.avant;
-      const cls = r.mieux ? (hausse ? 'ins-arrow-up-pos' : 'ins-arrow-down-pos') : 'ins-arrow-soft';
-      return '<div class="b1-row"><span>' + r.ind.label + ' : ' + fmt(r.ind, r.avant) + ' → ' + fmt(r.ind, r.apres) + r.ind.suffixe
-        + '</span><span class="' + cls + '">' + (hausse ? '↑' : '↓') + '</span></div>';
-    }).join('');
+    // Version compacte : les 3 changements les plus marqués ; les autres sont dans « Voir le détail »
+    const tries = res.rows.slice().sort((x, y) => y.ratio - x.ratio);
+    const idDet = 'b1-det-' + i;
     cards.push('<div class="insight-real-card" style="border-left-color:var(--sage);margin-bottom:16px">'
-      + '<div class="irc-tag">📅 Depuis ' + quand + '</div>'
-      + '<div class="irc-text"><div class="b1-what">' + quoi + '</div>'
-      + (rows ? '<div class="b1-rows">' + rows + '</div>' : '<div class="b1-none">Pas de changement net depuis ' + quand + '.</div>')
-      + '<div class="b1-note">Comparé aux ' + semaines + ' semaines précédentes</div></div></div>');
+      + '<div class="b1-titre">' + titre + '</div>'
+      + '<div class="b1-depuis">📅 Depuis ' + quand + '</div>'
+      + (tries.length
+        ? '<div class="b1-rows">' + tries.slice(0, 3).map(b1RowHtml).join('') + '</div>'
+          + (tries.length > 3 ? '<div class="b1-rows b1-more" id="' + idDet + '">' + tries.slice(3).map(b1RowHtml).join('') + '</div>'
+            + '<button class="ins-link-btn" onclick="insToggleDetail(\'' + idDet + '\', this)">Voir le détail</button>' : '')
+        : '<div class="b1-none">Pas de changement net depuis ' + quand + '.</div>')
+      + '<div class="b1-note">Comparé aux ' + semaines + ' semaines précédentes</div></div>');
   });
   if (!cards.length) return '';
   return '<div class="section-title insights-section">Avant / Après tes nouveaux suivis</div>' + cards.join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PAGE INSIGHTS — 5 onglets : Vue d'ensemble · Semaine · Mois · Cycle · Liens
+// Un seul onglet est dessiné à la fois ; l'onglet choisi reste sélectionné pendant la session.
+// ══════════════════════════════════════════════════════════════════════════════
+let _insightsTab = 'overview';
+const INS_TABS = [['overview', 'Vue d\'ensemble'], ['semaine', 'Semaine'], ['mois', 'Mois'], ['cycle', 'Cycle'], ['liens', 'Liens']];
+const INS_MENTION = 'Observations sur tes données, pas un diagnostic. Si un point te préoccupe, parles-en à ton médecin, gastro-entérologue ou dermatologue.';
+
+function insightsTabsHtml(actif) {
+  return '<div class="ins-tabs" id="ins-tabs">' + INS_TABS.map(t =>
+    '<button class="ins-tab' + (t[0] === actif ? ' active' : '') + '" onclick="insightsSetTab(\'' + t[0] + '\')">' + t[1] + '</button>').join('') + '</div>';
+}
+function insightsSetTab(tab) {
+  if (!INS_TABS.some(t => t[0] === tab)) return;
+  _insightsTab = tab;
+  renderInsightsPage();
+  const sc = document.getElementById('insights-page-scroll');
+  if (sc) sc.scrollTop = 0;
+}
+// Après chaque rendu : cartes du carrousel recalées sur la 1re, hauteur ajustée, bulle active centrée
+function insightsAfterRender() {
+  _ichartIdx[''] = 0; _ichartIdx['-30'] = 0;
+  ichartFitAll();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(ichartFitAll);
+  setTimeout(ichartFitAll, 300);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(ichartFitAll);
+  const bar = document.getElementById('ins-tabs');
+  const on  = bar ? bar.querySelector('.ins-tab.active') : null;
+  if (bar && on) bar.scrollLeft = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;
+}
+// Diagnostic des corrélations : plus de bouton visible — 3 appuis rapides sur le titre « Mes insights »
+let _insTitleTaps = [];
+function insightsTitleTap() {
+  const now = Date.now();
+  _insTitleTaps = _insTitleTaps.filter(t => now - t < 900);
+  _insTitleTaps.push(now);
+  if (_insTitleTaps.length >= 3) { _insTitleTaps = []; diagBrique2(); }
+}
+
+// Onglets (remplis sous-étape par sous-étape)
+// ══════════════════════════════════════════════════════════════════════════════
+// ONGLET VUE D'ENSEMBLE — alertes · résumé de la semaine · 3 liens les plus forts · avant/après · rapport PDF
+// ══════════════════════════════════════════════════════════════════════════════
+// Alertes et actions (bloc absent s'il n'y en a pas) : cycle décalé + tests alimentaires (textes inchangés)
+function insightsAlertesHtml(ctx) {
+  let html = '';
+  if (cycleDecale()) html += insightsCycleAlerteHtml();
+  getFoodTestInsights(ctx.entries).forEach(i => {
+    html += '<div class="ins-alerte"><div class="ins-alerte-titre">' + i.icon + ' ' + i.tag + '</div><div class="ins-alerte-txt">' + i.text + '</div></div>';
+  });
+  return html;
+}
+
+// « Cette semaine en résumé » : toujours la semaine en cours ; un clic ouvre l'onglet Semaine sur la carte du thème
+const INS_CARTE_SEMAINE = { transit: 0, ballonnements: 0, douleurs: 0, sommeil: 1, energie: 1, stress: 2, peau: 3 };   // pas de carte « Douleurs » : elle renvoie à Transit & Ballonnements
+function insightsResumeHtml(ctx) {
+  const summary = buildInsightsSummary(ctx.getDayVals, 0);
+  if (!summary.items.length) return '';
+  return '<div class="ins-summary-block"><div class="ins-summary-title">' + summary.title + '</div><div class="ins-summary-sub">' + summary.subtitle + '</div>'
+    + summary.items.map(item => '<div class="ins-summary-item" onclick="insightsOpenWeekCard(\'' + item.key + '\')"><span class="ins-summary-kw">'
+      + item.indicator + ' ' + item.keyword + '</span><span>' + item.arrow + '</span></div>').join('') + '</div>';
+}
+function insightsOpenWeekCard(key) {
+  const idx = INS_CARTE_SEMAINE[key] !== undefined ? INS_CARTE_SEMAINE[key] : 0;
+  _ichartWeekOffset = 0;
+  _insightsTab = 'semaine';
+  renderInsightsPage();
+  const sc = document.getElementById('insights-page-scroll');
+  if (sc) sc.scrollTop = 0;
+  if (idx > 0) setTimeout(() => ichartGoTo(idx, ''), 60);
+}
+
+// Les 3 liens les plus forts (fenêtre propre à chaque moteur : chacun existe aussi dans l'onglet Liens) ; bloc absent s'il n'y en a aucun
+function insightsTopLiensHtml() {
+  const liens = corrTrier(corrCatalogue()).slice(0, 3);
+  if (!liens.length) return '';
+  return '<div class="ins-liens"><div class="ins-liens-titre">Liens repérés</div><div class="ins-liens-liste">'
+    + liens.map(l => { const p = corrPhrase(l); return '<div class="ins-lien"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('')
+    + '</div><div class="ins-liens-pied"><span class="ins-liens-legende">●●● lien marqué · ●● lien modéré</span>'
+    + '<button class="ins-link-btn" onclick="insightsSetTab(\'liens\')">Voir tous les liens</button></div></div>';
+}
+
+// Page presque vide (moins de 5 entrées sur 30 jours) : même message qu'avant
+function insightsEmptyHtml(ctx) {
+    const types = { transit:false, repas:false, peau:false, stress:false };
+    ctx.entries.forEach(e => { if (types[e.type] !== undefined) types[e.type] = true; });
+    const pills = Object.entries({ transit:'🌿 Transit', repas:'🥗 Repas', peau:'✨ Peau', stress:'😮‍💨 Stress' })
+      .map(([key, label]) => `<div class="ipp${types[key]?' done':''}"><div class="ipp-dot"></div>${label}</div>`).join('');
+    return `
+      <div class="insights-empty-page">
+        <div class="iep-icon">🌿</div>
+        <div class="iep-title">Tes insights arrivent bientôt</div>
+        <div class="iep-text">Continue à remplir ton journal pour voir tes premières observations.<br><br>
+          <span style="font-size:0.78rem;color:var(--text-light)">${ctx.totalEntries} entrée${ctx.totalEntries>1?'s':''} · ${ctx.SEUIL_INSIGHTS-ctx.totalEntries} de plus pour tes premiers insights</span>
+        </div>
+        <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px">Ce que tu as déjà noté</div>
+        <div class="insights-progress-pills">${pills}</div>
+      </div>`;
+}
+
+// Bouton « Générer mon rapport PDF » : grisé et non cliquable (« Bientôt disponible ») tant que la génération n'est pas branchée.
+// Mettre INS_PDF_BRANCHE à true rétablit le comportement d'origine (actif dès 14 entrées, handlePdfReport).
+const INS_PDF_BRANCHE = false;
+function insightsPdfHtml(totalEntries) {
+  const SEUIL_PDF = 14;
+  const actif = INS_PDF_BRANCHE && totalEntries >= SEUIL_PDF;
+  const reste = SEUIL_PDF - totalEntries;
+  const sous = !INS_PDF_BRANCHE ? 'Bientôt disponible'
+    : (actif ? 'À partager avec ton dermatologue ou gastro-entérologue' : 'Disponible dans ' + reste + ' entrée' + (reste > 1 ? 's' : '') + ' de plus');
+  return '<div class="section-title" style="margin-top:8px">Rapport médecin</div>'
+    + '<div class="pdf-btn" id="pdf-btn-insights"' + (INS_PDF_BRANCHE ? ' onclick="handlePdfReport()"' : ' aria-disabled="true"')
+    + ' style="opacity:' + (actif ? '1;cursor:pointer' : '0.45;cursor:not-allowed') + (INS_PDF_BRANCHE ? '' : ';pointer-events:none') + '">'
+    + '<div class="pdf-icon">📄</div><div><div class="pdf-title">Générer mon rapport PDF</div><div class="pdf-sub" id="pdf-btn-sub">' + sous + '</div></div>'
+    + '<span style="color:var(--text-light);font-size:1.1rem;margin-left:auto">→</span></div>';
+}
+
+function insightsTabOverview(ctx) {
+  let html = insightsAlertesHtml(ctx);
+  if (ctx.totalEntries < ctx.SEUIL_INSIGHTS) html += insightsEmptyHtml(ctx);
+  else html += insightsResumeHtml(ctx) + insightsTopLiensHtml();
+  return html + ctx.brique1Html + insightsPdfHtml(ctx.totalEntries);
+}
+// ── Onglet Semaine : navigation ‹ › par semaine + cartes par thème (sans panneau Synthèse) ──
+function insightsTabSemaine(ctx) {
+  return buildInsightsCarousel(ctx.getDayVals, 7, 'semaine');
+}
+// ── Onglet Mois : navigation ‹ › par mois + cartes par thème, puis la Synthèse du mois ──
+function insightsTabMois(ctx) {
+  return buildInsightsCarousel(ctx.getDayVals, 30, 'mois') + buildMoisSynthese();
+}
+// ── Onglet Cycle : alerte éventuelle, tableau par phase, phrases, nombre de cycles ──────────────
+// Les calculs par phase sont ceux de getCycleInsights (cycleStatsParPhase) : mêmes données, mêmes seuils (CYCLE_SEUILS).
+const CYCLE_LIGNES = [
+  { key: 'ballonnements', label: 'Ballonnements',    sens: 'bas' },
+  { key: 'douleurs',      label: 'Douleurs',         sens: 'bas' },
+  { key: 'transit',       label: 'Transit',          sens: 'haut' },
+  { key: 'selleOui',      label: 'Jours avec selle', sens: 'haut' },
+  { key: 'selleFreq',     label: 'Passages',         sens: 'normal', plage: [0.5, 3] },   // plus de passages = mieux, jusqu'au niveau normal
+  { key: 'selleBristol',  label: 'Selles (Bristol)', sens: 'normal', plage: [3, 4] },       // le mieux = la zone normale (types 3 à 4)
+  { key: 'peau',          label: 'Peau',             sens: 'haut' },
+  { key: 'sommeil',       label: 'Sommeil',          sens: 'haut' },
+  { key: 'energie',       label: 'Énergie',          sens: 'haut' },
+  { key: 'humeur',        label: 'Humeur',           sens: 'haut' },
+  { key: 'stress',        label: 'Stress',           sens: 'bas' }
+];
+const CYCLE_COLONNES = [['regles', 'Règles'], ['preovul', 'Folliculaire'], ['ovulation', 'Ovulatoire'], ['luteale', 'Lutéale']];
+
+// Par ligne : pour chaque phase 'none' (moins de 3 jours) · 'beige' · 'vert' (mieux) · 'orange' (moins bien).
+// Une ligne n'est colorée que si l'écart entre sa meilleure et sa pire phase atteint le seuil de getCycleInsights ;
+// la meilleure phase et celles proches (moins d'un demi-seuil) → vert, la pire et ses proches → orange, le reste → beige.
+function cycleTableData(st) {
+  const lignes = [];
+  CYCLE_LIGNES.forEach(l => {
+    const moy = st.moyParPhase(l.key), seuil = CYCLE_SEUILS[l.key];
+    const dispo = st.PHASES.filter(ph => moy[ph].n >= st.SEUIL_PHASE && moy[ph].moy !== null);
+    if (!dispo.length) return;                                         // ligne sans aucune donnée : masquée
+    const score = ph => {
+      const m = moy[ph].moy;
+      if (l.sens === 'haut') return m;
+      if (l.sens === 'bas') return -m;
+      return -(m < l.plage[0] ? l.plage[0] - m : (m > l.plage[1] ? m - l.plage[1] : 0));
+    };
+    const etats = {};
+    st.PHASES.forEach(ph => { etats[ph] = dispo.indexOf(ph) < 0 ? 'none' : 'beige'; });
+    if (dispo.length >= 2) {
+      const sc = dispo.map(score), best = Math.max.apply(null, sc), worst = Math.min.apply(null, sc);
+      if (best - worst >= seuil) dispo.forEach(ph => {
+        const s = score(ph), dB = best - s, dW = s - worst;
+        if (dB < seuil / 2 && dB <= dW) etats[ph] = 'vert';
+        else if (dW < seuil / 2) etats[ph] = 'orange';
+      });
+    }
+    const moyenne = dispo.reduce((a, ph) => a + moy[ph].moy, 0) / dispo.length;
+    const sens = {};
+    dispo.forEach(ph => { sens[ph] = moy[ph].moy >= moyenne ? 'haut' : 'bas'; });   // direction de la phase par rapport à la moyenne de la ligne
+    lignes.push({ ligne: l, etats, sens });
+  });
+  return lignes;
+}
+
+// Mots d'une ligne : { nom } pour « c'est l'inverse pour … » ; { s, v, a } (sujet, verbe, attribut) ou { t, tc } (phrase entière, normale / prudente)
+function cycleMot(key, etat, sens) {
+  const pire = etat === 'orange';
+  switch (key) {
+    case 'ballonnements': return { nom: 'le ventre', s: 'ton ventre', v: 'est', a: pire ? 'plus gonflé' : 'plus calme' };
+    case 'douleurs':      return pire ? { nom: 'les douleurs', s: 'tes douleurs', v: 'sont', a: 'plus fréquentes' }
+                                      : { nom: 'les douleurs', t: 'tu as moins de douleurs', tc: 'tu sembles avoir moins de douleurs' };
+    case 'transit':       return { nom: 'le transit', s: 'ton transit', v: 'est', a: pire ? 'plus lent' : 'plus fluide' };
+    case 'selleOui':      return sens === 'bas' ? { nom: 'les jours avec selle', t: 'tu as moins de jours avec selle', tc: 'tu sembles avoir moins de jours avec selle' }
+                                                : { nom: 'les jours avec selle', t: 'tu as plus de jours avec selle', tc: 'tu sembles avoir plus de jours avec selle' };
+    case 'selleFreq':     return sens === 'bas' ? { nom: 'les passages', t: 'tu as moins de passages', tc: 'tu sembles avoir moins de passages' }
+                                                : { nom: 'les passages', t: 'tu as plus de passages', tc: 'tu sembles avoir plus de passages' };
+    case 'selleBristol':  return { nom: 'les selles', s: 'tes selles', v: 'sont', a: sens === 'bas' ? 'plus dures' : 'plus molles' };
+    case 'peau':          return { nom: 'la peau', s: 'ta peau', v: 'est', a: pire ? 'plus réactive' : 'plus calme' };
+    case 'sommeil':       return { nom: 'le sommeil', s: 'ton sommeil', v: 'est', a: pire ? 'moins bon' : 'meilleur' };
+    case 'energie':       return { nom: 'l\'énergie', s: 'ton énergie', v: 'est', a: pire ? 'plus basse' : 'plus haute' };
+    case 'humeur':        return { nom: 'l\'humeur', s: 'ton humeur', v: 'est', a: pire ? 'plus basse' : 'meilleure' };
+    case 'stress':        return pire ? { nom: 'le stress', t: 'ton stress monte', tc: 'ton stress semble monter' }
+                                      : { nom: 'le stress', s: 'ton stress', v: 'est', a: 'plus bas' };
+  }
+  return { nom: key, t: key, tc: key };
+}
+// « ton ventre est plus gonflé, ton sommeil moins bon et tes selles plus dures » (le verbe n'est dit qu'une fois)
+function cycleListe(mots, prudent) {
+  const parts = []; let verbeDit = false;
+  mots.forEach(m => {
+    if (m.t !== undefined) { parts.push(prudent ? m.tc : m.t); return; }
+    const verbe = prudent ? (m.v === 'sont' ? 'semblent' : 'semble') : m.v;
+    parts.push(m.s + (verbeDit ? ' ' : ' ' + verbe + ' ') + m.a);
+    verbeDit = true;
+  });
+  return parts.length < 2 ? parts[0] : parts.slice(0, -1).join(', ') + ' et ' + parts[parts.length - 1];
+}
+
+// 2 ou 3 phrases, par phase, sans répétition : la phase la plus difficile, puis la plus favorable (« c'est l'inverse pour … »), puis une éventuelle autre
+function cyclePhrases(table, st, prudent) {
+  const OUV = { regles: 'pendant tes règles', preovul: 'en phase folliculaire', ovulation: 'à l\'ovulation', luteale: 'en phase lutéale' };
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const par = {};
+  st.PHASES.forEach(ph => { par[ph] = { pire: [], mieux: [] }; });
+  table.forEach(t => st.PHASES.forEach(ph => {
+    if (t.etats[ph] === 'orange') par[ph].pire.push(t); else if (t.etats[ph] === 'vert') par[ph].mieux.push(t);
+  }));
+  // Dans une phrase, les indicateurs se suivent dans cet ordre (ventre, sommeil, stress, selles, puis les autres)
+  const PRIO = ['ballonnements', 'sommeil', 'stress', 'selleBristol', 'douleurs', 'transit', 'selleOui', 'selleFreq', 'peau', 'energie', 'humeur'];
+  const rang = t => PRIO.indexOf(t.ligne.key);
+  st.PHASES.forEach(ph => { par[ph].pire.sort((x, y) => rang(x) - rang(y)); par[ph].mieux.sort((x, y) => rang(x) - rang(y)); });
+  const ordre = ['luteale', 'regles', 'ovulation', 'preovul'];                   // priorité en cas d'égalité
+  const choisir = (cle, exclus) => {
+    let best = null;
+    ordre.forEach(ph => { if (exclus.indexOf(ph) < 0 && par[ph][cle].length && (!best || par[ph][cle].length > par[best][cle].length)) best = ph; });
+    return best;
+  };
+  const mots = (liste, etat, ph) => liste.map(t => cycleMot(t.ligne.key, etat, t.sens[ph]));
+  const phrases = [];
+  const A = choisir('pire', []), B = choisir('mieux', A ? [A] : []);
+  // Phrases courtes : au plus 4 éléments pour une phase, 3 pour les compléments (dans l'ordre de priorité ci-dessus)
+  if (A) phrases.push(cap(OUV[A]) + ', ' + cycleListe(mots(par[A].pire.slice(0, 4), 'orange', A), prudent) + '.');
+  if (B) {
+    const dansA = t => !!A && par[A].pire.some(u => u.ligne.key === t.ligne.key);
+    const inverse = par[B].mieux.filter(dansA).slice(0, 4), autres = par[B].mieux.filter(t => !dansA(t)).slice(0, 3), pires = par[B].pire.slice(0, 3);
+    const morceaux = [];
+    if (inverse.length) morceaux.push('c\'est l\'inverse pour ' + insListe(mots(inverse, 'vert', B).map(m => m.nom)));
+    if (autres.length)  morceaux.push(cycleListe(mots(autres, 'vert', B), prudent));
+    let txt = morceaux.join(', et ');
+    if (pires.length) txt += (txt ? ', mais ' : '') + cycleListe(mots(pires, 'orange', B), prudent);
+    phrases.push(cap(OUV[B]) + ', ' + txt + '.');
+  }
+  const C = ordre.filter(ph => ph !== A && ph !== B && (par[ph].pire.length || par[ph].mieux.length))[0];
+  if (C && phrases.length < 3) {
+    let txt = par[C].pire.length ? cycleListe(mots(par[C].pire.slice(0, 3), 'orange', C), prudent) : '';
+    if (par[C].mieux.length) txt += (txt ? ', mais ' : '') + cycleListe(mots(par[C].mieux.slice(0, 3), 'vert', C), prudent);
+    phrases.push(cap(OUV[C]) + ', ' + txt + '.');
+  }
+  return phrases;
+}
+
+// « environ N cycles » : durée couverte par les jours renseignés ÷ durée du cycle, arrondie (1 au minimum)
+function cycleNbCycles(st) {
+  const ds = st.dates.slice().sort();
+  if (!ds.length) return 0;
+  const jours = Math.round((new Date(ds[ds.length - 1] + 'T12:00:00') - new Date(ds[0] + 'T12:00:00')) / 86400000) + 1;
+  return Math.max(1, Math.round(jours / st.cycleDuration));
+}
+
+// Alerte « données de cycle décalées » (Vue d'ensemble et onglet Cycle)
+function insightsCycleAlerteHtml() {
+  return '<div class="ins-alerte"><div class="ins-alerte-titre">🌸 Tes données de cycle semblent décalées</div>'
+    + '<div class="ins-alerte-txt">Mets-les à jour pour que tes tendances par phase restent justes.</div>'
+    + '<button class="ins-alerte-btn" onclick="openCycleModal()">Mettre à jour mon cycle</button></div>';
+}
+
+function insightsTabCycle(ctx) {
+  const st = cycleStatsParPhase();
+  if (!st) return '<div class="cy-vide">Active le suivi de ton cycle pour voir comment tes indicateurs évoluent selon les phases.<br>'
+    + '<button class="ins-link-btn" onclick="openCycleModal()">Activer le suivi du cycle</button></div>';
+  const decale = cycleDecale();
+  const alerte = decale ? insightsCycleAlerteHtml() : '';
+  const table = st.dates.length >= st.SEUIL_PHASE * 2 ? cycleTableData(st) : [];
+  const comparable = table.some(t => st.PHASES.filter(ph => t.etats[ph] !== 'none').length >= 2);
+  if (!comparable) return alerte + '<div class="cy-vide">Pas encore assez de données par phase. Continue ton journal : les tendances apparaîtront au fil de tes cycles.</div>';
+
+  const colonnes = CYCLE_COLONNES.filter(c => c[0] !== 'ovulation' || table.some(t => t.etats.ovulation !== 'none'));   // Ovulatoire seulement si disponible
+  const cellule = e => e === 'none' ? '<span class="cy-none">–</span>' : '<span class="cy-dot cy-' + (e === 'vert' ? 'vert' : (e === 'orange' ? 'orange' : 'beige')) + '"></span>';
+  const phrases = cyclePhrases(table, st, decale);
+  return alerte + '<div class="cy-bloc">'
+    + (decale ? '<div class="cy-prudence">Ces tendances sont à prendre avec prudence tant que tes dates de cycle ne sont pas à jour.</div>' : '')
+    + '<div class="cy-scroll"><table class="cy-table"><thead><tr><th></th>' + colonnes.map(c => '<th>' + c[1] + '</th>').join('') + '</tr></thead><tbody>'
+    + table.map(t => '<tr><td class="cy-label">' + t.ligne.label + '</td>' + colonnes.map(c => '<td>' + cellule(t.etats[c[0]]) + '</td>').join('') + '</tr>').join('')
+    + '</tbody></table></div>'
+    + '<div class="cy-legende"><span class="cy-dot cy-vert"></span> mieux · <span class="cy-dot cy-beige"></span> neutre · <span class="cy-dot cy-orange"></span> moins bien · – pas assez de données</div>'
+    + '<div class="cy-phrases">' + (phrases.length ? phrases.map(p => '<p>' + p + '</p>').join('') : '<p>Pas de variation nette de tes indicateurs selon les phases de ton cycle.</p>') + '</div>'
+    + '<div class="cy-base">Basé sur environ ' + cycleNbCycles(st) + ' cycle' + (cycleNbCycles(st) > 1 ? 's' : '') + '.</div></div>';
+}
+// ── Onglet Liens : le contenu actuel des corrélations et co-évolutions, déplacé tel quel ──
+function insightsTabLiens(ctx) {
+  const html = buildThemeBlocks(
+    computeBrique2(ctx.allEntries), computeBrique4(), computeBrique9(), computeBrique10(),
+    computeBrique11(), computeBrique12(), computeBrique13());
+  return html || '<div class="ichart-empty" style="padding:32px 16px">Les liens entre tes indicateurs apparaîtront ici dès ' + CORR_MIN_JOURS + ' jours de données.</div>';
 }
 
 function renderInsightsPage() {
@@ -7053,116 +7404,17 @@ function renderInsightsPage() {
 
   const totalEntries = entries.length;
   const SEUIL_INSIGHTS = 5;
-  const SEUIL_PDF = 14;
+  const ctx = { getDayVals, allEntries, entries, totalEntries, SEUIL_INSIGHTS, brique1Html: b1Render() };
 
-  // Bouton PDF
-  const pdfBtn = document.getElementById('pdf-btn-insights');
-  const pdfSub = document.getElementById('pdf-btn-sub');
-  if (pdfBtn) {
-    if (totalEntries >= SEUIL_PDF) {
-      pdfBtn.style.opacity = '1'; pdfBtn.style.cursor = 'pointer';
-      if (pdfSub) pdfSub.textContent = 'À partager avec ton dermatologue ou gastro-entérologue';
-    } else {
-      pdfBtn.style.opacity = '0.45'; pdfBtn.style.cursor = 'not-allowed';
-      const rem = SEUIL_PDF - totalEntries;
-      if (pdfSub) pdfSub.textContent = `Disponible dans ${rem} entrée${rem>1?'s':''} de plus`;
-    }
-  }
+  // Un seul onglet à la fois
+  const onglets = { overview: insightsTabOverview, semaine: insightsTabSemaine, mois: insightsTabMois, cycle: insightsTabCycle, liens: insightsTabLiens };
+  if (!onglets[_insightsTab]) _insightsTab = 'overview';
+  const corps = onglets[_insightsTab](ctx);
 
-  // Brique 1 (avant / après « Mes nouveaux suivis ») : calculée AVANT la garde « page vide » —
-  // elle ne dépend pas des 30 derniers jours et s'affiche dès qu'elle a un résultat.
-  const brique1Html = b1Render();
-  const disclaimerHtml = `<div class="ins-disclaimer">Ces observations sont calculées sur tes données personnelles — jamais des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin, gastro-entérologue ou dermatologue.</div>`;
-
-  if (totalEntries < SEUIL_INSIGHTS) {
-    const types = { transit:false, repas:false, peau:false, stress:false };
-    entries.forEach(e => { if (types[e.type] !== undefined) types[e.type] = true; });
-    const pills = Object.entries({ transit:'🌿 Transit', repas:'🥗 Repas', peau:'✨ Peau', stress:'😮‍💨 Stress' })
-      .map(([key, label]) => `<div class="ipp${types[key]?' done':''}"><div class="ipp-dot"></div>${label}</div>`).join('');
-    content.innerHTML = `
-      <div class="insights-empty-page">
-        <div class="iep-icon">🌿</div>
-        <div class="iep-title">Tes insights arrivent bientôt</div>
-        <div class="iep-text">Continue à remplir ton journal pour voir tes premières observations.<br><br>
-          <span style="font-size:0.78rem;color:var(--text-light)">${totalEntries} entrée${totalEntries>1?'s':''} · ${SEUIL_INSIGHTS-totalEntries} de plus pour tes premiers insights</span>
-        </div>
-        <div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:12px">Ce que tu as déjà noté</div>
-        <div class="insights-progress-pills">${pills}</div>
-      </div>` + (brique1Html ? brique1Html + disclaimerHtml : '');
-    return;
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Collecte de tous les résultats briques (sans les afficher séparément)
-  // ────────────────────────────────────────────────────────────────────────────
-
-  const brique2Html  = computeBrique2(allEntries);
-  const brique4Html  = computeBrique4();
-  const brique9Html  = computeBrique9();
-  const brique10Html = computeBrique10();
-  const brique11Html = computeBrique11();
-  const brique12Html = computeBrique12();
-  const brique13Html = computeBrique13();
-  const foodTestHtml = (() => {
-    const ins = getFoodTestInsights(entries);
-    if (!ins.length) return '';
-    return `<div class="section-title insights-section" style="margin-top:4px">Tests alimentaires</div>` +
-      ins.map(i => `<div class="insight-real-card" style="border-left-color:#7dd3fc"><div class="irc-tag">${i.icon} ${i.tag}</div><div class="irc-text">${i.text}</div></div>`).join('');
-  })();
-
-  // Cycle — utilise tout l'historique mais fixe le bug de la synthèse hebdo
-  // getCycleInsights scanne localStorage directement, aucun filtrage par période
-  const cycleInsights = getCycleInsights([]);
-  const cycleHtml = cycleInsights.length
-    ? `<div class="section-title insights-section" style="margin-top:4px">Cycle &amp; corrélations</div>` +
-      cycleInsights.map(i => `
-        <div class="insight-real-card" style="border-left-color:#d8b4fe">
-          <div style="margin-bottom:6px"><span class="insight-cycle-badge">🌸 Suivi cycle</span></div>
-          <div class="irc-tag">${i.icon} ${i.tag}</div>
-          <div class="irc-text">${i.text}</div>
-        </div>`).join('')
-    : '';
-
-
-  // ── Niveau 1 : Résumé gros titres ─────────────────────────────────────────
-  const summary = buildInsightsSummary(getDayVals, _ichartWeekOffset);
-  const summaryItems = summary.items;
-  const summaryHtml = summaryItems.length ? `
-    <div class="ins-summary-block">
-      <div class="ins-summary-title">${summary.title}</div>
-      <div class="ins-summary-sub">${summary.subtitle}</div>
-      ${summaryItems.map((item, idx) => `
-        <div class="ins-summary-item" onclick="document.getElementById('ins-detail-${idx}')?.scrollIntoView({behavior:'smooth',block:'start'})">
-          <span class="ins-summary-kw">${item.indicator} ${item.keyword}</span>
-          <span>${item.arrow}</span>
-        </div>`).join('')}
-    </div>` : '';
-
-  // ── Niveau 3 : Corrélations groupées par thème ────────────────────────────
-  const themesHtml = buildThemeBlocks(
-    brique2Html, brique4Html, brique9Html, brique10Html,
-    brique11Html, brique12Html, brique13Html
-  );
-
-  // ── Assemblage final ───────────────────────────────────────────────────────
-  let html = summaryHtml;
-  html += buildInsightsCarousel(getDayVals, 7, 'semaine');
-  html += buildInsightsCarousel(getDayVals, 30, 'mois');
-  if (brique1Html) html += brique1Html;
-  if (foodTestHtml) html += foodTestHtml;
-  if (cycleHtml)    html += cycleHtml;
-  if (themesHtml)   html += themesHtml;
-  // Disclaimer unique en bas
-  html += `<div class="ins-disclaimer">Ces observations sont calculées sur tes données personnelles — jamais des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin, gastro-entérologue ou dermatologue.</div>`;
-
-  content.innerHTML = html;
-
-  // Hauteur de chaque carrousel = hauteur du panneau affiché (recalculée aussi après chargement des polices)
-  _ichartIdx[''] = 0; _ichartIdx['-30'] = 0;       // le rendu repart sur le 1er panneau
-  ichartFitAll();
-  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(ichartFitAll);
-  setTimeout(ichartFitAll, 300);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(ichartFitAll);
+  // Mention unique, en bas de page, commune à tous les onglets (absente tant qu'il n'y a aucune observation)
+  const mention = (totalEntries >= SEUIL_INSIGHTS || ctx.brique1Html) ? '<div class="ins-disclaimer">' + INS_MENTION + '</div>' : '';
+  content.innerHTML = insightsTabsHtml(_insightsTab) + corps + mention;
+  insightsAfterRender();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -7185,6 +7437,201 @@ function corrSeuilRho(n) {
 function corrAffichable(n, rho) {
   if (rho === null || rho === undefined || isNaN(rho)) return false;
   return n >= CORR_MIN_JOURS && Math.abs(rho) >= corrSeuilRho(n);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CATALOGUE DES LIENS — les 37 paires déjà calculées par les moteurs (Briques 2, 6, 9 à 13)
+// Mêmes données, même corrélation (spearmanCorr), même règle d'affichage (corrAffichable :
+// 14 jours minimum, 0,40 relevé quand il y a peu de jours). Deux usages :
+//   corrCatalogue()                → fenêtre propre à chaque moteur (30 derniers jours ; tout l'historique pour la Brique 2),
+//                                    donc chaque lien retenu existe aussi dans l'onglet Liens ;
+//   corrCatalogue({ from, to })    → uniquement les jours de la période (Synthèse du mois affiché), liens inverses compris.
+// ══════════════════════════════════════════════════════════════════════════════
+// [variable A, variable B, moteur]
+const CORR_PAIRS = [
+  ['stress','som','B9'], ['stress','hum','B9'], ['stress','peau','B9'], ['stress','bal','B9'], ['stress','doul','B9'], ['stress','selle','B9'], ['stress','bristol','B9'], ['stress','freq','B9'],
+  ['transit','bal','B10'], ['transit','doul','B10'], ['transit','peau','B10'], ['transit','som','B10'], ['transit','ener','B10'], ['transit','selle','B10'], ['transit','bristol','B10'], ['transit','freq','B10'],
+  ['bal','doul','B11'], ['bal','peau','B11'], ['bal','som','B11'], ['bal','ener','B11'], ['bal','selle','B11'], ['bal','bristol','B11'], ['bal','freq','B11'],
+  ['doul','som','B12'], ['doul','ener','B12'], ['doul','selle','B12'], ['doul','bristol','B12'], ['doul','freq','B12'],
+  ['som','hum','B13'],
+  ['hyd','freqTous','B6'], ['hyd','bristol','B6'], ['hyd','peau','B6'], ['hyd','transit','B6'], ['hyd','doul','B6'],
+  ['som','peau','B2'], ['stress','transit','B2'], ['ener','stress','B2']
+];
+
+// Un objet par jour, avec les mêmes règles de lecture que les moteurs :
+// ballonnements/sommeil/énergie/stress > 0 ; transit, peau, douleurs, humeur, hydratation : valeur ou rien ;
+// calendrier des selles : selle (oui = 1, non = 0), bristol et freq (jours « oui » seulement), freqTous (0 les jours « non »)
+function corrDayIndex() {
+  const idx = {}, HYD = { lt1: 0, '1to2': 1, gt2: 2 };
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    let ds = null, cal = false;
+    if (k.indexOf('nara_journal_') === 0) ds = k.slice(13);
+    else if (k.indexOf('nara_cal_') === 0) { ds = k.slice(9); cal = true; }
+    if (!ds || !/^\d{4}-\d{2}-\d{2}$/.test(ds)) continue;
+    let o;
+    try { o = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+    if (!o) continue;
+    const d = idx[ds] || (idx[ds] = {});
+    if (cal) {
+      if (o.yn) {
+        d.selle = o.yn === 'oui' ? 1 : 0;
+        d.freqTous = o.yn === 'oui' ? (o.freq || 1) : 0;
+        if (o.yn === 'oui') {
+          d.freq = o.freq || 1;
+          if (o.bristol !== null && o.bristol !== undefined) d.bristol = o.bristol;
+        }
+      }
+    } else {
+      if (o.transit !== null && o.transit !== undefined) d.transit = o.transit;
+      if (o.ballonnements > 0) d.bal = o.ballonnements;
+      if (o.douleurs !== undefined && o.douleurs !== null) d.doul = o.douleurs;
+      if (o.peau !== null && o.peau !== undefined) d.peau = o.peau;
+      if (o.sommeil > 0) d.som = o.sommeil;
+      if (o.energie > 0) d.ener = o.energie;
+      if (o.stress > 0) d.stress = o.stress;
+      if (o.humeur !== null && o.humeur !== undefined) d.hum = o.humeur === 0 ? 3 : (o.humeur === 1 ? 2 : 1);
+      if (o.hydratation !== null && o.hydratation !== undefined && HYD[o.hydratation] !== undefined) d.hyd = HYD[o.hydratation];
+    }
+  }
+  return idx;
+}
+
+function corrCatalogue(opts) {
+  const idx = corrDayIndex();
+  const dates = Object.keys(idx).sort();
+  const periode = !!(opts && opts.from);
+  const derniers30 = {};                                   // fenêtre des moteurs : aujourd'hui et les 29 jours précédents
+  for (let i = 0; i < 30; i++) { const d = new Date(); d.setDate(d.getDate() - i); derniers30[d.toISOString().split('T')[0]] = true; }
+  const out = [];
+  CORR_PAIRS.forEach(p => {
+    const a = p[0], b = p[1], moteur = p[2];
+    const jours = dates.filter(ds => {
+      if (periode) { if (ds < opts.from || ds > opts.to) return false; }
+      else if (moteur !== 'B2' && !derniers30[ds]) return false;
+      return idx[ds][a] !== undefined && idx[ds][b] !== undefined;
+    });
+    if (jours.length < CORR_MIN_JOURS) return;
+    const rho = spearmanCorr(jours.map(ds => idx[ds][a]), jours.map(ds => idx[ds][b]));
+    if (!corrAffichable(jours.length, rho)) return;
+    if (!periode && moteur === 'B2' && a === 'ener' && !(rho < 0)) return;     // même règle d'affichage que la Brique 2 (énergie haute = stress bas)
+    out.push({ a, b, moteur, n: jours.length, rho, force: Math.abs(rho) >= 0.55 ? 3 : 2 });
+  });
+  return out;
+}
+
+// ── Phrases : « {état A} et {état B} vont souvent ensemble » + points ●●● (marqué) ou ●● (modéré) ──
+// B est à l'état « haut » ; A à l'état qui va avec (même sens si lien positif, sens opposé sinon).
+// Quand un seul des deux est un symptôme (ballonnements, douleurs, stress), c'est lui qui est à l'état « haut ».
+const CORR_VOC = {
+  bal:      { haut: 'ballonnements',     bas: 'peu de ballonnements', icone: '🌀',  symptome: true },
+  doul:     { haut: 'douleurs',          bas: 'peu de douleurs',      icone: '😣',  symptome: true },
+  stress:   { haut: 'stress élevé',      bas: 'stress bas',           icone: '😮‍💨', symptome: true },
+  peau:     { haut: 'peau calme',        bas: 'poussées',             icone: '✨' },
+  som:      { haut: 'bon sommeil',       bas: 'sommeil léger',        icone: '😴' },
+  ener:     { haut: 'énergie haute',     bas: 'énergie basse',        icone: '⚡' },
+  hum:      { haut: 'bonne humeur',      bas: 'humeur basse',         icone: '😊' },
+  hyd:      { haut: 'bonne hydratation', bas: 'peu d\'eau',           icone: '💧' },
+  transit:  { haut: 'transit rapide',    bas: 'transit lent',         icone: '🌿' },
+  selle:    { haut: 'jours avec selle',  bas: 'jours sans selle',     icone: '🌿' },
+  bristol:  { haut: 'selles plus molles', bas: 'selles plus dures',   icone: '🌿' },
+  freq:     { haut: 'plus de passages',  bas: 'peu de passages',      icone: '🌿' },
+  freqTous: { haut: 'plus de passages',  bas: 'peu de passages',      icone: '🌿' }
+};
+const CORR_ICONE_ORDRE = ['bal', 'doul', 'stress', 'peau', 'som', 'ener', 'hum', 'hyd', 'transit', 'selle', 'bristol', 'freq', 'freqTous'];
+function corrPhrase(l) {
+  const A = CORR_VOC[l.a], B = CORR_VOC[l.b], pos = l.rho > 0;
+  let ea, eb;
+  if (A.symptome && !B.symptome) { ea = 'haut'; eb = pos ? 'haut' : 'bas'; }
+  else                           { eb = 'haut'; ea = pos ? 'haut' : 'bas'; }
+  const t = A[ea] + ' et ' + B[eb] + ' vont souvent ensemble';
+  const premier = CORR_ICONE_ORDRE.filter(k => k === l.a || k === l.b)[0];
+  return { icone: CORR_VOC[premier].icone, texte: t.charAt(0).toUpperCase() + t.slice(1), points: l.force === 3 ? '●●●' : '●●' };
+}
+function corrTrier(liens) { return liens.slice().sort((x, y) => Math.abs(y.rho) - Math.abs(x.rho) || y.n - x.n); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYNTHÈSE DU MOIS (sous le carrousel du mois) — fermée par défaut : 3 points au maximum
+//   ⬆️ ce qui va mieux · ⬇️ ce qui coince : mois affiché comparé au mois précédent (mêmes 11 indicateurs et même règle
+//      que l'avant/après : écart notable + test p < 0,01, 14 jours minimum de chaque côté) ;
+//   🔗 un lien repéré : le plus fort des liens du mois affiché (37 paires, signes + et −, mêmes seuils que partout).
+// ══════════════════════════════════════════════════════════════════════════════
+const INS_NOMS = { transit: 'ton transit', passages: 'tes passages', bristol: 'tes selles', ballonnements: 'tes ballonnements', douleurs: 'tes douleurs',
+                   peau: 'ta peau', sommeil: 'ton sommeil', energie: 'ton énergie', stress: 'ton stress', humeur: 'ton humeur', hydratation: 'ton hydratation' };
+function insListe(noms) { return noms.length < 2 ? (noms[0] || '') : noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1]; }
+
+// Bornes (AAAA-MM-JJ) du mois affiché (_ichartMonthOffset) et du mois précédent
+function insightsMonthInfo(offset) {
+  const moisFr = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const ref = new Date(); ref.setDate(1); ref.setHours(12, 0, 0, 0); ref.setMonth(ref.getMonth() + offset);
+  const y = ref.getFullYear(), m = ref.getMonth();
+  const ds = d => d.toISOString().split('T')[0];
+  return { start: ds(new Date(y, m, 1, 12)), end: ds(new Date(y, m + 1, 0, 12)), prevStart: ds(new Date(y, m - 1, 1, 12)), prevEnd: ds(new Date(y, m, 0, 12)), prevNom: moisFr[(m + 11) % 12] };
+}
+
+// Bouton « Voir le détail » / « Masquer le détail » (Synthèse du mois, carte avant/après)
+function insToggleDetail(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const ouvert = el.style.display === 'block';
+  el.style.display = ouvert ? 'none' : 'block';
+  if (btn) btn.textContent = ouvert ? 'Voir le détail' : 'Masquer le détail';
+}
+
+function buildMoisSynthese() {
+  const info = insightsMonthInfo(_ichartMonthOffset);
+  const titre = '<div class="ichart-header"><span class="ichart-title">Synthèse du mois</span></div>';
+  // Jours du mois affiché ayant au moins un indicateur du journal
+  const cidx = corrDayIndex();
+  let jours = 0;
+  Object.keys(cidx).forEach(ds => {
+    if (ds < info.start || ds > info.end) return;
+    const d = cidx[ds];
+    if (d.transit !== undefined || d.bal !== undefined || d.doul !== undefined || d.peau !== undefined || d.som !== undefined
+        || d.ener !== undefined || d.stress !== undefined || d.hum !== undefined || d.hyd !== undefined) jours++;
+  });
+  if (jours < CORR_MIN_JOURS) {
+    return '<div class="ins-synth">' + titre + '<div class="ichart-empty" style="padding:14px 0 6px">Continue à remplir ton journal — les liens entre tes indicateurs apparaîtront dès '
+      + CORR_MIN_JOURS + ' jours de données.</div></div>';
+  }
+
+  // ⬆️ / ⬇️ : mois affiché comparé au mois précédent
+  const bidx = b1BuildDayIndex(), mieux = [], coince = [];
+  B1_IND.forEach(ind => {
+    const c = b1Compare(ind, b1Collect(bidx, info.prevStart, info.prevEnd, ind.key), b1Collect(bidx, info.start, info.end, ind.key));
+    if (c && c.change) (c.mieux ? mieux : coince).push({ ind, mieux: c.mieux, avant: c.avant, apres: c.apres, p: c.p, ratio: c.ratio });
+  });
+  mieux.sort((x, y) => y.ratio - x.ratio);
+  coince.sort((x, y) => y.ratio - x.ratio);
+
+  // 🔗 : liens du mois affiché, du plus fort au plus faible
+  const liens = corrTrier(corrCatalogue({ from: info.start, to: info.end }));
+  const phraseLien = l => { const p = corrPhrase(l); return { icone: p.icone, texte: p.texte, points: p.points }; };
+
+  const nom = r => INS_NOMS[r.ind.key];
+  const lignes = [];
+  if (mieux.length)  lignes.push('⬆️ <strong>Ce qui va mieux</strong> : ' + insListe(mieux.slice(0, 3).map(nom)));
+  if (coince.length) lignes.push('⬇️ <strong>Ce qui coince</strong> : ' + insListe(coince.slice(0, 3).map(nom)));
+  if (liens.length) { const p = phraseLien(liens[0]); lignes.push('🔗 <strong>Un lien repéré</strong> : ' + p.texte + ' <span class="ins-dots">' + p.points + '</span>'); }
+  else lignes.push('🔗 Pas de lien net entre tes indicateurs ce mois-ci.');
+
+  // Détail (replié) : tous les ⬆️ / ⬇️ en « avant → après », tous les liens, renvoi vers l'onglet Cycle
+  let detail = '';
+  if (mieux.length)  detail += '<div class="ins-synth-sous">⬆️ Ce qui va mieux</div><div class="b1-rows">' + mieux.map(b1RowHtml).join('') + '</div>';
+  if (coince.length) detail += '<div class="ins-synth-sous">⬇️ Ce qui coince</div><div class="b1-rows">' + coince.map(b1RowHtml).join('') + '</div>';
+  if (liens.length > 1) detail += '<div class="ins-synth-sous">🔗 Liens repérés</div><div class="b1-rows">' + liens.map(l => { const p = phraseLien(l);
+    return '<div class="b1-row"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('') + '</div>';
+  let cycleActif = false;
+  try { const sc = cycleLoad(); cycleActif = !!(sc && sc.active && sc.startDate); } catch (e) {}
+  if (cycleActif) detail += '<div class="ins-synth-cycle" onclick="insightsSetTab(\'cycle\')">🌸 Tes tendances par phase de cycle sont dans l\'onglet Cycle.</div>';
+
+  return '<div class="ins-synth">' + titre
+    + ((mieux.length || coince.length) ? '<div class="ins-synth-sub">Comparé à ' + info.prevNom + '</div>' : '')
+    + '<div class="ins-synth-lignes">' + lignes.map(l => '<div class="ins-synth-ligne">' + l + '</div>').join('') + '</div>'
+    + (detail ? '<div class="ins-synth-det" id="ins-synth-det">' + detail + '</div>'
+      + '<button class="ins-link-btn" onclick="insToggleDetail(\'ins-synth-det\', this)">Voir le détail</button>' : '')
+    + '</div>';
 }
 
 // ── Niveaux : mêmes seuils pour les conseils des cartes et pour le résumé ─────
@@ -7286,7 +7733,8 @@ function buildInsightsSummary(getDayVals, weekOffset) {
     const a = cur[ind.key], b = prev[ind.key];
     if (!a.length) return;                                    // pas de donnée cette semaine → pas de ligne
     const bande  = ind.key === 'peau' ? insBandePeau(a) : insBande(ind.key, r1(moy(a)));
-    const niveau = INS_LIBELLES[ind.key][bande];
+    let niveau = INS_LIBELLES[ind.key][bande];
+    if (ind.key === 'sommeil' && bande === 1 && r1(moy(a)) >= 3.5) niveau = 'plutôt bon';       // 3,5 à 3,9 : même formulation que le conseil
     let tendance = '', arrow = '';
     if (a.length >= 3 && b.length >= 3) {                     // tendance : au moins 3 jours dans chaque semaine
       const diff = moy(a) - moy(b);
@@ -7329,7 +7777,7 @@ function buildThemeBlocks(b2, b4, b9, b10, b11, b12, b13) {
 
   const themes = [
     { label:'Fluctuations récentes',   dot:'ins-dot-bal',      html: b4  },
-    { label:'Co-évolutions — Brique 2',dot:'ins-dot-brique2',  html: b2  },
+    { label:'Co-évolutions',          dot:'ins-dot-brique2',  html: b2  },
     { label:'Stress & bien-être',      dot:'ins-dot-stress',   html: b9  },
     { label:'Transit ressenti',        dot:'ins-dot-transit',  html: b10 },
     { label:'Ballonnements',           dot:'ins-dot-bal',      html: b11 },
@@ -7375,7 +7823,6 @@ function ichartNavigate(periode, delta) {
 
 // Panneau 1 : Transit & Ballonnements  Panneau 2 : Sommeil & Énergie
 // Panneau 3 : Stress & Humeur          Panneau 4 : Peau
-// Panneau 5 : Synthèse de période
 //
 // Palette couleurs fixe — cohérente partout dans l'app :
 //   Transit      → --avocado   #C2C395  (vert naturel)
@@ -7659,14 +8106,16 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       const som = connu(avg1, n1), en = connu(avg2, n2);
       const bs = insBande('sommeil', som), be = insBande('energie', en);       // 0 faible · 1 moyen · 2 bon
       const conseilEnergie = () => {
-        const clause = som === null ? '' : ` alors que ton sommeil est ${bs === 2 ? 'bon' : 'correct'} (${som.toFixed(1)}/5)`;
+        const clause = som === null ? '' : ` alors que ton sommeil est ${bs === 2 ? 'bon' : (som >= 3.5 ? 'plutôt bon' : 'correct')} (${som.toFixed(1)}/5)`;
         return `Ton énergie est ${be === 0 ? 'basse' : 'moyenne'} (${en.toFixed(1)}/5)${clause} : regarde aussi l'hydratation, la régularité des repas et le mouvement dans la journée.`;
       };
       if (mois) {
         if (bs === 0 || be === 0) {
-          conseil = "Un mois avec peu de sommeil ou d'énergie est un signal à prendre au sérieux. Si ce rythme persiste, ça vaut le coup d'en parler à un professionnel — et d'auditer les charges qui pèsent le plus sur cette période.";
+          conseil = "Un mois avec peu de sommeil ou d'énergie est un signal à prendre au sérieux. Si ce rythme persiste, regarde d'abord les charges qui pèsent le plus sur cette période et ce que tu peux alléger.";
         } else if (bs === 2 && be === 2) {
           conseil = "Un mois avec un bon niveau de sommeil et d'énergie : ton corps est en phase de régulation. C'est souvent dans ces fenêtres qu'on peut intégrer des changements durables plus facilement.";
+        } else if (bs === 1 && som >= 3.5) {
+          conseil = `Ton sommeil est plutôt bon sur le mois (${som.toFixed(1)}/5). Des horaires de lever réguliers, même le week-end, peuvent encore consolider ton énergie.`;
         } else if (bs === 1) {
           conseil = `Sur le mois, un sommeil moyen à ${som.toFixed(1)}/5 suggère une régularité perfectible. La cohérence des horaires de lever — même le week-end — a un impact mesuré sur l'énergie de toute la semaine suivante.`;
         } else if (be === 1) {
@@ -7679,6 +8128,8 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
           conseil = conseilEnergie();
         } else if (bs === 2 && be === 2) {
           conseil = "Ton sommeil et ton énergie sont solides en ce moment. Continue ce rythme — c'est souvent dans ces phases que le corps régule mieux le reste.";
+        } else if (bs === 1 && som >= 3.5) {
+          conseil = "Ton sommeil est plutôt bon cette semaine. Garder un horaire de lever constant, même le week-end, aide à stabiliser l'énergie.";
         } else if (bs === 1) {
           conseil = "Essaie de garder un horaire de lever constant, même le week-end — c'est le levier le plus efficace pour stabiliser l'énergie sur la semaine.";
         } else if (be === 1) {
@@ -7699,7 +8150,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       const bst = insBande('stress', st);                                         // 0 bas · 1 modéré · 2 élevé
       if (mois) {
         if (bst === 2) {
-          conseil = "Un mois avec un stress chroniquement élevé a des effets documentés sur le microbiome, le sommeil et la perméabilité intestinale. C'est un signal à ne pas ignorer — si la charge ne baisse pas naturellement, envisage d'en parler à un médecin ou un psychologue.";
+          conseil = "Un mois avec un stress chroniquement élevé a des effets documentés sur le microbiome, le sommeil et la perméabilité intestinale. C'est un signal à ne pas ignorer — si la charge ne baisse pas naturellement, cherche ce que tu peux alléger. Si ça dure, en parler à un médecin ou un psychologue peut aider.";
         } else if (bst === 0) {
           conseil = "Un mois de stress bas, c'est rare. C'est une fenêtre précieuse pour ancrer de nouvelles habitudes — ton système nerveux est en conditions optimales pour les intégrer durablement.";
         } else if (bst === 1) {
@@ -7735,12 +8186,12 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       const fr = connu(avgFreq, tAll.length), bl = connu(avgBal, bAll.length);
       const bF = insBande('transit', fr);                                         // 0 lent (< 0,5/j) · 1 régulier · 2 rapide (> 3/j)
       const bB = insBande('ballonnements', bl);                                   // 2 = élevés (≥ 3)
-      const conseilRapide = () => `Plus de 3 passages par jour en moyenne (${fr.toFixed(1)}/jour) : si cela se répète, note ce que tu as mangé ces jours-là et parle-en à ton gastro-entérologue.`;
+      const conseilRapide = () => `Plus de 3 passages par jour en moyenne (${fr.toFixed(1)}/jour) : si cela se répète, note ce que tu as mangé ces jours-là pour repérer ce qui revient.`;
       if (mois) {
         if (bB === 2) {
-          conseil = "Des ballonnements élevés sur le mois méritent une attention particulière. C'est une donnée concrète à partager avec ton gastro-entérologue : la durée et la régularité du symptôme sont des informations diagnostiques précieuses.";
+          conseil = "Des ballonnements élevés sur le mois méritent une attention particulière. Note ce que tu manges, à quel moment, et ton niveau de stress : la durée et la régularité du symptôme sont des repères précieux.";
         } else if (bF === 0) {
-          conseil = `Moins d'un passage tous les deux jours en moyenne (${fr.toFixed(1)}/jour) sur le mois peut indiquer un transit lent chronique. Fibres variées, hydratation, et activité physique régulière sont les premiers leviers — mais si ça persiste, une consultation s'impose.`;
+          conseil = `Moins d'un passage tous les deux jours en moyenne (${fr.toFixed(1)}/jour) sur le mois peut indiquer un transit lent installé. Fibres variées, hydratation, et activité physique régulière sont les premiers leviers. Si ça dure, parles-en à ton médecin.`;
         } else if (bF === 2) {
           conseil = conseilRapide();
         } else if (bF === 1) {
@@ -7748,9 +8199,9 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
         }
       } else {
         if (bB === 2) {
-          conseil = "Des ballonnements fréquents peuvent indiquer une fermentation intestinale élevée. Manger plus lentement, bien mâcher et réduire temporairement les légumineuses et les choux aide souvent à les calmer. Si ça dure, c'est un point à aborder avec ton médecin.";
+          conseil = "Des ballonnements fréquents peuvent indiquer une fermentation intestinale élevée. Manger plus lentement, bien mâcher et réduire temporairement les légumineuses et les choux aide souvent à les calmer.";
         } else if (bF === 0) {
-          conseil = "Un transit irrégulier réagit souvent à l'hydratation et aux fibres — vise 1,5L d'eau par jour et varie les sources de légumes. Si la tendance persiste, parle-en à ton gastro-entérologue.";
+          conseil = "Un transit irrégulier réagit souvent à l'hydratation et aux fibres — vise 1,5L d'eau par jour et varie les sources de légumes.";
         } else if (bF === 2) {
           conseil = conseilRapide();
         } else if (bF === 1) {
@@ -7773,7 +8224,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       if (pAll.length >= minJours) {
         if (mois) {
           if (pctPoussee >= 40) {
-            conseil = `Avec ${pctPoussee}% de poussées sur le mois, c'est une donnée significative à documenter et partager avec ton dermatologue. Un journal de bord sur cette durée — alimentation, stress, cycle — peut aider à identifier des déclencheurs récurrents.`;
+            conseil = `Avec ${pctPoussee}% de poussées sur le mois, c'est une donnée à suivre de près. Un journal de bord sur cette durée — alimentation, stress, cycle — peut aider à identifier des déclencheurs récurrents. Si ça dure, parles-en à ton médecin.`;
           } else if (pctPos !== null && pctPos >= 80) {
             conseil = "Un mois majoritairement stable ou calme pour ta peau : c'est un beau signal. Si tu as changé quelque chose récemment — alimentation, routine, traitement — c'est probablement la bonne direction.";
           } else {
@@ -7781,7 +8232,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
           }
         } else {
           if (pctPoussee >= 40) {
-            conseil = "Des poussées fréquentes méritent d'être notées et partagées avec ton dermatologue — elles peuvent signaler une inflammation systémique ou une réaction alimentaire. La peau est souvent le dernier organe à exprimer ce que l'intestin vit en premier.";
+            conseil = "Des poussées fréquentes cette semaine. Note-les : leur fréquence et leur contexte sont des repères utiles.";
           } else if (pctPos !== null && pctPos >= 80) {
             conseil = "Ta peau est dans une bonne phase. C'est un bon moment pour observer ce qui fonctionne — alimentation, routines, niveau de stress — pour en garder la trace.";
           } else {
@@ -7796,76 +8247,6 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
       + `</div>`;
   }
 
-  // ── Panneau 5 : Synthèse globale (croisant les briques) ─────────────────
-  function panel5Synthese(allEntriesForCorr) {
-    const byDate = {};
-    allEntriesForCorr.forEach(e => {
-      if (!byDate[e.dateStr]) byDate[e.dateStr] = {};
-      if (e.type==='stress')  Object.assign(byDate[e.dateStr], {sommeil:e.values.sommeil, stress:e.values.stress, energie:e.values.energie});
-      if (e.type==='peau')    byDate[e.dateStr].peau = e.values.peau_etat;
-      if (e.type==='transit') Object.assign(byDate[e.dateStr], {transit:e.values.transit_etat, ballonnements:e.values.ballonnements});
-    });
-    const dts = Object.keys(byDate).sort();
-    const titre = periode === 'mois' ? 'Synthèse du mois' : 'Synthèse de la semaine';
-    const lines = [];
-
-    // Corrélation Sommeil ↔ Peau — seuil adapté à la période
-    const spDays = dts.filter(d => byDate[d].sommeil > 0 && byDate[d].peau != null);
-    if (spDays.length >= CORR_MIN_JOURS) {
-      const rho = spearmanCorr(spDays.map(d=>byDate[d].sommeil), spDays.map(d=>byDate[d].peau));
-      if (corrAffichable(spDays.length, rho) && rho > 0) {
-        const conf = Math.abs(rho) >= 0.55 ? 'assez marquée' : 'modérée';
-        const msg  = periode === 'mois'
-          ? `😴 ↔ ✨ <strong>Sommeil & peau liés sur le mois</strong> — Sur ${spDays.length} jours avec les deux données, les meilleures nuits coïncident avec un état de peau plus calme (corrélation ${conf}). Une tendance qui se confirme sur la durée.`
-          : `😴 ↔ ✨ <strong>Sommeil & peau liés</strong> — Les nuits de meilleur sommeil coïncident avec des jours de peau plus calme (sur ${spDays.length} jours communs). Un lien observé, pas une certitude.`;
-        lines.push(msg);
-      }
-    }
-
-    // Corrélation Stress ↔ Transit
-    const stDays = dts.filter(d => byDate[d].stress > 0 && byDate[d].transit != null);
-    if (stDays.length >= CORR_MIN_JOURS) {
-      const rho = spearmanCorr(stDays.map(d=>byDate[d].stress), stDays.map(d=>byDate[d].transit));
-      if (corrAffichable(stDays.length, rho)) {
-        const sens = rho < 0 ? "ton transit semble plus perturbé les jours de stress élevé" : "le stress élevé accompagne un transit plus rapide";
-        const msg  = periode === 'mois'
-          ? `😮‍💨 ↔ 🌿 <strong>Stress & transit liés sur le mois</strong> — Sur ${stDays.length} jours communs, ${sens}. Un pattern qui se répète sur un mois est un signal concret à mentionner à ton gastro-entérologue.`
-          : `😮‍💨 ↔ 🌿 <strong>Stress & transit liés</strong> — Sur ${stDays.length} jours, ${sens}. L'axe cerveau-intestin : réel et bidirectionnel.`;
-        lines.push(msg);
-      }
-    }
-
-    // Cycle : simple renvoi vers la section dédiée « Cycle & corrélations »
-    // (ses tendances par phase sont calculées sur tout l'historique, pas sur le mois affiché).
-    let cycleRenvoi = '';
-    try {
-      const settingsC = typeof cycleLoad === 'function' ? cycleLoad() : null;
-      if (settingsC && settingsC.active && settingsC.startDate
-          && typeof getCycleInsights === 'function' && getCycleInsights([]).length > 0) {
-        cycleRenvoi = `🌸 <strong>Suivi du cycle</strong> — Les tendances par phase de cycle sont dans la section « Cycle &amp; corrélations », calculées sur tout ton historique.`;
-      }
-    } catch (e) {}
-
-    const ligne = l => `<div style="font-size:0.78rem;color:var(--text-dark);line-height:1.55;padding:8px 0;border-bottom:1px solid var(--oat)">${l}</div>`;
-
-    if (lines.length === 0) {
-      return `<div class="ichart-panel"><div class="ichart-card">
-        <div class="ichart-header"><span class="ichart-title">${titre}</span></div>
-        <div class="ichart-empty" style="padding:24px 0 16px">
-          Continue à remplir ton journal — les corrélations entre tes indicateurs apparaîtront ici dès ${CORR_MIN_JOURS} jours de données croisées.
-        </div>${cycleRenvoi ? `<div style="margin-top:4px">${ligne(cycleRenvoi)}</div>` : ''}
-      </div></div>`;
-    }
-
-    return `<div class="ichart-panel"><div class="ichart-card">
-      <div class="ichart-header"><span class="ichart-title">${titre}</span></div>
-      <div style="margin-top:4px">${lines.concat(cycleRenvoi ? [cycleRenvoi] : []).map(ligne).join('')}</div>
-      <div style="font-size:0.65rem;color:var(--text-light);margin-top:10px;font-style:italic">
-        Ces tendances sont des observations sur tes propres données — pas des diagnostics. Si un pattern te préoccupe, parle-en à ton médecin ou gastro-entérologue.
-      </div>
-    </div></div>`;
-  }
-
   const p1 = panel1Transit();
   const p2 = panelDouble('Sommeil & Énergie', 'sommeil', 'energie', COL.sommeil, COL.energie,
                           'Sommeil /5', 'Énergie /5', 5, 5);
@@ -7873,22 +8254,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
                          'Stress /5', 'Humeur', 5, 3);
   const p4 = panel4Peau();
 
-  // Synthèse : uniquement en vue Mois, calculée sur les SEULS jours du mois affiché.
-  // (La vue Semaine n'a plus de panneau Synthèse : le bloc « Cette semaine en résumé » la remplace.)
-  let p5 = '';
-  if (isMois) {
-    const entriesPeriode = [];
-    days.forEach(d => {
-      if (d.stress !== null || d.energie !== null || d.sommeil !== null)
-        entriesPeriode.push({ type:'stress',  dateStr:d.ds, values:{ stress:d.stress||0, energie:d.energie||0, sommeil:d.sommeil||0 }});
-      if (d.peau !== null)
-        entriesPeriode.push({ type:'peau',    dateStr:d.ds, values:{ peau_etat:d.peau }});
-      if (d.transit !== null)
-        entriesPeriode.push({ type:'transit', dateStr:d.ds, values:{ transit_etat:d.transit, ballonnements:d.ballonnements||0 }});
-    });
-    p5 = panel5Synthese(entriesPeriode);
-  }
-  const panneaux = [p1, p2, p3, p4].concat(isMois ? [p5] : []);
+  const panneaux = [p1, p2, p3, p4];      // la Synthèse du mois est désormais sous le carrousel (buildMoisSynthese)
 
   // Message "pas de données" si période vide
   if (!hasAnyData) {
@@ -7920,14 +8286,22 @@ function ichartFitHeight(suffix, idx) {
   suffix = suffix || '';
   const track = document.getElementById('ichart-track' + suffix);
   if (!track || !track.children || !track.children.length) return;
-  if (idx === undefined || idx === null) {
-    const w = track.offsetWidth;
-    idx = w ? Math.round(track.scrollLeft / w) : 0;
-  }
+  if (idx === undefined || idx === null) idx = Math.round(track.scrollLeft / ichartStep(track));
   idx = Math.max(0, Math.min(track.children.length - 1, idx));
   const panel = track.children[idx];
   const h = panel ? panel.offsetHeight : 0;
   if (h > 0) track.style.height = h + 'px';
+}
+// Distance exacte (fractionnaire) entre deux cartes = largeur + espace
+function ichartStep(track) {
+  const c = track.children;
+  const w = c.length > 1 ? c[1].getBoundingClientRect().left - c[0].getBoundingClientRect().left : track.offsetWidth;
+  return w > 0 ? w : 1;
+}
+// Position de défilement exacte de la carte idx
+function ichartPanelLeft(track, idx) {
+  const marge = parseFloat(getComputedStyle(track).paddingLeft) || 0;     // marge intérieure de la piste
+  return track.children[idx].getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - marge;
 }
 function ichartFitAll() { ichartFitHeight(''); ichartFitHeight('-30'); }
 window.addEventListener('resize', ichartFitAll);
@@ -7938,7 +8312,7 @@ function ichartGoTo(idx, suffix) {
   if (!track) return;
   _ichartIdx[suffix] = idx;
   ichartFitHeight(suffix, idx);
-  track.scrollTo({ left: idx * track.offsetWidth, behavior: 'smooth' });
+  track.scrollTo({ left: ichartPanelLeft(track, idx), behavior: 'smooth' });
   document.querySelectorAll(`#ichart-dots${suffix} .ichart-dot`)
     .forEach((d,i) => d.classList.toggle('active', i===idx));
 }
@@ -7947,7 +8321,7 @@ function ichartHandleScroll(track, suffix) {
   suffix = suffix || '';
   clearTimeout(_ichartScrollTimers[suffix]);
   _ichartScrollTimers[suffix] = setTimeout(() => {
-    const idx = Math.round(track.scrollLeft / track.offsetWidth);
+    const idx = Math.round(track.scrollLeft / ichartStep(track));
     ichartFitHeight(suffix, idx);
     if (idx !== _ichartIdx[suffix]) {
       _ichartIdx[suffix] = idx;
@@ -7982,6 +8356,7 @@ function computeBrique4() {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (raw) {
         const j = JSON.parse(raw);
+        if (j.transit !== null && j.transit !== undefined) byDate[ds].transit = j.transit;   // ressenti : attendu par la Brique 6 (hydratation ↔ transit), jamais copié avant
         if (j.ballonnements !== undefined) byDate[ds].ballonnements = j.ballonnements;
         if (j.douleurs      !== undefined) byDate[ds].douleurs      = j.douleurs;
         if (j.peau    !== null && j.peau    !== undefined) byDate[ds].peau    = j.peau;
@@ -8083,7 +8458,8 @@ function computeBrique4() {
     }
   });
 
-  if (alertes.length === 0) return null;
+  // Sans alerte de fluctuation, les liens d'hydratation (Brique 6) doivent quand même s'afficher (null si aucun)
+  if (alertes.length === 0) return computeBrique6(byDate, SEUIL_MIN);
 
   // ── Brique 5 : Hydratation → Ballonnements ──────────────────────────────────
   // Si une dérive ou instabilité des ballonnements a été détectée,
@@ -8121,7 +8497,7 @@ function computeBrique4() {
           <span style="font-size:0.65rem;color:var(--text-light);display:block;margin-top:4px">Calculé sur ${a.jours} jours · observation, pas un diagnostic</span>
         </div>
         ${a.hydroNote || ''}
-      </div>`).join('') + computeBrique6(byDate, SEUIL_MIN);
+      </div>`).join('') + (computeBrique6(byDate, SEUIL_MIN) || '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -11636,11 +12012,14 @@ function openCycleFromMenu() {
 }
 
 // ── Corrélation cycle × données journal (pour les insights) ──────────────────
-function getCycleInsights(entries) {
-  const settings = cycleLoad();
-  if (!settings || !settings.active || !settings.startDate) return [];
+// Seuils d'écart entre phases : communs à getCycleInsights et au tableau de l'onglet Cycle
+const CYCLE_SEUILS = { transit: 0.4, ballonnements: 0.5, douleurs: 0.4, peau: 0.4, sommeil: 0.5, energie: 0.5, humeur: 0.4, stress: 0.5, selleOui: 0.2, selleFreq: 0.4, selleBristol: 0.5 };
 
-  const insights       = [];
+// Calcul par phase (partagé par getCycleInsights et l'onglet Cycle) — null si le suivi de cycle n'est pas actif
+function cycleStatsParPhase() {
+  const settings = cycleLoad();
+  if (!settings || !settings.active || !settings.startDate) return null;
+
   const cycleDuration  = settings.cycleDuration || 28;
   const regDuration    = settings.regDuration   || 5;
   const SEUIL_PHASE    = 3; // minimum d'entrées par phase pour afficher un résultat
@@ -11694,7 +12073,6 @@ function getCycleInsights(entries) {
   });
 
   const dates = Object.keys(byDate);
-  if (dates.length < SEUIL_PHASE * 2) return [];
 
   // ── Calcul des moyennes par phase ─────────────────────────────────────────
   const PHASES = ['regles', 'preovul', 'ovulation', 'luteale'];
@@ -11724,6 +12102,25 @@ function getCycleInsights(entries) {
     return { phMax, phMin, diff, moyMap };
   }
 
+  return { settings, cycleDuration, regDuration, SEUIL_PHASE, byDate, dates, PHASES, PHASE_LABELS, moyParPhase, phaseExtremes };
+}
+
+// Garde-fou : la date de début enregistrée remonte à plus d'une durée de cycle + 14 jours
+function cycleDecale() {
+  const settings = cycleLoad();
+  if (!settings || !settings.active || !settings.startDate) return false;
+  const startDate = new Date(settings.startDate + 'T12:00:00');
+  const daysSince = Math.round((new Date() - startDate) / (1000*60*60*24));
+  return daysSince > (settings.cycleDuration || 28) + 14;
+}
+
+function getCycleInsights(entries) {
+  const st = cycleStatsParPhase();
+  if (!st) return [];
+  const { SEUIL_PHASE, dates, PHASES, PHASE_LABELS, moyParPhase, phaseExtremes } = st;
+  const insights = [];
+  if (dates.length < SEUIL_PHASE * 2) return [];
+
   // Générer un insight si la différence entre phases est significative
   function addInsight(key, label, icon, seuilDiff, couleur, sensMax, sensMin, proStr) {
     const moy = moyParPhase(key);
@@ -11742,49 +12139,49 @@ function getCycleInsights(entries) {
   }
 
   // ── Indicateurs Journal ───────────────────────────────────────────────────
-  addInsight('transit', 'Transit ressenti', '🌱', 0.4,
+  addInsight('transit', 'Transit ressenti', '🌱', CYCLE_SEUILS.transit,
     '#B6C687',
     'Transit plus fluide en {phase}',
     'Transit plus lent en {phase}',
     null
   );
-  addInsight('ballonnements', 'Ballonnements', '🌀', 0.5,
+  addInsight('ballonnements', 'Ballonnements', '🌀', CYCLE_SEUILS.ballonnements,
     '#F3EDBD',
     'Ballonnements plus importants en {phase}',
     'Moins de ballonnements en {phase}',
     'Si ce pattern est régulier, parle-en à ton gastro-entérologue.'
   );
-  addInsight('douleurs', 'Douleurs abdominales', '😣', 0.4,
+  addInsight('douleurs', 'Douleurs abdominales', '😣', CYCLE_SEUILS.douleurs,
     '#DDBAAE',
     'Douleurs plus fréquentes en {phase}',
     'Moins de douleurs en {phase}',
     'Si ce pattern est persistant, parle-en à ton médecin ou gynécologue.'
   );
-  addInsight('peau', 'Peau', '✨', 0.4,
+  addInsight('peau', 'Peau', '✨', CYCLE_SEUILS.peau,
     '#EAC4AF',
     'Peau plus en difficulté en {phase}',
     'Peau plus calme en {phase}',
     'Tendance gut-skin observée — à mentionner à ton dermatologue si persistant.'
   );
-  addInsight('sommeil', 'Sommeil', '😴', 0.5,
+  addInsight('sommeil', 'Sommeil', '😴', CYCLE_SEUILS.sommeil,
     '#DAE9FA',
     'Sommeil moins bon en {phase}',
     'Meilleur sommeil en {phase}',
     null
   );
-  addInsight('energie', 'Énergie', '⚡', 0.5,
+  addInsight('energie', 'Énergie', '⚡', CYCLE_SEUILS.energie,
     '#BBB7E5',
     'Énergie plus basse en {phase}',
     'Énergie plus haute en {phase}',
     null
   );
-  addInsight('humeur', 'Humeur', '😊', 0.4,
+  addInsight('humeur', 'Humeur', '😊', CYCLE_SEUILS.humeur,
     '#EFBDBD',
     'Humeur plus basse en {phase}',
     'Humeur plus positive en {phase}',
     null
   );
-  addInsight('stress', 'Stress', '😮‍💨', 0.5,
+  addInsight('stress', 'Stress', '😮‍💨', CYCLE_SEUILS.stress,
     '#F7DFDF',
     'Stress plus élevé en {phase}',
     'Stress plus bas en {phase}',
@@ -11792,19 +12189,19 @@ function getCycleInsights(entries) {
   );
 
   // ── Calendrier des selles ─────────────────────────────────────────────────
-  addInsight('selleOui', 'Présence de selle (calendrier)', '🌿', 0.2,
+  addInsight('selleOui', 'Présence de selle (calendrier)', '🌿', CYCLE_SEUILS.selleOui,
     '#B6C687',
     'Plus de jours avec selle notée en {phase}',
     'Moins de jours avec selle notée en {phase}',
     'À mentionner à ton gastro-entérologue si ce pattern est régulier.'
   );
-  addInsight('selleFreq', 'Fréquence des selles (calendrier)', '🌿', 0.4,
+  addInsight('selleFreq', 'Fréquence des selles (calendrier)', '🌿', CYCLE_SEUILS.selleFreq,
     '#B6C687',
     'Plus de passages aux selles en {phase}',
     'Moins de passages aux selles en {phase}',
     null
   );
-  addInsight('selleBristol', 'Consistance Bristol (calendrier)', '🔬', 0.5,
+  addInsight('selleBristol', 'Consistance Bristol (calendrier)', '🔬', CYCLE_SEUILS.selleBristol,
     '#8ab4c4',
     'Selles plus fluides (Bristol plus élevé) en {phase}',
     'Selles plus dures (Bristol plus bas) en {phase}',
@@ -11812,9 +12209,7 @@ function getCycleInsights(entries) {
   );
 
   // ── Garde-fou cycle décalé ────────────────────────────────────────────────
-  const startDate = new Date(settings.startDate + 'T12:00:00');
-  const daysSince = Math.round((new Date() - startDate) / (1000*60*60*24));
-  if (daysSince > cycleDuration + 14) {
+  if (cycleDecale()) {
     insights.push({
       type:'cycle', icon:'🩺', tag:'Cycle · À noter',
       text:`Tes données de cycle semblent décalées — il peut être utile de les mettre à jour si ton cycle a changé. Si tu observes des irrégularités persistantes, une consultation gynécologique peut être utile.`

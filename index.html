@@ -3528,6 +3528,8 @@ function updateAuthBadge(user) {}
 
 function updateHomeUser(user) {
   if (!user) return;
+  // Un AUTRE compte sur le même appareil : le local de l'ancien compte est nettoyé avant tout chargement
+  try { syncEnsureOwner(user.id); } catch (e) { console.warn('[Nara] syncEnsureOwner:', e); }
   const prenom = user.user_metadata?.prenom || user.email.split('@')[0];
   const capitalized = prenom.charAt(0).toUpperCase() + prenom.slice(1);
   document.getElementById('home-user-name').textContent = capitalized;
@@ -3640,9 +3642,12 @@ async function handleLogin() {
 let _userRequestedLogout = false;
 
 async function handleLogout() {
-  _userRequestedLogout = true; // AVANT signOut pour que onAuthStateChange le voie
   document.getElementById('user-dropdown').classList.remove('open');
+  // Avant de partir : envoyer ce qui reste ; si des données ne peuvent pas partir, le dire (elles seraient effacées de cet appareil)
+  if (!(await syncConfirmLogout())) return;
+  _userRequestedLogout = true; // AVANT signOut pour que onAuthStateChange le voie
   currentUser = null;
+  syncOnLogout();
   clearLocalCache();           // Nettoyer les données Nara (pas les tokens auth)
   await sb.auth.signOut();     // signOut efface lui-même les tokens sb-*
   document.getElementById('home-user-name').textContent = '—';
@@ -3836,6 +3841,7 @@ try {
         if (event === 'SIGNED_OUT' && _userRequestedLogout) {
           _userRequestedLogout = false;
           currentUser = null;
+          syncOnLogout();
           clearLocalCache();
           go('onboarding');
         }
@@ -3900,7 +3906,7 @@ function updateHomeScore() {
   const daysWithAnyData = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const vals = getDayValues(dateStr);
     if (vals && vals.hasData) daysWithAnyData.push({ dateStr, vals });
   }
@@ -3927,7 +3933,7 @@ function updateHomeScore() {
   const barsData = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const v = getDayValues(dateStr);
     let dayScore = 0, dayCount = 0;
     if (v) {
@@ -4900,8 +4906,10 @@ async function startRoutine(id) {
     if (r.statut === 'active') {
       r.statut = 'disponible';
       r.jour_actuel = 0;
-      localStorage.removeItem('nara_routine_' + r.id);
+      // État « disponible » écrit explicitement et envoyé : sinon la base garderait deux routines actives
+      localStorage.setItem('nara_routine_' + r.id, JSON.stringify({ statut:'disponible', jour_actuel:0, updatedAt:Date.now() }));
       if (currentUser) localStorage.removeItem(routineCacheKey(currentUser.id, r.id));
+      syncMarkDirty('routine', r.id);
     }
   });
 
@@ -4912,21 +4920,11 @@ async function startRoutine(id) {
   r.jour_actuel = 1;
 
   // Sauvegarde locale immédiate
-  localStorage.setItem('nara_routine_' + id, JSON.stringify({ statut:'active', jour_actuel:1 }));
+  localStorage.setItem('nara_routine_' + id, JSON.stringify({ statut:'active', jour_actuel:1, updatedAt:Date.now() }));
 
-  // Sync Supabase
-  if (currentUser) {
-    localStorage.setItem(routineCacheKey(currentUser.id, id), JSON.stringify({ statut:'active', jour_actuel:1 }));
-    sb.from('nara_routines').upsert({
-      user_id: currentUser.id,
-      routine_id: id,
-      statut: 'active',
-      jour_actuel: 1,
-    }, { onConflict: 'user_id,routine_id' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Sync routine échouée:', error.message);
-      else console.log('[Nara] Routine synchronisée dans Supabase');
-    });
-  }
+  // Sync Supabase : marqué « à envoyer », envoyé par la couche de synchronisation (après lecture de la base)
+  if (currentUser) localStorage.setItem(routineCacheKey(currentUser.id, id), JSON.stringify({ statut:'active', jour_actuel:1 }));
+  syncMarkDirty('routine', id);
 
   go('routines');
   showToast('✓ Programme démarré · Jour 1 !');
@@ -5387,7 +5385,7 @@ function closeQuickLogBtn() {
 }
 
 async function saveQuickLog() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayStr();
 
   // Si c'est le quicklog repas, agréger tous les aliments pour les insights
   if (currentQLType === 'repas') {
@@ -5399,28 +5397,12 @@ async function saveQuickLog() {
   const localKey = `nara_log_${today}_${currentQLType}`;
   localStorage.setItem(localKey, JSON.stringify(entry));
 
-  // 2. Sync Supabase en arrière-plan si connecté
+  // 2. Sync Supabase : marqué « à envoyer », envoyé par la couche de synchronisation (après lecture de la base)
   if (currentUser) {
-    const userId = currentUser.id;
     // Cache avec userId pour isolation multi-compte
-    localStorage.setItem(cacheKey(userId, today, currentQLType), JSON.stringify(entry));
-
-    // Upsert dans Supabase (insert ou update si même date+type+user)
-    sb.from('nara_logs').upsert({
-      user_id: userId,
-      date: today,
-      type: currentQLType,
-      values: qlValues,
-    }, {
-      onConflict: 'user_id,date,type'
-    }).then(({ error }) => {
-      if (error) {
-        console.warn('[Nara] Sync Supabase échouée (sauvegardé localement) :', error.message);
-      } else {
-        console.log('[Nara] Entrée synchronisée dans Supabase');
-      }
-    });
+    localStorage.setItem(cacheKey(currentUser.id, today, currentQLType), JSON.stringify(entry));
   }
+  syncMarkDirty(currentQLType, today);
 
   // Sync vers le journal du jour : mettre à jour les champs correspondants
   syncQuickLogToJournal(currentQLType, qlValues);
@@ -5464,6 +5446,7 @@ function syncQuickLogToJournal(type, values) {
 
   if (changed) {
     localStorage.setItem(todayJournalKey(), JSON.stringify({ ...existing, date: today, ts: Date.now() }));
+    syncMarkDirty('journal', today);   // le journal du jour contient désormais cette saisie rapide
     // Si le journal est ouvert en ce moment, le rafraîchir
     const jrnScreen = document.getElementById('screen-journal');
     if (jrnScreen && jrnScreen.classList.contains('active')) {
@@ -5499,8 +5482,16 @@ const ALIMENTS = [
 ];
 
 // ── Fonctions date de base — NE PAS SUPPRIMER ─────────────────────────────────
+// Date LOCALE de l'appareil (YYYY-MM-DD). L'ancienne version utilisait la date UTC (toISOString), en retard
+// d'une ou deux heures sur la France : une saisie faite entre minuit et 2 h était rangée la veille.
+function localDateStr(d) {
+  const x = d || new Date();
+  const m = x.getMonth() + 1, j = x.getDate();
+  return x.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (j < 10 ? '0' : '') + j;
+}
+
 function getTodayStr() {
-  return new Date().toISOString().split('T')[0];
+  return localDateStr(new Date());
 }
 
 function getTodayLabel() {
@@ -5552,12 +5543,12 @@ function jrnLoadCurrentJournal() {
 function jrnNavigateDate(deltaDays) {
   const current = new Date(jrnGetDate() + 'T12:00:00');
   current.setDate(current.getDate() + deltaDays);
-  const newDate = current.toISOString().split('T')[0];
+  const newDate = localDateStr(current);
   const today   = getTodayStr();
   // Pas de futur, pas de plus de 30 jours en arrière
   const minDate = new Date(today + 'T12:00:00');
   minDate.setDate(minDate.getDate() - 30);
-  const minStr = minDate.toISOString().split('T')[0];
+  const minStr = localDateStr(minDate);
   if (newDate > today) return; // Futur bloqué
   if (newDate < minStr) return; // > 30 jours bloqué
   jrnCurrentDate = newDate === today ? null : newDate; // null = today (plus simple)
@@ -5926,30 +5917,28 @@ function jrnPersist(markComplete) {
   const dateStr = jrnGetDate(); // date active (aujourd'hui ou jour passé)
 
   // 1. Écriture immédiate dans localStorage avec la VRAIE date du jour concerné
-  const existing = jrnLoadCurrentJournal() || {};
-  const merged   = { ...existing, ...jrnValues, date: dateStr };
+  const existing = jrnLoadCurrentJournal();
+  const merged   = { ...(existing || {}), ...jrnValues, date: dateStr };
   if (markComplete) merged.completed = true;
+
+  // Un journal vide n'est jamais écrit ni envoyé : ouvrir le Journal ou changer de page ne crée rien
+  // (sur un appareil neuf, cela effaçait en ligne le journal déjà saisi ailleurs).
+  if (!existing && syncJournalIsEmpty(merged)) { try { jrnUpdateProgress(); } catch(e) {} return; }
+  // Rien n'a changé : on ne touche ni à l'horodatage ni à la base
+  if (existing && syncSameJournal(existing, merged)) { try { jrnUpdateProgress(); } catch(e) {} return; }
+
   merged.ts = Date.now();
   localStorage.setItem(`nara_journal_${dateStr}`, JSON.stringify(merged));
 
   // 2. Mise à jour barre de progression
   try { jrnUpdateProgress(); } catch(e) {}
 
-  // 3. Sync Supabase avec debounce 1.5s
+  // 3. Sync Supabase : marqué « à envoyer » (envoi différé de 1,5 s, après lecture de la base)
+  syncMarkDirty('journal', dateStr);
+
+  // Recalcul des insights dès qu'une donnée (rétroactive ou non) est sauvegardée
   clearTimeout(_jrnSaveDebounce);
-  _jrnSaveDebounce = setTimeout(() => {
-    if (!currentUser) return;
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id,
-      date:    dateStr,          // date réelle, pas forcément aujourd'hui
-      type:    'journal',
-      values:  merged,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] jrnPersist:', error.message);
-    });
-    // Recalcul immédiat des insights dès qu'une donnée (rétroactive ou non) est sauvegardée
-    try { updateHomeScore(); } catch(e) {}
-  }, 1500);
+  _jrnSaveDebounce = setTimeout(() => { try { updateHomeScore(); } catch(e) {} }, 1500);
 }
 
 // Gardé pour la compatibilité (appelé au changement de slide)
@@ -6153,6 +6142,7 @@ function deleteFromHistory(item) {
     deleted.push(item);
     localStorage.setItem(delKey, JSON.stringify(deleted));
   }
+  syncMarkDirty('food_prefs');
 
   // Retirer aussi des aliments sélectionnés si besoin
   if (_mealHistoryKey) {
@@ -6378,14 +6368,16 @@ function saveFoodToHistory(food, type) {
   let h = getFoodHistory(type);
   h = [food, ...h.filter(f => f.toLowerCase() !== food.toLowerCase())].slice(0, 100);
   localStorage.setItem(key, JSON.stringify(h));
+  syncMarkDirty('food_prefs');
 }
 
 function bindJournalSliders() {
   // Les sliders sont déjà branchés via oninput inline, mais on s'assure
-  // que la couleur de fond du slider reflète la valeur initiale
+  // que la couleur de fond du slider reflète la valeur initiale.
+  // Affichage seulement : afficher le Journal ne doit JAMAIS écrire (ni en local, ni en ligne).
   ['ballonnements','stress','sommeil','energie'].forEach(key => {
     const slider = document.getElementById(`jrn-slider-${key}`);
-    if (slider) jrnUpdateSlider(key, slider.value, 5);
+    if (slider) jrnPaintSlider(key, slider.value, 5);
   });
 }
 
@@ -6428,8 +6420,8 @@ function jrnToggleZone(idx, el) {
   jrnPersist(false);
 }
 
-function jrnUpdateSlider(key, val, max) {
-  jrnValues[key] = parseInt(val);
+// Affichage d'un curseur (libellé, couleur de fond, progression) — n'écrit rien
+function jrnPaintSlider(key, val, max) {
   const labelEl = document.getElementById(`jrn-val-${key}`);
   if (labelEl) labelEl.textContent = `${val}/${max}`;
   const slider = document.getElementById(`jrn-slider-${key}`);
@@ -6438,7 +6430,12 @@ function jrnUpdateSlider(key, val, max) {
     slider.style.background = `linear-gradient(to right, var(--sage) ${pct}%, var(--oat) ${pct}%)`;
   }
   jrnUpdateProgress();
-  jrnPersist(false); // debounce gère le réseau, localStorage est immédiat
+}
+
+function jrnUpdateSlider(key, val, max) {
+  jrnValues[key] = parseInt(val);
+  jrnPaintSlider(key, val, max);
+  jrnPersist(false); // localStorage est immédiat ; l'envoi est différé par la couche de synchronisation
 }
 
 function jrnStartEdit() {
@@ -6531,8 +6528,14 @@ async function uploadPhotoToSupabase(file) {
   if (!currentUser) {
     // Pas connecté — garder seulement en local (base64 dans localStorage)
     const today = getTodayStr();
-    localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
-    showToast('📷 Photo ajoutée (connexion requise pour la sync)');
+    try {
+      localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
+      syncMarkDirty('photo', today);   // envoyée dès la connexion
+      showToast('📷 Photo ajoutée (connexion requise pour la sync)');
+    } catch (e) {                      // photo trop lourde pour le stockage de l'appareil : on ne fait pas semblant de l'avoir gardée
+      currentPhotoDataUrl = null; refreshPhotoZone();
+      showToast('📷 Photo non enregistrée (connexion requise)');
+    }
     return;
   }
 
@@ -6567,15 +6570,8 @@ async function uploadPhotoToSupabase(file) {
     // Aussi sauvegarder en local comme fallback
     localStorage.setItem(`nara_photo_${today}`, currentPhotoPublicUrl);
 
-    // Mettre à jour le log Supabase avec la référence photo
-    if (currentUser) {
-      sb.from('nara_logs').upsert({
-        user_id: userId,
-        date: today,
-        type: 'photo',
-        values: { url: currentPhotoPublicUrl, path },
-      }, { onConflict: 'user_id,date,type' });
-    }
+    // La référence photo (url + chemin) est envoyée par la couche de synchronisation
+    syncMarkDirty('photo', today);
 
     currentPhotoDataUrl = null; // on utilise maintenant l'URL Supabase
     refreshPhotoZone();
@@ -6583,10 +6579,16 @@ async function uploadPhotoToSupabase(file) {
 
   } catch (err) {
     console.warn('[Nara] Upload photo échoué:', err.message);
-    // Fallback : garder la base64 en local
-    localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
-    refreshPhotoZone();
-    showToast('📷 Photo sauvegardée localement');
+    // Fallback : garder la base64 en local ; elle sera renvoyée automatiquement au retour du réseau
+    try {
+      localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
+      syncMarkDirty('photo', today);
+      refreshPhotoZone();
+      showToast('📷 Photo sauvegardée localement');
+    } catch (e2) {                     // photo trop lourde pour le stockage de l'appareil : on ne fait pas semblant de l'avoir gardée
+      currentPhotoDataUrl = null; refreshPhotoZone();
+      showToast('📷 Photo non enregistrée (connexion requise)');
+    }
   }
 }
 
@@ -6596,17 +6598,18 @@ async function deletePhoto() {
   currentPhotoPublicUrl = null;
   localStorage.removeItem(`nara_photo_${today}`);
 
-  // Supprimer dans Supabase Storage si connecté
+  // Supprimer dans Supabase Storage si connecté (hors ligne, la suppression est refaite à l'envoi suivant)
   if (currentUser) {
     const userId = currentUser.id;
     // Essayer les deux extensions
-    for (const ext of ['jpg','png']) {
-      await sb.storage.from('skin-photos').remove([`${userId}/${today}.${ext}`]);
-    }
-    sb.from('nara_logs').delete()
-      .eq('user_id', userId).eq('date', today).eq('type', 'photo');
-    removeSkinPhotoFromHistory(today);
+    try {
+      for (const ext of ['jpg','png']) {
+        await sb.storage.from('skin-photos').remove([`${userId}/${today}.${ext}`]);
+      }
+    } catch (e) { console.warn('[Nara] Suppression photo (stockage):', e && e.message); }
   }
+  removeSkinPhotoFromHistory(today);
+  syncMarkTomb('photo', today);   // pierre tombale : les autres appareils verront la suppression
 
   refreshPhotoZone();
   showToast('Photo supprimée');
@@ -6643,33 +6646,54 @@ function removeSkinPhotoFromHistory(dateStr) {
   localStorage.setItem('nara_skin_photos', JSON.stringify(history));
 }
 
-// Charger l'historique photos depuis Supabase au login
-async function loadPhotoHistory(userId) {
+// Historique des photos de peau : fusionne les lignes « photo » lues dans Supabase (appelée par la lecture de la connexion)
+function loadPhotoHistory(userId, rows, meta, res) {
+  // Reçoit les lignes « photo » déjà lues par la synchronisation et les fusionne, par date, avec l'historique local
   try {
-    const { data: logs } = await sb.from('nara_logs')
-      .select('date, values')
-      .eq('user_id', userId)
-      .eq('type', 'photo')
-      .order('date', { ascending: false })
-      .limit(90);
-
-    if (logs && logs.length > 0) {
-      const history = loadSkinPhotoHistory();
-      const existing = new Set(history.map(p => p.date));
-      logs.forEach(log => {
-        if (!existing.has(log.date)) {
-          const d = new Date(log.date + 'T12:00:00');
-          const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-          const mois = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
-          history.push({
-            date: log.date,
-            dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`,
-            url: log.values.url,
-          });
-        }
-      });
-      history.sort((a, b) => b.date.localeCompare(a.date));
-      localStorage.setItem('nara_skin_photos', JSON.stringify(history.slice(0, 90)));
+    const history = loadSkinPhotoHistory();
+    const byDate = {}, cloudDates = {}, today = getTodayStr();
+    history.forEach(p => { byDate[p.date] = p; });
+    const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    const mois = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+    let changed = false;
+    (rows || []).forEach(row => {
+      const v = row.values || {}, dk = syncKey('photo', row.date), cts = syncTs(v);
+      const dirtyTs = meta.dirty[dk] || 0, tombTs = meta.tomb[dk] || 0;
+      const hasLocal = !!(byDate[row.date] || localStorage.getItem('nara_photo_' + row.date));
+      cloudDates[row.date] = true;
+      if (v.deleted) {                                       // supprimée sur un autre appareil
+        if (hasLocal && dirtyTs > cts) return;               // reprise ici après la suppression : elle sera renvoyée
+        if (hasLocal) { delete byDate[row.date]; localStorage.removeItem('nara_photo_' + row.date); changed = true; }
+        delete meta.dirty[dk]; delete meta.tomb[dk];
+        return;
+      }
+      if (!v.url) return;
+      if (tombTs > cts) return;                              // supprimée ici après la version en ligne : la suppression sera renvoyée
+      if (hasLocal && dirtyTs > cts) return;                 // photo locale plus récente, en attente d'envoi
+      if (!byDate[row.date] || byDate[row.date].url !== v.url) {
+        const d = new Date(row.date + 'T12:00:00');
+        byDate[row.date] = { date: row.date, dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`, url: v.url };
+        changed = true;
+      }
+      if (row.date === today && !localStorage.getItem('nara_photo_' + row.date)) localStorage.setItem('nara_photo_' + row.date, v.url);
+      delete meta.dirty[dk]; delete meta.tomb[dk];
+    });
+    // Photos présentes ici mais absentes de la base (dans la période lue) : à envoyer
+    const oldest = rows && rows.length >= 90 ? rows[rows.length - 1].date : null;
+    const localDates = {};
+    history.forEach(p => { localDates[p.date] = true; });
+    for (let i = 0; i < localStorage.length; i++) {
+      const m = /^nara_photo_(\d{4}-\d{2}-\d{2})$/.exec(localStorage.key(i) || '');
+      if (m) localDates[m[1]] = true;
+    }
+    Object.keys(localDates).forEach(d => {
+      const dk = syncKey('photo', d);
+      if (!cloudDates[d] && (!oldest || d >= oldest) && !meta.dirty[dk]) meta.dirty[dk] = Date.now();
+    });
+    if (changed) {
+      const list = Object.keys(byDate).map(d => byDate[d]).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 90);
+      localStorage.setItem('nara_skin_photos', JSON.stringify(list));
+      if (res) res.changed = true;
     }
   } catch (err) {
     console.warn('[Nara] Chargement historique photos:', err.message);
@@ -6725,31 +6749,22 @@ async function saveJournal() {
       type:'transit', date:dateStr, ts:Date.now(),
       values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }
     }));
+    syncMarkDirty('transit', dateStr);
   }
   if (jrnValues.peau !== null) {
     localStorage.setItem(`nara_log_${dateStr}_peau`, JSON.stringify({
       type:'peau', date:dateStr, ts:Date.now(), values:{ peau_etat:jrnValues.peau }
     }));
+    syncMarkDirty('peau', dateStr);
   }
   if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) {
     localStorage.setItem(`nara_log_${dateStr}_stress`, JSON.stringify({
       type:'stress', date:dateStr, ts:Date.now(),
       values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }
     }));
+    syncMarkDirty('stress', dateStr);
   }
-  if (currentUser) {
-    const userId = currentUser.id;
-    const logs = [];
-    if (jrnValues.transit !== null) logs.push({ user_id:userId, date:dateStr, type:'transit',
-      values:{ transit_etat:jrnValues.transit, ballonnements:jrnValues.ballonnements, aliments:tousAliments }});
-    if (jrnValues.peau !== null) logs.push({ user_id:userId, date:dateStr, type:'peau',
-      values:{ peau_etat:jrnValues.peau }});
-    if (jrnValues.stress > 0 || jrnValues.sommeil > 0 || jrnValues.energie > 0) logs.push({
-      user_id:userId, date:dateStr, type:'stress',
-      values:{ stress:jrnValues.stress, sommeil:jrnValues.sommeil, energie:jrnValues.energie }});
-    if (logs.length > 0) sb.from('nara_logs').upsert(logs, { onConflict:'user_id,date,type' })
-      .then(({error}) => { if(error) console.warn('[Nara]', error.message); });
-  }
+  // L'envoi vers Supabase (journal + lignes dérivées) est assuré par la couche de synchronisation
 
   jrnEditMode    = false;
   jrnCurrentDate = null; // Revenir sur aujourd'hui après enregistrement
@@ -7710,7 +7725,7 @@ function renderInsightsPage() {
   const entries = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const v = getDayVals(dateStr);
     if (!v) continue;
     if (v.transit !== null && v.transit !== undefined)
@@ -7823,7 +7838,7 @@ function corrCatalogueDetail(opts) {
   const dates = Object.keys(idx).sort();
   const periode = !!(opts && opts.from);
   const derniers30 = {};                                   // fenêtre commune : aujourd'hui et les 29 jours précédents
-  for (let i = 0; i < 30; i++) { const d = new Date(); d.setDate(d.getDate() - i); derniers30[d.toISOString().split('T')[0]] = true; }
+  for (let i = 0; i < 30; i++) { const d = new Date(); d.setDate(d.getDate() - i); derniers30[localDateStr(d)] = true; }
   const out = []; let nMax = 0;
   CORR_PAIRS.forEach(p => {
     const a = p[0], b = p[1], moteur = p[2];
@@ -7934,7 +7949,7 @@ function insightsMonthInfo(offset) {
   const moisFr = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   const ref = new Date(); ref.setDate(1); ref.setHours(12, 0, 0, 0); ref.setMonth(ref.getMonth() + offset);
   const y = ref.getFullYear(), m = ref.getMonth();
-  const ds = d => d.toISOString().split('T')[0];
+  const ds = d => localDateStr(d);
   return { start: ds(new Date(y, m, 1, 12)), end: ds(new Date(y, m + 1, 0, 12)), prevStart: ds(new Date(y, m - 1, 1, 12)), prevEnd: ds(new Date(y, m, 0, 12)), prevNom: moisFr[(m + 11) % 12] };
 }
 
@@ -8059,7 +8074,7 @@ function buildInsightsSummary(getDayVals, weekOffset) {
     const lundi = new Date(today); lundi.setDate(today.getDate() - dow + off * 7);
     const dim   = new Date(lundi); dim.setDate(lundi.getDate() + 6);
     const jours = [];
-    for (const d = new Date(lundi); d <= dim; d.setDate(d.getDate() + 1)) jours.push(d.toISOString().split('T')[0]);
+    for (const d = new Date(lundi); d <= dim; d.setDate(d.getDate() + 1)) jours.push(localDateStr(d));
     return { lundi, dim, jours };
   }
   function libelle(w, premierLe) {            // « du 9 au 15 novembre » · « du 26 octobre au 1er novembre »
@@ -8223,7 +8238,7 @@ function buildInsightsCarousel(getDayVals, nDays, periode) {
   const days = [];
   const cur  = new Date(periodStart);
   while (cur <= periodEnd) {
-    const ds = cur.toISOString().split('T')[0];
+    const ds = localDateStr(cur);
     const v  = getDayVals(ds) || {};
     days.push({
       ds,
@@ -8686,7 +8701,7 @@ function computeBrique4() {
   const byDate = {};
   for (let i = 0; i < FENETRE * 2; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     byDate[ds] = { ds };
 
     // Journal : ressenti transit, ballonnements, douleurs, peau, stress, énergie, sommeil, hydratation
@@ -8850,7 +8865,7 @@ function computeBrique13() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (!raw) continue;
@@ -8897,7 +8912,7 @@ function computeBrique12() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (!raw) continue;
@@ -8955,7 +8970,7 @@ function computeBrique12() {
   const cDOui = [], cDBristol = [], cDFreq = [];
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const jRaw = localStorage.getItem(`nara_journal_${ds}`);
       if (!jRaw) continue;
@@ -9028,7 +9043,7 @@ function computeBrique11() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (!raw) continue;
@@ -9119,7 +9134,7 @@ function computeBrique11() {
   const calBOui = [], calBBristol = [], calBFreq = [];
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const jRaw = localStorage.getItem(`nara_journal_${ds}`);
       if (!jRaw) continue;
@@ -9178,7 +9193,7 @@ function computeBrique10() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (!raw) continue;
@@ -9289,7 +9304,7 @@ function computeBrique10() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const jRaw = localStorage.getItem(`nara_journal_${ds}`);
       if (!jRaw) continue;
@@ -9376,7 +9391,7 @@ function computeBrique9() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const raw = localStorage.getItem(`nara_journal_${ds}`);
       if (!raw) continue;
@@ -9505,7 +9520,7 @@ function computeBrique9() {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     try {
       const jRaw = localStorage.getItem(`nara_journal_${ds}`);
       if (!jRaw) continue;
@@ -9592,7 +9607,7 @@ function computeBrique6(byDate, seuilMin) {
 
   for (let i = 0; i < 30; i++) {
     const d  = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     const hyd = byDate[ds]?.hydratation;
     if (hyd === undefined || hyd === null) continue;
 
@@ -9949,7 +9964,7 @@ function diagBrique2() {
   const FENETRE = 15, SEUIL_MIN = 7, SEUIL_RATIO = 2.0;
   const allDates30 = Array.from({length:30}, (_,i) => {
     const d = new Date(); d.setDate(d.getDate()-i);
-    return d.toISOString().split('T')[0];
+    return localDateStr(d);
   }).reverse();
   const rec  = allDates30.slice(15); // 15 récents
   const prec = allDates30.slice(0,15); // 15 précédents
@@ -10014,7 +10029,7 @@ function diagBrique2() {
     const HYD_MAP = { 'lt1': 0, '1to2': 1, 'gt2': 2 };
     for (let i = 0; i < 30; i++) {
       const d  = new Date(); d.setDate(d.getDate() - i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j  = byDate[ds]; if (!j) continue;
       const hyd = j.hydratation;
       if (hyd === undefined || hyd === null) continue;
@@ -10049,7 +10064,7 @@ function diagBrique2() {
     const pairesPeau7 = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const hyd = byDate[ds]?.hydratation;
       const peau = byDate[ds]?.peau;
       if (hyd !== undefined && hyd !== null && peau !== undefined && peau !== null)
@@ -10067,7 +10082,7 @@ function diagBrique2() {
     const pairesTransit7 = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const hyd = byDate[ds]?.hydratation, tr = byDate[ds]?.transit;
       if (hyd !== undefined && hyd !== null && tr !== undefined && tr !== null)
         pairesTransit7.push({ hyd, transit: tr });
@@ -10084,7 +10099,7 @@ function diagBrique2() {
     const pairesDoul7 = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const hyd = byDate[ds]?.hydratation, doul = byDate[ds]?.douleurs;
       if (hyd !== undefined && hyd !== null && doul !== undefined && doul !== null)
         pairesDoul7.push({ hyd, douleurs: doul });
@@ -10106,7 +10121,7 @@ function diagBrique2() {
     const pS = [], pH = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.sommeil > 0) pS.push({ stress: j.stress, sommeil: j.sommeil });
       if (j.humeur != null) {
@@ -10135,7 +10150,7 @@ function diagBrique2() {
     const pPeau9 = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.peau !== null && j.peau !== undefined) pPeau9.push({ stress: j.stress, peau: j.peau });
     }
@@ -10151,7 +10166,7 @@ function diagBrique2() {
     const pBal9 = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.ballonnements > 0) pBal9.push({ stress: j.stress, ballonnements: j.ballonnements });
     }
@@ -10167,7 +10182,7 @@ function diagBrique2() {
     const pDoul9 = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       if (j.douleurs !== undefined && j.douleurs !== null) pDoul9.push({ stress: j.stress, douleurs: j.douleurs });
     }
@@ -10183,7 +10198,7 @@ function diagBrique2() {
     const csOui = [], csBristol = [], csFreq = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.stress > 0)) continue;
       try {
         const cal = JSON.parse(localStorage.getItem('nara_cal_' + ds) || 'null');
@@ -10231,7 +10246,7 @@ function diagBrique2() {
     const p = { bal:[], doul:[], peau:[], som:[], ener:[] };
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds];
       if (!j || j.transit === null || j.transit === undefined) continue;
       const t = j.transit;
@@ -10258,7 +10273,7 @@ function diagBrique2() {
     const cOui = [], cBristol = [], cFreq = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds];
       if (!j || j.transit === null || j.transit === undefined) continue;
       const t = j.transit;
@@ -10284,7 +10299,7 @@ function diagBrique2() {
     const p = { doul:[], peau:[], som:[], ener:[] };
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.ballonnements > 0)) continue;
       const b = j.ballonnements;
       if (j.douleurs !== undefined && j.douleurs !== null) p.doul.push({b, v:j.douleurs});
@@ -10308,7 +10323,7 @@ function diagBrique2() {
     const cBOui = [], cBBristol = [], cBFreq = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds]; if (!j || !(j.ballonnements > 0)) continue;
       const bVal = j.ballonnements;
       try {
@@ -10333,7 +10348,7 @@ function diagBrique2() {
     const pS = [], pE = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds];
       if (!j || j.douleurs === undefined || j.douleurs === null) continue;
       const doul = j.douleurs;
@@ -10354,7 +10369,7 @@ function diagBrique2() {
     const cD = { oui:[], bristol:[], freq:[] };
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds];
       if (!j || j.douleurs === undefined || j.douleurs === null) continue;
       const doul = j.douleurs;
@@ -10387,7 +10402,7 @@ function diagBrique2() {
     const p = [];
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate()-i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = localDateStr(d);
       const j = byDate[ds];
       if (!j || !(j.sommeil > 0) || j.humeur === null || j.humeur === undefined) continue;
       const hNum = j.humeur === 0 ? 3 : j.humeur === 1 ? 2 : 1;
@@ -10485,65 +10500,729 @@ function generateInsights(entries) {
   return insights;
 }
 
-// Charger toutes les données de l'utilisateur depuis Supabase
-async function loadUserData(userId) {
-  if (!userId) return;
+// ══════════════════════════════════════════════════════════════════════════════
+// SYNCHRONISATION AVEC SUPABASE — lecture avant écriture, fusion « le plus récent gagne »
+//
+//  1. LIRE AVANT D'ÉCRIRE : tant que la lecture + fusion de la connexion n'est pas terminée, RIEN n'est envoyé.
+//     Les saisies sont enregistrées en local et marquées « à envoyer » (mémorisé sur l'appareil).
+//  2. FUSION entrée par entrée, la version la plus récente gagne (jamais tout-ou-rien). Un journal vide ne
+//     remplace jamais un journal rempli, ni en local ni en ligne.
+//  3. UN APPAREIL AU STOCKAGE VIDE N'ENVOIE JAMAIS DE DONNÉES VIDES : seules les données réellement saisies
+//     (ou réellement présentes en local) partent ; une valeur vide n'est jamais envoyée.
+//  4. Les suppressions voyagent sous forme de « pierre tombale » (ligne marquée supprimée) pour que les
+//     autres appareils les voient. Elles sont rangées dans nara_sync_meta, jamais dans les clés de données.
+//  5. Ce qui n'a pas pu partir (hors ligne…) reste « à envoyer » et repart seul au retour du réseau.
+//  6. Tout est filtré sur user_id = utilisatrice connectée ; un autre compte sur le même appareil
+//     déclenche le nettoyage des données locales de l'ancien compte avant tout chargement.
+// Fiche locale : nara_sync_meta = { owner, lastPull, fullPullAt, dirty:{"type|date":ms}, tomb:{"type|date":ms}, stomb:{idSuivi:ms} }
+// ══════════════════════════════════════════════════════════════════════════════
+const SYNC_META_KEY   = 'nara_sync_meta';
+const SYNC_SINGLETONS = ['health_profile', 'suivis', 'food_test', 'cycle_settings', 'cycle_history', 'food_test_history', 'food_prefs'];
+const SYNC_QUICK      = ['transit', 'repas', 'peau', 'stress'];
+const SYNC_JUNK_TYPES = ['journal', 'calendrier', 'photo', 'health_profile', 'suivis', 'food_test', 'cycle_settings', 'cycle_history', 'food_test_history', 'food_prefs'];
+const SYNC_DAY_MS     = 86400000;
+let _syncReadyFor    = null;   // utilisatrice dont la lecture initiale est terminée (écritures autorisées)
+let _syncPulling     = null;   // lecture en cours (une seule à la fois)
+let _syncPullUser    = null;
+let _syncLastPullOk  = 0;
+let _syncFlushP      = null;   // envoi en cours (promesse)
+let _syncFlushAgain  = false;
+let _syncFlushTimer  = null;
 
+function syncMeta() {
   try {
-    // Charger les logs des 30 derniers jours
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
-    const sinceStr = since.toISOString().split('T')[0];
+    const m = JSON.parse(localStorage.getItem(SYNC_META_KEY) || 'null');
+    if (m && typeof m === 'object') { m.dirty = m.dirty || {}; m.tomb = m.tomb || {}; m.stomb = m.stomb || {}; return m; }
+  } catch (e) {}
+  return { owner: null, lastPull: 0, fullPullAt: 0, dirty: {}, tomb: {}, stomb: {} };
+}
+function syncSaveMeta(m) {
+  try { localStorage.setItem(SYNC_META_KEY, JSON.stringify(m)); } catch (e) { console.warn('[Nara] fiche de synchronisation:', e && e.message); }
+}
+function syncRead(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function syncWrite(k, v) {
+  try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+  catch (e) { console.warn('[Nara] écriture locale impossible (' + k + '):', e && e.message); return false; }
+}
+function syncKey(type, date) { return type + '|' + (date || '-'); }
 
-    const { data: logs, error } = await sb
-      .from('nara_logs')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', sinceStr)
-      .order('date', { ascending: false });
+// Horodatage d'une valeur : updatedAt ou ts (millisecondes ou texte ISO) ; 0 = inconnu
+function syncTs(v) {
+  if (!v || typeof v !== 'object') return 0;
+  const x = v.updatedAt != null ? v.updatedAt : v.ts;
+  if (typeof x === 'number') return isFinite(x) ? x : 0;
+  if (typeof x === 'string') { const n = Date.parse(x); return isNaN(n) ? 0 : n; }
+  return 0;
+}
+// Forme canonique (clés triées ; ts / updatedAt / date ignorés au premier niveau) pour savoir si deux contenus sont identiques
+function syncCanon(v, top) {
+  if (Array.isArray(v)) return '[' + v.map(x => syncCanon(x, false)).join(',') + ']';
+  if (v && typeof v === 'object') {
+    return '{' + Object.keys(v).filter(k => !(top && (k === 'ts' || k === 'updatedAt' || k === 'date'))).sort()
+      .map(k => JSON.stringify(k) + ':' + syncCanon(v[k], false)).join(',') + '}';
+  }
+  return JSON.stringify(v === undefined ? null : v);
+}
+function syncSame(a, b) { return syncCanon(a, true) === syncCanon(b, true); }
 
-    if (error) {
-      // Table n'existe pas encore ou erreur réseau — on continue avec le cache local
-      console.warn('[Nara] Impossible de charger les logs:', error.message);
-      return;
+// Marqueurs « à envoyer » et suppressions
+function syncMarkDirty(type, date) {
+  const m = syncMeta();
+  m.dirty[syncKey(type, date)] = Date.now();
+  syncSaveMeta(m);
+  syncFlushSoon();
+}
+function syncMarkTomb(type, date) {
+  const m = syncMeta(), k = syncKey(type, date), now = Date.now();
+  m.tomb[k] = now; m.dirty[k] = now;
+  syncSaveMeta(m);
+  syncFlushSoon();
+}
+function syncMarkSuiviTombs(ids) {
+  const m = syncMeta(), now = Date.now();
+  ids.forEach(id => { m.stomb[id] = now; });
+  syncSaveMeta(m);
+}
+function syncUnsentCount() { return Object.keys(syncMeta().dirty).length; }
+// Vrai tant que c'est bien cette utilisatrice qui est connectée et que sa lecture est terminée (sinon on n'écrit plus rien)
+function syncStillMine(uid) { return !!uid && !!currentUser && currentUser.id === uid && _syncReadyFor === uid; }
+
+// ── Journal : vide ? fusion champ par champ ───────────────────────────────────
+// Champs « choix » : une valeur 0 est une vraie réponse (ex. transit « lent ») ; seul null / absent = vide.
+// Champs « curseur » : 0 = non renseigné.
+function syncJournalIsEmpty(j) {
+  if (!j || typeof j !== 'object') return true;
+  const nul = v => v === null || v === undefined;
+  if (['transit', 'douleurs', 'peau', 'humeur', 'hydratation'].some(k => !nul(j[k]))) return false;
+  if (['ballonnements', 'stress', 'sommeil', 'energie'].some(k => j[k])) return false;
+  if (j.notes && String(j.notes).trim()) return false;
+  if ((Array.isArray(j.zone) && j.zone.length) || (Array.isArray(j.aliments) && j.aliments.length)) return false;
+  const r = j.repas;
+  if (r && typeof r === 'object') {
+    for (const k in r) {
+      const m = r[k] || {};
+      if ((m.aliments && m.aliments.length) || (m.epices && m.epices.length) || m.portion || (m.ressenti_libre && String(m.ressenti_libre).trim())) return false;
     }
+  }
+  return true;
+}
+// Forme normalisée d'un journal pour les comparaisons : une clé absente et sa valeur « vide » sont équivalentes
+// (sinon un journal incomplet venu de la saisie rapide paraîtrait différent du même journal enregistré en entier).
+function syncJournalNorm(j) {
+  const o = JSON.parse(JSON.stringify(j || {})), nul = v => v === null || v === undefined;
+  ['transit', 'douleurs', 'peau', 'humeur', 'hydratation'].forEach(k => { if (nul(o[k])) o[k] = null; });
+  ['ballonnements', 'stress', 'sommeil', 'energie'].forEach(k => { if (!o[k]) o[k] = 0; });
+  if (!Array.isArray(o.zone)) o.zone = [];
+  if (!(o.notes && String(o.notes).trim())) o.notes = '';
+  o.completed = !!o.completed;
+  const r = (o.repas && typeof o.repas === 'object') ? o.repas : {};
+  ['matin', 'midi', 'soir', 'encas'].forEach(mk => {
+    const m = r[mk] = r[mk] || {};
+    if (!Array.isArray(m.aliments)) m.aliments = [];
+    if (!Array.isArray(m.epices)) m.epices = [];
+    if (nul(m.portion)) m.portion = null;
+    if (!(m.ressenti_libre && String(m.ressenti_libre).trim())) delete m.ressenti_libre;
+  });
+  o.repas = r;
+  if (Array.isArray(o.aliments) && !o.aliments.length) delete o.aliments;
+  return o;
+}
+function syncSameJournal(a, b) { return syncSame(syncJournalNorm(a), syncJournalNorm(b)); }
+// a = version la plus récente (on la garde) ; b = l'autre : ses valeurs ne servent qu'à combler les champs vides de a
+function syncMergeJournal(a, b) {
+  const out = JSON.parse(JSON.stringify(a || {})), o = b || {};
+  const nul = v => v === null || v === undefined;
+  ['transit', 'douleurs', 'peau', 'humeur', 'hydratation'].forEach(k => { if (nul(out[k]) && !nul(o[k])) out[k] = o[k]; });
+  ['ballonnements', 'stress', 'sommeil', 'energie'].forEach(k => { if (!out[k] && o[k]) out[k] = o[k]; });
+  if (!(out.notes && String(out.notes).trim()) && o.notes && String(o.notes).trim()) out.notes = o.notes;
+  if (!(Array.isArray(out.zone) && out.zone.length) && Array.isArray(o.zone) && o.zone.length) out.zone = o.zone.slice();
+  if (o.repas && typeof o.repas === 'object') {
+    if (!out.repas || typeof out.repas !== 'object') out.repas = {};
+    Object.keys(o.repas).forEach(mk => {
+      const om = o.repas[mk] || {};
+      const cm = out.repas[mk] = out.repas[mk] || {};
+      ['aliments', 'epices'].forEach(f => { if (!(Array.isArray(cm[f]) && cm[f].length) && Array.isArray(om[f]) && om[f].length) cm[f] = om[f].slice(); });
+      if (nul(cm.portion) && !nul(om.portion)) cm.portion = om.portion;
+      if (!(cm.ressenti_libre && String(cm.ressenti_libre).trim()) && om.ressenti_libre) cm.ressenti_libre = om.ressenti_libre;
+    });
+  }
+  if (o.completed) out.completed = true;
+  Object.keys(o).forEach(k => { if (!(k in out)) out[k] = o[k]; });
+  return out;
+}
 
-    // Mettre en cache local tous les logs récupérés
-    if (logs && logs.length > 0) {
-      logs.forEach(log => {
-        const key = cacheKey(userId, log.date, log.type);
-        const entry = { type: log.type, date: log.date, values: log.values, ts: log.created_at };
-        localStorage.setItem(key, JSON.stringify(entry));
-        // Compatibilité avec l'ancien format (sans userId)
-        localStorage.setItem(`nara_log_${log.date}_${log.type}`, JSON.stringify(entry));
+// ── Suivis : identifiant stable, horodatage ───────────────────────────────────
+// Les anciens suivis n'ont pas d'identifiant : on en dérive un de leur contenu (le même sur tous les appareils).
+function syncSuiviId(e) {
+  if (e && e.id) return e.id;
+  const s = [e && e.addedAt, e && e.type, e && e.date, e && e.problo, e && e.pro, e && e.note].join('|');
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return 'L' + h.toString(36);
+}
+function syncSuiviTs(e) { return Date.parse((e && (e.updatedAt || e.addedAt)) || '') || 0; }
+function syncSuiviCore(e) { return { type: e.type || '', problo: e.problo || '', pro: e.pro || '', note: e.note || '', date: e.date || '' }; }
+
+// ── Envoi (« à envoyer » → Supabase) ──────────────────────────────────────────
+function syncFlushSoon(immediately) {
+  if (!currentUser || _syncReadyFor !== currentUser.id) return;     // pas de lecture terminée = aucun envoi
+  clearTimeout(_syncFlushTimer);
+  _syncFlushTimer = setTimeout(syncFlush, immediately ? 0 : 1500);
+}
+function syncIsNetworkError(err) {
+  const t = String((err && (err.message || err)) || '');
+  return /fetch|network|Load failed|Timeout|timed out|offline|NetworkError/i.test(t);
+}
+function syncDataUrlToBlob(du) {
+  const m = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(du);
+  if (!m) throw new Error('photo illisible');
+  const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: m[1] || 'image/jpeg' });
+}
+
+// Construit la ligne à envoyer pour une clé « type|date », à partir de l'état LOCAL actuel.
+// Retourne { row, table? } · { drop:true } (rien à envoyer) · { fail:true } (à réessayer)
+async function syncBuildRow(key, meta, uid) {
+  const i = key.indexOf('|'), type = key.slice(0, i), date = key.slice(i + 1);
+  const ts = meta.dirty[key] || Date.now(), tomb = meta.tomb[key];
+  const today = localDateStr(new Date(ts));            // date de la dernière modification (comme l'ancien code : date du jour de l'enregistrement)
+  const mk = (d, values) => ({ row: { user_id: uid, date: d, type: type, values: values } });
+  if (type === 'journal') {
+    const j = syncRead('nara_journal_' + date);
+    return (!j || syncJournalIsEmpty(j)) ? { drop: true } : mk(date, j);       // un journal vide n'est jamais envoyé
+  }
+  if (type === 'calendrier') {
+    const c = syncRead('nara_cal_' + date);
+    if (c) return mk(date, Object.assign({}, c, { updatedAt: c.updatedAt || ts }));
+    return tomb ? mk(date, { deleted: true, updatedAt: tomb }) : { drop: true };
+  }
+  if (SYNC_QUICK.indexOf(type) >= 0) {
+    const e = syncRead('nara_log_' + date + '_' + type);
+    return (!e || !e.values) ? { drop: true } : mk(date, Object.assign({}, e.values, { updatedAt: syncTs(e) || ts }));
+  }
+  if (type === 'photo') return syncBuildPhotoRow(date, meta, uid, ts, tomb);
+  if (type === 'routine') {
+    const r = syncRead('nara_routine_' + date);                                  // « date » = identifiant de la routine
+    if (!r || !r.statut) return { drop: true };
+    return { table: 'nara_routines', row: { user_id: uid, routine_id: date, statut: r.statut, jour_actuel: r.jour_actuel || 0, updated_at: new Date(syncTs(r) || ts).toISOString() } };
+  }
+  if (type === 'health_profile') { const p = syncRead('nara_profile'); return p ? mk(today, p) : { drop: true }; }
+  if (type === 'cycle_settings' || type === 'food_test') {
+    const v = syncRead(type === 'food_test' ? 'nara_food_test' : 'nara_cycle');
+    if (v) return mk(today, v);
+    return tomb ? mk(today, { deleted: true, updatedAt: tomb }) : { drop: true };
+  }
+  if (type === 'suivis') {
+    const list = suivisLoad(), deleted = Object.keys(meta.stomb).map(id => ({ id: id, updatedAt: meta.stomb[id] }));
+    return (!list.length && !deleted.length) ? { drop: true } : mk(today, { list: list, deleted: deleted, updatedAt: ts });
+  }
+  if (type === 'cycle_history' || type === 'food_test_history') {
+    const l = syncRead(type === 'cycle_history' ? 'nara_cycle_history' : 'nara_food_test_history');
+    return (Array.isArray(l) && l.length) ? mk(today, { list: l, updatedAt: ts }) : { drop: true };
+  }
+  if (type === 'food_prefs') {
+    const v = { food_history: syncRead('nara_food_history') || [], spice_history: syncRead('nara_spice_history') || [], food_deleted: syncRead('nara_food_deleted') || [], spice_deleted: syncRead('nara_spice_deleted') || [], updatedAt: ts };
+    return (v.food_history.length || v.spice_history.length || v.food_deleted.length || v.spice_deleted.length) ? mk(today, v) : { drop: true };
+  }
+  return { drop: true };
+}
+
+// Photo : ligne « photo » ; envoie d'abord le fichier si la photo n'a été gardée qu'en local (hors ligne) ;
+// une suppression retire aussi les fichiers du stockage puis envoie la pierre tombale.
+async function syncBuildPhotoRow(date, meta, uid, ts, tomb) {
+  const hist = loadSkinPhotoHistory().filter(p => p.date === date)[0];
+  const local = localStorage.getItem('nara_photo_' + date) || (hist && hist.url) || null;
+  const mk = values => ({ row: { user_id: uid, date: date, type: 'photo', values: values } });
+  if (!local) {
+    if (!tomb) return { drop: true };
+    try { await withTimeout(sb.storage.from('skin-photos').remove([uid + '/' + date + '.jpg', uid + '/' + date + '.png']), 15000, 'suppression photo'); }
+    catch (e) { return { fail: true }; }
+    return mk({ deleted: true, updatedAt: tomb });
+  }
+  if (local.indexOf('data:') === 0) {
+    try {
+      const blob = syncDataUrlToBlob(local);
+      const path = uid + '/' + date + '.' + (blob.type.indexOf('png') >= 0 ? 'png' : 'jpg');
+      const up = await withTimeout(sb.storage.from('skin-photos').upload(path, blob, { upsert: true, contentType: blob.type, cacheControl: '3600' }), 30000, 'envoi photo');
+      if (up && up.error) return { fail: true };
+      if (!syncStillMine(uid)) return { fail: true };               // déconnexion pendant l'envoi : on n'écrit plus rien sur l'appareil
+      const url = sb.storage.from('skin-photos').getPublicUrl(path).data.publicUrl;
+      saveSkinPhotoToHistory(date, url);
+      localStorage.setItem('nara_photo_' + date, url);
+      if (date === getTodayStr()) { currentPhotoDataUrl = null; currentPhotoPublicUrl = url; try { refreshPhotoZone(); } catch (e) {} }
+      return mk({ url: url, path: path, updatedAt: ts });
+    } catch (e) { return { fail: true }; }
+  }
+  const m = /\/skin-photos\/([^?]+)/.exec(local);
+  return mk({ url: local, path: m ? decodeURIComponent(m[1]) : uid + '/' + date + '.jpg', updatedAt: ts });
+}
+
+async function syncUpsert(table, rows, onConflict) {
+  try {
+    const res = await withTimeout(sb.from(table).upsert(rows, { onConflict: onConflict }), 20000, 'envoi');
+    if (!res.error) return { ok: true };
+    console.warn('[Nara] envoi ' + table + ' refusé:', res.error.message);
+    // Panne passagère (réseau, serveur indisponible, trop de requêtes) ou session refusée : inutile d'insister ligne par ligne, on réessaiera plus tard
+    const st = res.status || 0;
+    return { ok: false, network: syncIsNetworkError(res.error) || st >= 500 || st === 429 || st === 408 || st === 401 || st === 403 };
+  } catch (e) { return { ok: false, network: true }; }
+}
+async function syncSendBatches(table, items, onConflict, sent, uid) {
+  for (let i = 0; i < items.length; i += 50) {
+    if (!syncStillMine(uid)) return false;
+    const part = items.slice(i, i + 50);
+    const r = await syncUpsert(table, part.map(x => x.row), onConflict);
+    if (r.ok) { part.forEach(x => { sent[x.k] = true; }); continue; }
+    if (r.network) return false;                                    // injoignable : tout reste « à envoyer »
+    for (const x of part) {                                          // refus sur le lot : on isole ligne par ligne
+      if (!syncStillMine(uid)) return false;
+      const r1 = await syncUpsert(table, [x.row], onConflict);
+      if (r1.ok) sent[x.k] = true; else if (r1.network) return false;
+    }
+  }
+  return true;
+}
+
+// Envoie tout ce qui est « à envoyer » (jamais avant la fin de la lecture de la connexion).
+// Un seul envoi à la fois : un appel pendant un envoi en cours attend la fin de celui-ci (et en relance un si besoin).
+function syncFlush() {
+  if (_syncFlushP) { _syncFlushAgain = true; return _syncFlushP; }
+  _syncFlushP = syncFlushRun().then(() => { _syncFlushP = null; }, () => { _syncFlushP = null; });
+  return _syncFlushP;
+}
+async function syncFlushRun() {
+  const uid = currentUser && currentUser.id;
+  if (!uid || _syncReadyFor !== uid || !sb) return;
+  try {
+    let tours = 0;
+    do {
+      _syncFlushAgain = false;
+      const meta = syncMeta(), keys = Object.keys(meta.dirty);
+      if (!keys.length) break;
+      const snap = {}, logs = [], routs = [], sent = {};
+      keys.forEach(k => { snap[k] = meta.dirty[k]; });
+      for (const k of keys) {
+        const b = await syncBuildRow(k, meta, uid);
+        if (b.drop) sent[k] = true;
+        else if (!b.fail) (b.table === 'nara_routines' ? routs : logs).push({ k: k, row: b.row });
+      }
+      const ok1 = await syncSendBatches('nara_logs', logs, 'user_id,date,type', sent, uid);
+      if (ok1) await syncSendBatches('nara_routines', routs, 'user_id,routine_id', sent, uid);
+      if (!syncStillMine(uid)) return;                                // déconnexion / changement de compte pendant l'envoi : fiche locale laissée telle quelle
+      const m2 = syncMeta();
+      Object.keys(sent).forEach(k => {
+        if (m2.dirty[k] === snap[k]) { delete m2.dirty[k]; delete m2.tomb[k]; }     // inchangé depuis l'envoi : c'est fait
       });
-      console.log(`[Nara] ${logs.length} entrées chargées depuis Supabase`);
-    }
+      syncSaveMeta(m2);
+    } while (_syncFlushAgain && ++tours < 5);
+  } catch (e) { console.warn('[Nara] envoi:', e && e.message || e); }
+}
 
-    // Charger les routines actives
-    const { data: routines } = await sb
-      .from('nara_routines')
-      .select('*')
-      .eq('user_id', userId);
+// ── Lecture (Supabase → appareil) ─────────────────────────────────────────────
+// Toutes les requêtes sont filtrées sur user_id = utilisatrice connectée.
+// Lecture complète (tout l'historique) : appareil neuf, ou plus d'une semaine depuis la dernière.
+// Sinon : 30 derniers jours + dernières versions des données uniques (profil, suivis, cycle…) + photos + routines.
+function syncLocalKey(type, date) {
+  return type === 'journal' ? 'nara_journal_' + date : type === 'calendrier' ? 'nara_cal_' + date : 'nara_log_' + date + '_' + type;
+}
+async function syncFetchPages(makeQuery) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const res = await withTimeout(makeQuery().range(from, from + 999), 20000, 'lecture');
+    if (res.error) throw res.error;
+    const part = res.data || [];
+    for (let i = 0; i < part.length; i++) out.push(part[i]);
+    if (part.length < 1000) break;
+  }
+  return out;
+}
+async function syncPull(userId) {
+  if (!sb || !userId) return;
+  const t0 = Date.now(), meta0 = syncMeta();
+  const full = !meta0.fullPullAt || (t0 - meta0.fullPullAt) > 7 * SYNC_DAY_MS || meta0.owner !== userId;
+  const since = full ? null : localDateStr(new Date(t0 - 30 * SYNC_DAY_MS));
+  const base = () => sb.from('nara_logs').select('*').eq('user_id', userId);
+  let rows;
+  if (full) {
+    rows = await syncFetchPages(() => base().order('date', { ascending: false }).order('type', { ascending: true }));
+  } else {
+    const win = await syncFetchPages(() => base().gte('date', since).order('date', { ascending: false }).order('type', { ascending: true }));
+    const sing = await withTimeout(base().in('type', SYNC_SINGLETONS).order('date', { ascending: false }).limit(250), 20000, 'lecture');
+    if (sing.error) throw sing.error;
+    const pho = await withTimeout(base().eq('type', 'photo').order('date', { ascending: false }).limit(90), 20000, 'lecture');
+    if (pho.error) throw pho.error;
+    rows = win.concat(sing.data || [], pho.data || []);
+  }
+  let routines = null;
+  try {
+    const r = await withTimeout(sb.from('nara_routines').select('*').eq('user_id', userId), 20000, 'lecture');
+    if (r.error) console.warn('[Nara] Lecture routines:', r.error.message); else routines = r.data || [];
+  } catch (e) { console.warn('[Nara] Lecture routines:', e && e.message || e); }
+  if (!currentUser || currentUser.id !== userId) return;           // déconnexion ou changement de compte pendant la lecture : on jette
+  const res = syncApply(userId, rows, routines, { full: full, since: since, t0: t0 });
+  _syncReadyFor = userId; _syncLastPullOk = Date.now();            // à partir d'ici seulement, les envois sont autorisés
+  console.log('[Nara] ' + rows.length + ' entrées lues dans Supabase (' + (full ? 'historique complet' : '30 derniers jours') + ')');
+  syncRefreshUI(res);
+  await syncFlush();
+}
 
-    if (routines && routines.length > 0) {
-      routines.forEach(r => {
-        const key = routineCacheKey(userId, r.routine_id);
-        localStorage.setItem(key, JSON.stringify({ statut: r.statut, jour_actuel: r.jour_actuel }));
-        localStorage.setItem('nara_routine_' + r.routine_id, JSON.stringify({ statut: r.statut, jour_actuel: r.jour_actuel }));
-      });
-    }
-
-    // Charger l'historique photos
-    await loadPhotoHistory(userId);
-
-    // Mettre à jour l'UI
-    try { updateHomeScore(); } catch(e) {}
-
-  } catch (err) {
-    console.warn('[Nara] Erreur chargement données:', err);
+// Fusion d'une ligne datée (journal, calendrier, saisies rapides) avec l'état local
+function syncMergeDatedRow(type, row, uid, meta, res) {
+  const date = row.date, dk = syncKey(type, date), lk = syncLocalKey(type, date), quick = SYNC_QUICK.indexOf(type) >= 0;
+  const uk = cacheKey(uid, date, type);
+  const cv = row.values && typeof row.values === 'object' ? row.values : {};
+  const cts = syncTs(cv);
+  const local = syncRead(lk), lvals = quick ? (local && local.values) : local;
+  const dirtyTs = meta.dirty[dk] || 0, tombTs = meta.tomb[dk] || 0;
+  const lts = local ? Math.max(quick ? (syncTs(local) || syncTs(lvals)) : syncTs(local), dirtyTs) : 0;
+  const putLocal = values => {
+    if (quick) {
+      const v = Object.assign({}, values); delete v.updatedAt;
+      const entry = { type: type, date: date, values: v, ts: cts || row.created_at || Date.now() };
+      syncWrite(lk, entry); syncWrite(uk, entry);
+    } else syncWrite(lk, values);
+    res.changed = true; if (type === 'journal') res.journalDates.push(date);
+  };
+  const dropLocal = () => {
+    localStorage.removeItem(lk); if (quick) localStorage.removeItem(uk);
+    res.changed = true; if (type === 'journal') res.journalDates.push(date);
+  };
+  if (cv.deleted) {                                                  // supprimé sur un autre appareil
+    if (local && lts > cts) { meta.dirty[dk] = dirtyTs || Date.now(); return; }       // modifié ici après la suppression : on garde et on renverra
+    if (local) dropLocal();
+    delete meta.dirty[dk]; delete meta.tomb[dk];
+    return;
+  }
+  if (!local) {
+    if (tombTs && tombTs > cts) { meta.dirty[dk] = meta.dirty[dk] || tombTs; return; }   // supprimé ici après la version en ligne
+    if (type === 'journal' && syncJournalIsEmpty(cv)) return;                              // inutile d'écrire un journal vide
+    putLocal(cv); delete meta.tomb[dk]; delete meta.dirty[dk];
+    return;
+  }
+  if (type === 'journal' ? syncSameJournal(lvals, cv) : syncSame(lvals, cv)) { delete meta.dirty[dk]; return; }       // identique : rien à faire
+  if (type === 'journal') {
+    const le = syncJournalIsEmpty(lvals), ce = syncJournalIsEmpty(cv);
+    if (le && ce) return;
+    if (le) { putLocal(cv); delete meta.dirty[dk]; return; }                              // un journal vide ne gagne jamais
+    if (ce) { meta.dirty[dk] = dirtyTs || Date.now(); return; }
+    const merged = !(cts > lts) ? syncMergeJournal(lvals, cv) : syncMergeJournal(cv, lvals);
+    merged.date = date; merged.ts = Math.max(syncTs(lvals), cts);
+    if (!syncSameJournal(merged, lvals)) putLocal(merged);
+    if (syncSameJournal(merged, cv)) delete meta.dirty[dk]; else meta.dirty[dk] = Date.now();
+    return;
+  }
+  if (!(cts > lts)) meta.dirty[dk] = dirtyTs || Date.now();          // version locale la plus récente (ou égalité) : elle sera envoyée
+  else { putLocal(cv); delete meta.dirty[dk]; delete meta.tomb[dk]; }
+}
+function syncApplyDated(type, cloudRows, uid, meta, opts, res) {
+  const cloudDates = {};
+  cloudRows.forEach(row => {
+    cloudDates[row.date] = true;
+    try { syncMergeDatedRow(type, row, uid, meta, res); } catch (e) { console.warn('[Nara] fusion ' + type + ' ' + row.date + ':', e && e.message || e); }
+  });
+  // Entrées locales absentes de la base (dans la période lue) : elles n'ont jamais été envoyées → à envoyer
+  const re = type === 'journal' ? /^nara_journal_(\d{4}-\d{2}-\d{2})$/ : type === 'calendrier' ? /^nara_cal_(\d{4}-\d{2}-\d{2})$/ : new RegExp('^nara_log_(\\d{4}-\\d{2}-\\d{2})_' + type + '$');
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i), m = k && re.exec(k);
+    if (!m || cloudDates[m[1]] || (opts.since && m[1] < opts.since)) continue;
+    if (type === 'journal' && syncJournalIsEmpty(syncRead(k))) continue;
+    const dk = syncKey(type, m[1]);
+    if (!meta.dirty[dk]) meta.dirty[dk] = Date.now();
   }
 }
+
+// Données uniques « objet » : profil de santé, réglages du cycle, test alimentaire.
+// La plus récente gagne ; profil et cycle comblent en plus ses clés absentes avec les autres versions
+// (jamais de perte quand un appareil neuf a enregistré un profil incomplet avant la fin de la lecture).
+function syncApplyObject(spec, rows, meta, res) {
+  const dk = syncKey(spec.type), local = syncRead(spec.local);
+  const dirtyTs = meta.dirty[dk] || 0, tombTs = meta.tomb[dk] || 0;
+  const cands = [];
+  rows.forEach(r => { if (r.values && typeof r.values === 'object') cands.push({ v: r.values, ts: syncTs(r.values), date: r.date, del: !!r.values.deleted, mine: false }); });
+  if (local) cands.push({ v: local, ts: Math.max(syncTs(local), dirtyTs), date: '9999-12-31', del: false, mine: true });
+  else if (tombTs) cands.push({ v: { deleted: true }, ts: tombTs, date: '9999-12-31', del: true, mine: true });
+  if (!cands.length) return;
+  cands.sort((a, b) => (b.ts - a.ts) || ((b.mine ? 1 : 0) - (a.mine ? 1 : 0)) || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  const win = cands[0];
+  if (win.del) {                                                     // la suppression la plus récente gagne
+    if (local) { localStorage.removeItem(spec.local); res.changed = true; }
+    if (win.mine) meta.dirty[dk] = dirtyTs || tombTs || Date.now(); else { delete meta.dirty[dk]; delete meta.tomb[dk]; }
+    return;
+  }
+  const tombMax = cands.reduce((m, c) => c.del ? Math.max(m, c.ts) : m, 0);
+  const merged = Object.assign({}, win.v);
+  if (spec.fill) cands.slice(1).forEach(c => {
+    if (c.del || c.ts < tombMax) return;
+    Object.keys(c.v).forEach(k => { if (merged[k] === undefined) merged[k] = c.v[k]; });
+  });
+  if (spec.type === 'health_profile') {                              // consentement : la date la plus ancienne est conservée
+    const cs = cands.map(c => c.v.rgpdConsent).filter(Boolean).sort();
+    if (cs.length) merged.rgpdConsent = cs[0];
+  }
+  if (!local || !syncSame(local, merged)) { syncWrite(spec.local, merged); res.changed = true; }
+  const top = rows[0] && rows[0].values;
+  if (top && !top.deleted && syncSame(top, merged)) delete meta.dirty[dk]; else meta.dirty[dk] = dirtyTs || Date.now();
+  delete meta.tomb[dk];
+}
+
+// « Mes nouveaux suivis » : fusion par identifiant (le plus récent gagne) entre la dernière version en ligne et l'appareil.
+// Chaque enregistrement contient la liste ENTIÈRE : seule la version la plus récente fait foi (les anciennes versions
+// contiennent des suivis depuis supprimés, qui ne doivent pas revenir). Un suivi supprimé (pierre tombale plus récente
+// que sa dernière modification) ne revient jamais, même si un autre appareil l'a encore.
+function syncApplySuivis(rows, meta, res) {
+  const dk = syncKey('suivis'), tombs = Object.assign({}, meta.stomb), byId = {};
+  rows.forEach(r => ((r.values && Array.isArray(r.values.deleted)) ? r.values.deleted : []).forEach(t => {
+    if (t && t.id) tombs[t.id] = Math.max(tombs[t.id] || 0, syncTs(t));
+  }));
+  const take = (e, mine) => {
+    if (!e || typeof e !== 'object') return;
+    const x = Object.assign({}, e); x.id = syncSuiviId(x);
+    const ts = syncSuiviTs(x), cur = byId[x.id];
+    if (!cur || ts > cur.ts || (ts === cur.ts && mine)) byId[x.id] = { e: x, ts: ts };
+  };
+  ((rows[0] && rows[0].values && Array.isArray(rows[0].values.list)) ? rows[0].values.list : []).forEach(e => take(e, false));
+  suivisLoad().forEach(e => take(e, true));
+  const out = [];
+  Object.keys(byId).forEach(id => { if (!(tombs[id] && tombs[id] >= byId[id].ts)) out.push(byId[id].e); });
+  const keyOf = e => (e.addedAt || '') + '|' + e.id;
+  out.sort((a, b) => keyOf(a) < keyOf(b) ? -1 : keyOf(a) > keyOf(b) ? 1 : 0);
+  const cutoff = Date.now() - 400 * SYNC_DAY_MS;                      // les très anciennes pierres tombales sont oubliées
+  Object.keys(tombs).forEach(id => { if (tombs[id] < cutoff) delete tombs[id]; });
+  meta.stomb = tombs;
+  const asMap = l => { const o = {}; (l || []).forEach(e => { const id = syncSuiviId(e); o[id] = Object.assign({}, e, { id: id }); }); return o; };
+  const local = syncRead('nara_suivis');
+  if ((out.length || Array.isArray(local)) && (!Array.isArray(local) || syncCanon(asMap(local), false) !== syncCanon(asMap(out), false))) {
+    syncWrite('nara_suivis', out); res.changed = true;
+  }
+  const top = rows[0] && rows[0].values, topTombs = {};
+  if (top && Array.isArray(top.deleted)) top.deleted.forEach(t => { if (t && t.id) topTombs[t.id] = syncTs(t); });
+  const sameAsTop = top && Array.isArray(top.list) && syncCanon(asMap(top.list), false) === syncCanon(asMap(out), false) && syncCanon(topTombs, false) === syncCanon(tombs, false);
+  if (sameAsTop) delete meta.dirty[dk];
+  else if (out.length || Object.keys(tombs).length) meta.dirty[dk] = meta.dirty[dk] || Date.now();
+}
+
+// Listes à fusionner par réunion (aucune suppression possible dans l'appli) : historique des cycles, historique des tests
+function syncApplyList(spec, rows, meta, res) {
+  const dk = syncKey(spec.type), local = syncRead(spec.local), items = [], seen = {};
+  const add = e => { const k = e && typeof e === 'object' ? spec.key(e) : null; if (!k || seen[k]) return; seen[k] = true; items.push(e); };
+  (Array.isArray(local) ? local : []).forEach(add);                   // l'appareil d'abord (priorité à clé égale)
+  rows.forEach(r => ((r.values && Array.isArray(r.values.list)) ? r.values.list : []).forEach(add));
+  if (!items.length) return;
+  const sk = e => spec.sortKey(e) + '|' + syncCanon(e, false);
+  items.sort((a, b) => sk(a) < sk(b) ? 1 : sk(a) > sk(b) ? -1 : 0);
+  const merged = items.slice(0, spec.cap);
+  if (!Array.isArray(local) || syncCanon(local, false) !== syncCanon(merged, false)) { syncWrite(spec.local, merged); res.changed = true; }
+  const top = rows[0] && rows[0].values && rows[0].values.list;
+  if (Array.isArray(top) && syncCanon(top, false) === syncCanon(merged, false)) delete meta.dirty[dk]; else meta.dirty[dk] = meta.dirty[dk] || Date.now();
+}
+// Préférences d'aliments / d'épices : historiques et éléments retirés, par réunion (sans doublon, casse ignorée)
+function syncApplyPrefs(rows, meta, res) {
+  const dk = syncKey('food_prefs'), K = { food_history: 'nara_food_history', spice_history: 'nara_spice_history', food_deleted: 'nara_food_deleted', spice_deleted: 'nara_spice_deleted' };
+  const merged = {}, topSet = {}, mergedSet = {};
+  const top = rows[0] && rows[0].values;
+  let any = false;
+  Object.keys(K).forEach(f => {
+    const loc = syncRead(K[f]), seen = {}, out = [];
+    const add = s => { if (typeof s !== 'string' || !s) return; const l = s.toLowerCase(); if (seen[l]) return; seen[l] = true; out.push(s); };
+    (Array.isArray(loc) ? loc : []).forEach(add);
+    rows.forEach(r => ((r.values && Array.isArray(r.values[f])) ? r.values[f] : []).forEach(add));
+    merged[f] = f.indexOf('history') >= 0 ? out.slice(0, 100) : out;
+    if (out.length) any = true;
+    const setKey = a => (a || []).map(x => String(x).toLowerCase()).sort().join('\u0001');
+    mergedSet[f] = setKey(merged[f]); topSet[f] = setKey(top && top[f]);
+    if (out.length && setKey(Array.isArray(loc) ? loc : []) !== mergedSet[f]) { syncWrite(K[f], merged[f]); res.changed = true; }
+  });
+  if (!any) return;
+  if (top && Object.keys(K).every(f => topSet[f] === mergedSet[f])) delete meta.dirty[dk]; else meta.dirty[dk] = meta.dirty[dk] || Date.now();
+}
+
+// Routines : le plus récent gagne par routine ; une seule routine active à la fois
+function syncApplyRoutines(cloud, meta, res) {
+  const byId = {}, now = Date.now();
+  cloud.forEach(r => { byId[r.routine_id] = r; });
+  const ts = {};
+  routinesData.forEach(def => {
+    const id = def.id, c = byId[id], lk = 'nara_routine_' + id, local = syncRead(lk), dk = syncKey('routine', id);
+    const dirtyTs = meta.dirty[dk] || 0, cts = c ? (Date.parse(c.updated_at || '') || 0) : 0;
+    const lts = local ? Math.max(syncTs(local), dirtyTs) : 0;
+    if (!c && !local) return;
+    if (c && (!local || (cts > lts && (local.statut !== c.statut || (local.jour_actuel || 0) !== (c.jour_actuel || 0))))) {
+      syncWrite(lk, { statut: c.statut, jour_actuel: c.jour_actuel || 0, updatedAt: cts || now });
+      delete meta.dirty[dk]; res.changed = true; ts[id] = cts;
+      return;
+    }
+    if (c && local.statut === c.statut && (local.jour_actuel || 0) === (c.jour_actuel || 0)) { delete meta.dirty[dk]; ts[id] = Math.max(lts, cts); return; }
+    if (!c && !(local.statut === 'active' || local.jour_actuel > 0)) return;   // état par défaut : rien à envoyer
+    meta.dirty[dk] = dirtyTs || now; ts[id] = lts;                                // l'état local est le plus récent : il part
+  });
+  const actives = routinesData.map(r => r.id).filter(id => { const l = syncRead('nara_routine_' + id); return l && l.statut === 'active'; });
+  if (actives.length > 1) {                                                        // garder la plus récente, ranger les autres
+    actives.sort((a, b) => (ts[b] || 0) - (ts[a] || 0));
+    actives.slice(1).forEach(id => {
+      syncWrite('nara_routine_' + id, { statut: 'disponible', jour_actuel: 0, updatedAt: now });
+      meta.dirty[syncKey('routine', id)] = now; res.changed = true;
+    });
+  }
+}
+
+// Applique tout ce qui vient d'être lu, d'un seul bloc (aucune attente entre la lecture du local et son écriture)
+function syncApply(uid, rows, routines, opts) {
+  const meta = syncMeta(), res = { changed: false, journalDates: [] }, byType = {}, seen = {};
+  rows.forEach(r => {
+    if (!r || !r.type || !r.date || !r.values) return;
+    const k = r.date + '|' + r.type;
+    if (seen[k]) return;
+    seen[k] = true; (byType[r.type] = byType[r.type] || []).push(r);
+  });
+  Object.keys(byType).forEach(t => byType[t].sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  const step = (nom, f) => { try { f(); } catch (e) { console.warn('[Nara] fusion ' + nom + ':', e && e.message || e); } };
+  ['journal', 'calendrier'].concat(SYNC_QUICK).forEach(t => step(t, () => syncApplyDated(t, byType[t] || [], uid, meta, opts, res)));
+  step('photos', () => loadPhotoHistory(uid, byType.photo || [], meta, res));
+  step('profil', () => syncApplyObject({ type: 'health_profile', local: 'nara_profile', fill: true }, byType.health_profile || [], meta, res));
+  step('cycle', () => syncApplyObject({ type: 'cycle_settings', local: 'nara_cycle', fill: true }, byType.cycle_settings || [], meta, res));
+  step('test alimentaire', () => syncApplyObject({ type: 'food_test', local: 'nara_food_test', fill: false }, byType.food_test || [], meta, res));
+  step('suivis', () => syncApplySuivis(byType.suivis || [], meta, res));
+  step('historique des cycles', () => syncApplyList({ type: 'cycle_history', local: 'nara_cycle_history', key: e => e.date, sortKey: e => e.date || '', cap: 12 }, byType.cycle_history || [], meta, res));
+  step('historique des tests', () => syncApplyList({ type: 'food_test_history', local: 'nara_food_test_history', key: e => e.food && (e.food + '|' + e.startDate + '|' + e.endDate), sortKey: e => (e.endDate || '') + '|' + (e.startDate || ''), cap: 20 }, byType.food_test_history || [], meta, res));
+  step('préférences', () => syncApplyPrefs(byType.food_prefs || [], meta, res));
+  if (routines) step('routines', () => syncApplyRoutines(routines, meta, res));
+  step('nettoyage', syncCleanupLegacyJunk);
+  meta.owner = uid; meta.lastPull = opts.t0; if (opts.full) meta.fullPullAt = opts.t0;
+  syncSaveMeta(meta);
+  return res;
+}
+
+// Les anciennes versions copiaient chaque ligne lue sous des clés « nara_log_<date>_<type> » que l'appli ne lit jamais
+// (journal, calendrier, profil… en doublon) : elles occupent la place du stockage local → on les retire.
+function syncCleanupLegacyJunk() {
+  const rm = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    const m = k && (/^nara_log_\d{4}-\d{2}-\d{2}_(.+)$/.exec(k) || /^nara_[0-9a-f-]{36}_log_\d{4}-\d{2}-\d{2}_(.+)$/.exec(k));
+    if (m && SYNC_JUNK_TYPES.indexOf(m[1]) >= 0) rm.push(k);
+  }
+  rm.forEach(k => localStorage.removeItem(k));
+}
+
+// Après une lecture : mettre l'écran à jour sans jamais perturber une saisie en cours
+function syncRefreshUI(res) {
+  try { updateHomeScore(); } catch (e) {}
+  if (!res || !res.changed) return;
+  const act = document.querySelector('.screen.active'), id = act ? act.id.replace('screen-', '') : '';
+  try {
+    if (id === 'journal' && res.journalDates.indexOf(jrnGetDate()) >= 0) {
+      const ae = document.activeElement, typing = ae && act.contains(ae) && /^(INPUT|TEXTAREA)$/.test(ae.tagName);
+      const ex = jrnLoadCurrentJournal();
+      if (typing) { if (ex) jrnValues = Object.assign({}, ex); }
+      else {
+        const slide = jrnCurrentSlide;
+        renderJournal();
+        if (slide > 0) {
+          jrnCurrentSlide = slide;
+          const tr = document.getElementById('jrn-track');
+          if (tr) tr.scrollLeft = slide * tr.offsetWidth;
+          updateJrnNavBar();
+        }
+      }
+    } else if (id === 'routines') renderRoutines();
+    else if (id === 'suivis') renderSuivis();
+    else if (id === 'calendar') renderCalendar();
+    else if (id === 'gallery') renderGallery();
+    else if (id === 'insights') renderInsightsPage();
+    else if (id === 'profile' && profileOpenSection === null) renderProfile();
+  } catch (e) { console.warn('[Nara] rafraîchissement après lecture:', e && e.message || e); }
+  const p = profileLoad();
+  if (p && p.rgpdConsent) { const ov = document.getElementById('profile-consent-overlay'); if (ov) ov.classList.remove('open'); }
+}
+
+// ── Connexion / compte / déconnexion ──────────────────────────────────────────
+// Une seule lecture à la fois par utilisatrice (la connexion déclenche deux appels : l'événement SIGNED_IN et handleLogin)
+function syncPullUser(uid) {
+  if (_syncPulling && _syncPullUser === uid) return _syncPulling;
+  try { syncEnsureOwner(uid); } catch (e) { console.warn('[Nara] syncEnsureOwner:', e); }   // jamais de fusion avec les données locales d'un autre compte
+  _syncPullUser = uid;
+  _syncPulling = syncPull(uid).catch(e => { console.warn('[Nara] loadUserData:', e && e.message || e); }).then(() => { _syncPulling = null; });
+  return _syncPulling;
+}
+// Charger toutes les données de l'utilisatrice depuis Supabase, les fusionner avec le local, puis envoyer ce qui reste à envoyer
+async function loadUserData(userId) {
+  if (!userId) return;
+  if (_syncReadyFor === userId && Date.now() - _syncLastPullOk < 20000) return;   // vient d'être lu
+  return syncPullUser(userId);
+}
+// Retour au premier plan / retour du réseau : relire d'abord si besoin, puis envoyer
+function syncOnResume() {
+  if (!currentUser || !sb) return;
+  if (_syncReadyFor !== currentUser.id || Date.now() - _syncLastPullOk > 120000) syncPullUser(currentUser.id);
+  else syncFlushSoon(true);
+}
+
+// Données locales appartenant à un autre compte (anciennes installations sans fiche : repérées par les clés « nara_<id>_… »)
+function syncHasForeignLegacyKeys(uid) {
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = /^nara_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})_(?:log|routine)_/.exec(localStorage.key(i) || '');
+    if (m && m[1] !== uid) return true;
+  }
+  return false;
+}
+// Remet à zéro tout ce que l'appli garde en mémoire pour l'ancienne utilisatrice
+function syncResetMemory() {
+  jrnValues = {}; jrnEditMode = false; jrnCurrentDate = null; jrnCurrentSlide = 0;
+  currentPhotoDataUrl = null; currentPhotoPublicUrl = null;
+  profileData = {}; profileOpenSection = null; _suiviForm = null;
+  routinesData.forEach(r => { r.statut = 'disponible'; r.jour_actuel = 0; });
+}
+// Appelée à chaque fois que l'identité est connue : un AUTRE compte sur le même appareil → nettoyage du local de l'ancien compte
+function syncEnsureOwner(uid) {
+  if (!uid) return;
+  const meta = syncMeta();
+  const foreign = meta.owner ? meta.owner !== uid : syncHasForeignLegacyKeys(uid);
+  if (foreign) {
+    console.warn('[Nara] Données locales d\'un autre compte : nettoyage avant de charger ce compte');
+    clearTimeout(_syncFlushTimer);
+    _syncReadyFor = null; _syncLastPullOk = 0;
+    clearLocalCache();
+    syncResetMemory();
+    try { updateHomeScore(); } catch (e) {}
+  }
+  const m = foreign ? syncMeta() : meta;
+  if (m.owner !== uid) { m.owner = uid; syncSaveMeta(m); }
+}
+function syncOnLogout() {
+  clearTimeout(_syncFlushTimer);
+  _syncReadyFor = null; _syncLastPullOk = 0;
+}
+// Données locales jamais confrontées à la base (première ouverture après la mise à jour, lecture impossible) : comptées comme « à vérifier »
+function syncNeverVerified() {
+  if (syncMeta().fullPullAt) return 0;
+  let n = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i) || '';
+    if (/^nara_(journal|cal)_\d{4}-\d{2}-\d{2}$/.test(k) || /^nara_log_\d{4}-\d{2}-\d{2}_(transit|repas|peau|stress)$/.test(k) ||
+        k === 'nara_profile' || k === 'nara_suivis' || k === 'nara_food_test' || k === 'nara_cycle') n++;
+  }
+  return n;
+}
+// Avant de se déconnecter : envoyer ce qui reste (4 s maximum) ; si quelque chose n'a pas pu partir, le dire
+async function syncConfirmLogout() {
+  if (!currentUser) return true;
+  const uid = currentUser.id;
+  try {
+    await Promise.race([
+      (async () => { if (_syncReadyFor !== uid) await syncPullUser(uid); await syncFlush(); })(),
+      new Promise(resolve => setTimeout(resolve, 4000)),
+    ]);
+  } catch (e) {}
+  const n = syncUnsentCount() + syncNeverVerified();
+  if (!n) return true;
+  return window.confirm('Certaines de tes données (' + n + ') n\'ont pas encore pu être envoyées en ligne.\n\nSi tu te déconnectes maintenant, elles seront effacées de cet appareil et seront perdues.\n\nSe déconnecter quand même ?');
+}
+
+window.addEventListener('online', () => { syncOnResume(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncOnResume(); else syncFlushSoon(true); });
+window.addEventListener('pagehide', () => { syncFlushSoon(true); });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // GALERIE PEAU — historique des photos avec accordéon par date
@@ -10746,14 +11425,7 @@ function profileLoad() {
 function profileSave(data) {
   data.updatedAt = new Date().toISOString();
   localStorage.setItem('nara_profile', JSON.stringify(data));
-  if (currentUser) {
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id, date: getTodayStr(),
-      type: 'health_profile', values: data,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Profile sync:', error.message);
-    });
-  }
+  syncMarkDirty('health_profile');
 }
 
 // État courant du profil en mémoire pendant l'édition
@@ -11339,7 +12011,7 @@ function renderHomeContextBlock() {
 function buildYesterdaySummary() {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const dateStr = yesterday.toISOString().split('T')[0];
+  const dateStr = localDateStr(yesterday);
 
   const jrn = (() => { try { return JSON.parse(localStorage.getItem(`nara_journal_${dateStr}`) || 'null'); } catch { return null; } })();
   const logTransit = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_transit`) || 'null'); } catch { return null; } })();
@@ -11403,18 +12075,28 @@ function buildYesterdaySummary() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function suivisLoad() {
-  try { return JSON.parse(localStorage.getItem('nara_suivis') || '[]'); } catch { return []; }
+  let l = [];
+  try { l = JSON.parse(localStorage.getItem('nara_suivis') || '[]'); } catch { return []; }
+  if (!Array.isArray(l)) return [];
+  l.forEach(e => { if (e && typeof e === 'object' && !e.id) e.id = syncSuiviId(e); });   // les anciens suivis reçoivent un identifiant stable
+  return l;
 }
 function suivisSave(list) {
+  // Chaque suivi a un identifiant stable et une date de dernière modification ; ceux qui disparaissent de la liste
+  // sont enregistrés comme supprimés (les autres appareils les retirent aussi).
+  const prev = {}, now = new Date().toISOString();
+  suivisLoad().forEach(e => { prev[e.id] = e; });
+  list.forEach(e => {
+    e.id = syncSuiviId(e);
+    const p = prev[e.id];
+    if (!p || syncCanon(syncSuiviCore(p), false) !== syncCanon(syncSuiviCore(e), false)) e.updatedAt = now;
+    else if (!e.updatedAt && p.updatedAt) e.updatedAt = p.updatedAt;
+    delete prev[e.id];
+  });
+  const gone = Object.keys(prev);
+  if (gone.length) syncMarkSuiviTombs(gone);
   localStorage.setItem('nara_suivis', JSON.stringify(list));
-  if (currentUser) {
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id, date: getTodayStr(),
-      type: 'suivis', values: { list },
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] suivis sync:', error.message);
-    });
-  }
+  syncMarkDirty('suivis');
 }
 
 let _suiviForm = null;
@@ -11541,7 +12223,7 @@ function suivisSaveForm() {
   if (_suiviForm.date > suivisTodayLocal().slice(0, _suiviForm.date.length)) { showToast('La date de d\xE9but ne peut pas \xEAtre dans le futur'); return; }
   if (!_suiviForm.type) { showToast('Choisis un type d\u2019\xE9v\xE9nement'); return; }
   const list  = suivisLoad();
-  const entry = { type:_suiviForm.type, problo:_suiviForm.problo||'', pro:_suiviForm.pro||'',
+  const entry = { id:_suiviForm.id, type:_suiviForm.type, problo:_suiviForm.problo||'', pro:_suiviForm.pro||'',
     note:_suiviForm.note||'', date:_suiviForm.date, addedAt:new Date().toISOString() };
   if (_suiviForm.idx !== undefined) list[_suiviForm.idx] = entry;
   else list.push(entry);
@@ -11572,15 +12254,11 @@ function testLoad() {
   try { return JSON.parse(localStorage.getItem('nara_food_test') || 'null'); } catch { return null; }
 }
 function testSave(data) {
+  if (data && typeof data === 'object') data.updatedAt = new Date().toISOString();
   localStorage.setItem('nara_food_test', JSON.stringify(data));
-  if (currentUser) {
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id, date: getTodayStr(), type: 'food_test', values: data,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Test sync:', error.message); });
-  }
+  syncMarkDirty('food_test');
 }
-function testClear() { localStorage.removeItem('nara_food_test'); }
+function testClear() { localStorage.removeItem('nara_food_test'); syncMarkTomb('food_test'); }
 
 // Historique des tests passés (pour détecter la dérive)
 function testHistory() {
@@ -11590,6 +12268,7 @@ function testAddToHistory(test) {
   const h = testHistory();
   h.unshift({ food: test.food, startDate: test.startDate, endDate: getTodayStr(), result: test.phase });
   localStorage.setItem('nara_food_test_history', JSON.stringify(h.slice(0, 20)));
+  syncMarkDirty('food_test_history');
 }
 
 // ── État courant d'un test ───────────────────────────────────────────────────
@@ -11883,7 +12562,7 @@ function computeTestBilan(test) {
 
   for (let i = 0; i < 30; i++) {
     const d = new Date(startDate); d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const jrn = localStorage.getItem(`nara_journal_${dateStr}`);
     const log = localStorage.getItem(`nara_log_${dateStr}_transit`);
     const entry = jrn ? JSON.parse(jrn) : (log ? JSON.parse(log) : null);
@@ -12129,6 +12808,7 @@ function cycleConfirmStart(answer) {
         try { history = JSON.parse(localStorage.getItem('nara_cycle_history') || '[]'); } catch {}
         history.unshift({ date: today, duration: realDuration });
         localStorage.setItem('nara_cycle_history', JSON.stringify(history.slice(0, 12)));
+        syncMarkDirty('cycle_history');
       }
     }
     settings.startDate = today;
@@ -12153,14 +12833,9 @@ function cycleLoad() {
   try { return JSON.parse(localStorage.getItem('nara_cycle') || 'null'); } catch { return null; }
 }
 function cycleSave(data) {
+  if (data && typeof data === 'object') data.updatedAt = new Date().toISOString();
   localStorage.setItem('nara_cycle', JSON.stringify(data));
-  if (currentUser) {
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id, date: getTodayStr(), type: 'cycle_settings', values: data,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Cycle sync:', error.message);
-    });
-  }
+  syncMarkDirty('cycle_settings');
 }
 
 // ── Calcul de phase ───────────────────────────────────────────────────────────
@@ -12335,6 +13010,7 @@ function cycleSaveSettings() {
 
 function cycleResetModule() {
   localStorage.removeItem('nara_cycle');
+  syncMarkTomb('cycle_settings');
   closeCycleModal();
   showToast('Module cycle réinitialisé');
   const jrn = document.getElementById('screen-journal');
@@ -12569,22 +13245,14 @@ function calLoad(dateStr) {
 }
 
 function calSave(dateStr, data) {
+  data.updatedAt = Date.now();
   localStorage.setItem(calKey(dateStr), JSON.stringify(data));
-  if (currentUser) {
-    sb.from('nara_logs').upsert({
-      user_id: currentUser.id, date: dateStr, type: 'calendrier', values: data,
-    }, { onConflict: 'user_id,date,type' }).then(({ error }) => {
-      if (error) console.warn('[Nara] Cal sync:', error.message);
-    });
-  }
+  syncMarkDirty('calendrier', dateStr);
 }
 
 function calDelete(dateStr) {
   localStorage.removeItem(calKey(dateStr));
-  if (currentUser) {
-    sb.from('nara_logs').delete()
-      .eq('user_id', currentUser.id).eq('date', dateStr).eq('type', 'calendrier');
-  }
+  syncMarkTomb('calendrier', dateStr);   // pierre tombale : les autres appareils verront la suppression
 }
 
 // ── État calendrier ──────────────────────────────────────────────────────────
@@ -12710,7 +13378,7 @@ function renderCalendar() {
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const offset = firstDay === 0 ? 6 : firstDay - 1;
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayStr();
 
   let html = '';
   for (let i = 0; i < offset; i++) html += '<div class="cal-day empty"></div>';

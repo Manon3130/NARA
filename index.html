@@ -1718,9 +1718,12 @@ if (typeof supabase === 'undefined') {
   .cy-table tbody tr:last-child td { border-bottom: none; }
   .cy-table td.cy-label { text-align: left; color: var(--text-dark); padding-right: 8px; white-space: nowrap; }
   .cy-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; }
-  .cy-vert { background: #4a9960; }
-  .cy-beige { background: var(--oat); }
-  .cy-orange { background: #c88756; }
+  .cy-vert { background: #F7C8D3; }                                          /* mieux : Blush Petal */
+  .cy-beige { background: #FFF7E6; box-shadow: inset 0 0 0 1px var(--oat); } /* neutre : Vanilla Cream + contour fin beige (visible sur le blanc) */
+  .cy-orange { background: #B46A72; }                                        /* moins bien : Rosewood — onglet Cycle seulement (les flèches ailleurs gardent leurs couleurs) */
+  .cy-table tbody.cy-extra { display: none; }                               /* lignes entièrement neutres : repliées */
+  .cy-table.cy-tout tbody.cy-extra { display: table-row-group; }
+  .cy-table.cy-tout tbody.cy-main tr:last-child td { border-bottom: 1px solid var(--oat); }
   .cy-none { color: var(--text-light); }
   .cy-legende { font-size: 0.68rem; color: var(--text-light); margin-top: 12px; line-height: 1.8; }
   .cy-legende .cy-dot { width: 10px; height: 10px; margin: 0 2px 1px 4px; }
@@ -1731,49 +1734,26 @@ if (typeof supabase === 'undefined') {
   .cy-base { font-size: 0.68rem; color: var(--text-light); margin-top: 12px; }
   .cy-vide { font-size: 0.78rem; color: var(--text-light); font-style: italic; text-align: center; padding: 32px 16px; line-height: 1.6; }
 
-  /* Niveau 3 — Blocs thématiques */
-  .ins-theme-block {
-    background: white; border-radius: 18px; padding: 18px;
-    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    border-left: 4px solid var(--oat);
-  }
-  .ins-theme-header {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-  }
-  .ins-theme-dot {
-    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-  }
-  .ins-theme-label {
-    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--text-light); font-weight: 500;
-  }
-  .ins-theme-body {
-    font-size: 0.82rem; color: var(--text-dark); line-height: 1.65;
-  }
-  .ins-theme-body + .ins-theme-body { margin-top: 8px; }
-  .ins-link-pair {
-    display: flex; align-items: baseline; gap: 6px; margin-top: 6px;
-    font-size: 0.8rem; color: var(--text-mid); line-height: 1.55;
-  }
-  .ins-link-pair-icon { flex-shrink: 0; font-size: 0.88rem; }
+  /* Onglet Liens : 3 blocs */
+  .lk-intro { font-size: 0.7rem; color: var(--text-light); text-align: center; line-height: 1.5; margin: 0 0 14px; }
+  .lk-bloc { background: white; border: 1.5px solid var(--oat); border-radius: 18px; padding: 16px 18px 14px; margin-bottom: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .lk-titre { font-size: 0.86rem; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
+  .lk-texte { font-size: 0.84rem; color: var(--text-dark); line-height: 1.65; margin: 0 0 4px; }
+  .lk-vide { font-size: 0.78rem; color: var(--text-light); font-style: italic; padding: 2px 0 4px; }
+  .lk-graph { margin-top: 10px; padding: 0 2px; }
+  .lk-legende { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 0.65rem; color: var(--text-light); margin-bottom: 6px; }
+  .lk-leg { display: inline-flex; align-items: center; gap: 5px; }
+  .lk-leg-aire { display: inline-block; width: 10px; height: 10px; border-radius: 2px; border: 1px solid; }
+  .lk-leg-trait { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+  .lk-echelle { margin-left: auto; font-style: italic; }
+  .lk-autres { display: none; margin-top: 6px; border-top: 1px solid var(--oat); }
+  .lk-autres .ins-lien:last-child { border-bottom: none; }
 
   /* Disclaimer global unique en bas */
   .ins-disclaimer {
     font-size: 0.68rem; color: var(--text-light); font-style: italic;
     text-align: center; padding: 16px 0 8px; line-height: 1.6;
   }
-
-  /* Couleurs par thème */
-  .ins-dot-cycle      { background: #d8b4fe; }
-  .ins-dot-hydration  { background: #93c5fd; }
-  .ins-dot-stress     { background: #F7DFDF; }
-  .ins-dot-transit    { background: #B6C687; }
-  .ins-dot-bal        { background: #F3EDBD; }
-  .ins-dot-douleurs   { background: #DDBAAE; }
-  .ins-dot-sommeil    { background: #DAE9FA; }
-  .ins-dot-energie    { background: #BBB7E5; }
-  .ins-dot-peau       { background: #EAC4AF; }
-  .ins-dot-brique2    { background: #8a8ec4; }
 
   /* Carrousel — retirer le disclaimer interne des panneaux */
   .ichart-summary span[style*="Calculé sur"],
@@ -7119,9 +7099,9 @@ function insightsOpenWeekCard(key) {
   if (idx > 0) setTimeout(() => ichartGoTo(idx, ''), 60);
 }
 
-// Les 3 liens les plus forts (fenêtre propre à chaque moteur : chacun existe aussi dans l'onglet Liens) ; bloc absent s'il n'y en a aucun
+// Les 3 liens les plus forts des 30 derniers jours, hors liens évidents (même classement que l'onglet Liens : chacun y figure) ; bloc absent s'il n'y en a aucun
 function insightsTopLiensHtml() {
-  const liens = corrTrier(corrCatalogue()).slice(0, 3);
+  const liens = corrTopLiens();
   if (!liens.length) return '';
   return '<div class="ins-liens"><div class="ins-liens-titre">Liens repérés</div><div class="ins-liens-liste">'
     + liens.map(l => { const p = corrPhrase(l); return '<div class="ins-lien"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('')
@@ -7261,47 +7241,92 @@ function cycleListe(mots, prudent) {
   return parts.length < 2 ? parts[0] : parts.slice(0, -1).join(', ') + ' et ' + parts[parts.length - 1];
 }
 
-// 2 ou 3 phrases, par phase, sans répétition : la phase la plus difficile, puis la plus favorable (« c'est l'inverse pour … »), puis une éventuelle autre
-function cyclePhrases(table, st, prudent) {
+// Phrases sans répétition : une observation (un indicateur « mieux » ou « moins bien ») n'est dite qu'une fois.
+// Les observations qui concernent exactement les mêmes phases forment une phrase ; une observation de sens opposé qui ne concerne qu'une partie
+// de ces phases s'y ajoute (« …, mais ton sommeil et ton stress vont mieux en phase lutéale »). 3 phrases au plus, dans l'ordre du cycle.
+// Retourne [{ texte, cles }] : cles = les observations dites dans la phrase.
+function cycleGroupes(table, st, prudent) {
+  const ORDRE = ['regles', 'preovul', 'ovulation', 'luteale'];
+  const PH = ORDRE.filter(ph => st.PHASES.indexOf(ph) >= 0);
   const OUV = { regles: 'pendant tes règles', preovul: 'en phase folliculaire', ovulation: 'à l\'ovulation', luteale: 'en phase lutéale' };
+  const ouv = phases => {
+    if (phases.length === 2 && phases[0] === 'preovul' && phases[1] === 'luteale') return 'en phases folliculaire et lutéale';
+    return insListe(phases.map(ph => OUV[ph]));
+  };
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
-  const par = {};
-  st.PHASES.forEach(ph => { par[ph] = { pire: [], mieux: [] }; });
-  table.forEach(t => st.PHASES.forEach(ph => {
-    if (t.etats[ph] === 'orange') par[ph].pire.push(t); else if (t.etats[ph] === 'vert') par[ph].mieux.push(t);
-  }));
   // Dans une phrase, les indicateurs se suivent dans cet ordre (ventre, sommeil, stress, selles, puis les autres)
   const PRIO = ['ballonnements', 'sommeil', 'stress', 'selleBristol', 'douleurs', 'transit', 'selleOui', 'selleFreq', 'peau', 'energie', 'humeur'];
-  const rang = t => PRIO.indexOf(t.ligne.key);
-  st.PHASES.forEach(ph => { par[ph].pire.sort((x, y) => rang(x) - rang(y)); par[ph].mieux.sort((x, y) => rang(x) - rang(y)); });
-  const ordre = ['luteale', 'regles', 'ovulation', 'preovul'];                   // priorité en cas d'égalité
-  const choisir = (cle, exclus) => {
-    let best = null;
-    ordre.forEach(ph => { if (exclus.indexOf(ph) < 0 && par[ph][cle].length && (!best || par[ph][cle].length > par[best][cle].length)) best = ph; });
-    return best;
+  const SENS_DEP = { selleOui: 1, selleFreq: 1, selleBristol: 1 };     // la formulation dépend du sens (plus / moins) : il fait partie de l'observation
+
+  // 1. observations : (indicateur, état) → phases concernées
+  const obs = {};
+  table.forEach(t => PH.forEach(ph => {
+    const e = t.etats[ph];
+    if (e !== 'orange' && e !== 'vert') return;
+    const cle = t.ligne.key + '|' + e + (SENS_DEP[t.ligne.key] ? '|' + t.sens[ph] : '');
+    (obs[cle] = obs[cle] || { cle: cle, key: t.ligne.key, etat: e, sens: t.sens[ph], phases: [] }).phases.push(ph);
+  }));
+  // 2. groupes : les observations qui concernent exactement les mêmes phases forment une phrase
+  const par = {};
+  Object.keys(obs).forEach(k => {
+    const o = obs[k], gk = o.phases.join('+');
+    (par[gk] = par[gk] || { phases: o.phases, pire: [], mieux: [], sup: [] })[o.etat === 'orange' ? 'pire' : 'mieux'].push(o);
+  });
+  const rang = o => PRIO.indexOf(o.key);
+  const groupes = Object.keys(par).map(k => par[k]);
+  groupes.forEach(g => { g.pire.sort((x, y) => rang(x) - rang(y)); g.mieux.sort((x, y) => rang(x) - rang(y)); });
+  const premier = g => ORDRE.indexOf(g.phases[0]);
+  groupes.sort((x, y) => premier(x) - premier(y) || y.phases.length - x.phases.length);
+  // 3. un groupe de sens opposé, dont les phases sont toutes dans celles d'un autre, rejoint sa phrase
+  const dans = (h, g) => h !== g && h.phases.length < g.phases.length && h.phases.every(ph => g.phases.indexOf(ph) >= 0);
+  const sens1 = g => (g.pire.length && !g.mieux.length) ? 'pire' : ((g.mieux.length && !g.pire.length) ? 'mieux' : '');   // groupe d'un seul sens
+  const rejoint = {};
+  groupes.forEach(h => {
+    const hs = sens1(h); if (!hs) return;
+    const parent = groupes.filter(g => dans(h, g) && sens1(g) && sens1(g) !== hs && !g.sup.length && !rejoint[g.phases.join('+')])[0];
+    if (parent && parent.pire.length + parent.mieux.length + h.pire.length + h.mieux.length <= 6) { parent.sup.push(h); rejoint[h.phases.join('+')] = true; }
+  });
+  const principaux = groupes.filter(g => !rejoint[g.phases.join('+')]);
+  // 4. au plus 3 phrases : les plus riches, puis remises dans l'ordre du cycle
+  const poids = g => [g].concat(g.sup).reduce((s, x) => s + x.pire.length * 2 + x.mieux.length, 0);
+  let retenus = principaux.slice();
+  if (retenus.length > 3) retenus = retenus.slice().sort((x, y) => poids(y) - poids(x) || premier(x) - premier(y)).slice(0, 3).sort((x, y) => premier(x) - premier(y));
+
+  const mots = (liste, etat) => liste.map(o => cycleMot(o.key, etat, o.sens));
+  // « ton sommeil et ton stress vont mieux » quand chaque indicateur a un sujet ; sinon la liste habituelle
+  const vont = (liste, etat) => {
+    const ms = mots(liste, etat);
+    if (!ms.every(m => m.s !== undefined)) return null;
+    const pl = ms.length > 1 || ms[0].v === 'sont';
+    return insListe(ms.map(m => m.s)) + ' ' + (prudent ? (pl ? 'semblent aller' : 'semble aller') : (pl ? 'vont' : 'va')) + ' mieux';
   };
-  const mots = (liste, etat, ph) => liste.map(t => cycleMot(t.ligne.key, etat, t.sens[ph]));
-  const phrases = [];
-  const A = choisir('pire', []), B = choisir('mieux', A ? [A] : []);
-  // Phrases courtes : au plus 4 éléments pour une phase, 3 pour les compléments (dans l'ordre de priorité ci-dessus)
-  if (A) phrases.push(cap(OUV[A]) + ', ' + cycleListe(mots(par[A].pire.slice(0, 4), 'orange', A), prudent) + '.');
-  if (B) {
-    const dansA = t => !!A && par[A].pire.some(u => u.ligne.key === t.ligne.key);
-    const inverse = par[B].mieux.filter(dansA).slice(0, 4), autres = par[B].mieux.filter(t => !dansA(t)).slice(0, 3), pires = par[B].pire.slice(0, 3);
-    const morceaux = [];
-    if (inverse.length) morceaux.push('c\'est l\'inverse pour ' + insListe(mots(inverse, 'vert', B).map(m => m.nom)));
-    if (autres.length)  morceaux.push(cycleListe(mots(autres, 'vert', B), prudent));
-    let txt = morceaux.join(', et ');
-    if (pires.length) txt += (txt ? ', mais ' : '') + cycleListe(mots(pires, 'orange', B), prudent);
-    phrases.push(cap(OUV[B]) + ', ' + txt + '.');
-  }
-  const C = ordre.filter(ph => ph !== A && ph !== B && (par[ph].pire.length || par[ph].mieux.length))[0];
-  if (C && phrases.length < 3) {
-    let txt = par[C].pire.length ? cycleListe(mots(par[C].pire.slice(0, 3), 'orange', C), prudent) : '';
-    if (par[C].mieux.length) txt += (txt ? ', mais ' : '') + cycleListe(mots(par[C].mieux.slice(0, 3), 'vert', C), prudent);
-    phrases.push(cap(OUV[C]) + ', ' + txt + '.');
-  }
-  return phrases;
+  const out = [];
+  retenus.forEach(g => {
+    const pire = g.pire.slice(0, 4), mieux = g.mieux.slice(0, pire.length ? 3 : 4);
+    let txt = pire.length ? cycleListe(mots(pire, 'orange'), prudent) : '';
+    if (mieux.length) txt += (txt ? ', mais ' : '') + cycleListe(mots(mieux, 'vert'), prudent);
+    const cles = pire.concat(mieux).map(o => o.cle);
+    let enBas = pire.length > 0;                                    // la phrase dit-elle déjà du « moins bien » ?
+    g.sup.slice(0, 2).forEach(h => {
+      const hp = h.pire.slice(0, 3), hm = h.mieux.slice(0, 3), morceaux = [];
+      if (hm.length) morceaux.push(vont(hm, 'vert') || cycleListe(mots(hm, 'vert'), prudent));
+      if (hp.length) morceaux.push(cycleListe(mots(hp, 'orange'), prudent));
+      txt += (hm.length && enBas ? ', mais ' : (!hm.length && !enBas ? ', mais ' : ', et ')) + morceaux.join(' et ') + ' ' + ouv(h.phases);
+      if (hp.length) enBas = true;
+      cles.push.apply(cles, hp.concat(hm).map(o => o.cle));
+    });
+    out.push({ texte: cap(ouv(g.phases)) + ', ' + txt + '.', cles: cles });
+  });
+  return out;
+}
+function cyclePhrases(table, st, prudent) { return cycleGroupes(table, st, prudent).map(x => x.texte); }
+
+// Bouton « Voir tous les indicateurs » / « Masquer » : affiche ou replie les lignes entièrement neutres du tableau
+function cyToggleLignes(btn) {
+  const t = document.getElementById('cy-table');
+  if (!t) return;
+  const tout = t.classList.toggle('cy-tout');
+  if (btn) btn.textContent = tout ? 'Masquer' : 'Voir tous les indicateurs';
 }
 
 // « environ N cycles » : durée couverte par les jours renseignés ÷ durée du cycle, arrondie (1 au minimum)
@@ -7331,22 +7356,316 @@ function insightsTabCycle(ctx) {
 
   const colonnes = CYCLE_COLONNES.filter(c => c[0] !== 'ovulation' || table.some(t => t.etats.ovulation !== 'none'));   // Ovulatoire seulement si disponible
   const cellule = e => e === 'none' ? '<span class="cy-none">–</span>' : '<span class="cy-dot cy-' + (e === 'vert' ? 'vert' : (e === 'orange' ? 'orange' : 'beige')) + '"></span>';
+  // Le tableau n'affiche par défaut que les lignes ayant au moins une pastille « mieux » ou « moins bien » ; les lignes entièrement neutres sont repliées
+  const coloree = t => colonnes.some(c => t.etats[c[0]] === 'vert' || t.etats[c[0]] === 'orange');
+  const lignes = table.filter(coloree), neutres = table.filter(t => !coloree(t));
   const phrases = cyclePhrases(table, st, decale);
+  if (!lignes.length || !phrases.length) return alerte + '<div class="cy-bloc"><div class="cy-phrases"><p>Pas de variation nette de tes indicateurs selon les phases de ton cycle.</p></div></div>';
+  const ligneHtml = t => '<tr><td class="cy-label">' + t.ligne.label + '</td>' + colonnes.map(c => '<td>' + cellule(t.etats[c[0]]) + '</td>').join('') + '</tr>';
   return alerte + '<div class="cy-bloc">'
     + (decale ? '<div class="cy-prudence">Ces tendances sont à prendre avec prudence tant que tes dates de cycle ne sont pas à jour.</div>' : '')
-    + '<div class="cy-scroll"><table class="cy-table"><thead><tr><th></th>' + colonnes.map(c => '<th>' + c[1] + '</th>').join('') + '</tr></thead><tbody>'
-    + table.map(t => '<tr><td class="cy-label">' + t.ligne.label + '</td>' + colonnes.map(c => '<td>' + cellule(t.etats[c[0]]) + '</td>').join('') + '</tr>').join('')
-    + '</tbody></table></div>'
+    + '<div class="cy-scroll"><table class="cy-table" id="cy-table"><thead><tr><th></th>' + colonnes.map(c => '<th>' + c[1] + '</th>').join('') + '</tr></thead>'
+    + '<tbody class="cy-main">' + lignes.map(ligneHtml).join('') + '</tbody>'
+    + (neutres.length ? '<tbody class="cy-extra">' + neutres.map(ligneHtml).join('') + '</tbody>' : '')
+    + '</table></div>'
+    + (neutres.length ? '<button class="ins-link-btn" onclick="cyToggleLignes(this)">Voir tous les indicateurs</button>' : '')
     + '<div class="cy-legende"><span class="cy-dot cy-vert"></span> mieux · <span class="cy-dot cy-beige"></span> neutre · <span class="cy-dot cy-orange"></span> moins bien · – pas assez de données</div>'
-    + '<div class="cy-phrases">' + (phrases.length ? phrases.map(p => '<p>' + p + '</p>').join('') : '<p>Pas de variation nette de tes indicateurs selon les phases de ton cycle.</p>') + '</div>'
+    + '<div class="cy-phrases">' + phrases.map(p => '<p>' + p + '</p>').join('') + '</div>'
     + '<div class="cy-base">Basé sur environ ' + cycleNbCycles(st) + ' cycle' + (cycleNbCycles(st) > 1 ? 's' : '') + '.</div></div>';
 }
-// ── Onglet Liens : le contenu actuel des corrélations et co-évolutions, déplacé tel quel ──
+// ══════════════════════════════════════════════════════════════════════════════
+// ONGLET LIENS — 3 blocs fixes : 🌀 Ton ventre · ✨ Ta peau · 😴 Sommeil, énergie & humeur
+// Les liens viennent du catalogue (corrCatalogue : 37 paires, 30 derniers jours), classés une seule fois (corrBloc), sans doublon.
+// Chaque bloc : un texte de 1 à 3 phrases (les 3 liens les plus forts entre thèmes différents), un graphique (le lien le plus fort),
+// puis « Voir les N autres liens ». Les liens évidents entre mesures du transit ne sont ni cités ni tracés : ils restent dans « Voir les autres liens ».
+// Les calculs (moteurs, Spearman, seuils) ne changent pas : seule la présentation est ici.
+// ══════════════════════════════════════════════════════════════════════════════
+const CORR_BLOCS = [
+  { id: 'ventre',  titre: '🌀 Ton ventre',                bordure: 'var(--sage)' },
+  { id: 'peau',    titre: '✨ Ta peau',                    bordure: '#F7C8D3' },
+  { id: 'sommeil', titre: '😴 Sommeil, énergie & humeur',  bordure: '#BBB7E5' }
+];
+
+// ── Mots des phrases, par indicateur et par état (haut / bas) ──
+//   jour : « Tes jours de … sont aussi tes jours de … » · « Les jours de …, … »
+//   cl   : « Les jours où …, … » · « Quand …, … »            np : « Tes jours de … vont souvent avec … »
+const CORR_MOTS = {
+  stress:  { jour: { haut: 'jours de stress élevé',       bas: 'jours de stress bas' },
+             cl:   { haut: 'ton stress est élevé',        bas: 'ton stress est bas' },
+             np:   { haut: 'un stress élevé',             bas: 'un stress bas' } },
+  bal:     { jour: { haut: 'jours de ballonnements',      bas: 'jours sans ballonnements' },
+             cl:   { haut: 'tu as plus de ballonnements', bas: 'tu as moins de ballonnements' },
+             np:   { haut: 'plus de ballonnements',       bas: 'moins de ballonnements' } },
+  doul:    { jour: { haut: 'jours de douleurs',           bas: 'jours sans douleurs' },
+             cl:   { haut: 'tu as plus de douleurs',      bas: 'tu as moins de douleurs' },
+             np:   { haut: 'plus de douleurs',            bas: 'moins de douleurs' } },
+  peau:    { jour: { haut: 'jours de peau calme',         bas: 'jours de poussée' },
+             cl:   { haut: 'ta peau est plus calme',      bas: 'ta peau est plus réactive' },
+             np:   { haut: 'une peau plus calme',         bas: 'une peau plus réactive' } },
+  som:     { jour: { haut: 'jours de bon sommeil',        bas: 'jours de sommeil léger' },
+             cl:   { haut: 'tu dors mieux',               bas: 'tu dors moins bien' },
+             np:   { haut: 'un meilleur sommeil',         bas: 'un sommeil moins bon' } },
+  ener:    { jour: { haut: 'jours d\'énergie haute',      bas: 'jours d\'énergie basse' },
+             cl:   { haut: 'ton énergie est plus haute',  bas: 'ton énergie est plus basse' },
+             np:   { haut: 'plus d\'énergie',             bas: 'moins d\'énergie' } },
+  hum:     { jour: { haut: 'jours de bonne humeur',       bas: 'jours d\'humeur basse' },
+             cl:   { haut: 'ton humeur est meilleure',    bas: 'ton humeur est plus basse' },
+             np:   { haut: 'une meilleure humeur',        bas: 'une humeur plus basse' } },
+  hyd:     { jour: { haut: 'jours de bonne hydratation',  bas: 'jours où tu bois peu' },
+             cl:   { haut: 'tu bois davantage',           bas: 'tu bois peu' },
+             np:   { haut: 'une bonne hydratation',       bas: 'peu d\'eau' } },
+  transit: { jour: { haut: 'jours de transit fluide',     bas: 'jours de transit lent' },
+             cl:   { haut: 'ton transit est plus fluide', bas: 'ton transit est moins fluide' },
+             np:   { haut: 'un transit plus fluide',      bas: 'un transit moins fluide' } },
+  selle:   { jour: { haut: 'jours avec selle',            bas: 'jours sans selle' },
+             cl:   { haut: 'tu vas à la selle',           bas: 'tu ne vas pas à la selle' },
+             np:   { haut: 'une selle dans la journée',   bas: 'une absence de selle' } },
+  bristol: { jour: { haut: 'jours de selles plus molles', bas: 'jours de selles plus dures' },
+             cl:   { haut: 'tes selles sont plus molles', bas: 'tes selles sont plus dures' },
+             np:   { haut: 'des selles plus molles',      bas: 'des selles plus dures' } },
+  freq:    { jour: { haut: 'jours avec plus de passages', bas: 'jours avec moins de passages' },
+             cl:   { haut: 'tu as plus de passages',      bas: 'tu as moins de passages' },
+             np:   { haut: 'plus de passages',            bas: 'moins de passages' } }
+};
+CORR_MOTS.freqTous = CORR_MOTS.freq;
+// Sujet et verbe d'une proposition (« ton humeur » + « est plus basse ») : sert à dire « ton énergie aussi » quand deux résultats se disent pareil
+function corrSP(k, e) {
+  const cl = CORR_MOTS[k].cl[e], w = cl.split(' '), n = w[0] === 'tu' ? 1 : 2;
+  return { cl: cl, s: w.slice(0, n).join(' '), p: w.slice(n).join(' ') };
+}
+function corrPts(l) { return '&nbsp;<span class="ins-dots">' + (l.force === 3 ? '●●●' : '●●') + '</span>'; }
+// « Tes jours avec selle vont souvent de pair avec … » : on évite « avec … avec »
+function corrAvec(jour) { return /\bavec\b/.test(jour) ? 'vont souvent de pair avec' : 'vont souvent avec'; }
+
+// ── Sens d'un lien ──────────────────────────────────────────────────────────────────────────────
+// Sens naturel : de l'indicateur « en amont » (la condition) vers celui « en aval » (le résultat), dans cet ordre :
+// hydratation · stress · transit · ballonnements · douleurs · sommeil · énergie · humeur · peau · selles, Bristol, passages.
+const CORR_RANG = { hyd: 0, stress: 1, transit: 2, bal: 3, doul: 4, som: 5, ener: 6, hum: 7, peau: 8, selle: 9, bristol: 10, freq: 11, freqTous: 11 };
+function corrSens(l) { return CORR_RANG[l.a] <= CORR_RANG[l.b] ? { c: l.a, o: l.b } : { c: l.b, o: l.a }; }
+const corrForce = l => Math.abs(l.rho);
+const corrPlusFort = (x, y) => corrForce(y) - corrForce(x) || y.n - x.n;
+
+// ── Phrases ─────────────────────────────────────────────────────────────────────────────────────
+// Transit et peau (toujours en premier dans Ta peau) : « Ton intestin et ta peau semblent liés : les jours de transit fluide, ta peau est plus calme ●●● »
+function corrPhraseFluide(l) {
+  const e = corrEtats(l), A = CORR_MOTS[l.a], B = CORR_MOTS[l.b];
+  return 'Ton intestin et ta peau semblent liés : les ' + A.jour[e.ea] + ', ' + B.cl[e.eb] + corrPts(l) + '.';
+}
+// Un seul lien : jj « Tes jours de … sont aussi tes jours de … » · jo « Les jours où …, … » · qd « Quand …, … » · vsa « Tes jours de … vont souvent avec … »
+function corrPhraseUn(sp, modele) {
+  const C = CORR_MOTS[sp.c.k], O = CORR_MOTS[sp.o.k], pts = corrPts(sp.l);
+  if (modele === 'jj')  return 'Tes ' + C.jour[sp.c.e] + ' sont aussi tes ' + O.jour[sp.o.e] + pts + '.';
+  if (modele === 'jo')  return 'Les jours où ' + C.cl[sp.c.e] + ', ' + O.cl[sp.o.e] + pts + '.';
+  if (modele === 'vsa') return 'Tes ' + C.jour[sp.c.e] + ' ' + corrAvec(C.jour[sp.c.e]) + ' ' + O.np[sp.o.e] + pts + '.';
+  return 'Quand ' + C.cl[sp.c.e] + ', ' + O.cl[sp.o.e] + pts + '.';
+}
+// Plusieurs liens qui partent de la même condition (étoile A) :
+//   « Les jours de stress élevé, tu dors moins bien ●●●, ton énergie est plus basse ●● et ton humeur aussi ●●. »
+function corrPhraseEtoileA(sp) {
+  let prec = null;
+  const parts = sp.items.map(it => {
+    const s = corrSP(it.k, it.e);
+    const txt = (prec && prec.p === s.p && prec.s !== s.s) ? s.s + ' aussi' : s.cl;
+    prec = s;
+    return txt + corrPts(it.l);
+  });
+  return 'Les ' + CORR_MOTS[sp.hub.k].jour[sp.hub.e] + ', ' + insListe(parts) + '.';
+}
+// Plusieurs liens qui aboutissent au même résultat (étoile B) : le résultat commun ouvre la phrase
+//   « Tes jours de douleurs vont souvent avec plus de ballonnements ●●● et un transit moins fluide ●●●. »
+function corrPhraseEtoileB(sp) {
+  const J = CORR_MOTS[sp.hub.k].jour[sp.hub.e];
+  return 'Tes ' + J + ' ' + corrAvec(J) + ' ' + insListe(sp.items.map(it => CORR_MOTS[it.k].np[it.e] + corrPts(it.l))) + '.';
+}
+
+// ── Agencement des phrases d'un bloc ───────────────────────────────────────────────────────────
+// Règles : un indicateur (un thème : le transit compte pour un) n'ouvre jamais plus d'une phrase du bloc, et ne conclut jamais plus d'une phrase.
+//   • plusieurs liens qui partent du même indicateur → une phrase « Les jours de …, …, … et … » (étoile A) ;
+//   • plusieurs liens qui aboutissent au même indicateur → une phrase « Tes jours de … vont souvent avec … et … » (étoile B) ;
+//   • sinon un lien par phrase, dit dans son sens naturel ; en dernier recours à l'envers (« Tes jours de … sont aussi tes jours de … »).
+// On cherche l'agencement le moins éloigné du sens naturel (peu d'inversions, peu de phrases) qui respecte les deux règles.
+function corrPartitions(a) {
+  if (!a.length) return [[]];
+  const res = [];
+  (function rec(i, groupes) {
+    if (i === a.length) { res.push(groupes.map(g => g.slice())); return; }
+    groupes.push([a[i]]); rec(i + 1, groupes); groupes.pop();                       // un groupe à part d'abord
+    groupes.forEach(g => { if (g.length < 3) { g.push(a[i]); rec(i + 1, groupes); g.pop(); } });
+  })(0, []);
+  return res;
+}
+// Façons de dire un groupe de liens en une phrase. Chaque façon : { type, ouvre, conclut, cout } (ouvre / conclut = thèmes)
+function corrOptions(liens) {
+  const can = k => CORR_CANON[k] || k, contraire = e => (e === 'haut' ? 'bas' : 'haut');
+  const etat = (l, k) => { const e = corrEtats(l); return k === l.a ? e.ea : e.eb; };
+  if (liens.length === 1) {
+    const l = liens[0], s = corrSens(l);
+    const nat = { type: 'un', inverse: false, l: l, c: { k: s.c, e: etat(l, s.c) }, o: { k: s.o, e: etat(l, s.o) }, cout: 0 };
+    const inv = { type: 'un', inverse: true,  l: l, c: nat.o, o: nat.c, cout: 2 };
+    return [nat, inv].map(r => Object.assign(r, { ouvre: corrTheme(r.c.k), conclut: [corrTheme(r.o.k)] }));
+  }
+  const res = [];
+  ['c', 'o'].forEach(role => {                                                       // c : même condition (A) · o : même résultat (B)
+    const autre = role === 'c' ? 'o' : 'c', hub = can(corrSens(liens[0])[role]);
+    if (!liens.every(l => can(corrSens(l)[role]) === hub)) return;
+    ['haut', 'bas'].forEach(s => {                                                   // état de l'indicateur commun ; un lien qui le dit autrement est retourné (les deux états inversés)
+      const items = liens.map(l => {
+        const sn = corrSens(l), d = etat(l, sn[role]), f = etat(l, sn[autre]);
+        return { l: l, k: sn[autre], e: d === s ? f : contraire(f), flip: d !== s };
+      }).sort((x, y) => corrPlusFort(x.l, y.l));
+      res.push({ type: role === 'c' ? 'A' : 'B', hub: { k: hub, e: s }, items: items, ouvre: corrTheme(hub), conclut: items.map(i => corrTheme(i.k)),
+                 cout: items.filter(i => i.flip).length + (role === 'o' ? 0.5 : 0) });
+    });
+  });
+  return res;
+}
+// Meilleur agencement de ces liens (tp : lien transit×peau déjà dit en tête de Ta peau, il occupe « transit » à l'ouverture et « peau » à la conclusion)
+function corrAgencer(liens, tp) {
+  const plafond = tp ? 2 : 3, sT = tp ? corrSens(tp) : null;
+  const ouvre0 = sT ? [corrTheme(sT.c)] : [], conclut0 = sT ? [corrTheme(sT.o)] : [];
+  let meilleur = null;
+  for (let masque = (1 << liens.length) - 1; masque >= 0; masque--) {              // du plus complet au moins complet : un lien n'est écarté qu'en dernier recours
+    const gardes = liens.filter((l, i) => masque & (1 << i)), rejetes = liens.filter((l, i) => !(masque & (1 << i)));
+    const cRej = rejetes.reduce((s, l) => s + 20 + corrForce(l), 0);
+    corrPartitions(gardes).forEach(part => {
+      if (part.length > plafond) return;
+      const options = part.map(corrOptions), choix = [];
+      (function rec(i, ouvre, conclut, cout) {
+        if (meilleur && cRej + cout + 3 * part.length >= meilleur.cout) return;
+        if (i === part.length) { meilleur = { cout: cRej + cout + 3 * part.length, specs: choix.slice(), gardes: gardes, rejetes: rejetes }; return; }
+        options[i].forEach(o => {
+          if (ouvre.indexOf(o.ouvre) >= 0) return;
+          if (o.conclut.some((t, j) => conclut.indexOf(t) >= 0 || o.conclut.indexOf(t) !== j)) return;
+          choix.push(o);
+          rec(i + 1, ouvre.concat(o.ouvre), conclut.concat(o.conclut), cout + o.cout);
+          choix.pop();
+        });
+      })(0, ouvre0, conclut0, 0);
+    });
+  }
+  return meilleur;
+}
+const corrLiensDe = sp => (sp.type === 'un' ? [sp.l] : sp.items.map(i => i.l));
+
+// Texte d'un bloc : les liens les plus forts entre deux thèmes différents (3 au plus, un seul par paire de thèmes), dits en 1 à 3 phrases.
+// Dans Ta peau, le lien transit×peau, s'il existe, est toujours cité en premier.
+// Un lien qui ne peut pas se dire sans enfreindre les règles ci-dessus est remplacé par le lien suivant (il reste dans « Voir les autres liens »).
+function corrTexteBloc(nets, blocId) {
+  const tp = blocId === 'peau' ? (nets.filter(l => corrCle(l) === 'peau|transit')[0] || null) : null;
+  const candidats = [], vus = {};
+  if (tp) vus[corrCleTheme(tp)] = true;
+  nets.forEach(l => { if (l === tp || vus[corrCleTheme(l)]) return; vus[corrCleTheme(l)] = true; candidats.push(l); });
+  const place = tp ? 2 : 3;
+  let choisis = candidats.slice(0, place), reste = candidats.slice(place), ag = corrAgencer(choisis, tp);
+  while (ag.rejetes.length && reste.length) {
+    choisis = ag.gardes.concat(reste.splice(0, ag.rejetes.length)).sort(corrPlusFort);
+    ag = corrAgencer(choisis, tp);
+  }
+  const specs = ag.specs.map((sp, i) => ({ sp: sp, i: i, f: Math.max.apply(null, corrLiensDe(sp).map(corrForce)) }))
+    .sort((x, y) => y.f - x.f || x.i - y.i).map(x => x.sp);                          // la phrase du lien le plus fort d'abord
+  const textes = [], modeles = [], pris = {};
+  if (tp) { textes.push(corrPhraseFluide(tp)); modeles.push('pe'); }
+  specs.forEach(sp => { if (sp.type === 'A') pris.jo = true; else if (sp.type === 'B') pris.vsa = true; });   // une phrase à plusieurs liens réserve sa structure
+  specs.forEach(sp => {
+    if (sp.type === 'A') { textes.push(corrPhraseEtoileA(sp)); modeles.push('A'); return; }
+    if (sp.type === 'B') { textes.push(corrPhraseEtoileB(sp)); modeles.push('B'); return; }
+    // modèles de rang : dans l'ordre, en changeant de modèle d'une phrase à l'autre ; un lien dit à l'envers reste sur des tournures qui ne donnent pas de sens (jj, vsa), « Les jours où » en dernier
+    const base = ['jj', 'qd', 'jo'], p = textes.length % 3;
+    const ordre = sp.inverse ? ['jj', 'vsa', 'jo'] : base.slice(p).concat(base.slice(0, p), ['vsa']);
+    const modele = ordre.filter(x => !pris[x])[0] || ordre[0];
+    pris[modele] = true;
+    textes.push(corrPhraseUn(sp, modele)); modeles.push(modele);
+  });
+  return { phrases: textes, modeles: modeles, cites: (tp ? [tp] : []).concat(ag.gardes), rejetes: ag.rejetes, specs: specs, tp: tp };
+}
+
+// ── Graphique d'un lien : deux courbes sur des échelles propres, moyenne sur 3 jours, courbe qui ne dépasse jamais les points ──
+//   1er indicateur : aire douce (opacité 25 %) · 2e indicateur : trait plein, un peu plus épais, par-dessus · axe du bas : dates (j/m)
+const CORR_NOM = { stress: 'Stress', bal: 'Ballonnements', doul: 'Douleurs', peau: 'Peau', som: 'Sommeil', ener: 'Énergie', hum: 'Humeur', hyd: 'Hydratation',
+                   transit: 'Transit', selle: 'Jours avec selle', bristol: 'Selles (Bristol)', freq: 'Passages', freqTous: 'Passages' };
+const CORR_COUL = { stress: '#E58FA5', bal: '#D6B13F', doul: '#D9694F', peau: '#E9A47A', som: '#6EA8E0', ener: '#8F7FD6', hum: '#C77DBA', hyd: '#4FB5B5',
+                    transit: '#7FB069', selle: '#9A8F7A', bristol: '#A0714F', freq: '#5E86B5', freqTous: '#5E86B5' };
+function corrRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+// Moyenne sur 3 jours (la veille, le jour, le lendemain — seulement ceux qui existent) ; t = numéro de jour
+function corrLisser(t, v) {
+  return v.map((x, i) => { let s = 0, c = 0; for (let j = 0; j < v.length; j++) if (Math.abs(t[j] - t[i]) <= 1) { s += v[j]; c++; } return s / c; });
+}
+// Courbe de Fritsch–Carlson (spline cubique monotone) : entre deux points elle ne sort jamais de l'intervalle des deux valeurs (aucun « rebond »)
+function corrCourbe(pts) {
+  const n = pts.length, m = [], t = [];
+  for (let i = 0; i < n - 1; i++) m[i] = (pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x);
+  t[0] = m[0]; t[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
+  for (let i = 0; i < n - 1; i++) {
+    if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue; }
+    const a = t[i] / m[i], b = t[i + 1] / m[i], s = a * a + b * b;
+    if (s > 9) { const k = 3 / Math.sqrt(s); t[i] = k * a * m[i]; t[i + 1] = k * b * m[i]; }
+  }
+  let d = 'M' + pts[0].x.toFixed(1) + ',' + pts[0].y.toFixed(1);
+  for (let i = 0; i < n - 1; i++) {
+    const dx = (pts[i + 1].x - pts[i].x) / 3;
+    d += ' C' + (pts[i].x + dx).toFixed(1) + ',' + (pts[i].y + t[i] * dx).toFixed(1) + ' ' + (pts[i + 1].x - dx).toFixed(1) + ',' + (pts[i + 1].y - t[i + 1] * dx).toFixed(1) + ' ' + pts[i + 1].x.toFixed(1) + ',' + pts[i + 1].y.toFixed(1);
+  }
+  return d;
+}
+function corrGraphiqueSvg(jours, va, vb, cA, cB, nomA, nomB) {
+  const n = jours.length; if (n < 2) return '';
+  const W = 300, H = 92, padL = 14, padR = 14, padT = 10, padB = 22, iw = W - padL - padR, ih = H - padT - padB;
+  const t = jours.map(ds => Math.round(Date.parse(ds + 'T00:00:00Z') / 864e5)), t0 = t[0], t1 = t[n - 1], span = Math.max(1, t1 - t0);
+  const x = ti => padL + (ti - t0) / span * iw;
+  const pts = v => { const s = corrLisser(t, v), mn = Math.min.apply(null, s), mx = Math.max.apply(null, s);
+    return s.map((y, i) => ({ x: x(t[i]), y: mx === mn ? padT + ih / 2 : padT + ih - (y - mn) / (mx - mn) * ih })); };
+  const pA = pts(va), pB = pts(vb), dA = corrCourbe(pA), dB = corrCourbe(pB), base = padT + ih;
+  // dates : une étiquette par semaine à partir du dernier jour (une toutes les 2 ou 3 semaines si la période est longue)
+  const pas = 7 * Math.max(1, Math.ceil(span / 7 / 5)), ticks = [];
+  for (let ti = t1; ti >= t0; ti -= pas) ticks.push(ti);
+  const lab = ti => { const d = new Date(ti * 864e5); return d.getUTCDate() + '/' + (d.getUTCMonth() + 1); };
+  const dates = ticks.map(ti => '<line x1="' + x(ti).toFixed(1) + '" y1="' + base + '" x2="' + x(ti).toFixed(1) + '" y2="' + (base + 3) + '" stroke="var(--oat)" stroke-width="1"/>'
+    + '<text x="' + x(ti).toFixed(1) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="8.5" fill="var(--text-light)">' + lab(ti) + '</text>').join('');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible" role="img" aria-label="' + nomA + ' (aire) et ' + nomB + ' (trait), moyenne sur 3 jours">'
+    + '<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + base + '" stroke="var(--oat)" stroke-width="1"/>'
+    + '<line x1="' + padL + '" y1="' + base + '" x2="' + (W - padR) + '" y2="' + base + '" stroke="var(--oat)" stroke-width="1"/>'
+    + '<path d="' + dA + ' L' + pA[n - 1].x.toFixed(1) + ',' + base + ' L' + pA[0].x.toFixed(1) + ',' + base + ' Z" fill="' + corrRgba(cA, 0.25) + '" stroke="none"/>'
+    + '<path d="' + dB + '" fill="none" stroke="' + cB + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+    + dates + '</svg>';
+}
+function corrGraphiqueHtml(l, idx) {
+  const va = l.jours.map(ds => idx[ds][l.a]), vb = l.jours.map(ds => idx[ds][l.b]), cA = CORR_COUL[l.a], cB = CORR_COUL[l.b];
+  const svg = corrGraphiqueSvg(l.jours, va, vb, cA, cB, CORR_NOM[l.a], CORR_NOM[l.b]);
+  if (!svg) return '';
+  return '<div class="lk-graph"><div class="lk-legende">'
+    + '<span class="lk-leg"><i class="lk-leg-aire" style="background:' + corrRgba(cA, 0.25) + ';border-color:' + corrRgba(cA, 0.5) + '"></i>' + CORR_NOM[l.a] + '</span>'
+    + '<span class="lk-leg"><i class="lk-leg-trait" style="background:' + cB + '"></i>' + CORR_NOM[l.b] + '</span>'
+    + '<span class="lk-echelle">moyenne sur 3 jours · chaque courbe à son échelle</span></div>' + svg + '</div>';
+}
+
+// ── Un bloc : texte, graphique du lien le plus fort, « Voir les N autres liens » (une ligne courte par lien, comme la Vue d'ensemble) ──
+function corrBlocHtml(bloc, liens, idx) {
+  const tete = '<div class="lk-bloc" style="border-color:' + bloc.bordure + '"><div class="lk-titre">' + bloc.titre + '</div>';
+  if (!liens.length) return tete + '<div class="lk-vide">Pas de lien net pour l\'instant.</div></div>';
+  const nets = liens.filter(l => !corrEvident(l)), evidents = liens.filter(corrEvident);
+  let h = tete, cites = [];
+  if (nets.length) {
+    const t = corrTexteBloc(nets, bloc.id);
+    cites = t.cites;
+    const tracer = nets.filter(l => cites.indexOf(l) >= 0)[0] || nets[0];            // le lien le plus fort du texte
+    h += '<p class="lk-texte" data-liens="' + cites.map(corrCle).join(' ') + '">' + t.phrases.join(' ') + '</p>' + corrGraphiqueHtml(tracer, idx);
+  } else h += '<div class="lk-vide">Pas de lien net pour l\'instant.</div>';
+  const autres = nets.filter(l => cites.indexOf(l) < 0).concat(evidents);              // les liens évidents viennent en dernier
+  if (autres.length) {
+    const id = 'lk-autres-' + bloc.id, voir = autres.length === 1 ? 'Voir 1 autre lien' : 'Voir les ' + autres.length + ' autres liens';
+    h += '<div class="lk-autres" id="' + id + '">'
+      + autres.map(l => { const p = corrPhrase(l); return '<div class="ins-lien" data-lien="' + corrCle(l) + '"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('')
+      + '</div><button class="ins-link-btn" onclick="insToggleDetail(\'' + id + '\', this, \'' + voir + '\', \'Masquer\')">' + voir + '</button>';
+  }
+  return h + '</div>';
+}
 function insightsTabLiens(ctx) {
-  const html = buildThemeBlocks(
-    computeBrique2(ctx.allEntries), computeBrique4(), computeBrique9(), computeBrique10(),
-    computeBrique11(), computeBrique12(), computeBrique13());
-  return html || '<div class="ichart-empty" style="padding:32px 16px">Les liens entre tes indicateurs apparaîtront ici dès ' + CORR_MIN_JOURS + ' jours de données.</div>';
+  const det = corrCatalogueDetail();
+  if (det.nMax < CORR_MIN_JOURS) return '<div class="ichart-empty" style="padding:32px 16px">Les liens entre tes indicateurs apparaîtront ici dès ' + CORR_MIN_JOURS + ' jours de données.</div>';
+  const liens = corrTrier(corrDedoublonner(det.liens));
+  return '<div class="lk-intro">Sur tes 30 derniers jours · des liens observés, pas des causes.</div>'
+    + CORR_BLOCS.map(b => corrBlocHtml(b, liens.filter(l => corrBloc(l) === b.id), det.idx)).join('');
 }
 
 function renderInsightsPage() {
@@ -7443,8 +7762,8 @@ function corrAffichable(n, rho) {
 // CATALOGUE DES LIENS — les 37 paires déjà calculées par les moteurs (Briques 2, 6, 9 à 13)
 // Mêmes données, même corrélation (spearmanCorr), même règle d'affichage (corrAffichable :
 // 14 jours minimum, 0,40 relevé quand il y a peu de jours). Deux usages :
-//   corrCatalogue()                → fenêtre propre à chaque moteur (30 derniers jours ; tout l'historique pour la Brique 2),
-//                                    donc chaque lien retenu existe aussi dans l'onglet Liens ;
+//   corrCatalogue()                → les 30 derniers jours pour toutes les paires (Brique 2 comprise) : la Vue d'ensemble et l'onglet Liens
+//                                    reposent sur la même période et le même classement ;
 //   corrCatalogue({ from, to })    → uniquement les jours de la période (Synthèse du mois affiché), liens inverses compris.
 // ══════════════════════════════════════════════════════════════════════════════
 // [variable A, variable B, moteur]
@@ -7498,58 +7817,107 @@ function corrDayIndex() {
   return idx;
 }
 
-function corrCatalogue(opts) {
+// corrCatalogueDetail : les liens retenus + nMax (plus grand nombre de jours communs d'une paire, même sous le seuil) + idx (valeurs par jour, pour les graphiques)
+function corrCatalogueDetail(opts) {
   const idx = corrDayIndex();
   const dates = Object.keys(idx).sort();
   const periode = !!(opts && opts.from);
-  const derniers30 = {};                                   // fenêtre des moteurs : aujourd'hui et les 29 jours précédents
+  const derniers30 = {};                                   // fenêtre commune : aujourd'hui et les 29 jours précédents
   for (let i = 0; i < 30; i++) { const d = new Date(); d.setDate(d.getDate() - i); derniers30[d.toISOString().split('T')[0]] = true; }
-  const out = [];
+  const out = []; let nMax = 0;
   CORR_PAIRS.forEach(p => {
     const a = p[0], b = p[1], moteur = p[2];
     const jours = dates.filter(ds => {
       if (periode) { if (ds < opts.from || ds > opts.to) return false; }
-      else if (moteur !== 'B2' && !derniers30[ds]) return false;
+      else if (!derniers30[ds]) return false;
       return idx[ds][a] !== undefined && idx[ds][b] !== undefined;
     });
+    if (jours.length > nMax) nMax = jours.length;
     if (jours.length < CORR_MIN_JOURS) return;
     const rho = spearmanCorr(jours.map(ds => idx[ds][a]), jours.map(ds => idx[ds][b]));
     if (!corrAffichable(jours.length, rho)) return;
     if (!periode && moteur === 'B2' && a === 'ener' && !(rho < 0)) return;     // même règle d'affichage que la Brique 2 (énergie haute = stress bas)
-    out.push({ a, b, moteur, n: jours.length, rho, force: Math.abs(rho) >= 0.55 ? 3 : 2 });
+    out.push({ a, b, moteur, n: jours.length, rho, force: Math.abs(rho) >= 0.55 ? 3 : 2, jours });
   });
-  return out;
+  return { liens: out, nMax, idx };
 }
+function corrCatalogue(opts) { return corrCatalogueDetail(opts).liens; }
 
 // ── Phrases : « {état A} et {état B} vont souvent ensemble » + points ●●● (marqué) ou ●● (modéré) ──
 // B est à l'état « haut » ; A à l'état qui va avec (même sens si lien positif, sens opposé sinon).
 // Quand un seul des deux est un symptôme (ballonnements, douleurs, stress), c'est lui qui est à l'état « haut ».
+// icone : symbole de l'indicateur · iconeBas : symbole quand c'est l'état « bas » qui est cité (peu de douleurs, stress bas : jamais un visage qui souffre)
 const CORR_VOC = {
   bal:      { haut: 'ballonnements',     bas: 'peu de ballonnements', icone: '🌀',  symptome: true },
-  doul:     { haut: 'douleurs',          bas: 'peu de douleurs',      icone: '😣',  symptome: true },
-  stress:   { haut: 'stress élevé',      bas: 'stress bas',           icone: '😮‍💨', symptome: true },
+  doul:     { haut: 'douleurs',          bas: 'peu de douleurs',      icone: '😣',  iconeBas: '😌', symptome: true },
+  stress:   { haut: 'stress élevé',      bas: 'stress bas',           icone: '😮‍💨', iconeBas: '😌', symptome: true },
   peau:     { haut: 'peau calme',        bas: 'poussées',             icone: '✨' },
   som:      { haut: 'bon sommeil',       bas: 'sommeil léger',        icone: '😴' },
   ener:     { haut: 'énergie haute',     bas: 'énergie basse',        icone: '⚡' },
   hum:      { haut: 'bonne humeur',      bas: 'humeur basse',         icone: '😊' },
   hyd:      { haut: 'bonne hydratation', bas: 'peu d\'eau',           icone: '💧' },
-  transit:  { haut: 'transit rapide',    bas: 'transit lent',         icone: '🌿' },
+  transit:  { haut: 'transit fluide',    bas: 'transit lent',         icone: '🌿' },
   selle:    { haut: 'jours avec selle',  bas: 'jours sans selle',     icone: '🌿' },
   bristol:  { haut: 'selles plus molles', bas: 'selles plus dures',   icone: '🌿' },
   freq:     { haut: 'plus de passages',  bas: 'peu de passages',      icone: '🌿' },
   freqTous: { haut: 'plus de passages',  bas: 'peu de passages',      icone: '🌿' }
 };
 const CORR_ICONE_ORDRE = ['bal', 'doul', 'stress', 'peau', 'som', 'ener', 'hum', 'hyd', 'transit', 'selle', 'bristol', 'freq', 'freqTous'];
-function corrPhrase(l) {
+// États comparés d'un lien : { ea, eb } = état (haut / bas) de A et de B
+function corrEtats(l) {
   const A = CORR_VOC[l.a], B = CORR_VOC[l.b], pos = l.rho > 0;
-  let ea, eb;
-  if (A.symptome && !B.symptome) { ea = 'haut'; eb = pos ? 'haut' : 'bas'; }
-  else                           { eb = 'haut'; ea = pos ? 'haut' : 'bas'; }
-  const t = A[ea] + ' et ' + B[eb] + ' vont souvent ensemble';
-  const premier = CORR_ICONE_ORDRE.filter(k => k === l.a || k === l.b)[0];
-  return { icone: CORR_VOC[premier].icone, texte: t.charAt(0).toUpperCase() + t.slice(1), points: l.force === 3 ? '●●●' : '●●' };
+  if (A.symptome && !B.symptome) return { ea: 'haut', eb: pos ? 'haut' : 'bas' };
+  return { ea: pos ? 'haut' : 'bas', eb: 'haut' };
+}
+function corrPhrase(l) {
+  const A = CORR_VOC[l.a], B = CORR_VOC[l.b], e = corrEtats(l);
+  const t = A[e.ea] + ' et ' + B[e.eb] + ' vont souvent ensemble';
+  const premier = CORR_ICONE_ORDRE.filter(k => k === l.a || k === l.b)[0], etat = premier === l.a ? e.ea : e.eb, V = CORR_VOC[premier];
+  return { icone: (etat === 'bas' && V.iconeBas) || V.icone, texte: t.charAt(0).toUpperCase() + t.slice(1), points: l.force === 3 ? '●●●' : '●●' };
 }
 function corrTrier(liens) { return liens.slice().sort((x, y) => Math.abs(y.rho) - Math.abs(x.rho) || y.n - x.n); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RÈGLES COMMUNES AUX LIENS — onglet Liens · 3 liens de la Vue d'ensemble · Synthèse du mois
+//   • un lien = une paire d'indicateurs ; dans l'onglet Liens, chaque lien n'apparaît que dans un seul bloc ;
+//   • un seul classement de force pour tout le monde : |rho| décroissant, puis le plus de jours communs (corrTrier) ;
+//   • les liens « évidents » entre mesures du transit n'apprennent rien : jamais cités, jamais tracés, jamais dans la Vue d'ensemble.
+// ══════════════════════════════════════════════════════════════════════════════
+// Bloc d'un lien : peau → Ta peau · sinon ventre (transit ressenti, selles, passages, Bristol, ballonnements, douleurs) → Ton ventre · sinon Sommeil, énergie & humeur
+const CORR_VENTRE = { transit: 1, selle: 1, bristol: 1, freq: 1, freqTous: 1, bal: 1, doul: 1 };
+function corrBloc(l) {
+  if (l.a === 'peau' || l.b === 'peau') return 'peau';
+  if (CORR_VENTRE[l.a] || CORR_VENTRE[l.b]) return 'ventre';
+  return 'sommeil';
+}
+// Une paire d'indicateurs = un seul lien (« passages » compte pour un seul indicateur, qu'il vienne des jours « oui » ou de tous les jours)
+const CORR_CANON = { freqTous: 'freq' };
+function corrCle(l) {
+  const x = CORR_CANON[l.a] || l.a, y = CORR_CANON[l.b] || l.b;
+  return x < y ? x + '|' + y : y + '|' + x;
+}
+// Si deux moteurs produisent la même paire, on garde le plus fort (|rho|, puis le plus de jours) ; l'ordre d'origine est conservé
+function corrDedoublonner(liens) {
+  const meilleur = {};
+  liens.forEach(l => {
+    const k = corrCle(l), m = meilleur[k];
+    if (!m || Math.abs(l.rho) > Math.abs(m.rho) || (Math.abs(l.rho) === Math.abs(m.rho) && l.n > m.n)) meilleur[k] = l;
+  });
+  return liens.filter(l => meilleur[corrCle(l)] === l);
+}
+// Liste unique des liens, du plus fort au plus faible (opts : période, comme corrCatalogue)
+function corrListeClassee(opts) { return corrTrier(corrDedoublonner(corrCatalogue(opts))); }
+
+// Liens « évidents » : transit ressenti, jours avec selle, Bristol et passages mesurent la même chose (le transit)
+const CORR_TRANSIT = { transit: 1, selle: 1, bristol: 1, freq: 1, freqTous: 1 };
+function corrEvident(l) { return !!(CORR_TRANSIT[l.a] && CORR_TRANSIT[l.b]); }
+// Liens à mettre en avant : la liste classée sans les liens évidents
+function corrLiensNets(opts) { return corrListeClassee(opts).filter(l => !corrEvident(l)); }
+// Les 3 liens de la Vue d'ensemble : les plus forts des 30 derniers jours ; chacun apparaît dans l'onglet Liens
+function corrTopLiens() { return corrLiensNets().slice(0, 3); }
+// Un thème = un indicateur, sauf le transit (4 mesures = 1 thème)
+function corrTheme(k) { return CORR_TRANSIT[k] ? 'transit' : (CORR_CANON[k] || k); }
+function corrCleTheme(l) { return [corrTheme(l.a), corrTheme(l.b)].sort().join('|'); }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SYNTHÈSE DU MOIS (sous le carrousel du mois) — fermée par défaut : 3 points au maximum
@@ -7570,13 +7938,13 @@ function insightsMonthInfo(offset) {
   return { start: ds(new Date(y, m, 1, 12)), end: ds(new Date(y, m + 1, 0, 12)), prevStart: ds(new Date(y, m - 1, 1, 12)), prevEnd: ds(new Date(y, m, 0, 12)), prevNom: moisFr[(m + 11) % 12] };
 }
 
-// Bouton « Voir le détail » / « Masquer le détail » (Synthèse du mois, carte avant/après)
-function insToggleDetail(id, btn) {
+// Bouton « Voir le détail » / « Masquer le détail » (Synthèse du mois, carte avant/après) ; voir / masquer : autres libellés (onglet Liens)
+function insToggleDetail(id, btn, voir, masquer) {
   const el = document.getElementById(id);
   if (!el) return;
   const ouvert = el.style.display === 'block';
   el.style.display = ouvert ? 'none' : 'block';
-  if (btn) btn.textContent = ouvert ? 'Voir le détail' : 'Masquer le détail';
+  if (btn) btn.textContent = ouvert ? (voir || 'Voir le détail') : (masquer || 'Masquer le détail');
 }
 
 function buildMoisSynthese() {
@@ -7606,7 +7974,7 @@ function buildMoisSynthese() {
   coince.sort((x, y) => y.ratio - x.ratio);
 
   // 🔗 : liens du mois affiché, du plus fort au plus faible
-  const liens = corrTrier(corrCatalogue({ from: info.start, to: info.end }));
+  const liens = corrLiensNets({ from: info.start, to: info.end });          // classement commun, sans doublon et sans lien évident (ni en titre, ni dans le détail)
   const phraseLien = l => { const p = corrPhrase(l); return { icone: p.icone, texte: p.texte, points: p.points }; };
 
   const nom = r => INS_NOMS[r.ind.key];
@@ -7655,6 +8023,17 @@ function insBande(key, v) {
     case 'transit':       return v < 0.5 ? 0 : (v <= 3 ? 1 : 2);                    // passages/jour : lent < 0,5 · rapide > 3
   }
   return null;
+}
+// Émoji d'une ligne du résumé : un visage qui suit le niveau (jamais 😣 pour une bonne nouvelle) ; les autres lignes gardent leur symbole d'indicateur
+//   douleurs : absentes 😌 · légères 😕 (🙂 en baisse, 😣 en hausse) · intenses 😣 (😕 en baisse) — stress : bas 😌, sinon inchangé
+function insEmojiNiveau(key, bande, tendance, defaut) {
+  if (key === 'douleurs') {
+    if (bande === 0) return '😌';
+    if (bande === 1) return tendance === 'en baisse' ? '🙂' : (tendance === 'en hausse' ? '😣' : '😕');
+    return tendance === 'en baisse' ? '😕' : '😣';
+  }
+  if (key === 'stress' && bande === 0) return '😌';
+  return defaut;
 }
 // Peau : même règle que la carte (≥ 40 % de poussées → en poussée ; sinon calme si plus de jours calmes que stables)
 function insBandePeau(valeurs) {
@@ -7750,7 +8129,7 @@ function buildInsightsSummary(getDayVals, weekOffset) {
       }
     }
     items.push({
-      indicator: `${ind.icon} ${ind.label}`,
+      indicator: `${insEmojiNiveau(ind.key, bande, tendance, ind.icon)} ${ind.label}`,
       keyword: tendance ? `${niveau}, ${tendance}` : niveau,
       arrow,
       key: ind.key, niveau, tendance,
@@ -7763,47 +8142,6 @@ function buildInsightsSummary(getDayVals, weekOffset) {
     subtitle: `par rapport à la semaine précédente (${libelle(wPrev, true)})`,
     items
   };
-}
-
-// ── Niveau 3 : regroupement des briques par thème ────────────────────────────
-function buildThemeBlocks(b2, b4, b9, b10, b11, b12, b13) {
-  if (!b2 && !b4 && !b9 && !b10 && !b11 && !b12 && !b13) return '';
-
-  let html = `<div class="section-title insights-section">Co-évolutions détectées</div>`;
-
-  // Chaque brique existante est affichée avec un header thématique simplifié
-  // Les "Calculé sur N jours · observation, pas un diagnostic" dans les cartes
-  // sont masqués par CSS (.ichart-summary span) — le disclaimer est en bas de page
-
-  const themes = [
-    { label:'Fluctuations récentes',   dot:'ins-dot-bal',      html: b4  },
-    { label:'Co-évolutions',          dot:'ins-dot-brique2',  html: b2  },
-    { label:'Stress & bien-être',      dot:'ins-dot-stress',   html: b9  },
-    { label:'Transit ressenti',        dot:'ins-dot-transit',  html: b10 },
-    { label:'Ballonnements',           dot:'ins-dot-bal',      html: b11 },
-    { label:'Douleurs abdominales',    dot:'ins-dot-douleurs', html: b12 },
-    { label:'Sommeil & Humeur',        dot:'ins-dot-sommeil',  html: b13 },
-  ];
-
-  themes.forEach(t => {
-    if (!t.html) return;
-    // Remplacer le section-title interne par un header thématique unifié
-    const inner = t.html
-      .replace(/<div class="section-title[^"]*"[^>]*>[^<]*<\/div>/, '')
-      .replace(/Calculé sur \d+ jours communs · observation, pas un diagnostic/g, '')
-      .replace(/Calculé sur \d+ jours communs · /g, '')
-      .replace(/observation, pas un diagnostic/g, '');
-    html += `
-      <div class="ins-theme-block insights-section" style="border-left-color:var(--oat)">
-        <div class="ins-theme-header">
-          <div class="ins-theme-dot ${t.dot}"></div>
-          <span class="ins-theme-label">${t.label}</span>
-        </div>
-        ${inner}
-      </div>`;
-  });
-
-  return html;
 }
 
 // ── État navigation temporelle Insights ────────────────────────────────────

@@ -977,6 +977,29 @@ if (typeof supabase === 'undefined') {
     color: rgba(255,255,255,0.7); font-size: 0.78rem; margin-top: 12px;
   }
 
+  /* ===== PHOTOS PRIVÉES — états d'affichage (liens temporaires) ===== */
+  /* Pas encore de lien : l'image est invisible (jamais d'icône « image cassée »). Lien indisponible : image masquée, message doux à sa place. */
+  img[data-photo-path]:not([src]) { visibility: hidden; }
+  img[data-photo-path][data-photo-state="off"] { display: none; }
+  .photo-soft {
+    display: none; align-items: center; justify-content: center; text-align: center;
+    background: var(--honey); color: var(--text-light); border-radius: 8px; font-size: 1.2rem;
+  }
+  img[data-photo-path][data-photo-state="off"] + .photo-soft { display: flex; }
+  .photo-soft-thumb { width: 44px; height: 44px; flex-shrink: 0; }
+  .photo-soft-fill { position: absolute; inset: 0; border-radius: 0; }
+  .photo-soft-msg { flex-direction: column; gap: 6px; min-height: 150px; padding: 18px 16px; border-radius: 16px; font-size: 0.78rem; line-height: 1.45; }
+  .photo-soft-msg .ps-ico { font-size: 1.6rem; }
+  .photo-soft-msg small { display: block; font-size: 0.68rem; opacity: 0.8; margin-top: 2px; }
+  .photo-preview-wrap { min-height: 150px; }
+  .photo-preview-wrap .photo-soft-msg { padding-bottom: 58px; }       /* laisse la place aux boutons Changer / Supprimer */
+  .gallery-day-photo-wrap { min-height: 120px; }
+  .gallery-day-photo-wrap .photo-soft-msg { min-height: 120px; border-radius: 10px; }
+  .photo-soft-fs { background: transparent; color: rgba(255,255,255,0.82); min-height: 0; padding: 24px; }
+
+  /* Version de l'appli (bas du profil) */
+  .app-version { text-align: center; font-size: 0.68rem; color: var(--text-light); opacity: 0.75; padding: 18px 0 4px; letter-spacing: 0.02em; }
+
   /* ===== MOT DE PASSE OUBLIÉ — MODALE ===== */
   .fp-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.55);
@@ -1419,11 +1442,6 @@ if (typeof supabase === 'undefined') {
   .gallery-day-thumb {
     width: 44px; height: 44px; border-radius: 8px;
     object-fit: cover; background: var(--oat); flex-shrink: 0;
-  }
-  .gallery-day-thumb-placeholder {
-    width: 44px; height: 44px; border-radius: 8px;
-    background: var(--honey); display: flex; align-items: center;
-    justify-content: center; font-size: 1.2rem; flex-shrink: 0;
   }
   .gallery-day-info {}
   .gallery-day-date {
@@ -3495,8 +3513,15 @@ function withTimeout(promise, ms, label) {
 let currentUser = null;
 
 // ── Variables globales photo et journal ──
-let currentPhotoDataUrl = null;
-let currentPhotoPublicUrl = null;
+let currentPhotoDataUrl = null;   // aperçu local (base64) : photo en cours d'envoi, ou gardée hors ligne en attendant le réseau
+// Photos privées : liens temporaires, gardés en mémoire seulement (jamais dans le stockage de l'appareil)
+const PHOTO_LINK_TTL = 300;        // durée d'un lien : 5 minutes
+const PHOTO_LINK_MARGIN = 60000;   // un lien qui expire dans moins d'une minute est renouvelé avant usage
+let _photoLinks = {};              // chemin → { url, exp }
+let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
+let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
+let _photoObserver = null;         // surveillance des images de photos à afficher
+const APP_VERSION = '15/11 · 2 h 16';   // date et heure (Paris) de la livraison, affichée en bas du profil
 let jrnValues = {};
 let jrnEditMode = false;
 let jrnCurrentMeal = 'matin'; // moment de repas actif
@@ -4036,6 +4061,7 @@ function clearLocalCache() {
     // Supabase les gère lui-même via signOut().
   }
   keysToRemove.forEach(k => localStorage.removeItem(k));
+  photoForgetAll();    // liens temporaires et photos affichées de l'ancienne utilisatrice : plus rien en mémoire
   console.log('[Nara] Cache applicatif nettoyé (tokens auth préservés)');
 }
 
@@ -4228,11 +4254,6 @@ function showScreen(id, btn) {
   if (id === 'home') try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   if (id === 'insights') renderInsightsPage();
   if (id === 'journal') {
-    if (!currentPhotoDataUrl && !currentPhotoPublicUrl) {
-      const today = getTodayStr();
-      const stored = localStorage.getItem(`nara_photo_${today}`);
-      if (stored) currentPhotoPublicUrl = stored;
-    }
     try {
       renderJournal();
     } catch(e) {
@@ -5976,8 +5997,8 @@ function renderJournalDone(todayLabel, data) {
       </div>
       <div class="skin-history-grid">
         ${skinPhotos.slice(0, 9).map(p => `
-          <div class="skin-history-thumb" onclick="openPhotoFullscreen('${p.url}','${p.date}')">
-            <img src="${p.url}" alt="Peau ${p.date}" loading="lazy">
+          <div class="skin-history-thumb" onclick="openPhotoFullscreen('${p.path}','${p.date}')">
+            ${photoImgHtml(p.path, { alt: 'Peau ' + p.date, lazy: true, soft: 'photo-soft-fill' })}
             <div class="skin-history-date">${p.dateLabel}</div>
           </div>`).join('')}
       </div>
@@ -6447,18 +6468,227 @@ function jrnStartEdit() {
 // PHOTO SUIVI PEAU — appareil photo / galerie + Supabase Storage
 // ══════════════════════════════════════════════════════════════════════════════
 
-// URL de la photo du jour (en mémoire pendant la session)
-// (variables déclarées globalement en haut du script)
+// ── Photos PRIVÉES : chemins et liens temporaires ───────────────────────────
+// Le bucket « skin-photos » est privé. L'appli ne garde JAMAIS d'adresse web de photo : seulement le CHEMIN du fichier
+// (<identifiant>/<date>.<jpg|png>). Pour afficher une photo, elle demande à Supabase un lien temporaire (5 min),
+// gardé en mémoire uniquement — jamais dans le stockage de l'appareil — et en redemande un quand il va expirer.
+// Dans le HTML, une photo est une <img data-photo-path="…"> sans adresse : photoHydrate() y pose le lien dès qu'on l'a.
+
+// Chemin du fichier d'une photo à partir d'une référence : un chemin déjà propre, ou une ancienne adresse du bucket
+// (publique ou lien temporaire). Renvoie null si ce n'est pas une photo de ce bucket (copie locale « data: », autre site,
+// photo d'un autre compte quand uid est fourni…).
+function photoPathFrom(ref, uid) {
+  if (!ref || typeof ref !== 'string' || ref.indexOf('data:') === 0) return null;
+  let p = ref;
+  const m = /\/storage\/v1\/object\/(?:public|sign|authenticated)\/skin-photos\/([^?#]+)/.exec(ref);
+  if (m) p = m[1]; else if (/^[a-z]+:/i.test(ref)) return null;
+  try { p = decodeURIComponent(p); } catch (e) { return null; }
+  if (!/^[0-9a-f-]{36}\/\d{4}-\d{2}-\d{2}\.[A-Za-z0-9]{2,5}$/.test(p)) return null;
+  return (!uid || p.indexOf(uid + '/') === 0) ? p : null;
+}
+
+// Lien temporaire encore valable (plus d'une minute devant lui), sinon null
+function photoLinkFresh(path) {
+  const l = _photoLinks[path];
+  return (l && l.exp - Date.now() > PHOTO_LINK_MARGIN) ? l.url : null;
+}
+
+// Lien temporaire d'une photo : promesse du lien, ou null s'il est indisponible (hors ligne, fichier absent, autre compte…).
+// « bad » = le lien qui vient d'échouer : on ne le redonne pas, on en demande un nouveau.
+// Les demandes faites au même instant partent dans UN SEUL appel à Supabase.
+function photoLinkFor(path, bad) {
+  const fresh = photoLinkFresh(path);
+  if (fresh && fresh !== bad) return Promise.resolve(fresh);
+  if (_photoFlight[path]) return _photoFlight[path].then(out => out[path] || null);
+  if (!_photoBatch) {
+    const batch = _photoBatch = { want: {}, run: null };
+    batch.run = new Promise(resolve => setTimeout(resolve, 25)).then(() => photoFlush(batch));
+  }
+  _photoBatch.want[path] = true;
+  return _photoBatch.run.then(out => out[path] || null);
+}
+
+// Envoie le lot de demandes : { chemin: lien } pour les photos dont Supabase a donné un lien
+async function photoFlush(batch) {
+  if (_photoBatch === batch) _photoBatch = null;
+  const paths = Object.keys(batch.want), out = {};
+  const uid = currentUser && currentUser.id;
+  paths.forEach(p => { _photoFlight[p] = batch.run; });
+  try {
+    if (navigator.onLine !== false && sb) {
+      // Seulement les photos de CE compte (même règle que celle du stockage) : jamais de demande pour le dossier d'un autre compte
+      const mine = paths.filter(p => uid && p.indexOf(uid + '/') === 0);
+      for (let i = 0; i < mine.length; i += 100) {
+        const part = mine.slice(i, i + 100);
+        const res = await withTimeout(sb.storage.from('skin-photos').createSignedUrls(part, PHOTO_LINK_TTL), 15000, 'liens photos');
+        if (res && res.error) throw res.error;
+        ((res && res.data) || []).forEach((it, k) => {
+          const p = (it && it.path) || part[k];
+          if (it && it.signedUrl && !it.error && p) out[p] = it.signedUrl;
+        });
+      }
+    }
+  } catch (e) { console.warn('[Nara] Liens photos indisponibles:', e && e.message ? e.message : e); }
+  if (currentUser && currentUser.id === uid) {          // déconnexion / changement de compte pendant la demande : on ne garde rien
+    const exp = Date.now() + PHOTO_LINK_TTL * 1000;
+    Object.keys(out).forEach(p => { _photoLinks[p] = { url: out[p], exp: exp }; });
+  } else {
+    Object.keys(out).forEach(p => { delete out[p]; });
+  }
+  paths.forEach(p => { if (_photoFlight[p] === batch.run) delete _photoFlight[p]; });
+  return out;
+}
+
+// Pose le lien temporaire sur une image de photo — ou l'état « indisponible » (message doux) si on n'en a pas
+function photoApply(img, path, url) {
+  if (!img.isConnected || img.getAttribute('data-photo-path') !== path) return;      // l'image a été remplacée ou retirée entre-temps
+  if (url) {
+    img.dataset.photoState = 'wait';
+    if (img.getAttribute('src') !== url) img.setAttribute('src', url);
+  } else {
+    img.removeAttribute('src');
+    img.dataset.photoState = 'off';
+  }
+}
+
+function photoHydrateOne(img) {
+  const path = img.getAttribute('data-photo-path');
+  if (!path) return;
+  if (img.getAttribute('src') && img.dataset.photoState === 'ok') return;            // déjà affichée
+  img.dataset.photoState = 'wait';
+  photoLinkFor(path).then(url => photoApply(img, path, url));
+}
+
+// Cherche les images de photos dans une partie de la page (ou la page entière) et leur donne leur lien
+function photoHydrate(root) {
+  if (!root || root.nodeType !== 1) return;
+  if (root.matches && root.matches('img[data-photo-path]')) photoHydrateOne(root);
+  if (root.querySelectorAll) root.querySelectorAll('img[data-photo-path]').forEach(photoHydrateOne);
+}
+
+// Image déjà présente dans la page (plein écran) : chemin → lien temporaire ; copie locale « data: » → affichée directement
+function photoSetImg(img, ref) {
+  if (!img) return;
+  img.removeAttribute('src');
+  img.dataset.photoTry = '';
+  if (typeof ref === 'string' && ref.indexOf('data:') === 0) {
+    img.removeAttribute('data-photo-path'); img.removeAttribute('data-photo-state');
+    img.setAttribute('src', ref);
+    return;
+  }
+  const path = photoPathFrom(ref);
+  if (!path) { img.setAttribute('data-photo-path', ''); img.dataset.photoState = 'off'; return; }
+  img.setAttribute('data-photo-path', path);
+  photoHydrateOne(img);
+}
+
+// HTML d'une photo : le HTML ne contient jamais d'adresse web, seulement le chemin (le lien est posé ensuite par photoHydrate).
+// Une copie locale « data: » (photo pas encore envoyée) s'affiche directement. L'élément qui suit l'image est le message doux,
+// visible seulement si la photo est indisponible : o.msg = message complet, sinon une simple icône ; o.soft = classe de mise en forme.
+function photoImgHtml(ref, o) {
+  o = o || {};
+  const local = typeof ref === 'string' && ref.indexOf('data:') === 0;
+  const path = local ? null : photoPathFrom(ref);
+  const alt = String(o.alt || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const cls = o.cls ? ` class="${o.cls}"` : '';
+  const lazy = o.lazy ? ' loading="lazy"' : '';
+  const soft = o.msg
+    ? `<span class="photo-soft photo-soft-msg${o.soft ? ' ' + o.soft : ''}"><span class="ps-ico">📷</span><span>Photo indisponible pour l'instant<small>Elle s'affichera dès le retour de la connexion.</small></span></span>`
+    : `<span class="photo-soft${o.soft ? ' ' + o.soft : ''}">📷</span>`;
+  const img = local
+    ? `<img${cls} src="${ref}" alt="${alt}"${lazy}>`
+    : `<img${cls} data-photo-path="${path || ''}" data-alt="${alt}" alt=""${lazy}${path ? '' : ' data-photo-state="off"'}>`;
+  return img + soft;
+}
+
+// Retour du réseau / retour sur l'appli / fin d'une lecture : les photos restées « indisponibles » repartent chercher un lien
+function photoRetryOff() {
+  document.querySelectorAll('img[data-photo-path][data-photo-state="off"]').forEach(i => { i.dataset.photoTry = ''; photoHydrateOne(i); });
+}
+
+// Déconnexion / changement de compte : plus aucun lien en mémoire, plus aucune photo affichée ou en attente
+function photoForgetAll() {
+  _photoLinks = {}; _photoFlight = {}; _photoBatch = null;
+  currentPhotoDataUrl = null;
+  document.querySelectorAll('img[data-photo-path]').forEach(i => { i.removeAttribute('src'); i.removeAttribute('data-photo-path'); i.removeAttribute('data-photo-state'); });
+  document.querySelectorAll('.photo-fullscreen.open, .gallery-fullscreen.open').forEach(m => m.classList.remove('open'));
+}
+
+// Démarrage : surveille la page. Toute image de photo qui apparaît reçoit son lien ; si le lien échoue (expiré…) on en redemande
+// UN nouveau, une seule fois ; s'il n'y en a pas (hors ligne…) le message doux prend la place de l'image.
+function photoWatch() {
+  if (_photoObserver) return;
+  // « load » et « error » ne remontent pas jusqu'à la page : on les écoute dès la descente (phase de capture)
+  document.addEventListener('load', e => {
+    const i = e.target;
+    if (!i || i.tagName !== 'IMG' || !i.hasAttribute('data-photo-path')) return;
+    i.dataset.photoState = 'ok'; i.dataset.photoTry = '';
+    if (i.dataset.alt) i.alt = i.dataset.alt;
+  }, true);
+  document.addEventListener('error', e => {
+    const i = e.target;
+    if (!i || i.tagName !== 'IMG' || !i.hasAttribute('data-photo-path')) return;
+    const path = i.getAttribute('data-photo-path'), failed = i.getAttribute('src');
+    if (!path || !failed) return;
+    i.removeAttribute('src');                                   // jamais d'icône « image cassée » à l'écran
+    if (i.dataset.photoTry === '1' || navigator.onLine === false) { photoApply(i, path, null); return; }
+    i.dataset.photoTry = '1';                                   // 1er échec (lien expiré ?) : un nouveau lien, une seule fois
+    photoLinkFor(path, failed).then(url => photoApply(i, path, url));
+  }, true);
+  window.addEventListener('online', photoRetryOff);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) photoRetryOff(); });
+  _photoObserver = window.MutationObserver ? new MutationObserver(list => { list.forEach(m => m.addedNodes.forEach(n => photoHydrate(n))); }) : true;
+  if (_photoObserver !== true) _photoObserver.observe(document.body, { childList: true, subtree: true });
+  photoHydrate(document.body);
+}
+
+// Au démarrage, sans réseau : met d'équerre ce que les versions précédentes ont gardé sur l'appareil.
+// Une adresse publique devient un simple chemin ; ce qui n'est pas une photo de ce bucket est retiré ;
+// les copies de lignes « photo » (jamais lues par l'appli) sont supprimées. Rien n'est envoyé à Supabase : la base garde ses lignes telles quelles.
+function photoSanitizeLocal() {
+  try {
+    const dayKeys = [], junk = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) || '';
+      if (/^nara_photo_\d{4}-\d{2}-\d{2}$/.test(k)) dayKeys.push(k);
+      else if (/^nara_(?:[0-9a-f-]{36}_)?log_\d{4}-\d{2}-\d{2}_photo$/.test(k)) junk.push(k);
+    }
+    junk.forEach(k => localStorage.removeItem(k));
+    dayKeys.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (!v || v.indexOf('data:') === 0) return;                // vide, ou copie locale en attente d'envoi : inchangée
+      const p = photoPathFrom(v);
+      if (!p) localStorage.removeItem(k);                         // pas une photo de ce bucket : inutilisable
+      else if (p !== v) localStorage.setItem(k, p);               // ancienne adresse → chemin
+    });
+    const raw = localStorage.getItem('nara_skin_photos');
+    if (raw) {
+      let list = null;
+      try { list = JSON.parse(raw); } catch (e) { list = null; }
+      if (!Array.isArray(list)) { localStorage.removeItem('nara_skin_photos'); return; }
+      let changed = false;
+      const out = [];
+      list.forEach(e => {
+        const p = e && e.date ? photoPathFrom(e.path || e.url) : null;
+        if (!p) { changed = true; return; }
+        if (e.url !== undefined || e.path !== p) changed = true;
+        out.push({ date: e.date, dateLabel: e.dateLabel, path: p });
+      });
+      if (changed) localStorage.setItem('nara_skin_photos', JSON.stringify(out));
+    }
+  } catch (e) { console.warn('[Nara] Remise en ordre locale des photos:', e && e.message ? e.message : e); }
+}
 
 function renderPhotoZone() {
   const today = getTodayStr();
   // Vérifier si une photo existe déjà pour aujourd'hui
   const stored = localStorage.getItem(`nara_photo_${today}`);
-  if (stored || currentPhotoPublicUrl || currentPhotoDataUrl) {
-    const url = currentPhotoDataUrl || currentPhotoPublicUrl || stored;
+  if (stored || currentPhotoDataUrl) {
+    // Aperçu local (envoi en cours, ou photo gardée hors ligne) ; sinon photo déjà envoyée : chemin → lien temporaire
+    const ref = currentPhotoDataUrl || stored;
     return `
       <div class="photo-preview-wrap">
-        <img class="photo-preview-img" src="${url}" alt="Photo peau du jour">
+        ${photoImgHtml(ref, { cls: 'photo-preview-img', alt: 'Photo peau du jour', msg: true })}
         <div class="photo-preview-overlay">
           <div class="photo-preview-actions">
             <button class="photo-action-btn change" onclick="event.stopPropagation(); triggerPhotoInput()">
@@ -6547,7 +6777,7 @@ async function uploadPhotoToSupabase(file) {
   const path = `${userId}/${today}.${ext}`;
 
   try {
-    // Upload dans le bucket 'skin-photos' (à créer dans Supabase Storage)
+    // Upload dans le bucket 'skin-photos' (privé)
     const { data, error } = await sb.storage
       .from('skin-photos')
       .upload(path, file, {
@@ -6558,22 +6788,15 @@ async function uploadPhotoToSupabase(file) {
 
     if (error) throw error;
 
-    // Récupérer l'URL publique signée (valable 10 ans)
-    const { data: urlData } = sb.storage
-      .from('skin-photos')
-      .getPublicUrl(path);
+    // Le fichier est dans le stockage PRIVÉ : on ne garde que son chemin, jamais d'adresse web
+    delete _photoLinks[path];      // photo remplacée le même jour : l'ancien lien montrerait l'ancienne image
+    saveSkinPhotoToHistory(today, path);
+    localStorage.setItem(`nara_photo_${today}`, path);
 
-    currentPhotoPublicUrl = urlData.publicUrl;
-
-    // Sauvegarder l'URL Supabase en local pour l'historique
-    saveSkinPhotoToHistory(today, currentPhotoPublicUrl);
-    // Aussi sauvegarder en local comme fallback
-    localStorage.setItem(`nara_photo_${today}`, currentPhotoPublicUrl);
-
-    // La référence photo (url + chemin) est envoyée par la couche de synchronisation
+    // La référence photo (chemin) est envoyée par la couche de synchronisation
     syncMarkDirty('photo', today);
 
-    currentPhotoDataUrl = null; // on utilise maintenant l'URL Supabase
+    currentPhotoDataUrl = null; // l'affichage passe par un lien temporaire demandé à Supabase
     refreshPhotoZone();
     showToast('📷 Photo synchronisée !');
 
@@ -6595,8 +6818,8 @@ async function uploadPhotoToSupabase(file) {
 async function deletePhoto() {
   const today = getTodayStr();
   currentPhotoDataUrl = null;
-  currentPhotoPublicUrl = null;
   localStorage.removeItem(`nara_photo_${today}`);
+  if (currentUser) ['jpg', 'png'].forEach(ext => { delete _photoLinks[`${currentUser.id}/${today}.${ext}`]; });   // plus aucun lien pour cette photo
 
   // Supprimer dans Supabase Storage si connecté (hors ligne, la suppression est refaite à l'envoi suivant)
   if (currentUser) {
@@ -6624,7 +6847,7 @@ function loadSkinPhotoHistory() {
   } catch { return []; }
 }
 
-function saveSkinPhotoToHistory(dateStr, url) {
+function saveSkinPhotoToHistory(dateStr, path) {
   const history = loadSkinPhotoHistory();
   const d = new Date(dateStr + 'T12:00:00');
   const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
@@ -6633,7 +6856,7 @@ function saveSkinPhotoToHistory(dateStr, url) {
 
   // Remplacer si même date, sinon ajouter
   const idx = history.findIndex(p => p.date === dateStr);
-  const entry = { date: dateStr, dateLabel, url };
+  const entry = { date: dateStr, dateLabel, path };
   if (idx >= 0) history[idx] = entry;
   else history.unshift(entry);
 
@@ -6667,15 +6890,16 @@ function loadPhotoHistory(userId, rows, meta, res) {
         delete meta.dirty[dk]; delete meta.tomb[dk];
         return;
       }
-      if (!v.url) return;
+      const ph = photoPathFrom(v.path || v.url, userId);     // ligne récente : chemin ; ancienne ligne : chemin retrouvé dans l'adresse enregistrée
+      if (!ph) return;
       if (tombTs > cts) return;                              // supprimée ici après la version en ligne : la suppression sera renvoyée
       if (hasLocal && dirtyTs > cts) return;                 // photo locale plus récente, en attente d'envoi
-      if (!byDate[row.date] || byDate[row.date].url !== v.url) {
+      if (!byDate[row.date] || byDate[row.date].path !== ph) {
         const d = new Date(row.date + 'T12:00:00');
-        byDate[row.date] = { date: row.date, dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`, url: v.url };
+        byDate[row.date] = { date: row.date, dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`, path: ph };
         changed = true;
       }
-      if (row.date === today && !localStorage.getItem('nara_photo_' + row.date)) localStorage.setItem('nara_photo_' + row.date, v.url);
+      if (row.date === today && !localStorage.getItem('nara_photo_' + row.date)) localStorage.setItem('nara_photo_' + row.date, ph);
       delete meta.dirty[dk]; delete meta.tomb[dk];
     });
     // Photos présentes ici mais absentes de la base (dans la période lue) : à envoyer
@@ -6701,7 +6925,7 @@ function loadPhotoHistory(userId, rows, meta, res) {
 }
 
 // Plein écran photo
-function openPhotoFullscreen(url, dateStr) {
+function openPhotoFullscreen(ref, dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   const mois = ['janvier','février','mars','avril','mai','juin',
@@ -6715,12 +6939,13 @@ function openPhotoFullscreen(url, dateStr) {
     modal.className = 'photo-fullscreen';
     modal.innerHTML = `
       <button class="photo-fullscreen-close" onclick="closePhotoFullscreen()">✕</button>
-      <img id="photo-fs-img" src="" alt="">
+      <img id="photo-fs-img" alt="">
+      <div class="photo-soft photo-soft-msg photo-soft-fs"><span class="ps-ico">📷</span><span>Photo indisponible pour l'instant<small>Elle s'affichera dès le retour de la connexion.</small></span></div>
       <div class="photo-fullscreen-date" id="photo-fs-date"></div>`;
     modal.addEventListener('click', e => { if (e.target === modal) closePhotoFullscreen(); });
     document.body.appendChild(modal);
   }
-  document.getElementById('photo-fs-img').src = url;
+  photoSetImg(document.getElementById('photo-fs-img'), ref);     // chemin → lien temporaire
   document.getElementById('photo-fs-date').textContent = label;
   modal.classList.add('open');
 }
@@ -10733,7 +10958,7 @@ async function syncBuildRow(key, meta, uid) {
 // une suppression retire aussi les fichiers du stockage puis envoie la pierre tombale.
 async function syncBuildPhotoRow(date, meta, uid, ts, tomb) {
   const hist = loadSkinPhotoHistory().filter(p => p.date === date)[0];
-  const local = localStorage.getItem('nara_photo_' + date) || (hist && hist.url) || null;
+  const local = localStorage.getItem('nara_photo_' + date) || (hist && hist.path) || null;
   const mk = values => ({ row: { user_id: uid, date: date, type: 'photo', values: values } });
   if (!local) {
     if (!tomb) return { drop: true };
@@ -10748,15 +10973,15 @@ async function syncBuildPhotoRow(date, meta, uid, ts, tomb) {
       const up = await withTimeout(sb.storage.from('skin-photos').upload(path, blob, { upsert: true, contentType: blob.type, cacheControl: '3600' }), 30000, 'envoi photo');
       if (up && up.error) return { fail: true };
       if (!syncStillMine(uid)) return { fail: true };               // déconnexion pendant l'envoi : on n'écrit plus rien sur l'appareil
-      const url = sb.storage.from('skin-photos').getPublicUrl(path).data.publicUrl;
-      saveSkinPhotoToHistory(date, url);
-      localStorage.setItem('nara_photo_' + date, url);
-      if (date === getTodayStr()) { currentPhotoDataUrl = null; currentPhotoPublicUrl = url; try { refreshPhotoZone(); } catch (e) {} }
-      return mk({ url: url, path: path, updatedAt: ts });
+      saveSkinPhotoToHistory(date, path);                           // le fichier est dans le stockage privé : on ne garde que son chemin
+      localStorage.setItem('nara_photo_' + date, path);
+      delete _photoLinks[path];                                     // photo remplacée : l'ancien lien montrerait l'ancienne image
+      if (date === getTodayStr()) { currentPhotoDataUrl = null; try { refreshPhotoZone(); } catch (e) {} }
+      return mk({ path: path, updatedAt: ts });
     } catch (e) { return { fail: true }; }
   }
-  const m = /\/skin-photos\/([^?]+)/.exec(local);
-  return mk({ url: local, path: m ? decodeURIComponent(m[1]) : uid + '/' + date + '.jpg', updatedAt: ts });
+  const p = photoPathFrom(local, uid);                              // chemin du fichier (une ancienne adresse enregistrée est convertie)
+  return p ? mk({ path: p, updatedAt: ts }) : { drop: true };       // ni copie locale ni photo de ce compte : rien à envoyer
 }
 
 async function syncUpsert(table, rows, onConflict) {
@@ -11109,6 +11334,7 @@ function syncCleanupLegacyJunk() {
 // Après une lecture : mettre l'écran à jour sans jamais perturber une saisie en cours
 function syncRefreshUI(res) {
   try { updateHomeScore(); } catch (e) {}
+  try { photoRetryOff(); } catch (e) {}      // photos restées « indisponibles » (ex. avant la connexion) : nouvelle demande de lien
   if (!res || !res.changed) return;
   const act = document.querySelector('.screen.active'), id = act ? act.id.replace('screen-', '') : '';
   try {
@@ -11170,7 +11396,7 @@ function syncHasForeignLegacyKeys(uid) {
 // Remet à zéro tout ce que l'appli garde en mémoire pour l'ancienne utilisatrice
 function syncResetMemory() {
   jrnValues = {}; jrnEditMode = false; jrnCurrentDate = null; jrnCurrentSlide = 0;
-  currentPhotoDataUrl = null; currentPhotoPublicUrl = null;
+  currentPhotoDataUrl = null;
   profileData = {}; profileOpenSection = null; _suiviForm = null;
   routinesData.forEach(r => { r.statut = 'disponible'; r.jour_actuel = 0; });
 }
@@ -11234,7 +11460,7 @@ function renderGallery() {
   if (!scroll) return;
 
   // Charger l'historique des photos (local + photos du jour sans historique)
-  let history = loadSkinPhotoHistory();
+  let history = loadSkinPhotoHistory().map(p => ({ date: p.date, dateLabel: p.dateLabel, ref: p.path }));
 
   // Ajouter aussi les photos par date stockées directement (nara_photo_YYYY-MM-DD)
   // qui n'auraient pas encore été indexées dans nara_skin_photos
@@ -11243,8 +11469,9 @@ function renderGallery() {
     if (key && key.startsWith('nara_photo_')) {
       const dateStr = key.replace('nara_photo_', '');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
-      const url = localStorage.getItem(key);
-      if (!url) continue;
+      const stored = localStorage.getItem(key);
+      const ref = stored && stored.indexOf('data:') === 0 ? stored : photoPathFrom(stored);   // copie locale en attente d'envoi, ou chemin
+      if (!ref) continue;
       // Vérifier si déjà dans l'historique
       if (!history.find(p => p.date === dateStr)) {
         const d = new Date(dateStr + 'T12:00:00');
@@ -11253,7 +11480,7 @@ function renderGallery() {
         history.push({
           date: dateStr,
           dateLabel: `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`,
-          url
+          ref
         });
       }
     }
@@ -11325,10 +11552,7 @@ function renderGallery() {
             <div class="gallery-day-header" id="hdr-${accordionId}"
                  onclick="toggleGalleryDay('${accordionId}')">
               <div class="gallery-day-left">
-                <img class="gallery-day-thumb" src="${photo.url}"
-                     alt="Peau ${photo.dateLabel}"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <div class="gallery-day-thumb-placeholder" style="display:none">📷</div>
+                ${photoImgHtml(photo.ref, { cls: 'gallery-day-thumb', alt: 'Peau ' + photo.dateLabel, soft: 'photo-soft-thumb' })}
                 <div class="gallery-day-info">
                   <div class="gallery-day-date">${dateFullLabel}</div>
                   <div class="gallery-day-meta">${skinTag ? 'État noté' : 'Photo de suivi'}</div>
@@ -11338,8 +11562,8 @@ function renderGallery() {
             </div>
             <div class="gallery-day-content" id="cnt-${accordionId}">
               <div class="gallery-day-photo-wrap"
-                   onclick="openGalleryFullscreen('${photo.url}','${dateFullLabel}')">
-                <img src="${photo.url}" alt="Peau ${dateFullLabel}" loading="lazy">
+                   onclick="openGalleryFullscreen('${photo.ref}','${dateFullLabel}')">
+                ${photoImgHtml(photo.ref, { alt: 'Peau ' + dateFullLabel, lazy: true, msg: true })}
               </div>
               <div class="gallery-day-photo-actions">
                 ${skinTag}
@@ -11388,12 +11612,12 @@ function toggleGalleryDay(accordionId) {
 }
 
 // Plein écran galerie
-function openGalleryFullscreen(url, dateLabel) {
+function openGalleryFullscreen(ref, dateLabel) {
   const fs = document.getElementById('gallery-fullscreen');
   const img = document.getElementById('gallery-fs-img');
   const info = document.getElementById('gallery-fs-info');
   if (!fs || !img) return;
-  img.src = url;
+  photoSetImg(img, ref);      // chemin → lien temporaire ; copie locale « data: » → directement
   if (info) info.textContent = dateLabel;
   fs.classList.add('open');
 }
@@ -11555,6 +11779,7 @@ function renderProfile() {
       </div>`;
   });
 
+  html += `<div class="app-version" id="app-version">Version du ${APP_VERSION}</div>`;
   scroll.innerHTML = html;
 }
 
@@ -13580,6 +13805,8 @@ try { renderRecettes(); } catch(e) {}
 try { renderBibliotheque(); } catch(e) {}
 try { renderRoutines(); } catch(e) {}
 try { updateHomeScore(); } catch(e) {}
+// Photos privées : remise en ordre du stockage local (sans réseau), puis surveillance des images à afficher
+try { photoSanitizeLocal(); photoWatch(); } catch(e) { console.warn('[Nara] photos:', e); }
 // Restaurer la session utilisateur — DOIT être appelé au démarrage
 try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); hideBootLoader(); }
 window.__naraBooted = true; // atteint uniquement si le script principal s'est exécuté jusqu'au bout
@@ -13602,7 +13829,8 @@ window.__naraBooted = true; // atteint uniquement si le script principal s'est e
       <!-- Modale plein écran -->
       <div class="gallery-fullscreen" id="gallery-fullscreen" onclick="closeGalleryFullscreen()">
         <button class="gallery-fs-close" onclick="event.stopPropagation(); closeGalleryFullscreen()">✕</button>
-        <img class="gallery-fs-img" id="gallery-fs-img" src="" alt="">
+        <img class="gallery-fs-img" id="gallery-fs-img" alt="">
+        <div class="photo-soft photo-soft-msg photo-soft-fs"><span class="ps-ico">📷</span><span>Photo indisponible pour l'instant<small>Elle s'affichera dès le retour de la connexion.</small></span></div>
         <div class="gallery-fs-info" id="gallery-fs-info"></div>
       </div>
 

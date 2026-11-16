@@ -442,11 +442,13 @@ if (typeof supabase === 'undefined') {
   .rout-hero-prog-bar { flex:1; height:6px; background:rgba(255,255,255,0.2); border-radius:6px; overflow:hidden; }
   .rout-hero-prog-fill { height:100%; background:rgba(255,255,255,0.8); border-radius:6px; }
   .rout-hero-prog-label { font-size:0.72rem; opacity:0.85; white-space:nowrap; }
-  .rout-hero-days { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:16px; position:relative; z-index:1; }
-  .rout-hero-day { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.55rem; font-weight:600; }
-  .rout-hero-day.done { background:rgba(255,255,255,0.85); color:#555; }
-  .rout-hero-day.today { background:white; color:#333; box-shadow:0 0 0 2px rgba(255,255,255,0.6); }
-  .rout-hero-day.future { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.5); }
+  .rout-hero-days { display:grid; grid-template-columns:repeat(7, 26px); justify-content:space-between; gap:9px 0; margin-bottom:16px; position:relative; z-index:1; }
+  .rout-hero-day { width:26px; height:26px; box-sizing:border-box; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.55rem; font-weight:600; position:relative; color:white; border:1.5px solid rgba(255,255,255,0.75); cursor:pointer; }
+  .rout-hero-day.plein { background:rgba(255,255,255,0.9); border-color:rgba(255,255,255,0.9); color:#555; }
+  .rout-hero-day.moitie { background:linear-gradient(90deg, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.12) 50%); color:#444; }
+  .rout-hero-day.vide { background:transparent; }
+  .rout-hero-day.futur { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.25); color:rgba(255,255,255,0.5); }
+  .rout-hero-day.auj::after { content:''; position:absolute; inset:-5px; border-radius:50%; border:2px solid rgba(255,255,255,0.85); }
   .rout-hero-cta { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); border-radius:14px; padding:12px 18px; font-size:0.82rem; letter-spacing:0.04em; cursor:pointer; position:relative; z-index:1; }
   .rout-dispo-card { border-radius:20px; overflow:hidden; margin-bottom:14px; cursor:pointer; position:relative; transition:transform 0.15s; }
   .rout-dispo-card:active { transform:scale(0.98); }
@@ -456,12 +458,12 @@ if (typeof supabase === 'undefined') {
   .rout-dispo-tag { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.7); margin-bottom:4px; }
   .rout-dispo-titre { font-family:'Cormorant Garamond',serif; font-size:1.1rem; color:white; margin-bottom:4px; }
   .rout-dispo-desc { font-size:0.72rem; color:rgba(255,255,255,0.75); line-height:1.4; }
-  .rout-dispo-badge { position:absolute; top:14px; right:14px; background:rgba(255,255,255,0.2); border-radius:10px; padding:3px 10px; font-size:0.6rem; color:white; letter-spacing:0.05em; }
+  .rout-dispo-badge { display:inline-block; margin-top:10px; background:rgba(255,255,255,0.2); border-radius:10px; padding:3px 10px; font-size:0.6rem; color:white; letter-spacing:0.05em; }
   /* ===== ROUTINE DÉTAIL ===== */
   #screen-routine-detail { background: var(--cream); }
   .rout-detail-inner { display:flex; flex-direction:column; height:100%; }
   .rout-detail-hero { flex-shrink:0; padding:calc(env(safe-area-inset-top, 0px) + 14px) clamp(16px, 6vw, 28px) 22px; position:relative; }
-  .rout-detail-back { position:absolute; top:50px; left:18px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; color:white; z-index:10; }
+  .rout-detail-back { width:34px; height:34px; margin-bottom:12px; border-radius:50%; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; color:white; }
   .rout-detail-emoji { font-size:2.4rem; margin-bottom:6px; display:block; }
   .rout-detail-titre { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:400; color:white; margin-bottom:4px; }
   .rout-detail-sous { font-size:0.75rem; color:rgba(255,255,255,0.75); margin-bottom:14px; }
@@ -479,10 +481,6 @@ if (typeof supabase === 'undefined') {
   .rout-semaine-chevron { font-size:0.8rem; color:var(--text-light); transition:transform 0.2s; }
   .rout-semaine-chevron.open { transform:rotate(90deg); }
   .rout-semaine-tasks { display:flex; flex-direction:column; gap:10px; }
-  .rout-tache-item { background:white; border-radius:16px; padding:14px 16px; display:flex; gap:12px; align-items:center; cursor:pointer; transition:transform 0.12s; border-left:3px solid transparent; }
-  .rout-tache-item:active { transform:scale(0.98); }
-  .rout-tache-ico { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
-  .rout-tache-body { flex:1; }
   .rout-tache-type { font-size:0.58rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-light); margin-bottom:2px; }
   .rout-tache-titre { font-size:0.86rem; color:var(--text-dark); font-weight:500; margin-bottom:2px; }
   .rout-tache-desc { font-size:0.71rem; color:var(--text-mid); line-height:1.4; }
@@ -499,6 +497,102 @@ if (typeof supabase === 'undefined') {
   .rout-modale-etape { display:flex; gap:12px; align-items:flex-start; }
   .rout-modale-num { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:white; flex-shrink:0; margin-top:1px; }
   .rout-modale-etape-text { font-size:0.82rem; color:rgba(255,255,255,0.9); line-height:1.6; }
+  .rout-modale-avant { font-size:0.78rem; color:rgba(255,255,255,0.95); line-height:1.55; background:rgba(255,255,255,0.16); border-radius:12px; padding:10px 12px; margin-bottom:16px; }
+  .rout-modale-note { font-size:0.74rem; color:rgba(255,255,255,0.9); line-height:1.55; margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.25); }
+  /* ===== ROUTINES — PROGRAMMES DE 21 JOURS ===== */
+  .rout-fin-card { display:flex; align-items:center; gap:12px; background:white; border-radius:18px; padding:14px 16px; margin-bottom:12px; border-left:4px solid var(--sage); cursor:pointer; }
+  .rout-fin-emoji { font-size:1.8rem; flex-shrink:0; }
+  .rout-fin-body { flex:1; min-width:0; }
+  .rout-fin-titre { font-family:'Cormorant Garamond',serif; font-size:1.1rem; color:var(--text-dark); }
+  .rout-fin-sous { font-size:0.7rem; color:var(--text-mid); margin-top:2px; }
+  .rout-fin-btn { border:1.5px solid var(--oat); background:none; color:var(--text-mid); border-radius:12px; padding:9px 12px; font-family:'DM Sans',sans-serif; font-size:0.72rem; cursor:pointer; white-space:nowrap; }
+  .rout-intro { font-size:0.8rem; color:var(--text-mid); line-height:1.5; margin-bottom:14px; }
+  .rout-fin-bloc { background:white; border:1.5px solid var(--oat); border-radius:18px; padding:16px; margin-bottom:16px; }
+  .rout-fin-bloc-titre { font-family:'Cormorant Garamond',serif; font-size:1.25rem; color:var(--text-dark); margin-bottom:6px; }
+  .rout-fin-bloc-texte { font-size:0.8rem; color:var(--text-mid); line-height:1.55; margin-bottom:12px; }
+  .rout-fin-bloc-btn { border:none; color:white; border-radius:12px; padding:11px 18px; font-family:'DM Sans',sans-serif; font-size:0.8rem; cursor:pointer; }
+  /* Le jour regardé */
+  .rout-jour-entete { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .rout-jour-titres { flex:1; min-width:0; }
+  .rout-jour-titre { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:var(--text-dark); line-height:1.25; }
+  .rout-jour-sous { font-size:0.72rem; color:var(--text-light); margin-top:1px; }
+  .rout-jour-nav { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--oat); background:white; color:var(--text-mid); font-size:1.1rem; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; padding:0; }
+  .rout-jour-nav:disabled { opacity:0.35; cursor:default; }
+  .rout-jour-note { font-size:0.72rem; color:var(--text-mid); background:var(--honey); border-radius:10px; padding:8px 12px; margin-bottom:12px; line-height:1.45; }
+  .rout-cartes { display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
+  .rout-carte { background:white; border-radius:16px; padding:6px 14px 8px 4px; border-left:3px solid var(--rc, var(--sage)); }
+  .rout-carte.fait { background:#fbfaf3; }
+  .rout-carte.opt { border-left-style:dashed; }
+  .rout-carte-ligne { display:flex; align-items:flex-start; gap:2px; }
+  .rout-case { width:44px; height:44px; flex-shrink:0; background:none; border:none; padding:0; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .rout-case-boite { width:26px; height:26px; box-sizing:border-box; border-radius:8px; border:2px solid var(--oat); background:white; color:transparent; font-size:0.85rem; display:flex; align-items:center; justify-content:center; transition:background 0.15s, border-color 0.15s; }
+  .rout-carte.fait .rout-case-boite { background:var(--rc, var(--sage)); border-color:var(--rc, var(--sage)); color:white; }
+  .rout-carte.verrou .rout-case-boite { opacity:0.55; }
+  .rout-carte-main { flex:1; min-width:0; padding:8px 0 4px; }
+  .rout-carte-main[onclick], .rout-carte .rout-tache-arrow { cursor:pointer; }
+  .rout-carte .rout-tache-arrow { padding:12px 2px 0 8px; font-size:1.1rem; }
+  .rout-carte.fait .rout-tache-titre { color:var(--text-mid); }
+  .rout-extra { margin:0 0 4px 8px; padding:6px 0 4px; }
+  .rout-extra-titre { display:block; font-size:0.68rem; color:var(--text-mid); margin-bottom:8px; }
+  .rout-extra-titre span { color:var(--text-light); }
+  .rout-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .rout-chip { padding:9px 14px; min-height:40px; border-radius:20px; border:1.5px solid var(--oat); background:white; font-family:'DM Sans',sans-serif; font-size:0.78rem; color:var(--text-mid); cursor:pointer; }
+  .rout-chip.on { background:var(--rc, var(--sage)); border-color:var(--rc, var(--sage)); color:white; }
+  .rout-en-ligne { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .rout-en-nom { width:48px; font-size:0.78rem; color:var(--text-dark); }
+  .rout-en-notes { display:flex; gap:8px; }
+  .rout-en-btn { width:38px; height:38px; border-radius:50%; border:1.5px solid var(--oat); background:white; font-family:'DM Sans',sans-serif; font-size:0.85rem; color:var(--text-mid); cursor:pointer; padding:0; }
+  .rout-en-btn.on { background:var(--rc, var(--sage)); border-color:var(--rc, var(--sage)); color:white; }
+  .rout-texte { width:100%; box-sizing:border-box; padding:11px 12px; border:1.5px solid var(--oat); border-radius:12px; font-family:'DM Sans',sans-serif; font-size:16px; color:var(--text-dark); background:#fffdf8; resize:none; outline:none; }
+  .rout-texte:focus { border-color:var(--rc, var(--sage)); }
+  .rout-texte[readonly] { background:#f8f5ee; color:var(--text-mid); }
+  .rout-texte-btn { margin:2px 0 6px 8px; padding:10px 18px; border-radius:12px; border:none; background:var(--rc, var(--sage)); color:white; font-family:'DM Sans',sans-serif; font-size:0.8rem; cursor:pointer; }
+  /* Les 21 ronds */
+  .rout-rondes-bloc { background:white; border-radius:18px; padding:16px 12px 12px; margin-bottom:16px; }
+  .rout-rondes-titre { font-family:'Cormorant Garamond',serif; font-size:1.1rem; color:var(--text-dark); margin:0 4px 12px; }
+  .rout-rondes { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:10px 2px; justify-items:center; }
+  .rout-rond { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; padding:2px 0; min-width:0; width:100%; min-height:44px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .rout-rond-c { position:relative; width:26px; height:26px; box-sizing:border-box; border-radius:50%; border:2px solid var(--sage); background:white; }
+  .rout-rond.plein .rout-rond-c { background:var(--sage); }
+  .rout-rond.moitie .rout-rond-c { background:linear-gradient(90deg, var(--sage) 50%, white 50%); }
+  .rout-rond.futur .rout-rond-c { border-color:var(--oat); background:#f3efe6; }
+  .rout-rond.auj .rout-rond-c::after { content:''; position:absolute; inset:-6px; border-radius:50%; border:2px solid var(--sage); opacity:0.55; }
+  .rout-rond-n { font-size:0.62rem; color:var(--text-light); }
+  .rout-rond.futur .rout-rond-n { opacity:0.6; }
+  .rout-rond.sel .rout-rond-n { color:var(--text-dark); font-weight:700; }
+  .rout-legende { display:flex; flex-wrap:wrap; gap:6px 14px; margin:12px 4px 0; font-size:0.66rem; color:var(--text-light); }
+  .rout-legende i { display:inline-block; width:11px; height:11px; box-sizing:border-box; border-radius:50%; border:1.5px solid var(--sage); margin-right:5px; vertical-align:-1px; }
+  .rout-legende i.plein { background:var(--sage); }
+  .rout-legende i.moitie { background:linear-gradient(90deg, var(--sage) 50%, white 50%); }
+  /* Vue par semaine (consultation) */
+  .rout-semaines-toggle { display:flex; align-items:center; justify-content:space-between; padding:14px 4px; margin-bottom:8px; font-size:0.82rem; color:var(--text-mid); border-top:1px solid var(--oat); cursor:pointer; }
+  .rout-sj { background:white; border-radius:14px; padding:10px 14px 6px; }
+  .rout-sj.auj { box-shadow:0 0 0 1.5px var(--sage); }
+  .rout-sj-entete { display:flex; justify-content:space-between; margin-bottom:4px; }
+  .rout-sj-num { font-size:0.78rem; font-weight:600; color:var(--text-dark); }
+  .rout-sj-date { font-size:0.68rem; color:var(--text-light); }
+  .rout-sl { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:0.78rem; color:var(--text-mid); }
+  .rout-sl[onclick] { cursor:pointer; }
+  .rout-sl em { font-style:normal; color:var(--text-light); font-size:0.7rem; }
+  .rout-sl-ico { width:20px; text-align:center; flex-shrink:0; }
+  .rout-sl-titre { flex:1; line-height:1.35; }
+  .rout-sl-fl { color:var(--text-light); }
+  .rout-stop-link { display:block; margin:18px auto 8px; background:none; border:none; color:var(--text-light); font-family:'DM Sans',sans-serif; font-size:0.74rem; text-decoration:underline; cursor:pointer; padding:10px; }
+  /* Petite fenêtre de confirmation */
+  .rout-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1100; display:none; align-items:flex-end; justify-content:center; }
+  .rout-sheet-overlay.open { display:flex; }
+  .rout-sheet-card { background:white; border-radius:28px 28px 0 0; padding:24px clamp(16px,6vw,28px) calc(24px + env(safe-area-inset-bottom,0px)); width:100%; max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .rout-sheet-titre { font-family:'Cormorant Garamond',serif; font-size:1.25rem; color:var(--text-dark); margin-bottom:8px; line-height:1.3; }
+  .rout-sheet-texte { font-size:0.8rem; color:var(--text-mid); line-height:1.55; margin-bottom:18px; }
+  .rout-sheet-btn { display:block; width:100%; padding:15px; background:var(--sage); color:white; border:none; border-radius:14px; font-family:'DM Sans',sans-serif; font-size:0.88rem; cursor:pointer; margin-top:8px; }
+  .rout-sheet-btn.neutre { background:none; color:var(--text-light); font-size:0.8rem; text-decoration:underline; padding:11px; }
+  /* Accueil : rappel d'énergie */
+  .home-rout-block { display:flex; align-items:center; gap:12px; background:white; border:1.5px solid var(--oat); border-left:4px solid var(--sage); border-radius:16px; padding:13px 16px; margin-bottom:16px; cursor:pointer; }
+  .home-rout-ico { font-size:1.2rem; }
+  .home-rout-txt { flex:1; min-width:0; }
+  .home-rout-titre { font-size:0.88rem; color:var(--text-dark); font-weight:500; }
+  .home-rout-sous { font-size:0.7rem; color:var(--text-light); margin-top:2px; }
+  .home-rout-fl { color:var(--text-light); font-size:1.1rem; }
 
   /* ===== RECETTES — ÉCRAN LISTE ===== */
   #screen-recipes { background: var(--cream); }
@@ -3163,6 +3257,9 @@ if (typeof supabase === 'undefined') {
           </div>
         </div>
 
+        <!-- Rappel de la routine en cours (énergie en 3 points) — rendu par renderHomeRoutineBlock() -->
+        <div id="home-routine-block"></div>
+
         <!-- Bloc contextuel : profil incomplet → invitation ; profil complet → résumé veille -->
         <div id="home-context-block">
           <!-- Rendu dynamique par renderHomeContextBlock() -->
@@ -3288,7 +3385,7 @@ if (typeof supabase === 'undefined') {
       <div class="art-progress-bar"><div class="art-progress-fill" id="art-progress-fill"></div></div>
       <div class="art-detail-inner">
         <div class="art-hero" id="art-hero">
-          <div class="art-back-btn" onclick="go('library')">←</div>
+          <div class="art-back-btn" onclick="routRetour('library')">←</div>
           <div class="art-hero-label" id="art-hero-label"></div>
           <div class="art-hero-titre" id="art-hero-titre"></div>
           <div class="art-hero-sous" id="art-hero-sous"></div>
@@ -3334,7 +3431,7 @@ if (typeof supabase === 'undefined') {
           </div>
         </div>
         <div class="rout-detail-scroll" id="rout-detail-scroll"></div>
-        <div style="padding: 0 clamp(16px,6vw,28px) calc(16px + env(safe-area-inset-bottom, 0px)); flex-shrink:0; background:var(--cream);">
+        <div id="rout-start-wrap" style="padding: 0 clamp(16px,6vw,28px) calc(16px + env(safe-area-inset-bottom, 0px)); flex-shrink:0; background:var(--cream);">
           <button id="rout-start-btn" class="save-btn" style="margin-top:0; background:var(--sage);">Démarrer ce programme →</button>
         </div>
       </div>
@@ -3344,7 +3441,9 @@ if (typeof supabase === 'undefined') {
           <button class="rout-modale-close" onclick="closeRoutModale()">✕</button>
           <div class="rout-modale-titre" id="rout-modale-titre"></div>
           <div class="rout-modale-duree" id="rout-modale-duree"></div>
+          <div class="rout-modale-avant" id="rout-modale-avant" style="display:none"></div>
           <div class="rout-modale-etapes" id="rout-modale-etapes"></div>
+          <div class="rout-modale-note" id="rout-modale-note" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -3376,7 +3475,7 @@ if (typeof supabase === 'undefined') {
     <div class="screen" id="screen-recipe-detail">
       <div class="recipe-detail-inner">
         <div class="recipe-hero" id="recipe-hero">
-          <div class="recipe-hero-back" onclick="go('recipes')">←</div>
+          <div class="recipe-hero-back" onclick="routRetour('recipes')">←</div>
           <span class="recipe-hero-emoji" id="detail-emoji"></span>
           <div class="recipe-hero-rubrique" id="detail-rubrique"></div>
           <div class="recipe-hero-titre" id="detail-titre"></div>
@@ -3482,7 +3581,7 @@ function withTimeout(promise, ms, label) {
      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
      user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
      date date NOT NULL,
-     type text NOT NULL,          -- 'transit' | 'repas' | 'peau' | 'stress'
+     type text NOT NULL,          -- 'transit' | 'repas' | 'peau' | 'stress' | … | 'routine_jour' (ce qui est coché / choisi / écrit dans une routine, une ligne par jour)
      values jsonb NOT NULL DEFAULT '{}',
      created_at timestamptz DEFAULT now(),
      UNIQUE(user_id, date, type)  -- une entrée par type par jour
@@ -3498,7 +3597,7 @@ function withTimeout(promise, ms, label) {
      routine_id text NOT NULL,    -- 'archetype_1' | 'archetype_2' | 'archetype_3'
      statut text NOT NULL DEFAULT 'disponible',
      jour_actuel integer NOT NULL DEFAULT 0,
-     started_at timestamptz DEFAULT now(),
+     started_at timestamptz DEFAULT now(),   -- jour de début de la routine, écrit « à midi UTC » (le jour se calcule à partir de lui)
      updated_at timestamptz DEFAULT now(),
      UNIQUE(user_id, routine_id)
    );
@@ -3521,7 +3620,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '15/11 · 2 h 16';   // date et heure (Paris) de la livraison, affichée en bas du profil
+const APP_VERSION = '16/11 · 15 h 02';   // date et heure (Paris) de la livraison, affichée en bas du profil
 let jrnValues = {};
 let jrnEditMode = false;
 let jrnCurrentMeal = 'matin'; // moment de repas actif
@@ -3950,6 +4049,7 @@ function updateHomeScore() {
     try { updateQuickBtns(); } catch(e) {}
     try { renderHomeContextBlock(); } catch(e) {}
     try { renderHomeCycleBlock(); }  catch(e) {}
+    try { renderHomeRoutineBlock(); }  catch(e) {}
     return;
   }
 
@@ -4020,6 +4120,7 @@ function updateHomeScore() {
   try { updateQuickBtns(); } catch(e) {}
   try { renderHomeContextBlock(); } catch(e) { console.warn('[Nara] contextBlock:', e); }
   try { renderHomeCycleBlock(); }  catch(e) { console.warn('[Nara] cycleBlock:', e); }
+  try { renderHomeRoutineBlock(); }  catch(e) { console.warn('[Nara] routineBlock:', e); }
 
   if (insEmpty && insList) {
     if (daysWithAnyData.length >= 5) {
@@ -4076,7 +4177,7 @@ const onglets = [
 ];
 
 const recettes = [
-  { id:"001", titre:"Bouillon lacto-fermenté au gingembre & curcuma", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🫖", badge:"Anti-inflammatoire", hero_gradient:"linear-gradient(160deg, #f5e8d0, #d4a850)", couleur_accent:"#818263", note_nara:"Le miso non pasteurisé contient des bactéries lactiques vivantes. Curcuma + poivre noir : la pipérine augmente l'absorption de la curcumine jusqu'à 2000%.", tags:["Anti-inflammatoire","Probiotiques","Intestin","Sans gluten","Vegan"], article:"Le microbiome intestinal expliqué", precaution:null,
+  { id:"001", titre:"Bouillon lacto-fermenté au gingembre & curcuma", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🫖", badge:"Anti-inflammatoire", hero_gradient:"linear-gradient(160deg, #f5e8d0, #d4a850)", couleur_accent:"#818263", note_nara:"Le miso non pasteurisé contient des bactéries lactiques vivantes. Curcuma + poivre noir : la pipérine augmente l'absorption de la curcumine jusqu'à 2000%.", tags:["Anti-inflammatoire","Probiotiques","Intestin","Sans gluten","Vegan"], article:"Le microbiome intestinal expliqué", precaution:"Le curcuma en quantité peut interagir avec certains médicaments (anticoagulants notamment) : demande conseil à ton pharmacien si tu en prends.",
     ingredients:[{nom:"Bouillon de légumes",qty:"600 ml"},{nom:"Miso non pasteurisé",qty:"2 c.s.",key:true},{nom:"Gingembre frais",qty:"3 cm",key:true},{nom:"Curcuma en poudre",qty:"1 c.c.",key:true},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Algues wakamé",qty:"1 c.s."},{nom:"Citron",qty:"½"}],
     conseil:"Le miso ne doit jamais bouillir — ajoute-le hors du feu pour préserver les probiotiques.",
     etapes:[{titre:"Préparer le bouillon",duree:"5 min",instruction:"Faire chauffer le bouillon de légumes à feu doux sans le porter à ébullition.",conseil:null},{titre:"Ajouter les aromates",duree:"3 min",instruction:"Râper le gingembre frais et l'ajouter au bouillon. Incorporer curcuma et poivre noir.",conseil:"La pipérine du poivre noir multiplie par 20 l'absorption du curcuma."},{titre:"Réhydrater les algues",duree:"5 min",instruction:"Faire tremper les algues wakamé dans un bol d'eau tiède pendant 5 minutes.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Ajouter les algues réhydratées au bouillon. Retirer du feu.",conseil:null},{titre:"Incorporer le miso",duree:"1 min",instruction:"Délayer le miso dans une louche de bouillon tiède (pas bouillant) puis verser dans la casserole.",conseil:"Ne jamais cuire le miso : ses bactéries lactiques seraient détruites au-delà de 60°C."},{titre:"Finition",duree:"1 min",instruction:"Presser le demi-citron. Servir chaud dans un bol. Déguster lentement.",conseil:null}]
@@ -4086,7 +4187,7 @@ const recettes = [
     conseil:"Choisir du saumon sauvage si possible : teneur en oméga-3 plus élevée que l'élevage.",
     etapes:[{titre:"Préparer la base",duree:"3 min",instruction:"Laver et essorer la roquette. La disposer dans un grand bol.",conseil:null},{titre:"Préparer les ingrédients",duree:"5 min",instruction:"Trancher l'avocat en lamelles. Couper le saumon en morceaux. Presser le citron.",conseil:"Citronner l'avocat immédiatement pour éviter l'oxydation."},{titre:"Assembler",duree:"2 min",instruction:"Disposer le saumon et l'avocat sur la roquette. Parsemer de graines de courge.",conseil:null},{titre:"Assaisonner et servir",duree:"1 min",instruction:"Arroser d'huile d'olive et de jus de citron. Saler, poivrer. Servir immédiatement.",conseil:"Manger dans les 20 minutes pour bénéficier au maximum des oméga-3 non oxydés."}]
   },
-  { id:"003", titre:"Golden milk au lait d'avoine, cannelle & miel", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"8 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"✨", badge:"Système nerveux", hero_gradient:"linear-gradient(160deg, #f5e8c0, #c8880a)", couleur_accent:"#b87820", note_nara:"La cannelle stabilise la glycémie en soirée. Curcuma + poivre noir. Le rituel lui-même active le système nerveux parasympathique.", tags:["Anti-inflammatoire","Stress","Sommeil","Sans gluten","Vegan"], article:"Stress et alimentation : le lien oublié", precaution:null,
+  { id:"003", titre:"Golden milk au lait d'avoine, cannelle & miel", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"8 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"✨", badge:"Système nerveux", hero_gradient:"linear-gradient(160deg, #f5e8c0, #c8880a)", couleur_accent:"#b87820", note_nara:"La cannelle stabilise la glycémie en soirée. Curcuma + poivre noir. Le rituel lui-même active le système nerveux parasympathique.", tags:["Anti-inflammatoire","Stress","Sommeil","Sans gluten","Vegan"], article:"Stress et alimentation : le lien oublié", precaution:"Le curcuma en quantité peut interagir avec certains médicaments (anticoagulants notamment) : demande conseil à ton pharmacien si tu en prends.",
     ingredients:[{nom:"Lait d'avoine",qty:"250 ml"},{nom:"Curcuma",qty:"½ c.c.",key:true},{nom:"Cannelle",qty:"½ c.c.",key:true},{nom:"Gingembre en poudre",qty:"¼ c.c."},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Miel",qty:"1 c.c."},{nom:"Vanille (optionnel)",qty:"1 pincée"}],
     conseil:"Préparer ce rituel sans écran, dans le calme. Le contexte influence autant que les ingrédients.",
     etapes:[{titre:"Chauffer le lait",duree:"3 min",instruction:"Faire chauffer doucement le lait d'avoine sans le bouillir.",conseil:null},{titre:"Ajouter les épices",duree:"2 min",instruction:"Incorporer curcuma, cannelle, gingembre et poivre noir. Mélanger au fouet.",conseil:"Le poivre noir est indispensable : il active la curcumine."},{titre:"Finition douce",duree:"1 min",instruction:"Hors du feu, ajouter le miel et la vanille. Fouetter jusqu'à légère mousse.",conseil:"Le miel chauffé au-delà de 40°C perd ses propriétés — toujours l'ajouter hors feu."},{titre:"Savourer",duree:"2 min",instruction:"Verser dans une belle tasse. Boire lentement, sans écran, idéalement 1h avant le coucher.",conseil:"Ce rituel en lui-même active le système parasympathique : prends le temps."}]
@@ -4161,7 +4262,7 @@ const recettes = [
     conseil:"Manger ce velouté idéalement au moins 2h avant de dormir. L'heure du dîner influence la qualité du sommeil autant que le contenu de l'assiette.",
     etapes:[{titre:"Faire revenir",duree:"4 min",instruction:"Faire revenir l'oignon émincé dans l'huile d'olive jusqu'à transparence.",conseil:null},{titre:"Ajouter les courgettes",duree:"2 min",instruction:"Couper les courgettes en rondelles. Ajouter à la casserole et faire revenir 2 min.",conseil:null},{titre:"Cuire",duree:"15 min",instruction:"Verser le bouillon. Porter à frémissement et cuire 15 min.",conseil:null},{titre:"Mixer et crémer",duree:"3 min",instruction:"Mixer finement. Ajouter le fromage de chèvre et mixer à nouveau. Assaisonner avec muscade, sel, poivre.",conseil:"Le fromage de chèvre en fin de cuisson = texte crémeuse sans matière grasse lourde."},{titre:"Servir",duree:"1 min",instruction:"Verser dans des bols. Parsemer de graines de courge. Servir chaud.",conseil:"Un dîner terminé avant 20h optimise la fenêtre de récupération nocturne."}]
   },
-  { id:"018", titre:"Overnight oats cerise, lavande & graines de courge", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"8 min", portions:1, niveau:"Très facile", regime:"Végétarien", emoji:"🍒", badge:"Mélatonine", hero_gradient:"linear-gradient(160deg, #2a1040, #7020b0)", couleur_accent:"#7020b0", note_nara:"Cerises : source alimentaire la plus documentée de mélatonine naturelle. Graines de courge : magnésium + tryptophane = précurseurs directs de la mélatonine.", tags:["Mélatonine","Sommeil","Magnésium","Sans cuisson","Végétarien"], article:"Mélatonine alimentaire : mythe ou réalité ?", precaution:null,
+  { id:"018", titre:"Overnight oats cerise, lavande & graines de courge", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"8 min", portions:1, niveau:"Très facile", regime:"Végétarien", emoji:"🍒", badge:"Mélatonine", hero_gradient:"linear-gradient(160deg, #2a1040, #7020b0)", couleur_accent:"#7020b0", note_nara:"Les cerises contiennent un peu de mélatonine. Les graines de courge apportent du magnésium et du tryptophane.", tags:["Mélatonine","Sommeil","Magnésium","Sans cuisson","Végétarien"], article:"Mélatonine alimentaire : mythe ou réalité ?", precaution:null,
     ingredients:[{nom:"Flocons d'avoine",qty:"60 g"},{nom:"Lait d'amande ou de vache",qty:"150 ml"},{nom:"Yaourt nature",qty:"50 g"},{nom:"Cerises (fraîches ou surgelées)",qty:"100 g",key:true},{nom:"Graines de courge",qty:"1 c.s.",key:true},{nom:"Lavande alimentaire séchée",qty:"½ c.c.",key:true},{nom:"Miel",qty:"1 c.c."}],
     conseil:"Préparer la veille au soir — 8 heures de trempage permettent aux flocons de libérer leur amidon résistant prébiotique.",
     etapes:[{titre:"Préparer la base (veille au soir)",duree:"3 min",instruction:"Mélanger flocons d'avoine, lait, yaourt, lavande et miel dans un bocal. Remuer.",conseil:"La lavande : une petite pincée suffit, l'effet est subtil et apaisant."},{titre:"Laisser reposer",duree:"0 min",instruction:"Couvrir et réfrigérer toute la nuit (minimum 6h).",conseil:"Plus le trempage est long, plus l'amidon résistant se développe : meilleur pour le microbiome."},{titre:"Garnir le matin",duree:"3 min",instruction:"Le matin, remuer les oats. Disposer les cerises dénoyautées et les graines de courge par-dessus.",conseil:"Cerises fraîches en saison, surgelées le reste de l'année — la mélatonine est préservée par la congélation."}]
@@ -4239,6 +4340,7 @@ const SCREEN_BG = {
 };
 
 function showScreen(id, btn) {
+  if (id !== 'recipe-detail' && id !== 'article-detail') routRetourVers = null;   // la flèche retour d'une recette / d'un article ne ramène à une routine que si on en vient
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
@@ -4669,170 +4771,964 @@ function openArticle(id) {
 }
 
 
-// ===== ROUTINES DATA =====
+// ===== ROUTINES — PROGRAMMES DE 21 JOURS =====
+// · Le jour se CALCULE : (date du jour − date de début) + 1, plafonné à 21. Il avance avec le calendrier, cases cochées ou non.
+// · État d'une routine sur l'appareil : nara_routine_<id> = { statut, startDate, jour_actuel, updatedAt }.
+//   « Terminée » n'est jamais écrit : c'est « le jour 21 est passé » (calcul), donc identique sur tous les appareils.
+// · Ce qui est coché / choisi / écrit : nara_rjour_<date> (un enregistrement par jour, type « routine_jour » dans nara_logs),
+//   rangé par passage dans un programme (« <routine>@<date de début> ») et valeur par valeur, pour être croisé avec le journal.
 const routinesData = [
   {
-    id:"archetype_1", titre:"Ventre & Peau", sous_titre:"Protocole intestin-peau · 3 semaines",
-    statut:"disponible", jour_actuel:0, duree_jours:21,
-    couleur:"#818263", gradient:"linear-gradient(135deg, #818263, #5a5e40)", emoji:"🌿",
-    description:"Un protocole holistique qui connecte la santé intestinale à l'état de la peau — alimentation, mouvement doux et observation.",
-    semaines:[
-      { numero:1, titre:"Observation & fondations", taches:[
-        { id:"t1-1", titre:"Journal alimentaire du matin", duree:"5 min", type:"habitude", description:"Note ce que tu as mangé hier soir et comment tu te sens ce matin — transit, énergie, peau.", modale:null },
-        { id:"t1-2", titre:"Bouillon digestif du soir", duree:"30 min", type:"recette", description:"Prépare et bois le bouillon lacto-fermenté au gingembre & curcuma 30 min avant le dîner.", modale:null },
-        { id:"t1-3", titre:"Massage abdominal", duree:"5 min", type:"pratique_guidee", description:"Massage en cercles dans le sens des aiguilles d'une montre pour stimuler le transit.", modale:"modal-massage" },
-        { id:"t1-4", titre:"Yoga digestif doux", duree:"10 min", type:"pratique_guidee", description:"Postures douces pour relâcher les tensions abdominales et stimuler la motilité.", modale:"modal-yoga" },
-        { id:"t1-5", titre:"Lecture du jour", duree:"6 min", type:"article", description:"L'axe intestin-peau : le lien que personne ne t'a expliqué.", modale:null }
-      ]},
-      { numero:2, titre:"Approfondissement", taches:[
-        { id:"t2-1", titre:"Élimination gluten — Jour 1", duree:"Toute la journée", type:"habitude", description:"Commence 14 jours sans gluten pour observer l'impact sur ton transit et ta peau.", modale:null },
-        { id:"t2-2", titre:"Cohérence cardiaque matin", duree:"5 min", type:"pratique_guidee", description:"5 cycles de respiration 5s inspiration / 5s expiration pour réguler le cortisol du matin.", modale:"modal-coherence" },
-        { id:"t2-3", titre:"Fermenté du jour", duree:"2 min", type:"habitude", description:"Intègre 1 aliment fermenté dans ton repas : kefir, choucroute crue, miso ou kimchi.", modale:null },
-        { id:"t2-4", titre:"Suivi peau — Photo + note", duree:"3 min", type:"suivi", description:"Photo de ta peau + note de 1 à 10 sur l'état général. Compare avec la semaine 1.", modale:null }
-      ]},
-      { numero:3, titre:"Ancrage", taches:[
-        { id:"t3-1", titre:"Bilan intestin-peau", duree:"10 min", type:"bilan", description:"Compare tes notes de la semaine 1, 2 et 3. Quels patterns as-tu observés ?", modale:null },
-        { id:"t3-2", titre:"Mes 3 habitudes à garder", duree:"5 min", type:"reflexion", description:"Identifie les 3 habitudes de ce programme qui ont eu le plus d'impact et planifie leur intégration durable.", modale:null },
-        { id:"t3-3", titre:"Massage abdominal — Version avancée", duree:"8 min", type:"pratique_guidee", description:"Version enrichie du massage avec travail sur les points de tension spécifiques.", modale:"modal-massage" }
-      ]}
+    id: "archetype_1",
+    titre: "Ventre & Peau",
+    sous_titre: "Protocole intestin-peau · 3 semaines",
+    statut: "disponible",
+    jour_actuel: 0,
+    duree_jours: 21,
+    couleur: "#818263",
+    gradient: "linear-gradient(135deg, #818263, #5a5e40)",
+    emoji: "🌿",
+    description: "Un protocole holistique qui connecte la santé intestinale à l'état de la peau — alimentation, mouvement doux et observation.",
+    semaines: [
+      { numero: 1, titre: "Observation & fondations" },
+      { numero: 2, titre: "Approfondissement" },
+      { numero: 3, titre: "Ancrage" }
     ],
-    modales:[
-      { id:"modal-massage", titre:"Massage abdominal digestif", duree:"5 min", etapes:["Allonge-toi sur le dos, genoux fléchis. Pose les deux mains à plat sur le ventre.","Commence par des cercles larges dans le sens des aiguilles d'une montre — la direction du transit.","Réduis progressivement les cercles en remontant vers le nombril. Pression douce mais ferme.","Travaille les 4 quadrants : bas droit → haut droit → haut gauche → bas gauche.","Termine par 5 respirations profondes, mains posées sur le ventre en sentant le mouvement."] },
-      { id:"modal-yoga", titre:"Yoga digestif doux", duree:"10 min", etapes:["Pawanmuktasana (genou-poitrine) : allongé, ramène un genou vers la poitrine. 5 respirations. Répète de l'autre côté.","Apanasana (deux genoux-poitrine) : ramène les deux genoux. Berce doucement de droite à gauche. 8 respirations.","Torsion douce : allongé, laisse tomber les genoux d'un côté, tête de l'autre. 5 respirations. Change de côté.","Viparita Karani (jambes au mur) : jambes tendues contre le mur, repos 3 minutes. Active le parasympathique.","Savasana : 2 minutes de relâchement complet, attention portée sur les sensations abdominales."] },
-      { id:"modal-coherence", titre:"Cohérence cardiaque 5-5", duree:"5 min", etapes:["Assieds-toi confortablement, dos droit, pieds à plat. Ferme les yeux ou pose le regard.","Inspire lentement par le nez pendant 5 secondes — gonfle le ventre, puis la poitrine.","Expire lentement par la bouche pendant 5 secondes — vide la poitrine, puis le ventre.","Répète ce cycle 5 fois. Si ton esprit s'échappe, reviens doucement au souffle.","Pour 5 minutes complètes : 5 secondes IN / 5 secondes OUT × 30 cycles."] }
+    taches: {
+      journal: {
+        titre: "Journal du matin",
+        duree: "5 min",
+        type: "habitude",
+        description: "Note ce que tu as mangé hier soir et comment tu te sens ce matin — transit, énergie, peau.",
+        action: { a: "journal", slide: "repas" }
+      },
+      massage: {
+        titre: "Massage abdominal",
+        duree: "5 min",
+        type: "pratique_guidee",
+        description: "Massage en cercles dans le sens des aiguilles d'une montre pour stimuler le transit.",
+        action: { a: "guide", modale: "modal-massage" }
+      },
+      massage_av: {
+        titre: "Massage abdominal — version avancée",
+        duree: "8 min",
+        type: "pratique_guidee",
+        description: "Version enrichie du massage avec travail sur les points de tension spécifiques.",
+        action: { a: "guide", modale: "modal-massage" }
+      },
+      coherence: {
+        titre: "Cohérence cardiaque matin",
+        duree: "5 min",
+        type: "pratique_guidee",
+        description: "5 cycles de respiration : 5 s d'inspiration, 5 s d'expiration.",
+        action: { a: "guide", modale: "modal-coherence" }
+      },
+      ferment: {
+        titre: "Fermenté du jour",
+        duree: "2 min",
+        type: "habitude",
+        description: "Intègre 1 aliment fermenté dans ton repas. Note lequel, si tu veux.",
+        action: { a: "tags", groupe: "ferment" }
+      },
+      sans_gluten: {
+        titre: "Journée sans gluten",
+        duree: "Toute la journée",
+        type: "habitude",
+        description: "Optionnel : une journée sans gluten, pour observer ton transit et ta peau. Si tu soupçonnes une intolérance, fais d'abord le dépistage avec ton médecin.",
+        action: null
+      },
+      gluten_debut: {
+        titre: "Début élimination gluten",
+        duree: "Toute la journée",
+        type: "habitude",
+        description: "Commence 14 jours sans gluten pour observer l'impact sur ton transit et ta peau. Si tu soupçonnes une intolérance au gluten, fais le dépistage avec ton médecin avant de l'arrêter : l'arrêter avant peut fausser le test.",
+        action: { a: "gluten" }
+      },
+      lecture: {
+        titre: "Lecture du jour",
+        type: "article",
+        action: { a: "article" }
+      },
+      photo: {
+        titre: "Photo de ta peau",
+        duree: "3 min",
+        type: "suivi",
+        description: "Prends une photo de ta peau dans la partie Peau du Journal. Tu pourras la comparer plus tard.",
+        action: { a: "journal", slide: "peau" }
+      },
+      yoga: {
+        titre: "Yoga digestif doux",
+        duree: "10 min",
+        type: "pratique_guidee",
+        description: "Postures douces pour relâcher les tensions abdominales et stimuler la motilité.",
+        action: { a: "guide", modale: "modal-yoga" }
+      },
+      bouillon: {
+        titre: "Bouillon digestif du soir",
+        duree: "30 min",
+        type: "recette",
+        description: "Prépare et bois le bouillon lacto-fermenté au gingembre & curcuma 30 min avant le dîner.",
+        action: { a: "recette", id: "001" }
+      },
+      point: {
+        titre: "Point de la semaine",
+        duree: "5 min",
+        type: "point",
+        description: "Prends un moment pour faire le point sur la semaine qui vient de passer.",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "change", q: "Qu'est-ce qui a changé ?" },
+            { f: "difficile", q: "Qu'est-ce qui a été difficile ?" }
+          ]
+        }
+      },
+      bilan: {
+        titre: "Bilan intestin-peau",
+        duree: "10 min",
+        type: "bilan",
+        description: "Compare tes notes de la semaine 1, 2 et 3. Quels patterns as-tu observés ?",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "bilan", q: "Ton bilan en quelques lignes" }
+          ]
+        }
+      },
+      reflexion: {
+        titre: "Mes 3 habitudes à garder",
+        duree: "5 min",
+        type: "reflexion",
+        description: "Identifie les 3 habitudes de ce programme qui ont eu le plus d'impact et planifie leur intégration durable.",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "habitudes", q: "Les 3 habitudes que tu veux garder" }
+          ]
+        }
+      }
+    },
+    habitudes: [
+      { k: "journal", plages: [[1, 21]] },
+      { k: "massage", plages: [[1, 14]] },
+      { k: "massage_av", plages: [[15, 21]] },
+      { k: "coherence", plages: [[8, 21]] },
+      { k: "ferment", plages: [[8, 21]] },
+      { k: "sans_gluten", plages: [[8, 21]], opt: true }
+    ],
+    ponctuelles: [
+      { j: 1, k: "lecture", article: "001" },
+      { j: 1, k: "photo", titre: "Photo de départ" },
+      { j: 2, k: "yoga" },
+      { j: 3, k: "bouillon" },
+      { j: 4, k: "lecture", article: "033" },
+      { j: 5, k: "yoga" },
+      { j: 7, k: "point", titre: "Point de la semaine 1" },
+      { j: 8, k: "gluten_debut", opt: true },
+      { j: 8, k: "lecture", article: "008" },
+      { j: 9, k: "yoga" },
+      { j: 10, k: "lecture", article: "014" },
+      { j: 11, k: "photo", titre: "Photo du milieu" },
+      { j: 12, k: "bouillon" },
+      { j: 13, k: "lecture", article: "019" },
+      { j: 14, k: "point", titre: "Point de la semaine 2" },
+      { j: 16, k: "yoga" },
+      { j: 17, k: "lecture", article: "035" },
+      { j: 19, k: "bouillon" },
+      { j: 20, k: "bilan" },
+      { j: 21, k: "photo", titre: "Photo de fin" },
+      { j: 21, k: "reflexion" }
+    ],
+    modales: [
+      {
+        id: "modal-massage",
+        titre: "Massage abdominal digestif",
+        duree: "5 min",
+        etapes: ["Allonge-toi sur le dos, genoux fléchis. Pose les deux mains à plat sur le ventre.", "Commence par des cercles larges dans le sens des aiguilles d'une montre — la direction du transit.", "Réduis progressivement les cercles en remontant vers le nombril. Pression douce mais ferme.", "Travaille les 4 quadrants : bas droit → haut droit → haut gauche → bas gauche.", "Termine par 5 respirations profondes, mains posées sur le ventre en sentant le mouvement."]
+      },
+      {
+        id: "modal-yoga",
+        titre: "Yoga digestif doux",
+        duree: "10 min",
+        etapes: ["Pawanmuktasana (genou-poitrine) : allongé, ramène un genou vers la poitrine. 5 respirations. Répète de l'autre côté.", "Apanasana (deux genoux-poitrine) : ramène les deux genoux. Berce doucement de droite à gauche. 8 respirations.", "Torsion douce : allongé, laisse tomber les genoux d'un côté, tête de l'autre. 5 respirations. Change de côté.", "Viparita Karani (jambes au mur) : jambes tendues contre le mur, repos 3 minutes, pour aider le corps à se détendre.", "Savasana : 2 minutes de relâchement complet, attention portée sur les sensations abdominales."]
+      },
+      {
+        id: "modal-coherence",
+        titre: "Cohérence cardiaque 5-5",
+        duree: "5 min",
+        etapes: ["Assieds-toi confortablement, dos droit, pieds à plat. Ferme les yeux ou pose le regard.", "Inspire lentement par le nez pendant 5 secondes — gonfle le ventre, puis la poitrine.", "Expire lentement par la bouche pendant 5 secondes — vide la poitrine, puis le ventre.", "Répète ce cycle 5 fois. Si ton esprit s'échappe, reviens doucement au souffle.", "Pour 5 minutes complètes : 5 secondes IN / 5 secondes OUT × 30 cycles."]
+      }
     ]
   },
   {
-    id:"archetype_2", titre:"Stress & Corps", sous_titre:"Régulation nerveuse progressive · 3 semaines",
-    statut:"disponible", jour_actuel:0, duree_jours:21,
-    couleur:"#8a8ec4", gradient:"linear-gradient(135deg, #8a8ec4, #5a5e94)", emoji:"🌬️",
-    description:"Un programme de régulation du système nerveux autonome — des outils concrets pour passer du mode survie au mode récupération.",
-    semaines:[
-      { numero:1, titre:"Reconnexion corps", taches:[
-        { id:"t1-1", titre:"Étirements doux du matin", duree:"8 min", type:"pratique_guidee", description:"Séquence d'étirements pour sortir le corps du mode contracté du sommeil.", modale:"modal-etir-doux" },
-        { id:"t1-2", titre:"Cohérence cardiaque", duree:"5 min", type:"pratique_guidee", description:"Respiration 5-5 pour calibrer le système nerveux dès le matin.", modale:"modal-coherence2" },
-        { id:"t1-3", titre:"Scan corporel", duree:"7 min", type:"pratique_guidee", description:"Exploration consciente des tensions physiques pour les identifier et les relâcher.", modale:"modal-scan" },
-        { id:"t1-4", titre:"Note de stress du soir", duree:"2 min", type:"suivi", description:"Score ton niveau de stress de 1 à 10. Note le contexte : qu'est-ce qui a déclenché les pics ?", modale:null }
-      ]},
-      { numero:2, titre:"Régulation profonde", taches:[
-        { id:"t2-1", titre:"Respiration 4-7-8", duree:"5 min", type:"pratique_guidee", description:"Technique de Dr Andrew Weil pour calmer le système nerveux en quelques minutes.", modale:"modal-478" },
-        { id:"t2-2", titre:"Marche consciente", duree:"20 min", type:"pratique_guidee", description:"Marche sans téléphone avec attention aux 5 sens — activation du parasympathique.", modale:"modal-marche" },
-        { id:"t2-3", titre:"Relaxation de Jacobson", duree:"15 min", type:"pratique_guidee", description:"Relaxation musculaire progressive — contracter puis relâcher chaque groupe musculaire.", modale:"modal-jacobson" },
-        { id:"t2-4", titre:"Golden milk du soir", duree:"8 min", type:"recette", description:"Rituel du soir anti-inflammatoire pour préparer le système nerveux au repos.", modale:null }
-      ]},
-      { numero:3, titre:"Ancrage cognitif", taches:[
-        { id:"t3-1", titre:"Étirements enrichis", duree:"12 min", type:"pratique_guidee", description:"Version avancée de la séquence d'étirements avec travail sur le nerf vague.", modale:"modal-etir-enrichis" },
-        { id:"t3-2", titre:"Stimulation du nerf vague", duree:"5 min", type:"pratique_guidee", description:"Techniques de stimulation directe : gargarisme, humming, eau froide sur la nuque.", modale:"modal-nerf-vague" },
-        { id:"t3-3", titre:"Recadrage cognitif", duree:"10 min", type:"pratique_guidee", description:"Identifier une pensée stressante et la reformuler avec la méthode Byron Katie.", modale:"modal-recadrage" },
-        { id:"t3-4", titre:"Routine pré-sommeil", duree:"20 min", type:"pratique_guidee", description:"Séquence complète de déconnexion pour signaler au système nerveux que la journée est terminée.", modale:"modal-sommeil" }
-      ]}
+    id: "archetype_2",
+    titre: "Stress & Corps",
+    sous_titre: "Régulation nerveuse progressive · 3 semaines",
+    statut: "disponible",
+    jour_actuel: 0,
+    duree_jours: 21,
+    couleur: "#8a8ec4",
+    gradient: "linear-gradient(135deg, #8a8ec4, #5a5e94)",
+    emoji: "🌬️",
+    description: "Un programme de régulation du système nerveux autonome — des outils concrets pour passer du mode survie au mode récupération.",
+    semaines: [
+      { numero: 1, titre: "Reconnexion corps" },
+      { numero: 2, titre: "Régulation profonde" },
+      { numero: 3, titre: "Ancrage cognitif" }
     ],
-    modales:[
-      { id:"modal-etir-doux", titre:"Étirements doux du matin", duree:"8 min", etapes:["Debout ou assis : rotation douce de la tête, 5 fois de chaque côté. Lent, sans forcer.","Étirement latéral : bras levé, penche-toi doucement sur le côté. 4 respirations. Change de côté.","Rotation du tronc : assis, tourne le buste en posant la main sur le genou opposé. 5 respirations. Change.","Flexion avant douce : jambes légèrement fléchies, laisse tomber le tronc vers le bas. 6 respirations.","Étirement du psoas : une jambe en avant en fente basse. Hanches vers l'avant. 5 respirations. Change."] },
-      { id:"modal-coherence2", titre:"Cohérence cardiaque", duree:"5 min", etapes:["Assieds-toi confortablement. Pose une main sur le cœur si tu veux.","Inspire par le nez pendant exactement 5 secondes.","Expire par la bouche pendant exactement 5 secondes.","Maintiens ce rythme pendant 5 minutes — soit 30 cycles complets.","Si possible, pratique 3 fois par jour : matin, midi, soir pour un effet maximal sur le cortisol."] },
-      { id:"modal-scan", titre:"Scan corporel progressif", duree:"7 min", etapes:["Allonge-toi confortablement. Ferme les yeux. Prends 3 grandes respirations.","Porte ton attention sur les pieds : qu'est-ce que tu ressens ? Chaleur, tension, contact ?","Remonte progressivement : mollets, genoux, cuisses, bassin. Note chaque sensation sans juger.","Continue : ventre, dos, poitrine, épaules. Remarque les zones de tension.","Termines par le cou, la mâchoire, le visage. À chaque zone tendue, expire et relâche consciemment."] },
-      { id:"modal-478", titre:"Respiration 4-7-8", duree:"5 min", etapes:["Assieds-toi dos droit. Place la langue sur le palais juste derrière les dents du haut.","Expire complètement par la bouche avec un son 'whoosh'.","Ferme la bouche. Inspire par le nez pendant 4 secondes.","Retiens ton souffle pendant 7 secondes.","Expire complètement par la bouche avec le son 'whoosh' pendant 8 secondes. C'est 1 cycle. Répète 4 fois."] },
-      { id:"modal-marche", titre:"Marche consciente", duree:"20 min", etapes:["Laisse le téléphone à la maison ou en mode avion. Pas d'écouteurs.","Les 5 premières minutes : observe 5 choses que tu vois, 4 que tu entends, 3 que tu peux toucher.","Synchronise ta respiration avec tes pas : inspire sur 4 pas, expire sur 4 pas.","Si une pensée stressante arrive, note-la mentalement 'pensée' et reviens aux sensations physiques.","Les 5 dernières minutes : ralentis progressivement. Arrive à destination comme si tu avais tout le temps du monde."] },
-      { id:"modal-jacobson", titre:"Relaxation de Jacobson", duree:"15 min", etapes:["Allonge-toi. Commence par les pieds : contracte tous les muscles du pied pendant 7 secondes, puis relâche totalement pendant 20 secondes.","Mollets : contracte 7s, relâche 20s. Remarque la différence entre tension et relâchement.","Cuisses, fessiers, abdominaux : même protocole. Contracte 7s, relâche 20s.","Mains, avant-bras, bras, épaules : poing serré 7s, relâche 20s. Puis haussement d'épaules 7s, relâche.","Visage : fronce les sourcils 7s, relâche. Serre les dents 7s, relâche. Termine en souriant 7s, relâche."] },
-      { id:"modal-etir-enrichis", titre:"Étirements enrichis — Semaine 3", duree:"12 min", etapes:["Séquence complète de la semaine 1 (8 min) avec maintien plus long de chaque posture.","Ajout : étirement du piriforme (figure en 4 assis) — 8 respirations de chaque côté.","Ajout : retournement sur le dos, genoux pliés, basculement lent gauche-droite 10 fois.","Intègre des sons à l'expiration (soupir, 'aaah') pour activer le nerf vague pendant les étirements.","Termine en position fœtale côté gauche pendant 2 minutes — position de récupération du système nerveux."] },
-      { id:"modal-nerf-vague", titre:"Stimulation du nerf vague", duree:"5 min", etapes:["Gargarisme : prends une gorgée d'eau et gargarise pendant 30 secondes jusqu'à avoir les yeux qui larmoient légèrement. Répète 3 fois.","Humming : ferme la bouche et produis un son grave continu 'mmmmm' pendant toute une expiration. Répète 10 fois.","Eau froide nuque : passe de l'eau froide sur la nuque et la base du crâne pendant 30 secondes.","Expiration prolongée : inspire 4s, expire lentement sur 8s. La longue expiration active directement le nerf vague.","Chant ou lecture à voix haute : 2 minutes. La vibration des cordes vocales stimule le nerf vague via le larynx."] },
-      { id:"modal-recadrage", titre:"Recadrage cognitif", duree:"10 min", etapes:["Identifie une pensée stressante précise. Écris-la noir sur blanc : 'Je suis [pensée]'.","Question 1 : Est-ce que c'est absolument vrai ? Peux-tu en être certain(e) à 100% ?","Question 2 : Comment te sens-tu quand tu crois cette pensée ? Qu'est-ce qu'elle te coûte ?","Question 3 : Qui serais-tu sans cette pensée ? Que ferais-tu différemment ?","Retournement : trouve 3 façons dont l'opposé de cette pensée peut être aussi vrai, voire plus vrai."] },
-      { id:"modal-sommeil", titre:"Routine pré-sommeil", duree:"20 min", etapes:["H-60 min : derniers écrans. Passe en lumière chaude tamisée. Température chambre à 18-19°C.","H-45 min : tisane adaptogène ou golden milk. Bois lentement, sans écran.","H-30 min : 5 min de cohérence cardiaque ou 4-7-8. Corps signale l'arrêt.","H-15 min : scan corporel léger allongé dans le lit. Relâche les tensions identifiées.","H-0 : si pensées envahissantes, note-les sur un carnet ('brain dump') pour les sortir de la tête."] }
+    taches: {
+      coherence: {
+        titre: "Cohérence cardiaque",
+        duree: "5 min",
+        type: "pratique_guidee",
+        description: "Respiration 5-5 pour calibrer le système nerveux dès le matin.",
+        action: { a: "guide", modale: "modal-coherence2" }
+      },
+      etirements: {
+        titre: "Étirements doux du matin",
+        duree: "8 min",
+        type: "pratique_guidee",
+        description: "Séquence d'étirements pour sortir le corps du mode contracté du sommeil.",
+        action: { a: "guide", modale: "modal-etir-doux" }
+      },
+      etirements_enrichis: {
+        titre: "Étirements enrichis",
+        duree: "12 min",
+        type: "pratique_guidee",
+        description: "Version avancée de la séquence d'étirements, pour aider le corps à se détendre.",
+        action: { a: "guide", modale: "modal-etir-enrichis" }
+      },
+      stress_soir: {
+        titre: "Note de stress du soir",
+        duree: "2 min",
+        type: "suivi",
+        description: "Note ton niveau de stress de 1 à 5 dans le Journal, et ce qui a déclenché les pics.",
+        action: { a: "journal", slide: "vie" }
+      },
+      resp_478: {
+        titre: "Respiration 4-7-8 du soir",
+        duree: "5 min",
+        type: "pratique_guidee",
+        description: "Technique du Dr Andrew Weil qui peut aider à apaiser.",
+        action: { a: "guide", modale: "modal-478" }
+      },
+      scan: {
+        titre: "Scan corporel",
+        duree: "7 min",
+        type: "pratique_guidee",
+        description: "Exploration consciente des tensions physiques pour les identifier et les relâcher.",
+        action: { a: "guide", modale: "modal-scan" }
+      },
+      marche: {
+        titre: "Marche consciente",
+        duree: "20 min",
+        type: "pratique_guidee",
+        description: "Marche sans téléphone avec attention aux 5 sens, pour aider le corps à se détendre.",
+        action: { a: "guide", modale: "modal-marche" }
+      },
+      jacobson: {
+        titre: "Relaxation de Jacobson",
+        duree: "15 min",
+        type: "pratique_guidee",
+        description: "Relaxation musculaire progressive — contracter puis relâcher chaque groupe musculaire.",
+        action: { a: "guide", modale: "modal-jacobson" }
+      },
+      golden_milk: {
+        titre: "Golden milk du soir",
+        duree: "8 min",
+        type: "recette",
+        description: "Rituel du soir anti-inflammatoire pour préparer le système nerveux au repos.",
+        action: { a: "recette", id: "003" }
+      },
+      nerf_vague: {
+        titre: "Stimulation du nerf vague",
+        duree: "5 min",
+        type: "pratique_guidee",
+        description: "Des gestes simples que beaucoup utilisent pour s'apaiser : gargarisme, humming, eau froide sur la nuque.",
+        action: { a: "guide", modale: "modal-nerf-vague" }
+      },
+      routine_presommeil: {
+        titre: "Routine pré-sommeil",
+        duree: "20 min",
+        type: "pratique_guidee",
+        description: "Séquence complète de déconnexion pour signaler au système nerveux que la journée est terminée.",
+        action: { a: "guide", modale: "modal-sommeil" }
+      },
+      recadrage: {
+        titre: "Questionner une pensée stressante",
+        duree: "10 min",
+        type: "pratique_guidee",
+        description: "Identifier une pensée stressante et la questionner pas à pas. Si le stress est intense ou dure, en parler à un psychologue peut vraiment aider.",
+        action: { a: "guide", modale: "modal-recadrage" }
+      },
+      lecture: {
+        titre: "Lecture du jour",
+        type: "article",
+        action: { a: "article" }
+      },
+      point: {
+        titre: "Point de la semaine",
+        duree: "5 min",
+        type: "point",
+        description: "Prends un moment pour faire le point sur la semaine qui vient de passer.",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "change", q: "Qu'est-ce qui a changé ?" },
+            { f: "difficile", q: "Qu'est-ce qui a été difficile ?" }
+          ]
+        }
+      },
+      bilan: {
+        titre: "Bilan stress-corps",
+        duree: "10 min",
+        type: "bilan",
+        description: "Relis tes notes de stress des 3 semaines : qu'est-ce que tu observes ?",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "bilan", q: "Ton bilan en quelques lignes" }
+          ]
+        }
+      },
+      reflexion: {
+        titre: "Mes 3 habitudes à garder",
+        duree: "5 min",
+        type: "reflexion",
+        description: "Identifie les 3 habitudes de ce programme qui ont eu le plus d'impact et planifie leur intégration durable.",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "habitudes", q: "Les 3 habitudes que tu veux garder" }
+          ]
+        }
+      }
+    },
+    habitudes: [
+      { k: "coherence", plages: [[1, 21]] },
+      { k: "etirements", plages: [[1, 14]] },
+      { k: "etirements_enrichis", plages: [[15, 21]] },
+      { k: "stress_soir", plages: [[1, 21]] },
+      { k: "resp_478", plages: [[8, 21]] }
+    ],
+    ponctuelles: [
+      { j: 1, k: "lecture", article: "019" },
+      { j: 1, k: "scan" },
+      { j: 3, k: "scan" },
+      { j: 4, k: "lecture", article: "021" },
+      { j: 5, k: "scan" },
+      { j: 7, k: "point", titre: "Point de la semaine 1" },
+      { j: 8, k: "marche" },
+      { j: 9, k: "jacobson" },
+      { j: 10, k: "golden_milk" },
+      { j: 10, k: "lecture", article: "020" },
+      { j: 11, k: "marche" },
+      { j: 12, k: "jacobson" },
+      { j: 13, k: "lecture", article: "023" },
+      { j: 14, k: "point", titre: "Point de la semaine 2" },
+      { j: 14, k: "marche" },
+      { j: 15, k: "nerf_vague" },
+      { j: 16, k: "routine_presommeil" },
+      { j: 17, k: "recadrage" },
+      { j: 17, k: "lecture", article: "024" },
+      { j: 18, k: "golden_milk" },
+      { j: 18, k: "nerf_vague" },
+      { j: 19, k: "recadrage" },
+      { j: 20, k: "bilan" },
+      { j: 21, k: "reflexion" }
+    ],
+    modales: [
+      {
+        id: "modal-etir-doux",
+        titre: "Étirements doux du matin",
+        duree: "8 min",
+        etapes: ["Debout ou assis : rotation douce de la tête, 5 fois de chaque côté. Lent, sans forcer.", "Étirement latéral : bras levé, penche-toi doucement sur le côté. 4 respirations. Change de côté.", "Rotation du tronc : assis, tourne le buste en posant la main sur le genou opposé. 5 respirations. Change.", "Flexion avant douce : jambes légèrement fléchies, laisse tomber le tronc vers le bas. 6 respirations.", "Étirement du psoas : une jambe en avant en fente basse. Hanches vers l'avant. 5 respirations. Change."]
+      },
+      {
+        id: "modal-coherence2",
+        titre: "Cohérence cardiaque",
+        duree: "5 min",
+        etapes: ["Assieds-toi confortablement. Pose une main sur le cœur si tu veux.", "Inspire par le nez pendant exactement 5 secondes.", "Expire par la bouche pendant exactement 5 secondes.", "Maintiens ce rythme pendant 5 minutes — soit 30 cycles complets.", "Si possible, pratique 3 fois par jour : matin, midi, soir."]
+      },
+      {
+        id: "modal-scan",
+        titre: "Scan corporel progressif",
+        duree: "7 min",
+        etapes: ["Allonge-toi confortablement. Ferme les yeux. Prends 3 grandes respirations.", "Porte ton attention sur les pieds : qu'est-ce que tu ressens ? Chaleur, tension, contact ?", "Remonte progressivement : mollets, genoux, cuisses, bassin. Note chaque sensation sans juger.", "Continue : ventre, dos, poitrine, épaules. Remarque les zones de tension.", "Termines par le cou, la mâchoire, le visage. À chaque zone tendue, expire et relâche consciemment."]
+      },
+      {
+        id: "modal-478",
+        titre: "Respiration 4-7-8",
+        duree: "5 min",
+        etapes: ["Assieds-toi dos droit. Place la langue sur le palais juste derrière les dents du haut.", "Expire complètement par la bouche avec un son 'whoosh'.", "Ferme la bouche. Inspire par le nez pendant 4 secondes.", "Retiens ton souffle pendant 7 secondes.", "Expire complètement par la bouche avec le son 'whoosh' pendant 8 secondes. C'est 1 cycle. Répète 4 fois."]
+      },
+      {
+        id: "modal-marche",
+        titre: "Marche consciente",
+        duree: "20 min",
+        etapes: ["Laisse le téléphone à la maison ou en mode avion. Pas d'écouteurs.", "Les 5 premières minutes : observe 5 choses que tu vois, 4 que tu entends, 3 que tu peux toucher.", "Synchronise ta respiration avec tes pas : inspire sur 4 pas, expire sur 4 pas.", "Si une pensée stressante arrive, note-la mentalement 'pensée' et reviens aux sensations physiques.", "Les 5 dernières minutes : ralentis progressivement. Arrive à destination comme si tu avais tout le temps du monde."]
+      },
+      {
+        id: "modal-jacobson",
+        titre: "Relaxation de Jacobson",
+        duree: "15 min",
+        etapes: ["Allonge-toi. Commence par les pieds : contracte tous les muscles du pied pendant 7 secondes, puis relâche totalement pendant 20 secondes.", "Mollets : contracte 7s, relâche 20s. Remarque la différence entre tension et relâchement.", "Cuisses, fessiers, abdominaux : même protocole. Contracte 7s, relâche 20s.", "Mains, avant-bras, bras, épaules : poing serré 7s, relâche 20s. Puis haussement d'épaules 7s, relâche.", "Visage : fronce les sourcils 7s, relâche. Serre les dents 7s, relâche. Termine en souriant 7s, relâche."]
+      },
+      {
+        id: "modal-etir-enrichis",
+        titre: "Étirements enrichis — Semaine 3",
+        duree: "12 min",
+        etapes: ["Séquence complète de la semaine 1 (8 min) avec maintien plus long de chaque posture.", "Ajout : étirement du piriforme (figure en 4 assis) — 8 respirations de chaque côté.", "Ajout : retournement sur le dos, genoux pliés, basculement lent gauche-droite 10 fois.", "Intègre des sons à l'expiration (soupir, 'aaah') pour aider le corps à se détendre pendant les étirements.", "Termine en position fœtale côté gauche pendant 2 minutes — position de récupération du système nerveux."]
+      },
+      {
+        id: "modal-nerf-vague",
+        titre: "Stimulation du nerf vague",
+        duree: "5 min",
+        etapes: ["Gargarisme : prends une gorgée d'eau et gargarise pendant 30 secondes jusqu'à avoir les yeux qui larmoient légèrement. Répète 3 fois.", "Humming : ferme la bouche et produis un son grave continu 'mmmmm' pendant toute une expiration. Répète 10 fois.", "Eau froide nuque : passe de l'eau froide sur la nuque et la base du crâne pendant 30 secondes.", "Expiration prolongée : inspire 4s, expire lentement sur 8s. La longue expiration peut aider à s'apaiser.", "Chant ou lecture à voix haute : 2 minutes. Beaucoup de personnes trouvent que chanter ou lire à voix haute aide à s'apaiser."]
+      },
+      {
+        id: "modal-recadrage",
+        titre: "Questionner une pensée stressante",
+        duree: "10 min",
+        etapes: ["Identifie une pensée stressante précise. Écris-la noir sur blanc : 'Je suis [pensée]'.", "Question 1 : Est-ce que c'est absolument vrai ? Peux-tu en être certain(e) à 100% ?", "Question 2 : Comment te sens-tu quand tu crois cette pensée ? Qu'est-ce qu'elle te coûte ?", "Question 3 : Qui serais-tu sans cette pensée ? Que ferais-tu différemment ?", "Retournement : trouve 3 façons dont l'opposé de cette pensée peut être aussi vrai, voire plus vrai."],
+        note: "Si le stress est intense ou dure, en parler à un psychologue peut vraiment aider."
+      },
+      {
+        id: "modal-sommeil",
+        titre: "Routine pré-sommeil",
+        duree: "20 min",
+        etapes: ["H-60 min : derniers écrans. Passe en lumière chaude tamisée. Température chambre à 18-19°C.", "H-45 min : tisane adaptogène ou golden milk. Bois lentement, sans écran.", "H-30 min : 5 min de cohérence cardiaque ou 4-7-8. Corps signale l'arrêt.", "H-15 min : scan corporel léger allongé dans le lit. Relâche les tensions identifiées.", "H-0 : si pensées envahissantes, note-les sur un carnet ('brain dump') pour les sortir de la tête."]
+      }
     ]
   },
   {
-    id:"archetype_3", titre:"Énergie & Sommeil", sous_titre:"Rythme circadien & vitalité · 3 semaines",
-    statut:"disponible", jour_actuel:0, duree_jours:21,
-    couleur:"#c8963c", gradient:"linear-gradient(135deg, #c8963c, #a07020)", emoji:"☀️",
-    description:"Un programme pour réaligner ton horloge biologique, stabiliser ton énergie dans la journée et améliorer profondément la qualité de ton sommeil.",
-    semaines:[
-      { numero:1, titre:"Comprendre son rythme", taches:[
-        { id:"t1-1", titre:"Douche froide progressive", duree:"3 min", type:"pratique_guidee", description:"Introduction progressive à l'eau froide le matin pour activer le cortisol naturel d'éveil.", modale:"modal-refroid" },
-        { id:"t1-2", titre:"Protocole hydratation matinale", duree:"5 min", type:"pratique_guidee", description:"500ml d'eau + électrolytes au réveil avant tout café — réhydrater les cellules.", modale:"modal-hydrat" },
-        { id:"t1-3", titre:"Assiette circadienne", duree:"10 min lecture", type:"pratique_guidee", description:"Comprendre quoi manger à quelle heure selon l'horloge biologique.", modale:"modal-assiette" },
-        { id:"t1-4", titre:"Journal énergie — 3 points", duree:"3 min", type:"suivi", description:"Note ton niveau d'énergie à 9h, 14h et 19h sur 10. Observe la courbe.", modale:null }
-      ]},
-      { numero:2, titre:"Stabiliser l'énergie", taches:[
-        { id:"t2-1", titre:"Rituel pré-sommeil", duree:"20 min", type:"pratique_guidee", description:"Séquence complète de déconnexion pour optimiser la qualité du sommeil profond.", modale:"modal-presommeil" },
-        { id:"t2-2", titre:"Rituel d'éveil", duree:"15 min", type:"pratique_guidee", description:"Exposition lumière naturelle + mouvement + protéines le matin pour ancrer le rythme circadien.", modale:"modal-eveil" },
-        { id:"t2-3", titre:"Jeûne intermittent doux 12:12", duree:"12h fenêtre", type:"pratique_guidee", description:"Fenêtre alimentaire de 12h pour laisser le microbiome se régénérer la nuit.", modale:"modal-jeune" },
-        { id:"t2-4", titre:"Overnight oats du soir", duree:"8 min", type:"recette", description:"Prépare les overnight oats cerise & lavande — mélatonine naturelle pour la nuit.", modale:null }
-      ]},
-      { numero:3, titre:"Ancrer le circadien", taches:[
-        { id:"t3-1", titre:"Sieste stratégique", duree:"20 min", type:"pratique_guidee", description:"Nap de 20 minutes entre 13h et 15h — améliore la vigilance de 34% sans inertie de sommeil.", modale:"modal-sieste" },
-        { id:"t3-2", titre:"Environnement sommeil optimal", duree:"30 min setup", type:"pratique_guidee", description:"Optimiser sa chambre : température, obscurité, sons — le setup qui améliore le sommeil profond.", modale:"modal-enviro" },
-        { id:"t3-3", titre:"Bilan énergie 3 semaines", duree:"10 min", type:"bilan", description:"Compare tes courbes d'énergie semaine 1 vs semaine 3. Qu'est-ce qui a changé ?", modale:null }
-      ]}
+    id: "archetype_3",
+    titre: "Énergie & Sommeil",
+    sous_titre: "Rythme circadien & vitalité · 3 semaines",
+    statut: "disponible",
+    jour_actuel: 0,
+    duree_jours: 21,
+    couleur: "#c8963c",
+    gradient: "linear-gradient(135deg, #c8963c, #a07020)",
+    emoji: "☀️",
+    description: "Un programme pour réaligner ton horloge biologique, stabiliser ton énergie dans la journée et améliorer profondément la qualité de ton sommeil.",
+    semaines: [
+      { numero: 1, titre: "Comprendre son rythme" },
+      { numero: 2, titre: "Stabiliser l'énergie" },
+      { numero: 3, titre: "Ancrer le circadien" }
     ],
-    modales:[
-      { id:"modal-refroid", titre:"Douche froide progressive", duree:"3 min", etapes:["Semaine 1 : termine ta douche chaude par 30 secondes d'eau froide sur les jambes seulement.","Semaine 2 : 45 secondes d'eau froide sur le dos et les épaules.","Semaine 3 : 60 secondes d'eau froide corps entier. Expire lentement pour ne pas paniquer.","Technique de Wim Hof : ne retiens pas ton souffle. Expire par la bouche, reste détendu.","Après la douche froide : 30 secondes de saut sur place ou de mouvement pour activer la thermogenèse."] },
-      { id:"modal-hydrat", titre:"Hydratation matinale", duree:"5 min", etapes:["Dès le réveil, avant le café : bois 500ml d'eau à température ambiante.","Option électrolytes : ajoute une pincée de sel marin + un filet de jus de citron.","Pourquoi : après 7-8h sans eau, les cellules sont déshydratées — le café avant l'eau aggrave la déshydratation.","Attends 20-30 minutes avant le premier café pour ne pas bloquer l'absorption.","Objectif semaine 3 : 500ml eau + exposition à la lumière naturelle dans les 30 minutes du réveil."] },
-      { id:"modal-assiette", titre:"Assiette circadienne", duree:"Guide", etapes:["Matin (6h-10h) : protéines + graisses + légumes. Évite les glucides raffinés qui créent un crash à 11h.","Midi (12h-14h) : repas le plus copieux de la journée. Glucides complexes acceptés — pic de cortisol naturel.","Goûter (15h-17h) : fruits, oléagineux, ou snack protéiné. La glycémie baisse naturellement à 15h.","Dîner (18h-20h) : léger, riche en tryptophane (volaille, œufs, légumineuses). Pas après 20h.","Après 20h : idéalement rien. Si besoin : tisane ou bouillon. Le microbiome a besoin de sa nuit."] },
-      { id:"modal-presommeil", titre:"Rituel pré-sommeil", duree:"20 min", etapes:["H-60 min : dernier écran. Lumière orange ou bougies. Température chambre 18°C.","H-45 min : dîner léger terminé. Si tisane : camomille, valériane ou golden milk.","H-30 min : 5 min de cohérence cardiaque. Note 3 choses positives de la journée (gratitude).","H-15 min : lecture (livre papier uniquement). Pas de news, pas de réseaux sociaux.","H-0 : chambre fraîche, obscurité totale ou masque. Même heure chaque soir — l'horloge se programme."] },
-      { id:"modal-eveil", titre:"Rituel d'éveil", duree:"15 min", etapes:["Réveil à heure fixe, même le week-end. L'horloge circadienne déteste l'irrégularité.","Dans les 5 premières minutes : lumière naturelle. Ouvre les volets, sors 5 min, ou utilise une lampe de luminothérapie.","Mouvement dans les 30 premières minutes : 10 minutes de marche, d'étirements ou de yoga léger.","Petit-déjeuner protéiné : œufs, sardines, légumineuses, noix. Évite les céréales sucrées.","Café : pas avant 90 minutes après le réveil (laisse l'adénosine se dissiper naturellement pour éviter le crash de 11h)."] },
-      { id:"modal-jeune", titre:"Jeûne intermittent doux 12:12", duree:"Guide", etapes:["Protocole doux : 12h sans manger. Ex : dernier repas à 20h, premier repas à 8h.","Pendant la fenêtre de jeûne : eau, tisanes sans sucre, café noir accepté après 90 min réveil.","Pourquoi 12:12 : le microbiome intestinal a besoin de 12h de repos pour effectuer ses cycles de nettoyage.","Effets attendus à 3 semaines : meilleure énergie le matin, transit plus régulier, sommeil plus profond.","Contre-indications : antécédents TCA, grossesse, hypoglycémie — consulter avant de commencer."] },
-      { id:"modal-sieste", titre:"Sieste stratégique", duree:"20 min", etapes:["Fenêtre optimale : entre 13h et 15h (creux circadien naturel). Jamais après 15h30.","Durée : 10-20 minutes maximum pour éviter l'inertie de sommeil (sensation de gueule de bois).","Technique NASA Nap : bois un café juste avant de t'allonger. La caféine agit dans 20 min — tu te réveilles naturellement boosté.","Environnement : obscurité ou masque, bouchons d'oreilles si bruit. Position allongée ou inclinée.","Réveil : ne te lève pas immédiatement. 2 minutes de transition, lumière progressive, mouvement léger."] },
-      { id:"modal-enviro", titre:"Environnement sommeil optimal", duree:"Setup", etapes:["Température : 18-19°C. C'est le facteur numéro 1 de qualité du sommeil profond — une chambre trop chaude réduit le sommeil N3.","Obscurité : blackout total si possible. Le moindre filet de lumière supprime la mélatonine. Masque de sommeil sinon.","Son : silence ou bruit blanc/rose à faible volume. Les bruits intermittents (voiture, voisins) fragmentent le sommeil.","Literie : matelas et oreiller adaptés à ta position de sommeil. Draps en matière naturelle (coton, lin).","Règle d'or : le lit = sommeil et intimité uniquement. Pas d'écrans, pas de travail, pas de repas au lit."] }
+    taches: {
+      hydratation: {
+        titre: "Hydratation au réveil",
+        duree: "5 min",
+        type: "habitude",
+        description: "Un grand verre d'eau au réveil, avant le café.",
+        action: { a: "tags", groupe: "hydratation", modale: "modal-hydrat" }
+      },
+      energie3: {
+        titre: "Énergie en 3 points",
+        duree: "3 min",
+        type: "suivi",
+        description: "Note ton énergie le matin, à midi et le soir, de 1 à 5.",
+        action: { a: "energie" }
+      },
+      douche_froide: {
+        titre: "Douche froide progressive",
+        duree: "3 min",
+        type: "pratique_guidee",
+        description: "Introduction progressive à l'eau froide le matin. Évite-la si tu as un problème cardiaque, de tension ou une maladie de Raynaud ; demande l'avis de ton médecin en cas de doute.",
+        action: { a: "guide", modale: "modal-refroid" }
+      },
+      rituel_eveil: {
+        titre: "Rituel d'éveil",
+        duree: "15 min",
+        type: "pratique_guidee",
+        description: "Exposition lumière naturelle + mouvement + protéines le matin pour ancrer le rythme circadien.",
+        action: { a: "guide", modale: "modal-eveil" }
+      },
+      rituel_presommeil: {
+        titre: "Rituel pré-sommeil",
+        duree: "20 min",
+        type: "pratique_guidee",
+        description: "Séquence complète de déconnexion pour optimiser la qualité du sommeil profond.",
+        action: { a: "guide", modale: "modal-presommeil" }
+      },
+      fenetre_12h: {
+        titre: "Fenêtre de 12 h la nuit",
+        duree: "12 h",
+        type: "habitude",
+        description: "Une fenêtre d'environ 12 h sans manger la nuit (par exemple 20 h – 8 h). Ne convient pas pendant la grossesse, en cas de diabète ou d'antécédents de troubles alimentaires.",
+        action: { a: "guide", modale: "modal-jeune" }
+      },
+      assiette: {
+        titre: "Assiette circadienne",
+        duree: "10 min lecture",
+        type: "pratique_guidee",
+        description: "Comprendre quoi manger à quelle heure selon l'horloge biologique.",
+        action: { a: "guide", modale: "modal-assiette" }
+      },
+      overnight_oats: {
+        titre: "Overnight oats du soir",
+        duree: "8 min",
+        type: "recette",
+        description: "Prépare les overnight oats avec de la cerise, qui contient un peu de mélatonine.",
+        action: { a: "recette", id: "018" }
+      },
+      environnement: {
+        titre: "Environnement de sommeil (à faire une fois)",
+        duree: "30 min setup",
+        type: "pratique_guidee",
+        description: "Optimiser sa chambre : température, obscurité, sons — le setup qui améliore le sommeil profond.",
+        action: { a: "guide", modale: "modal-enviro" }
+      },
+      sieste: {
+        titre: "Sieste courte",
+        duree: "20 min",
+        type: "pratique_guidee",
+        description: "Une sieste courte (10 à 20 minutes, entre 13 h et 15 h) peut aider à relancer la vigilance.",
+        action: { a: "guide", modale: "modal-sieste" }
+      },
+      lecture: {
+        titre: "Lecture du jour",
+        type: "article",
+        action: { a: "article" }
+      },
+      point: {
+        titre: "Point de la semaine",
+        duree: "5 min",
+        type: "point",
+        description: "Prends un moment pour faire le point sur la semaine qui vient de passer.",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "change", q: "Qu'est-ce qui a changé ?" },
+            { f: "difficile", q: "Qu'est-ce qui a été difficile ?" }
+          ]
+        }
+      },
+      bilan: {
+        titre: "Bilan énergie 3 semaines",
+        duree: "10 min",
+        type: "bilan",
+        description: "Compare tes courbes d'énergie semaine 1 vs semaine 3. Qu'est-ce qui a changé ?",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "bilan", q: "Ton bilan en quelques lignes" }
+          ]
+        }
+      },
+      reflexion: {
+        titre: "Mes 3 habitudes à garder",
+        duree: "5 min",
+        type: "reflexion",
+        description: "Identifie les 3 habitudes de ce programme qui ont eu le plus d'impact et planifie leur intégration durable.",
+        action: {
+          a: "texte",
+          champs: [
+            { f: "habitudes", q: "Les 3 habitudes que tu veux garder" }
+          ]
+        }
+      }
+    },
+    habitudes: [
+      { k: "hydratation", plages: [[1, 21]] },
+      { k: "energie3", plages: [[1, 7], [15, 21]] },
+      { k: "douche_froide", plages: [[1, 21]], opt: true },
+      { k: "rituel_eveil", plages: [[8, 21]] },
+      { k: "rituel_presommeil", plages: [[8, 21]] },
+      { k: "fenetre_12h", plages: [[8, 21]], opt: true }
+    ],
+    ponctuelles: [
+      { j: 1, k: "lecture", article: "025" },
+      { j: 2, k: "assiette" },
+      { j: 4, k: "lecture", article: "026" },
+      { j: 7, k: "point", titre: "Point de la semaine 1" },
+      { j: 8, k: "lecture", article: "029" },
+      { j: 9, k: "overnight_oats" },
+      { j: 10, k: "lecture", article: "027" },
+      { j: 13, k: "lecture", article: "028" },
+      { j: 14, k: "point", titre: "Point de la semaine 2" },
+      { j: 15, k: "environnement" },
+      { j: 16, k: "sieste", opt: true },
+      { j: 16, k: "overnight_oats" },
+      { j: 17, k: "lecture", article: "030" },
+      { j: 19, k: "sieste", opt: true },
+      { j: 20, k: "bilan" },
+      { j: 21, k: "reflexion" }
+    ],
+    modales: [
+      {
+        id: "modal-refroid",
+        titre: "Douche froide progressive",
+        duree: "3 min",
+        etapes: ["Semaine 1 : termine ta douche chaude par 30 secondes d'eau froide sur les jambes seulement.", "Semaine 2 : 45 secondes d'eau froide sur le dos et les épaules.", "Semaine 3 : 60 secondes d'eau froide corps entier. Expire lentement pour ne pas paniquer.", "Technique de Wim Hof : ne retiens pas ton souffle. Expire par la bouche, reste détendu.", "Après la douche froide : 30 secondes de saut sur place ou de mouvement pour activer la thermogenèse."],
+        avant: "Évite-la si tu as un problème cardiaque, de tension ou une maladie de Raynaud ; demande l'avis de ton médecin en cas de doute."
+      },
+      {
+        id: "modal-hydrat",
+        titre: "Hydratation matinale",
+        duree: "5 min",
+        etapes: ["Dès le réveil, avant le café : bois un grand verre d'eau à température ambiante.", "Tu peux choisir de l'eau, de l'eau citronnée ou une tisane, et noter ce que tu as bu dans la carte du jour.", "Option électrolytes : une pincée de sel marin et un filet de jus de citron dans l'eau. Déconseillés en cas d'hypertension ou de souci rénal sans avis médical.", "Si tu veux, laisse passer un moment avant ton premier café."]
+      },
+      {
+        id: "modal-assiette",
+        titre: "Assiette circadienne",
+        duree: "Guide",
+        etapes: ["Matin (6h-10h) : protéines + graisses + légumes. Évite les glucides raffinés qui créent un crash à 11h.", "Midi (12h-14h) : repas le plus copieux de la journée. Glucides complexes acceptés — pic de cortisol naturel.", "Goûter (15h-17h) : fruits, oléagineux, ou snack protéiné. La glycémie baisse naturellement à 15h.", "Dîner (18h-20h) : léger, riche en tryptophane (volaille, œufs, légumineuses). Pas après 20h.", "Après 20h : idéalement rien. Si besoin : tisane ou bouillon. Le microbiome a besoin de sa nuit."]
+      },
+      {
+        id: "modal-presommeil",
+        titre: "Rituel pré-sommeil",
+        duree: "20 min",
+        etapes: ["H-60 min : dernier écran. Lumière orange ou bougies. Température chambre 18°C.", "H-45 min : dîner léger terminé. Si tisane : camomille, valériane ou golden milk.", "H-30 min : 5 min de cohérence cardiaque. Note 3 choses positives de la journée (gratitude).", "H-15 min : lecture (livre papier uniquement). Pas de news, pas de réseaux sociaux.", "H-0 : chambre fraîche, obscurité totale ou masque. Même heure chaque soir — l'horloge se programme."]
+      },
+      {
+        id: "modal-eveil",
+        titre: "Rituel d'éveil",
+        duree: "15 min",
+        etapes: ["Réveil à heure fixe, même le week-end. L'horloge circadienne déteste l'irrégularité.", "Dans les 5 premières minutes : lumière naturelle. Ouvre les volets, sors 5 min, ou utilise une lampe de luminothérapie.", "Mouvement dans les 30 premières minutes : 10 minutes de marche, d'étirements ou de yoga léger.", "Petit-déjeuner protéiné : œufs, sardines, légumineuses, noix. Évite les céréales sucrées.", "Café : pas avant 90 minutes après le réveil (laisse l'adénosine se dissiper naturellement pour éviter le crash de 11h)."]
+      },
+      {
+        id: "modal-jeune",
+        titre: "Fenêtre de 12 h la nuit",
+        duree: "Guide",
+        etapes: ["Une fenêtre d'environ 12 h sans manger la nuit. Exemple : dernier repas à 20 h, premier repas à 8 h.", "Pendant la fenêtre de jeûne : eau, tisanes sans sucre, café noir accepté après 90 min réveil.", "Si tu ressens une faim importante, une fatigue inhabituelle ou un mal-être, mange : cette habitude est optionnelle.", "Si tu as une hypoglycémie connue, ou un doute, demande conseil à ton médecin avant de commencer."],
+        avant: "Ne convient pas pendant la grossesse, en cas de diabète ou d'antécédents de troubles alimentaires."
+      },
+      {
+        id: "modal-sieste",
+        titre: "Sieste courte",
+        duree: "20 min",
+        etapes: ["Fenêtre optimale : entre 13h et 15h (creux circadien naturel). Jamais après 15h30.", "Durée : 10-20 minutes maximum pour éviter l'inertie de sommeil (sensation de gueule de bois).", "Environnement : obscurité ou masque, bouchons d'oreilles si bruit. Position allongée ou inclinée.", "Réveil : ne te lève pas immédiatement. 2 minutes de transition, lumière progressive, mouvement léger."]
+      },
+      {
+        id: "modal-enviro",
+        titre: "Environnement sommeil optimal",
+        duree: "Setup",
+        etapes: ["Température : 18-19°C. C'est le facteur numéro 1 de qualité du sommeil profond — une chambre trop chaude réduit le sommeil N3.", "Obscurité : blackout total si possible. Le moindre filet de lumière supprime la mélatonine. Masque de sommeil sinon.", "Son : silence ou bruit blanc/rose à faible volume. Les bruits intermittents (voiture, voisins) fragmentent le sommeil.", "Literie : matelas et oreiller adaptés à ta position de sommeil. Draps en matière naturelle (coton, lin).", "Règle d'or : le lit = sommeil et intimité uniquement. Pas d'écrans, pas de travail, pas de repas au lit."]
+      }
     ]
   }
 ];
 
-const typeIcons = { habitude:"📝", recette:"🍽️", pratique_guidee:"✨", article:"📖", suivi:"📊", bilan:"🔍", reflexion:"💭" };
-const typeLabels = { habitude:"Habitude", recette:"Recette liée", pratique_guidee:"Pratique guidée", article:"Lecture", suivi:"Suivi", bilan:"Bilan", reflexion:"Réflexion" };
+const typeIcons = { habitude:"📝", recette:"🍽️", pratique_guidee:"✨", article:"📖", suivi:"📊", bilan:"🔍", reflexion:"💭", point:"🗓️" };
+const typeLabels = { habitude:"Habitude", recette:"Recette liée", pratique_guidee:"Pratique guidée", article:"Lecture", suivi:"Suivi", bilan:"Bilan", reflexion:"Réflexion", point:"Point de la semaine" };
+// Étiquettes facultatives (choix multiples) de certaines habitudes
+const ROUT_ETIQUETTES = {
+  ferment:     { titre: "Lequel ?", choix: [['kefir', 'Kéfir'], ['yaourt', 'Yaourt'], ['choucroute', 'Choucroute'], ['kimchi', 'Kimchi'], ['miso', 'Miso'], ['kombucha', 'Kombucha'], ['autre', 'Autre']] },
+  hydratation: { titre: "Qu'as-tu bu ?", choix: [['eau', 'Eau'], ['eau_citronnee', 'Eau citronnée'], ['tisane', 'Tisane']] }
+};
+const ROUT_ENERGIE = [['matin', 'Matin'], ['midi', 'Midi'], ['soir', 'Soir']];
+const ROUT_DUREE = 21;
+const ROUT_RETRO_JOURS = 2;            // on peut cocher après coup : aujourd'hui, hier et avant-hier
+const ROUT_JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const ROUT_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const ROUT_MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const ROUT_TXT_GLUTEN = "Si tu soupçonnes une intolérance au gluten, fais le dépistage avec ton médecin avant de l'arrêter : l'arrêter avant peut fausser le test.";
 let currentRoutine = null;
-let openSemaines = { 0: true };
+let openSemaines = { 0: true };        // semaines dépliées dans la vue par semaine
+let routJourVu = null;                 // jour (1 à 21) affiché dans le panneau du jour
+let routVueSemaine = false;            // vue par semaine dépliée ?
+let routRetourVers = null;             // « routine-detail » quand une recette / un article a été ouvert depuis une routine
+let routRetourScroll = 0;
+let _routSheetActions = [];
 
-function renderRoutines() {
-  // Lire l'état des routines depuis localStorage (persistance réelle)
+// ── Dates (calcul pur sur des textes AAAA-MM-JJ, insensible à l'heure d'été) ──
+function routJourNum(d) { return Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000); }
+function routEcart(a, b) { return routJourNum(b) - routJourNum(a); }              // nombre de jours de a à b
+function routAjouter(d, n) {
+  const t = new Date(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10) + n));
+  return t.getUTCFullYear() + '-' + String(t.getUTCMonth() + 1).padStart(2, '0') + '-' + String(t.getUTCDate()).padStart(2, '0');
+}
+function routLibelle(d) { const x = new Date(d + 'T12:00:00'); return ROUT_JOURS[x.getDay()] + ' ' + x.getDate() + ' ' + ROUT_MOIS[x.getMonth()]; }
+function routCourt(d) { const x = new Date(d + 'T12:00:00'); return x.getDate() + ' ' + ROUT_MOIS_COURT[x.getMonth()]; }
+function routMaintenant() { return Date.now(); }                                 // seule horloge du module (horodatage des saisies)
+function routHeure() { return new Date().getHours(); }                           // heure locale (rappel d'énergie de l'Accueil)
+
+// ── État d'une routine ───────────────────────────────────────────────────────
+function routLireEtat(id) { return syncRead('nara_routine_' + id); }
+// Date de début d'un état enregistré ; null si la routine n'est pas démarrée. Les anciens états (sans date de début)
+// comptent comme démarrés le jour de leur dernière modification.
+function routDebutDe(e) {
+  if (!e || (e.statut !== 'active' && e.statut !== 'terminee')) return null;
+  if (typeof e.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.startDate)) return e.startDate;
+  return localDateStr(new Date(syncTs(e) || routMaintenant()));
+}
+// Date de début d'une ligne de la table nara_routines : started_at « midi UTC » écrit par cette version ; sinon (anciennes lignes)
+// le jour de la dernière modification.
+function routDebutDeLigne(c) {
+  if (!c || (c.statut !== 'active' && c.statut !== 'terminee')) return null;
+  const m = /^(\d{4}-\d{2}-\d{2})T12:00:00(?:\.0+)?(?:Z|\+00:?00)$/.exec(String(c.started_at || ''));
+  if (m) return m[1];
+  return localDateStr(new Date(Date.parse(c.updated_at || '') || routMaintenant()));
+}
+// État du jour calculé à partir de l'état enregistré (rien n'est écrit)
+function routEtatDe(e) {
+  const debut = routDebutDe(e);
+  if (!debut) return { statut: 'disponible', debut: null, jour: 0 };
+  const ecoules = routEcart(debut, getTodayStr());
+  if (e.statut === 'terminee' || ecoules >= ROUT_DUREE) return { statut: 'terminee', debut: debut, jour: ROUT_DUREE };
+  return { statut: 'active', debut: debut, jour: Math.max(1, ecoules + 1) };
+}
+// Une seule routine en cours : s'il y en a plusieurs d'enregistrées (cas rare, deux appareils hors ligne), la plus récemment modifiée
+function routIdActive() {
+  let best = null, bt = -1;
   routinesData.forEach(r => {
-    const saved = localStorage.getItem('nara_routine_' + r.id);
-    if (saved) {
-      const s = JSON.parse(saved);
-      r.statut = s.statut;
-      r.jour_actuel = s.jour_actuel;
-    }
+    const s = routLireEtat(r.id);
+    if (routEtatDe(s).statut === 'active' && syncTs(s) > bt) { bt = syncTs(s); best = r.id; }
   });
+  return best;
+}
+function routEtat(id) {
+  const e = routEtatDe(routLireEtat(id));
+  if (e.statut === 'active' && routIdActive() !== id) return { statut: 'disponible', debut: null, jour: 0 };
+  return e;
+}
+function routRafraichir() {              // recopie l'état du jour dans routinesData (affichage)
+  routinesData.forEach(r => { const e = routEtat(r.id); r.statut = e.statut; r.jour_actuel = e.jour; r.debut = e.debut; });
+}
+// Seul point d'écriture de l'état d'une routine : enregistre sur l'appareil et marque « à envoyer »
+function routEcrireEtat(id, statut, debut) {
+  const etat = { statut: statut, jour_actuel: statut === 'active' ? 1 : 0, updatedAt: routMaintenant() };
+  if (debut) etat.startDate = debut;
+  if (!syncWrite('nara_routine_' + id, etat)) { showToast("Impossible d'enregistrer sur cet appareil"); return false; }
+  if (currentUser) {                                                  // copie locale historique (jamais relue) : écrite au démarrage, retirée à l'arrêt, comme avant
+    if (statut === 'active') localStorage.setItem(routineCacheKey(currentUser.id, id), JSON.stringify({ statut: statut, jour_actuel: etat.jour_actuel }));
+    else localStorage.removeItem(routineCacheKey(currentUser.id, id));
+  }
+  syncMarkDirty('routine', id);
+  return true;
+}
 
+// ── Tâches d'un jour ─────────────────────────────────────────────────────────
+function routTache(r, k, o) {
+  const t = Object.assign({ k: k }, r.taches[k], { opt: !!o.opt, quotidienne: !!o.quotidienne });
+  if (o.titre) t.titre = o.titre;
+  if (o.article) {                                                  // lecture : titre et durée viennent de la bibliothèque
+    const a = libArticles.find(x => x.id === o.article);
+    t.article = o.article; t.description = a ? a.titre : ''; t.duree = a ? a.temps : '';
+  }
+  return t;
+}
+function routTachesDuJour(r, j) {
+  const out = [];
+  r.habitudes.forEach(h => { if (h.plages.some(p => j >= p[0] && j <= p[1])) out.push(routTache(r, h.k, { opt: h.opt, quotidienne: true })); });
+  r.ponctuelles.forEach(p => { if (p.j === j) out.push(routTache(r, p.k, { opt: p.opt, quotidienne: false, titre: p.titre, article: p.article })); });
+  return out;
+}
+
+// ── Ce qui est coché / choisi / écrit (un enregistrement par jour) ────────────
+function routLireJour(date) { const v = syncRead('nara_rjour_' + date); return (v && typeof v === 'object' && v.runs && typeof v.runs === 'object') ? v : null; }
+function routRunCle(id, debut) { return id + '@' + debut; }
+function routRun(date, id, debut) { const v = routLireJour(date); return (v && v.runs[routRunCle(id, debut)]) || null; }
+function routRunVide(r, d0, j) { return { r: r, d0: d0, j: j, cases: {}, tags: {}, textes: {}, energie: {}, t: {} }; }
+function routPoser(run, chemin, valeur, ms) {                       // 'cases.k' · 'tags.g' · 'textes.k.champ' · 'energie.creneau'
+  const p = chemin.split('.');
+  if (p[0] === 'textes') { run.textes[p[1]] = run.textes[p[1]] || {}; run.textes[p[1]][p[2]] = valeur; }
+  else run[p[0]][p[1]] = valeur;
+  run.t[chemin] = ms;
+}
+function routEcrireJour(date, id, debut, j, changements) {
+  const ms = routMaintenant(), v = routLireJour(date) || { runs: {} }, cle = routRunCle(id, debut);
+  const run = v.runs[cle] = v.runs[cle] || routRunVide(id, debut, j);
+  ['cases', 'tags', 'textes', 'energie', 't'].forEach(s => { run[s] = run[s] || {}; });
+  Object.keys(changements).forEach(ch => routPoser(run, ch, changements[ch], ms));
+  v.updatedAt = ms;
+  if (!syncWrite('nara_rjour_' + date, v)) { showToast("Impossible d'enregistrer sur cet appareil"); return false; }
+  syncMarkDirty('routine_jour', date);
+  return true;
+}
+// Cochage possible : aujourd'hui, hier et avant-hier ; avant et après : consultation seule
+function routEditable(date) { const e = routEcart(date, getTodayStr()); return e >= 0 && e <= ROUT_RETRO_JOURS; }
+
+// Fusion valeur par valeur (synchronisation) : chaque valeur garde sa date de modification, la plus récente gagne
+function routCleOk(s) { return typeof s === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(s) && s !== '__proto__' && s !== 'constructor' && s !== 'prototype'; }
+function routNormaliserRun(x) {
+  if (!x || typeof x !== 'object' || !routCleOk(x.r) || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.d0))) return null;
+  const o = routRunVide(x.r, x.d0, +x.j || 0), t = (x.t && typeof x.t === 'object') ? x.t : {};
+  const ms = ch => (typeof t[ch] === 'number' && isFinite(t[ch])) ? t[ch] : 0;
+  Object.keys(x.cases || {}).forEach(k => { if (routCleOk(k)) { o.cases[k] = x.cases[k] ? 1 : 0; o.t['cases.' + k] = ms('cases.' + k); } });
+  Object.keys(x.tags || {}).forEach(g => { if (routCleOk(g) && Array.isArray(x.tags[g])) { o.tags[g] = x.tags[g].filter(s => typeof s === 'string' && s.length < 40).slice(0, 20); o.t['tags.' + g] = ms('tags.' + g); } });
+  Object.keys(x.textes || {}).forEach(k => {
+    const f = x.textes[k];
+    if (routCleOk(k) && f && typeof f === 'object') Object.keys(f).forEach(c => { if (routCleOk(c) && typeof f[c] === 'string') { (o.textes[k] = o.textes[k] || {})[c] = f[c].slice(0, 300); o.t['textes.' + k + '.' + c] = ms('textes.' + k + '.' + c); } });
+  });
+  Object.keys(x.energie || {}).forEach(c => { const n = Number(x.energie[c]); if (routCleOk(c) && n >= 0 && n <= 5) { o.energie[c] = Math.round(n); o.t['energie.' + c] = ms('energie.' + c); } });
+  return o;
+}
+function routNormaliserJour(v) {
+  const out = { updatedAt: syncTs(v) || 0, runs: {} };
+  Object.keys((v && v.runs) || {}).forEach(cle => { const r = routNormaliserRun(v.runs[cle]); if (r && routRunCle(r.r, r.d0) === cle) out.runs[cle] = r; });
+  return out;
+}
+function routFeuilles(run) {
+  const f = [], t = run.t || {};
+  const ajoute = (kind, k, c, v) => { const id = kind + '.' + k + (c ? '.' + c : ''); f.push({ id: id, kind: kind, k: k, c: c, v: v, t: t[id] || 0 }); };
+  Object.keys(run.cases).forEach(k => ajoute('cases', k, null, run.cases[k]));
+  Object.keys(run.tags).forEach(k => ajoute('tags', k, null, run.tags[k]));
+  Object.keys(run.textes).forEach(k => Object.keys(run.textes[k]).forEach(c => ajoute('textes', k, c, run.textes[k][c])));
+  Object.keys(run.energie).forEach(k => ajoute('energie', k, null, run.energie[k]));
+  return f;
+}
+function routFusionnerRun(a, b) {          // à date égale, le même choix sur tous les appareils (comparaison du texte de la valeur)
+  const best = {}, o = routRunVide(a.r, a.d0, Math.max(a.j || 0, b.j || 0));
+  routFeuilles(a).concat(routFeuilles(b)).forEach(x => {
+    const cur = best[x.id];
+    if (!cur || x.t > cur.t || (x.t === cur.t && JSON.stringify(x.v) > JSON.stringify(cur.v))) best[x.id] = x;
+  });
+  Object.keys(best).forEach(id => {
+    const x = best[id];
+    if (x.kind === 'textes') { o.textes[x.k] = o.textes[x.k] || {}; o.textes[x.k][x.c] = x.v; } else o[x.kind][x.k] = x.v;
+    o.t[id] = x.t;
+  });
+  return o;
+}
+function routFusionnerJour(a, b) {
+  const A = routNormaliserJour(a), B = routNormaliserJour(b), out = { updatedAt: Math.max(A.updatedAt, B.updatedAt), runs: {} };
+  Object.keys(A.runs).concat(Object.keys(B.runs)).forEach(cle => {
+    if (out.runs[cle]) return;
+    out.runs[cle] = (A.runs[cle] && B.runs[cle]) ? routFusionnerRun(A.runs[cle], B.runs[cle]) : (A.runs[cle] || B.runs[cle]);
+  });
+  return out;
+}
+
+// ── Les 21 ronds : état d'un jour ────────────────────────────────────────────
+// 'futur' · 'vide' (jour passé ou présent sans rien de coché) · 'moitie' (une partie) · 'plein' (toutes les tâches obligatoires faites)
+function routEtatJour(r, debut, j) {
+  const date = routAjouter(debut, j - 1);
+  if (date > getTodayStr()) return 'futur';
+  const run = routRun(date, r.id, debut), cases = (run && run.cases) || {}, en = (run && run.energie) || {};
+  const taches = routTachesDuJour(r, j), obl = taches.filter(t => !t.opt);
+  const faites = taches.filter(t => cases[t.k]).length;
+  const energiePartielle = taches.some(t => t.k === 'energie3') && ROUT_ENERGIE.some(c => en[c[0]] > 0);
+  if (!faites && !energiePartielle) return 'vide';
+  return (obl.length && obl.every(t => cases[t.k])) ? 'plein' : 'moitie';
+}
+
+// ── Démarrer · arrêter · recommencer ─────────────────────────────────────────
+// « Mes nouveaux suivis » : une entrée par démarrage (date complète, nom de la routine) pour que le bloc Avant / Après fonctionne.
+// Arrêter la routine ne la supprime jamais.
+function routCreerSuivi(r, debut) {
+  const id = 'routine-' + r.id + '-' + debut, liste = suivisLoad();
+  if (liste.some(e => e.id === id)) return;
+  liste.push({ id: id, type: r.titre, problo: '', pro: '', note: '', date: debut, addedAt: debut + 'T12:00:00.000Z' });
+  suivisSave(liste);
+}
+function routDemarrer(id) {
+  const r = routinesData.find(x => x.id === id);
+  if (!r) return;
+  const aujourdhui = getTodayStr();
+  routinesData.forEach(x => { if (x.id !== id && routEtat(x.id).statut === 'active') routEcrireEtat(x.id, 'disponible', null); });
+  if (!routEcrireEtat(id, 'active', aujourdhui)) return;
+  routCreerSuivi(r, aujourdhui);
+  routSheetFermer();
+  openRoutineDetail(id);
+  showToast('✓ Programme démarré · Jour 1 !');
+}
+function startRoutine(id) {
+  const r = routinesData.find(x => x.id === id);
+  if (!r) return;
+  routRafraichir();
+  if (r.statut === 'active') { openRoutineDetail(id); return; }          // déjà en cours : on ne recommence pas
+  const autre = routinesData.find(x => x.id !== id && x.statut === 'active');
+  if (!autre) { routDemarrer(id); return; }
+  routSheet({
+    titre: 'Arrêter ' + autre.titre + ' pour commencer ' + r.titre + ' ?',
+    texte: 'Tout ce que tu as coché sur ' + autre.titre + ' est gardé. Tu pourras la recommencer plus tard.',
+    boutons: [{ label: 'Arrêter ' + autre.titre + ' et commencer ' + r.titre, fn: () => routDemarrer(id) }, { label: 'Annuler', neutre: true }]
+  });
+}
+function routArreter(id) {
+  const r = routinesData.find(x => x.id === id);
+  if (!r) return;
+  routSheet({
+    titre: 'Arrêter ' + r.titre + ' ?',
+    texte: 'Tout ce que tu as coché est gardé, ainsi que le suivi « ' + r.titre + ' » dans Mes nouveaux suivis.',
+    boutons: [
+      { label: 'Arrêter ce programme', fn: () => { if (routEcrireEtat(id, 'disponible', null)) { go('routines'); showToast('Programme arrêté'); } } },
+      { label: 'Continuer le programme', neutre: true }
+    ]
+  });
+}
+
+// ── Petite fenêtre de confirmation / d'information ───────────────────────────
+function routSheet(o) {
+  const card = document.getElementById('rout-sheet-card'), ov = document.getElementById('rout-sheet-overlay');
+  if (!card || !ov) return;
+  _routSheetActions = (o.boutons || []).map(b => b.fn || null);
+  card.innerHTML = '<div class="test-modal-handle"></div><div class="rout-sheet-titre">' + escHtml(o.titre) + '</div>'
+    + (o.texte ? '<div class="rout-sheet-texte">' + escHtml(o.texte) + '</div>' : '')
+    + (o.boutons || []).map((b, i) => '<button type="button" class="rout-sheet-btn' + (b.neutre ? ' neutre' : '') + '" onclick="routSheetClic(' + i + ')">' + escHtml(b.label) + '</button>').join('');
+  ov.classList.add('open');
+}
+function routSheetClic(i) { const f = _routSheetActions[i]; routSheetFermer(); if (f) f(); }
+function routSheetFermer() { const ov = document.getElementById('rout-sheet-overlay'); if (ov) ov.classList.remove('open'); _routSheetActions = []; }
+function routSheetOverlay(ev) { if (ev.target === document.getElementById('rout-sheet-overlay')) routSheetFermer(); }
+
+// ── Liste des routines ───────────────────────────────────────────────────────
+// Les 21 petits ronds d'une routine (même calcul que le calendrier du détail) ; toucher un rond ouvre ce jour
+function routMiniRondes(r, e) {
+  let h = '';
+  for (let j = 1; j <= ROUT_DUREE; j++) {
+    h += '<div class="rout-hero-day ' + routEtatJour(r, e.debut, j) + (e.statut === 'active' && j === e.jour ? ' auj' : '') + '" onclick="event.stopPropagation(); openRoutineDetail(\'' + r.id + '\', ' + j + ')">' + j + '</div>';
+  }
+  return h;
+}
+function renderRoutines() {
+  routRafraichir();
   const active = routinesData.find(r => r.statut === 'active');
-  const disponibles = routinesData.filter(r => r.statut !== 'active');
+  const finies = routinesData.filter(r => r.statut === 'terminee');
+  const disponibles = routinesData.filter(r => r.statut === 'disponible');
   let html = '';
 
-  // Section "En cours" — uniquement si l'utilisateur a vraiment démarré
+  // Section « En cours » — uniquement si une routine est vraiment démarrée
   if (active) {
     const pct = Math.round((active.jour_actuel / active.duree_jours) * 100);
-    const daysHtml = Array.from({length: active.duree_jours}, (_,i) => {
-      const j = i+1, cls = j < active.jour_actuel ? 'done' : j === active.jour_actuel ? 'today' : 'future';
-      return `<div class="rout-hero-day ${cls}">${j <= 9 ? j : j === active.duree_jours ? j : '·'}</div>`;
-    }).join('');
     html += `<div class="section-title">En cours</div>
       <div class="rout-hero-card" style="background:${active.gradient}" onclick="openRoutineDetail('${active.id}')">
-        <div class="rout-hero-badge">✦ En cours · Jour ${active.jour_actuel}/${active.duree_jours}</div>
+        <div class="rout-hero-badge">✦ En cours · Jour ${active.jour_actuel} sur ${active.duree_jours}</div>
         <span class="rout-hero-emoji">${active.emoji}</span>
-        <div class="rout-hero-titre">${active.titre}</div>
-        <div class="rout-hero-sous">${active.sous_titre}</div>
+        <div class="rout-hero-titre">${escHtml(active.titre)}</div>
+        <div class="rout-hero-sous">${escHtml(active.sous_titre)}</div>
         <div class="rout-hero-prog-row">
           <div class="rout-hero-prog-bar"><div class="rout-hero-prog-fill" style="width:${pct}%"></div></div>
-          <div class="rout-hero-prog-label">${pct}% complété</div>
+          <div class="rout-hero-prog-label">Jour ${active.jour_actuel} sur ${active.duree_jours}</div>
         </div>
-        <div class="rout-hero-days">${daysHtml}</div>
+        <div class="rout-hero-days">${routMiniRondes(active, routEtat(active.id))}</div>
         <div class="rout-hero-cta">Continuer le programme →</div>
       </div>`;
   }
 
-  // Section "Programmes disponibles"
+  // Section « Terminée »
+  if (finies.length) {
+    html += `<div class="section-title" style="margin-top:${active ? '8px' : '0'}">${finies.length > 1 ? 'Terminées' : 'Terminée'}</div>`;
+    finies.forEach(r => {
+      html += `<div class="rout-fin-card" style="border-left-color:${r.couleur}" onclick="openRoutineDetail('${r.id}')">
+        <div class="rout-fin-emoji">${r.emoji}</div>
+        <div class="rout-fin-body">
+          <div class="rout-fin-titre">${escHtml(r.titre)}</div>
+          <div class="rout-fin-sous">✓ Terminée · du ${routCourt(r.debut)} au ${routCourt(routAjouter(r.debut, ROUT_DUREE - 1))}</div>
+        </div>
+        <button type="button" class="rout-fin-btn" onclick="event.stopPropagation(); routOuvrirBilan('${r.id}')">Voir mon bilan</button>
+      </div>`;
+    });
+  }
+
+  // Section « Programmes disponibles »
   if (disponibles.length) {
-    html += `<div class="section-title" style="margin-top:${active ? '8px' : '0'}">Programmes disponibles</div>`;
+    html += `<div class="section-title" style="margin-top:${(active || finies.length) ? '8px' : '0'}">Programmes disponibles</div>`;
     disponibles.forEach(r => {
       html += `<div class="rout-dispo-card" onclick="openRoutineDetail('${r.id}')">
         <div class="rout-dispo-inner" style="background:${r.gradient}">
           <div class="rout-dispo-emoji">${r.emoji}</div>
           <div class="rout-dispo-body">
-            <div class="rout-dispo-tag">${r.sous_titre}</div>
-            <div class="rout-dispo-titre">${r.titre}</div>
-            <div class="rout-dispo-desc">${r.description}</div>
+            <div class="rout-dispo-tag">${escHtml(r.sous_titre)}</div>
+            <div class="rout-dispo-titre">${escHtml(r.titre)}</div>
+            <div class="rout-dispo-desc">${escHtml(r.description)}</div>
+            <div class="rout-dispo-badge">Disponible · ${r.duree_jours} jours</div>
           </div>
         </div>
-        <div class="rout-dispo-badge">Disponible · ${r.duree_jours} jours</div>
       </div>`;
     });
   }
@@ -4840,76 +5736,400 @@ function renderRoutines() {
   document.getElementById('rout-list-scroll').innerHTML = html;
 }
 
-function openRoutineDetail(id) {
-  currentRoutine = routinesData.find(r => r.id === id);
-  const r = currentRoutine;
-  openSemaines = { 0: true };
+// ── Détail d'une routine ─────────────────────────────────────────────────────
+function openRoutineDetail(id, j) {
+  routSauverSaisie();
+  const r = routinesData.find(x => x.id === id);
+  if (!r) return;
+  currentRoutine = r;
+  routRafraichir();
+  const e = routEtat(id);
+  routJourVu = (e.statut !== 'disponible' && j >= 1 && j <= ROUT_DUREE) ? j : null;     // null = le jour en cours
+  routVueSemaine = false;
+  openSemaines = {};
+  openSemaines[e.statut === 'disponible' ? 0 : Math.floor(((routJourVu || e.jour) - 1) / 7)] = true;
+  routRendreEntete();
+  renderRoutineDetailBody();
+  showScreen('routine-detail', null);
+}
+function routRendreEntete() {
+  const r = currentRoutine, e = routEtat(r.id);
   document.getElementById('rout-detail-hero').style.background = r.gradient;
   document.getElementById('rout-detail-emoji').textContent = r.emoji;
   document.getElementById('rout-detail-titre').textContent = r.titre;
   document.getElementById('rout-detail-sous').textContent = r.sous_titre;
-  document.getElementById('rout-detail-desc').textContent = r.description;
-  const pct = r.statut === 'active' ? Math.round((r.jour_actuel / r.duree_jours) * 100) : 0;
+  const desc = document.getElementById('rout-detail-desc');
+  desc.textContent = r.description;
+  desc.style.display = e.statut === 'disponible' ? '' : 'none';
+  let pct = 0, txt = 'Pas encore démarré';
+  if (e.statut === 'active') { pct = Math.round((e.jour / ROUT_DUREE) * 100); txt = 'Jour ' + e.jour + ' sur ' + ROUT_DUREE; }
+  else if (e.statut === 'terminee') { pct = 100; txt = 'Terminée · du ' + routCourt(e.debut) + ' au ' + routCourt(routAjouter(e.debut, ROUT_DUREE - 1)); }
   document.getElementById('rout-detail-prog-fill').style.width = pct + '%';
-  document.getElementById('rout-detail-prog-txt').textContent = r.statut === 'active'
-    ? `Jour ${r.jour_actuel}/${r.duree_jours} · ${pct}%`
-    : 'Pas encore démarré';
-  // Bouton démarrer/continuer
-  const startBtn = document.getElementById('rout-start-btn');
-  if (startBtn) {
-    if (r.statut === 'active') {
-      startBtn.textContent = 'Continuer le programme →';
-      startBtn.style.display = '';
-    } else {
-      startBtn.textContent = 'Démarrer ce programme →';
-      startBtn.style.display = '';
-    }
-    startBtn.onclick = () => startRoutine(r.id);
+  document.getElementById('rout-detail-prog-txt').textContent = txt;
+  const wrap = document.getElementById('rout-start-wrap'), btn = document.getElementById('rout-start-btn');
+  if (wrap) wrap.style.display = e.statut === 'active' ? 'none' : '';
+  if (btn) {
+    btn.textContent = e.statut === 'terminee' ? 'Recommencer ce programme →' : 'Démarrer ce programme →';
+    btn.onclick = () => startRoutine(r.id);
   }
-  renderRoutineDetailBody();
-  showScreen('routine-detail', null);
 }
-
-function renderRoutineDetailBody() {
+// Ce qui est affiché : la routine ouverte, son état du jour, le jour regardé, sa date et ce qui y est enregistré
+function routContexte() {
   const r = currentRoutine;
+  if (!r) return null;
+  const e = routEtat(r.id);
+  if (e.statut === 'disponible') return null;
+  const j = routJourVu || e.jour, date = routAjouter(e.debut, j - 1);
+  return { r: r, e: e, j: j, date: date, run: routRun(date, r.id, e.debut) };
+}
+function renderRoutineDetailBody() {
+  const r = currentRoutine, e = routEtat(r.id);
   let html = '';
-  r.semaines.forEach((sem, idx) => {
-    const isOpen = openSemaines[idx] !== false;
-    const bgLight = r.couleur + '18';
-    html += `<div class="rout-semaine-block">
-      <div class="rout-semaine-header" style="background:${bgLight}" onclick="toggleSemaine(${idx})">
-        <div class="rout-semaine-num" style="background:${r.couleur}">S${sem.numero}</div>
-        <div class="rout-semaine-titre">Semaine ${sem.numero} — ${sem.titre}</div>
-        <div class="rout-semaine-chevron ${isOpen?'open':''}">›</div>
-      </div>
-      ${isOpen ? `<div class="rout-semaine-tasks">
-        ${sem.taches.map(t => `<div class="rout-tache-item" style="border-left-color:${r.couleur}" ${t.modale?`onclick="openRoutModale('${t.modale}')"`:''}> 
-          <div class="rout-tache-ico" style="background:${r.couleur}22">${typeIcons[t.type]||'•'}</div>
-          <div class="rout-tache-body">
-            <div class="rout-tache-type">${typeLabels[t.type]||t.type}</div>
-            <div class="rout-tache-titre">${t.titre}</div>
-            <div class="rout-tache-desc">${t.description}</div>
-            <div class="rout-tache-duree">⏱ ${t.duree}</div>
-          </div>
-          ${t.modale?`<div class="rout-tache-arrow" style="color:${r.couleur}">›</div>`:''}
-        </div>`).join('')}
-      </div>` : ''}
+  if (e.statut === 'disponible') {
+    html += '<div class="rout-intro">Un programme de ' + ROUT_DUREE + ' jours, jour par jour. Voici ce qui t\'attend :</div>';
+    html += '<div id="rout-semaines">' + routSemainesHtml(r, e) + '</div>';
+  } else {
+    if (e.statut === 'terminee') {
+      html += `<div class="rout-fin-bloc" style="border-color:${r.couleur}55">
+        <div class="rout-fin-bloc-titre">Les ${ROUT_DUREE} jours sont passés</div>
+        <div class="rout-fin-bloc-texte">Merci d'avoir pris ce temps pour toi. Relis ce que tu as noté : ce que tu as observé peut t'aider à choisir ce que tu gardes.</div>
+        <button type="button" class="rout-fin-bloc-btn" style="background:${r.couleur}" onclick="routVoirBilan()">Voir mon bilan</button>
+      </div>`;
+    }
+    html += '<div id="rout-jour">' + routJourHtml(r, e) + '</div>';
+    html += `<div class="rout-rondes-bloc">
+      <div class="rout-rondes-titre">Mes ${ROUT_DUREE} jours</div>
+      <div class="rout-rondes" id="rout-rondes">${routRondesHtml(r, e)}</div>
+      <div class="rout-legende"><span><i class="plein"></i>Tout est fait</span><span><i class="moitie"></i>En partie</span><span><i class="vide"></i>Rien de coché</span></div>
     </div>`;
-  });
+    html += `<div class="rout-semaines-toggle" onclick="routBasculerVueSemaine()">Voir tout le programme <span class="rout-semaine-chevron${routVueSemaine ? ' open' : ''}" id="rout-vue-chevron">›</span></div>
+      <div id="rout-semaines" style="display:${routVueSemaine ? 'block' : 'none'}">${routSemainesHtml(r, e)}</div>`;
+    if (e.statut === 'active') html += `<button type="button" class="rout-stop-link" onclick="routArreter('${r.id}')">Arrêter ce programme</button>`;
+  }
   document.getElementById('rout-detail-scroll').innerHTML = html;
 }
-
-function toggleSemaine(idx) {
-  openSemaines[idx] = !openSemaines[idx];
+// Remet l'écran à jour après une synchronisation, sans perturber une saisie en cours ni le défilement
+function routRafraichirDetail() {
+  const ecran = document.getElementById('screen-routine-detail');
+  if (!currentRoutine || !ecran || !ecran.classList.contains('active')) return;
+  routRafraichir();
+  const ae = document.activeElement;
+  if (ae && ae.tagName === 'TEXTAREA' && ecran.contains(ae)) { routMajVisuel(); return; }
+  const s = document.getElementById('rout-detail-scroll'), haut = s ? s.scrollTop : 0;
+  routRendreEntete();
   renderRoutineDetailBody();
+  if (s) s.scrollTop = haut;
+}
+function routSauverSaisie() {            // une saisie en cours est enregistrée avant tout changement d'écran ou de jour
+  const ae = document.activeElement;
+  if (ae && ae.tagName === 'TEXTAREA' && ae.closest('#screen-routine-detail')) ae.blur();
+}
+function routSurReprise() {              // retour au premier plan (le jour a pu changer pendant ce temps)
+  const act = document.querySelector('.screen.active'), id = act ? act.id.replace('screen-', '') : '';
+  try {
+    if (id === 'home') renderHomeRoutineBlock();
+    else if (id === 'routines') renderRoutines();
+    else if (id === 'routine-detail') routRafraichirDetail();
+  } catch (e) { console.warn('[Nara] routines au retour:', e && e.message || e); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') routSurReprise(); });
+function routOublier() {                 // changement de compte : plus rien de l'ancienne utilisatrice en mémoire ni à l'écran
+  currentRoutine = null; routJourVu = null; routVueSemaine = false; routRetourVers = null; openSemaines = { 0: true };
+  const s = document.getElementById('rout-detail-scroll');
+  if (s) s.innerHTML = '';
+  routSheetFermer();
 }
 
+// ── Le jour regardé : « Jour N · Aujourd'hui » et ses tâches ─────────────────
+function routJourHtml(r, e) {
+  const j = routJourVu || e.jour, date = routAjouter(e.debut, j - 1), auj = getTodayStr(), run = routRun(date, r.id, e.debut);
+  const estAuj = date === auj;
+  let note = '';
+  if (date > auj) note = "Ce jour n'est pas encore arrivé : tu peux regarder ce qui t'attend.";
+  else if (!routEditable(date)) note = 'Ce jour est passé : tu peux le consulter.';
+  else if (!estAuj) note = 'Tu peux encore cocher ce jour.';
+  const ctx = { e: e, j: j, date: date, run: run };
+  return `<div class="rout-jour-entete">
+      <button type="button" class="rout-jour-nav" onclick="routChoisirJour(${j - 1})" aria-label="Jour précédent"${j <= 1 ? ' disabled' : ''}>‹</button>
+      <div class="rout-jour-titres">
+        <div class="rout-jour-titre">Jour ${j} · ${estAuj ? "Aujourd'hui" : routLibelle(date)}</div>
+        ${estAuj ? `<div class="rout-jour-sous">${routLibelle(date)}</div>` : ''}
+      </div>
+      <button type="button" class="rout-jour-nav" onclick="routChoisirJour(${j + 1})" aria-label="Jour suivant"${j >= ROUT_DUREE ? ' disabled' : ''}>›</button>
+    </div>
+    ${note ? `<div class="rout-jour-note">${note}</div>` : ''}
+    <div class="rout-cartes">${routTachesDuJour(r, j).map(t => routCarteHtml(r, t, ctx)).join('')}</div>`;
+}
+function routCarteHtml(r, t, ctx) {
+  const a = t.action, on = !!(ctx.run && ctx.run.cases[t.k]);
+  const agit = !!a && (a.a === 'journal' || a.a === 'guide' || a.a === 'recette' || a.a === 'article' || a.a === 'gluten' || (a.a === 'tags' && !!a.modale));
+  const verrou = !routEditable(ctx.date);
+  return `<div class="rout-carte${on ? ' fait' : ''}${t.opt ? ' opt' : ''}${verrou ? ' verrou' : ''}" id="rtc-${t.k}" style="--rc:${r.couleur}">
+    <div class="rout-carte-ligne">
+      <button type="button" class="rout-case" role="checkbox" aria-checked="${on}" aria-label="Marquer « ${escHtml(t.titre)} » comme fait" onclick="routBasculer('${t.k}')"><span class="rout-case-boite">✓</span></button>
+      <div class="rout-carte-main"${agit ? ` onclick="routAgir('${t.k}')"` : ''}>
+        <div class="rout-tache-type">${typeIcons[t.type] || '•'} ${typeLabels[t.type] || t.type}${t.opt ? ' · optionnel' : ''}</div>
+        <div class="rout-tache-titre">${escHtml(t.titre)}</div>
+        ${t.description ? `<div class="rout-tache-desc">${escHtml(t.description)}</div>` : ''}
+        ${t.duree ? `<div class="rout-tache-duree">⏱ ${escHtml(t.duree)}</div>` : ''}
+      </div>
+      ${agit ? `<div class="rout-tache-arrow" onclick="routAgir('${t.k}')">›</div>` : ''}
+    </div>
+    ${routExtrasHtml(r, t, ctx)}
+  </div>`;
+}
+function routExtrasHtml(r, t, ctx) {
+  const a = t.action, run = ctx.run;
+  if (!a) return '';
+  if (a.a === 'tags') {
+    const g = ROUT_ETIQUETTES[a.groupe], sel = (run && run.tags[a.groupe]) || [];
+    return `<div class="rout-extra"><div class="rout-extra-titre">${g.titre} <span>(facultatif)</span></div><div class="rout-chips">${g.choix.map(c =>
+      `<button type="button" class="rout-chip${sel.indexOf(c[0]) >= 0 ? ' on' : ''}" data-g="${a.groupe}" data-tag="${c[0]}" onclick="routEtiquette('${t.k}','${a.groupe}','${c[0]}')">${c[1]}</button>`).join('')}</div></div>`;
+  }
+  if (a.a === 'energie') {
+    const en = (run && run.energie) || {};
+    return `<div class="rout-extra"><div class="rout-extra-titre">Ton énergie, de 1 à 5 <span>(comme dans ton journal)</span></div>${ROUT_ENERGIE.map(c =>
+      `<div class="rout-en-ligne"><span class="rout-en-nom">${c[1]}</span><div class="rout-en-notes">${[1, 2, 3, 4, 5].map(n =>
+        `<button type="button" class="rout-en-btn${en[c[0]] === n ? ' on' : ''}" data-c="${c[0]}" data-n="${n}" onclick="routNoterEnergie('${t.k}','${c[0]}',${n})">${n}</button>`).join('')}</div></div>`).join('')}</div>`;
+  }
+  if (a.a === 'texte') {
+    const tx = (run && run.textes[t.k]) || {}, ok = routTexteEditable(ctx, t.k);
+    return a.champs.map(ch => `<div class="rout-extra"><label class="rout-extra-titre" for="rtx-${t.k}-${ch.f}">${escHtml(ch.q)}</label>
+      <textarea class="rout-texte" id="rtx-${t.k}-${ch.f}" data-f="${ch.f}" maxlength="300" rows="3" placeholder="Quelques mots suffisent"${ok ? '' : ' readonly'} onblur="routEnregistrerTexte('${t.k}','${ch.f}',this.value)">${escHtml(tx[ch.f] || '')}</textarea></div>`).join('')
+      + (ok ? `<button type="button" class="rout-texte-btn" onclick="routEnregistrerCarte('${t.k}')">Enregistrer</button>` : '');
+  }
+  return '';
+}
+
+// ── Les 21 ronds ─────────────────────────────────────────────────────────────
+function routRondesHtml(r, e) {
+  const sel = routJourVu || e.jour;
+  let h = '';
+  for (let j = 1; j <= ROUT_DUREE; j++) {
+    h += `<button type="button" class="rout-rond ${routEtatJour(r, e.debut, j)}${e.statut === 'active' && j === e.jour ? ' auj' : ''}${j === sel ? ' sel' : ''}" data-j="${j}" onclick="routChoisirJour(${j})" aria-label="Jour ${j}"><span class="rout-rond-c"></span><span class="rout-rond-n">${j}</span></button>`;
+  }
+  return h;
+}
+function routMajRonds() {
+  const c = routContexte(), el = document.getElementById('rout-rondes');
+  if (!c || !el) return;
+  el.querySelectorAll('.rout-rond').forEach(b => {
+    const j = +b.dataset.j;
+    b.className = 'rout-rond ' + routEtatJour(c.r, c.e.debut, j) + (c.e.statut === 'active' && j === c.e.jour ? ' auj' : '') + (j === c.j ? ' sel' : '');
+  });
+}
+// Mise à jour sur place (cases, étiquettes, notes d'énergie, ronds) : l'écran n'est pas reconstruit, une saisie en cours reste intacte
+function routMajVisuel() {
+  const c = routContexte();
+  if (!c) return;
+  routTachesDuJour(c.r, c.j).forEach(t => {
+    const carte = document.getElementById('rtc-' + t.k);
+    if (!carte) return;
+    const on = !!(c.run && c.run.cases[t.k]);
+    carte.classList.toggle('fait', on);
+    const cb = carte.querySelector('.rout-case');
+    if (cb) cb.setAttribute('aria-checked', on ? 'true' : 'false');
+    carte.querySelectorAll('[data-tag]').forEach(b => b.classList.toggle('on', (((c.run && c.run.tags[b.dataset.g]) || []).indexOf(b.dataset.tag)) >= 0));
+    carte.querySelectorAll('[data-n]').forEach(b => b.classList.toggle('on', !!c.run && c.run.energie[b.dataset.c] === +b.dataset.n));
+  });
+  routMajRonds();
+}
+function routChoisirJour(j) {
+  routSauverSaisie();
+  const r = currentRoutine;
+  if (!r || j < 1 || j > ROUT_DUREE) return;
+  const e = routEtat(r.id);
+  if (e.statut === 'disponible') return;
+  routJourVu = j;
+  const el = document.getElementById('rout-jour');
+  if (el) el.innerHTML = routJourHtml(r, e);
+  routMajRonds();
+  const s = document.getElementById('rout-detail-scroll');
+  if (s) s.scrollTop = 0;
+}
+
+// ── Vue par semaine (consultation) ───────────────────────────────────────────
+function routSemainesHtml(r, e) {
+  const demarre = e.statut !== 'disponible';
+  return r.semaines.map((sem, idx) => {
+    const ouvert = openSemaines[idx] === true;
+    let jours = '';
+    for (let j = idx * 7 + 1; j <= idx * 7 + 7; j++) {
+      jours += `<div class="rout-sj${demarre && e.statut === 'active' && j === e.jour ? ' auj' : ''}">
+        <div class="rout-sj-entete"${demarre ? ` onclick="routChoisirJour(${j})"` : ''}><span class="rout-sj-num">Jour ${j}</span>${demarre ? `<span class="rout-sj-date">${routCourt(routAjouter(e.debut, j - 1))}</span>` : ''}</div>
+        ${routTachesDuJour(r, j).map(t => routLigneSemaine(t)).join('')}
+      </div>`;
+    }
+    return `<div class="rout-semaine-block">
+      <div class="rout-semaine-header" style="background:${r.couleur}18" onclick="toggleSemaine(${idx})">
+        <div class="rout-semaine-num" style="background:${r.couleur}">S${sem.numero}</div>
+        <div class="rout-semaine-titre">Semaine ${sem.numero} — ${escHtml(sem.titre)}</div>
+        <div class="rout-semaine-chevron${ouvert ? ' open' : ''}">›</div>
+      </div>
+      ${ouvert ? `<div class="rout-semaine-tasks">${jours}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function routLigneSemaine(t) {
+  const guide = !!t.action && (t.action.a === 'guide' || (t.action.a === 'tags' && !!t.action.modale));
+  const titre = t.article ? 'Lecture · ' + t.description : t.titre;
+  return `<div class="rout-sl${t.opt ? ' opt' : ''}"${guide ? ` onclick="openRoutModale('${t.action.modale}')"` : ''}>
+    <span class="rout-sl-ico">${typeIcons[t.type] || '•'}</span>
+    <span class="rout-sl-titre">${escHtml(titre)}${t.opt ? ' <em>(optionnel)</em>' : ''}</span>
+    ${guide ? '<span class="rout-sl-fl">›</span>' : ''}
+  </div>`;
+}
+function toggleSemaine(idx) {
+  openSemaines[idx] = !openSemaines[idx];
+  const r = currentRoutine, el = document.getElementById('rout-semaines');
+  if (r && el) el.innerHTML = routSemainesHtml(r, routEtat(r.id));
+}
+function routBasculerVueSemaine() {
+  routVueSemaine = !routVueSemaine;
+  const el = document.getElementById('rout-semaines'), ch = document.getElementById('rout-vue-chevron');
+  if (el) el.style.display = routVueSemaine ? 'block' : 'none';
+  if (ch) ch.classList.toggle('open', routVueSemaine);
+}
+
+// ── Cocher, choisir, écrire ──────────────────────────────────────────────────
+// Cochage possible : aujourd'hui, hier, avant-hier. Sinon, un message simple (jamais de reproche).
+function routPeutEcrire(date) {
+  if (routEditable(date)) return true;
+  showToast(date > getTodayStr() ? "Ce jour n'est pas encore arrivé" : 'Ce jour est passé : tu peux le consulter, plus le modifier');
+  return false;
+}
+function routBasculer(k) {
+  const c = routContexte();
+  if (!c || !routPeutEcrire(c.date)) return;
+  const ch = {};
+  ch['cases.' + k] = (c.run && c.run.cases[k]) ? 0 : 1;
+  if (routEcrireJour(c.date, c.r.id, c.e.debut, c.j, ch)) { c.run = routRun(c.date, c.r.id, c.e.debut); routMajVisuel(); }
+}
+function routEtiquette(k, groupe, id) {
+  const c = routContexte();
+  if (!c || !routPeutEcrire(c.date)) return;
+  const cur = ((c.run && c.run.tags[groupe]) || []).slice(), i = cur.indexOf(id);
+  if (i >= 0) cur.splice(i, 1); else cur.push(id);
+  const ch = {};
+  ch['tags.' + groupe] = cur;
+  if (i < 0 && !(c.run && c.run.cases[k])) ch['cases.' + k] = 1;                    // choisir une étiquette coche la tâche (modifiable)
+  routEcrireJour(c.date, c.r.id, c.e.debut, c.j, ch);
+  routMajVisuel();
+}
+function routNoterEnergie(k, creneau, n) {
+  const c = routContexte();
+  if (!c) return;
+  const auj = getTodayStr();
+  if (c.date !== auj) { showToast(c.date > auj ? "Ce jour n'est pas encore arrivé" : "L'énergie se note le jour même"); return; }
+  const en = Object.assign({}, c.run ? c.run.energie : {}), v = en[creneau] === n ? 0 : n;
+  en[creneau] = v;
+  const ch = {};
+  ch['energie.' + creneau] = v;
+  if (ROUT_ENERGIE.every(s => en[s[0]] > 0) && !(c.run && c.run.cases[k])) ch['cases.' + k] = 1;   // les 3 notes données : tâche cochée (modifiable)
+  routEcrireJour(c.date, c.r.id, c.e.debut, c.j, ch);
+  routMajVisuel();
+}
+// Texte court : modifiable comme les cases ; le bilan et la réflexion restent modifiables après la fin du programme
+function routTexteEditable(c, k) { return routEditable(c.date) || (c.e.statut === 'terminee' && (k === 'bilan' || k === 'reflexion')); }
+function routEnregistrerTexte(k, champ, valeur) {
+  const c = routContexte();
+  if (!c || !routTexteEditable(c, k)) return false;
+  const v = String(valeur || '').trim().slice(0, 300), avant = ((c.run && c.run.textes[k]) || {})[champ] || '';
+  if (v === avant) return true;
+  const ch = {};
+  ch['textes.' + k + '.' + champ] = v;
+  if (v && !(c.run && c.run.cases[k])) ch['cases.' + k] = 1;                         // écrire coche la tâche (modifiable)
+  const ok = routEcrireJour(c.date, c.r.id, c.e.debut, c.j, ch);
+  routMajVisuel();
+  return ok;
+}
+function routEnregistrerCarte(k) {
+  const carte = document.getElementById('rtc-' + k);
+  if (!carte) return;
+  let ok = true;
+  carte.querySelectorAll('textarea').forEach(x => { if (!routEnregistrerTexte(k, x.dataset.f, x.value)) ok = false; });
+  if (ok) showToast('✓ Enregistré');
+}
+
+// ── Toucher une carte : la bonne destination ─────────────────────────────────
+function routAgir(k) {
+  const c = routContexte();
+  if (!c) return;
+  const t = routTachesDuJour(c.r, c.j).find(x => x.k === k), a = t && t.action;
+  if (!a) return;
+  if (a.a === 'journal') routOuvrirJournal(a.slide, c.date);
+  else if (a.a === 'guide' || a.a === 'tags') openRoutModale(a.modale);
+  else if (a.a === 'recette') routOuvrirRecette(a.id);
+  else if (a.a === 'article') routOuvrirArticle(t.article);
+  else if (a.a === 'gluten') routOuvrirGluten();
+}
+// Journal du jour regardé, sur la bonne partie (Repas, Peau, Mode de vie…) — jamais dans le futur, 30 jours en arrière au plus
+function routOuvrirJournal(section, date) {
+  const auj = getTodayStr();
+  if (date > auj) { showToast("Ce jour n'est pas encore arrivé"); return; }
+  if (routEcart(date, auj) > 30) { showToast('Le journal se remplit sur les 30 derniers jours'); return; }
+  jrnCurrentDate = date === auj ? null : date;
+  go('journal');
+  const idx = JRN_SECTIONS.findIndex(s => s.id === section);
+  if (idx > 0) requestAnimationFrame(() => {
+    const tr = document.getElementById('jrn-track');
+    if (!tr) return;
+    jrnCurrentSlide = idx;
+    tr.scrollLeft = idx * tr.offsetWidth;
+    updateJrnNavBar();
+  });
+}
+function routMemoriserRetour() {         // la flèche retour d'une recette / d'un article ouvert depuis une routine ramène à la routine
+  const s = document.getElementById('rout-detail-scroll');
+  routRetourVers = 'routine-detail'; routRetourScroll = s ? s.scrollTop : 0;
+}
+function routRetour(defaut) {
+  const vers = routRetourVers, haut = routRetourScroll;
+  routRetourVers = null;
+  if (vers === 'routine-detail' && currentRoutine) {
+    go('routine-detail');
+    routRafraichirDetail();
+    requestAnimationFrame(() => { const s = document.getElementById('rout-detail-scroll'); if (s) s.scrollTop = haut; });
+  } else go(defaut);
+}
+function routOuvrirRecette(id) {
+  if (!recettes.some(x => x.id === id)) { showToast("Cette recette n'est pas disponible"); return; }
+  routMemoriserRetour();
+  openRecette(id);
+}
+function routOuvrirArticle(id) {
+  if (!libArticles.some(x => x.id === id)) { showToast("Cet article n'est pas disponible"); return; }
+  routMemoriserRetour();
+  openArticle(id);
+}
+function routOuvrirGluten() {
+  routSheet({
+    titre: 'Commencer sans gluten ?',
+    texte: ROUT_TXT_GLUTEN + ' Si tu veux observer ton transit et ta peau, tu peux lancer un test guidé : un seul aliment, une durée limitée, jamais de diagnostic.',
+    boutons: [{ label: 'Ouvrir « Tester un aliment »', fn: routLancerTestGluten }, { label: 'Plus tard', neutre: true }]
+  });
+}
+function routLancerTestGluten() {        // le protocole et ses garde-fous restent ceux de « Tester un aliment » : on préremplit seulement l'aliment
+  openTestModal();
+  const champ = document.getElementById('test-food-input');
+  if (champ) champ.value = 'gluten';
+}
+function routOuvrirBilan(id) {
+  openRoutineDetail(id, 20);
+  requestAnimationFrame(() => { const c = document.getElementById('rtc-bilan'); if (c) c.scrollIntoView({ block: 'center' }); });
+}
+function routVoirBilan() { if (currentRoutine) routOuvrirBilan(currentRoutine.id); }
+
+// ── Guides (pratiques guidées) ───────────────────────────────────────────────
 function openRoutModale(modalId) {
   const m = currentRoutine.modales.find(x => x.id === modalId);
   if (!m) return;
   document.getElementById('rout-modale-card').style.background = currentRoutine.gradient;
   document.getElementById('rout-modale-titre').textContent = m.titre;
   document.getElementById('rout-modale-duree').textContent = `⏱ ${m.duree}`;
+  const avant = document.getElementById('rout-modale-avant'), note = document.getElementById('rout-modale-note');
+  avant.textContent = m.avant || ''; avant.style.display = m.avant ? '' : 'none';
+  note.textContent = m.note || ''; note.style.display = m.note ? '' : 'none';
   document.getElementById('rout-modale-etapes').innerHTML = m.etapes.map((e,i) => `
     <div class="rout-modale-etape">
       <div class="rout-modale-num">${i+1}</div>
@@ -4917,38 +6137,34 @@ function openRoutModale(modalId) {
     </div>`).join('');
   document.getElementById('rout-modale-overlay').classList.add('open');
 }
-
 function closeRoutModale() { document.getElementById('rout-modale-overlay').classList.remove('open'); }
 function handleRoutModaleClick(e) { if (e.target===document.getElementById('rout-modale-overlay')) closeRoutModale(); }
 
-async function startRoutine(id) {
-  // Désactiver toute routine précédemment active
-  routinesData.forEach(r => {
-    if (r.statut === 'active') {
-      r.statut = 'disponible';
-      r.jour_actuel = 0;
-      // État « disponible » écrit explicitement et envoyé : sinon la base garderait deux routines actives
-      localStorage.setItem('nara_routine_' + r.id, JSON.stringify({ statut:'disponible', jour_actuel:0, updatedAt:Date.now() }));
-      if (currentUser) localStorage.removeItem(routineCacheKey(currentUser.id, r.id));
-      syncMarkDirty('routine', r.id);
-    }
-  });
-
-  // Démarrer la nouvelle
-  const r = routinesData.find(x => x.id === id);
-  if (!r) return;
-  r.statut = 'active';
-  r.jour_actuel = 1;
-
-  // Sauvegarde locale immédiate
-  localStorage.setItem('nara_routine_' + id, JSON.stringify({ statut:'active', jour_actuel:1, updatedAt:Date.now() }));
-
-  // Sync Supabase : marqué « à envoyer », envoyé par la couche de synchronisation (après lecture de la base)
-  if (currentUser) localStorage.setItem(routineCacheKey(currentUser.id, id), JSON.stringify({ statut:'active', jour_actuel:1 }));
-  syncMarkDirty('routine', id);
-
-  go('routines');
-  showToast('✓ Programme démarré · Jour 1 !');
+// ── Accueil : petit rappel « Note ton énergie » (Énergie & Sommeil, jours 1 à 7 et 15 à 21) ──
+// Matin avant 11 h · midi de 11 h à 16 h · soir à partir de 16 h ; affiché seulement si ce moment n'est pas déjà noté
+const ROUT_RAPPEL = { matin: 'Note ton énergie du matin', midi: 'Note ton énergie de midi', soir: 'Note ton énergie du soir' };
+function routCreneau(h) { return h < 11 ? 'matin' : h < 16 ? 'midi' : 'soir'; }
+function renderHomeRoutineBlock() {
+  const bloc = document.getElementById('home-routine-block');
+  if (!bloc) return;
+  bloc.innerHTML = '';
+  const id = routIdActive();
+  if (!id) return;
+  const r = routinesData.find(x => x.id === id), e = routEtat(id);
+  if (e.statut !== 'active' || !routTachesDuJour(r, e.jour).some(t => t.k === 'energie3')) return;
+  const run = routRun(getTodayStr(), id, e.debut), c = routCreneau(routHeure());
+  if (run && run.energie && run.energie[c] > 0) return;
+  bloc.innerHTML = `<div class="home-rout-block" style="border-left-color:${r.couleur}" onclick="routOuvrirEnergie()">
+      <span class="home-rout-ico">⚡</span>
+      <div class="home-rout-txt"><div class="home-rout-titre">${ROUT_RAPPEL[c]}</div><div class="home-rout-sous">${escHtml(r.titre)} · Jour ${e.jour} sur ${ROUT_DUREE}</div></div>
+      <span class="home-rout-fl">›</span>
+    </div>`;
+}
+function routOuvrirEnergie() {
+  const id = routIdActive();
+  if (!id) return;
+  openRoutineDetail(id);
+  requestAnimationFrame(() => { const c = document.getElementById('rtc-energie3'); if (c) c.scrollIntoView({ block: 'center' }); });
 }
 
 // Init
@@ -10928,10 +12144,16 @@ async function syncBuildRow(key, meta, uid) {
     return (!e || !e.values) ? { drop: true } : mk(date, Object.assign({}, e.values, { updatedAt: syncTs(e) || ts }));
   }
   if (type === 'photo') return syncBuildPhotoRow(date, meta, uid, ts, tomb);
+  if (type === 'routine_jour') {                                                 // ce qui est coché / choisi / écrit dans les routines ce jour-là
+    const n = routNormaliserJour(syncRead('nara_rjour_' + date));
+    return Object.keys(n.runs).length ? mk(date, Object.assign(n, { updatedAt: n.updatedAt || ts })) : { drop: true };
+  }
   if (type === 'routine') {
     const r = syncRead('nara_routine_' + date);                                  // « date » = identifiant de la routine
     if (!r || !r.statut) return { drop: true };
-    return { table: 'nara_routines', row: { user_id: uid, routine_id: date, statut: r.statut, jour_actuel: r.jour_actuel || 0, updated_at: new Date(syncTs(r) || ts).toISOString() } };
+    // Date de début envoyée « à midi UTC » (signature de cette version, relue telle quelle sur un autre appareil) ; jour_actuel = jour calculé, à titre d'information
+    const debut = routDebutDe(r), maj = new Date(syncTs(r) || ts).toISOString();
+    return { table: 'nara_routines', row: { user_id: uid, routine_id: date, statut: r.statut, jour_actuel: debut ? routEtatDe(r).jour : 0, started_at: debut ? debut + 'T12:00:00.000Z' : null, updated_at: maj } };
   }
   if (type === 'health_profile') { const p = syncRead('nara_profile'); return p ? mk(today, p) : { drop: true }; }
   if (type === 'cycle_settings' || type === 'food_test') {
@@ -11050,7 +12272,7 @@ async function syncFlushRun() {
 // Lecture complète (tout l'historique) : appareil neuf, ou plus d'une semaine depuis la dernière.
 // Sinon : 30 derniers jours + dernières versions des données uniques (profil, suivis, cycle…) + photos + routines.
 function syncLocalKey(type, date) {
-  return type === 'journal' ? 'nara_journal_' + date : type === 'calendrier' ? 'nara_cal_' + date : 'nara_log_' + date + '_' + type;
+  return type === 'journal' ? 'nara_journal_' + date : type === 'calendrier' ? 'nara_cal_' + date : type === 'routine_jour' ? 'nara_rjour_' + date : 'nara_log_' + date + '_' + type;
 }
 async function syncFetchPages(makeQuery) {
   const out = [];
@@ -11114,6 +12336,14 @@ function syncMergeDatedRow(type, row, uid, meta, res) {
     localStorage.removeItem(lk); if (quick) localStorage.removeItem(uk);
     res.changed = true; if (type === 'journal') res.journalDates.push(date);
   };
+  if (type === 'routine_jour') {                                     // fusion valeur par valeur : ni l'appareil ni la base ne perd quoi que ce soit
+    const cl = routNormaliserJour(cv), lo = local ? routNormaliserJour(local) : null;
+    const merged = lo ? routFusionnerJour(lo, cl) : cl;
+    if (!Object.keys(merged.runs).length) { delete meta.dirty[dk]; return; }
+    if (!lo || !syncSame(lo, merged)) { syncWrite(lk, merged); res.changed = true; }
+    if (syncSame(cl, merged)) delete meta.dirty[dk]; else meta.dirty[dk] = dirtyTs || Date.now();
+    return;
+  }
   if (cv.deleted) {                                                  // supprimé sur un autre appareil
     if (local && lts > cts) { meta.dirty[dk] = dirtyTs || Date.now(); return; }       // modifié ici après la suppression : on garde et on renverra
     if (local) dropLocal();
@@ -11148,7 +12378,7 @@ function syncApplyDated(type, cloudRows, uid, meta, opts, res) {
     try { syncMergeDatedRow(type, row, uid, meta, res); } catch (e) { console.warn('[Nara] fusion ' + type + ' ' + row.date + ':', e && e.message || e); }
   });
   // Entrées locales absentes de la base (dans la période lue) : elles n'ont jamais été envoyées → à envoyer
-  const re = type === 'journal' ? /^nara_journal_(\d{4}-\d{2}-\d{2})$/ : type === 'calendrier' ? /^nara_cal_(\d{4}-\d{2}-\d{2})$/ : new RegExp('^nara_log_(\\d{4}-\\d{2}-\\d{2})_' + type + '$');
+  const re = type === 'journal' ? /^nara_journal_(\d{4}-\d{2}-\d{2})$/ : type === 'calendrier' ? /^nara_cal_(\d{4}-\d{2}-\d{2})$/ : type === 'routine_jour' ? /^nara_rjour_(\d{4}-\d{2}-\d{2})$/ : new RegExp('^nara_log_(\\d{4}-\\d{2}-\\d{2})_' + type + '$');
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i), m = k && re.exec(k);
     if (!m || cloudDates[m[1]] || (opts.since && m[1] < opts.since)) continue;
@@ -11263,28 +12493,32 @@ function syncApplyPrefs(rows, meta, res) {
   if (top && Object.keys(K).every(f => topSet[f] === mergedSet[f])) delete meta.dirty[dk]; else meta.dirty[dk] = meta.dirty[dk] || Date.now();
 }
 
-// Routines : le plus récent gagne par routine ; une seule routine active à la fois
+// Routines : le plus récent gagne par routine ; une seule routine active à la fois.
+// On compare (statut, date de début) : le jour se calcule à partir de la date de début, jour_actuel n'est qu'une information.
 function syncApplyRoutines(cloud, meta, res) {
   const byId = {}, now = Date.now();
   cloud.forEach(r => { byId[r.routine_id] = r; });
-  const ts = {};
   routinesData.forEach(def => {
     const id = def.id, c = byId[id], lk = 'nara_routine_' + id, local = syncRead(lk), dk = syncKey('routine', id);
     const dirtyTs = meta.dirty[dk] || 0, cts = c ? (Date.parse(c.updated_at || '') || 0) : 0;
     const lts = local ? Math.max(syncTs(local), dirtyTs) : 0;
     if (!c && !local) return;
-    if (c && (!local || (cts > lts && (local.statut !== c.statut || (local.jour_actuel || 0) !== (c.jour_actuel || 0))))) {
-      syncWrite(lk, { statut: c.statut, jour_actuel: c.jour_actuel || 0, updatedAt: cts || now });
-      delete meta.dirty[dk]; res.changed = true; ts[id] = cts;
+    const cdeb = c ? routDebutDeLigne(c) : null;
+    const same = !!c && !!local && local.statut === c.statut && routDebutDe(local) === cdeb;
+    if (c && (!local || (cts > lts && !same))) {
+      const e = { statut: c.statut, jour_actuel: c.jour_actuel || 0, updatedAt: cts || now };
+      if (cdeb) e.startDate = cdeb;
+      syncWrite(lk, e); delete meta.dirty[dk]; res.changed = true;
       return;
     }
-    if (c && local.statut === c.statut && (local.jour_actuel || 0) === (c.jour_actuel || 0)) { delete meta.dirty[dk]; ts[id] = Math.max(lts, cts); return; }
-    if (!c && !(local.statut === 'active' || local.jour_actuel > 0)) return;   // état par défaut : rien à envoyer
-    meta.dirty[dk] = dirtyTs || now; ts[id] = lts;                                // l'état local est le plus récent : il part
+    if (same) { delete meta.dirty[dk]; return; }
+    if (!c && !(local.statut === 'active' || local.statut === 'terminee')) return;   // état par défaut : rien à envoyer
+    meta.dirty[dk] = dirtyTs || now;                                                   // l'état local est le plus récent : il part
   });
-  const actives = routinesData.map(r => r.id).filter(id => { const l = syncRead('nara_routine_' + id); return l && l.statut === 'active'; });
-  if (actives.length > 1) {                                                        // garder la plus récente, ranger les autres
-    actives.sort((a, b) => (ts[b] || 0) - (ts[a] || 0));
+  const etat = id => syncRead('nara_routine_' + id);
+  const actives = routinesData.map(r => r.id).filter(id => routEtatDe(etat(id)).statut === 'active');
+  if (actives.length > 1) {                                                          // garder la plus récente, ranger les autres
+    actives.sort((a, b) => syncTs(etat(b)) - syncTs(etat(a)));
     actives.slice(1).forEach(id => {
       syncWrite('nara_routine_' + id, { statut: 'disponible', jour_actuel: 0, updatedAt: now });
       meta.dirty[syncKey('routine', id)] = now; res.changed = true;
@@ -11303,7 +12537,7 @@ function syncApply(uid, rows, routines, opts) {
   });
   Object.keys(byType).forEach(t => byType[t].sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   const step = (nom, f) => { try { f(); } catch (e) { console.warn('[Nara] fusion ' + nom + ':', e && e.message || e); } };
-  ['journal', 'calendrier'].concat(SYNC_QUICK).forEach(t => step(t, () => syncApplyDated(t, byType[t] || [], uid, meta, opts, res)));
+  ['journal', 'calendrier', 'routine_jour'].concat(SYNC_QUICK).forEach(t => step(t, () => syncApplyDated(t, byType[t] || [], uid, meta, opts, res)));
   step('photos', () => loadPhotoHistory(uid, byType.photo || [], meta, res));
   step('profil', () => syncApplyObject({ type: 'health_profile', local: 'nara_profile', fill: true }, byType.health_profile || [], meta, res));
   step('cycle', () => syncApplyObject({ type: 'cycle_settings', local: 'nara_cycle', fill: true }, byType.cycle_settings || [], meta, res));
@@ -11353,6 +12587,7 @@ function syncRefreshUI(res) {
         }
       }
     } else if (id === 'routines') renderRoutines();
+    else if (id === 'routine-detail') routRafraichirDetail();
     else if (id === 'suivis') renderSuivis();
     else if (id === 'calendar') renderCalendar();
     else if (id === 'gallery') renderGallery();
@@ -11399,6 +12634,7 @@ function syncResetMemory() {
   currentPhotoDataUrl = null;
   profileData = {}; profileOpenSection = null; _suiviForm = null;
   routinesData.forEach(r => { r.statut = 'disponible'; r.jour_actuel = 0; });
+  try { routOublier(); } catch (e) {}
 }
 // Appelée à chaque fois que l'identité est connue : un AUTRE compte sur le même appareil → nettoyage du local de l'ancien compte
 function syncEnsureOwner(uid) {
@@ -14046,6 +15282,11 @@ window.__naraBooted = true; // atteint uniquement si le script principal s'est e
       <div class="test-modal-card" id="test-modal-card">
         <!-- Rendu dynamique selon l'état du test -->
       </div>
+    </div>
+
+    <!-- CONFIRMATIONS DES ROUTINES (changer de routine, arrêter, gluten) — rendu par routSheet() -->
+    <div class="rout-sheet-overlay" id="rout-sheet-overlay" onclick="routSheetOverlay(event)">
+      <div class="rout-sheet-card" id="rout-sheet-card"></div>
     </div>
 
     <!-- MODALE PARAMÈTRES CYCLE -->

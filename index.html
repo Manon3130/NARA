@@ -73,6 +73,10 @@ if (typeof supabase === 'undefined') {
   *, *::before, *::after {
     margin: 0; padding: 0; box-sizing: border-box;
   }
+  /* Marge sous la barre d'état : celle que donne l'appareil, jamais moins que le plancher (iOS peut la lire à 0 en mode écran d'accueil — bug WebKit 301994) */
+  :root { --top-floor: 0px; --safe-top: max(env(safe-area-inset-top, 0px), var(--top-floor)); }
+  html.ios { --top-floor: 47px; }
+  @media (min-width: 700px) { html.ios { --top-floor: 24px; } }
   html, body {
     width: 100%; height: 100%; height: 100dvh;
     min-height: 100dvh;
@@ -461,9 +465,9 @@ if (typeof supabase === 'undefined') {
   .rout-dispo-badge { display:inline-block; margin-top:10px; background:rgba(255,255,255,0.2); border-radius:10px; padding:3px 10px; font-size:0.6rem; color:white; letter-spacing:0.05em; }
   /* ===== ROUTINE DÉTAIL ===== */
   #screen-routine-detail { background: var(--cream); }
-  .rout-detail-inner { display:flex; flex-direction:column; height:100%; }
-  .rout-detail-hero { flex-shrink:0; padding:calc(env(safe-area-inset-top, 0px) + 14px) clamp(16px, 6vw, 28px) 22px; position:relative; }
-  .rout-detail-back { width:34px; height:34px; margin-bottom:12px; border-radius:50%; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; color:white; }
+  .rout-detail-inner { display:flex; flex-direction:column; height:100%; background:#FFFAF2; }
+  .rout-detail-hero { flex-shrink:0; padding:calc(var(--safe-top) + 16px) clamp(16px, 6vw, 28px) 22px; position:relative; }
+  .rout-detail-back { position:relative; width:34px; height:34px; margin-bottom:12px; border-radius:50%; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; color:white; }
   .rout-detail-emoji { font-size:2.4rem; margin-bottom:6px; display:block; }
   .rout-detail-titre { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:400; color:white; margin-bottom:4px; }
   .rout-detail-sous { font-size:0.75rem; color:rgba(255,255,255,0.75); margin-bottom:14px; }
@@ -497,6 +501,43 @@ if (typeof supabase === 'undefined') {
   .rout-modale-etape { display:flex; gap:12px; align-items:flex-start; }
   .rout-modale-num { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:white; flex-shrink:0; margin-top:1px; }
   .rout-modale-etape-text { font-size:0.82rem; color:rgba(255,255,255,0.9); line-height:1.6; }
+  .rout-detail-back::after, .art-back-btn::after, .recipe-hero-back::after { content:''; position:absolute; inset:-6px; }   /* zone cliquable d'au moins 44 px autour des flèches de 34 à 36 px (bordure de 1 px comprise) */
+  /* ===== PROMPT 8 — carte « Ta routine », bilan enrichi, habitudes à garder ===== */
+  .ins-routine-card { background:white; border-radius:18px; padding:16px 16px 14px; margin:0 0 16px; border-left:4px solid var(--rc, var(--sage)); }
+  .ins-routine-haut { display:flex; align-items:center; gap:10px; }
+  .ins-routine-emoji { font-size:1.5rem; }
+  .ins-routine-lib { font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-light); }
+  .ins-routine-nom { font-family:'Cormorant Garamond',serif; font-size:1.25rem; color:var(--text-dark); line-height:1.2; }
+  .ins-routine-jour { margin-left:auto; font-size:0.74rem; color:var(--text-mid); white-space:nowrap; }
+  .ins-routine-barre { height:6px; background:var(--oat); border-radius:4px; margin:12px 0 10px; overflow:hidden; }
+  .ins-routine-barre i { display:block; height:100%; background:var(--rc, var(--sage)); border-radius:4px; }
+  .ins-routine-ligne { font-size:0.8rem; color:var(--text-dark); margin-bottom:4px; }
+  .ins-routine-ligne b { font-weight:600; }
+  .ins-routine-depuis { font-size:0.76rem; color:var(--text-mid); margin:6px 0 2px; line-height:1.5; }
+  .ins-routine-btn { display:block; width:100%; margin-top:12px; padding:12px; min-height:44px; border:none; border-radius:12px; background:var(--rc, var(--sage)); color:white; font-family:'DM Sans',sans-serif; font-size:0.8rem; cursor:pointer; }
+  .rb { background:#fbf8f1; border:1px solid var(--oat); border-radius:14px; padding:12px 13px; margin:0 0 10px; }
+  .rb-t { font-size:0.66rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-light); margin-bottom:8px; }
+  .rb-rows .b1-row { display:flex; justify-content:space-between; gap:8px; font-size:0.8rem; padding:4px 0; color:var(--text-dark); }
+  .rb-note { font-size:0.68rem; color:var(--text-light); margin-top:6px; line-height:1.45; }
+  .rb-leg { display:flex; gap:14px; flex-wrap:wrap; font-size:0.7rem; color:var(--text-mid); margin:2px 0 6px; }
+  .rb-leg i { display:inline-block; width:18px; height:8px; border-radius:3px; margin-right:5px; vertical-align:1px; }
+  .rb-photos { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .rb-photos.une { grid-template-columns:minmax(0, 60%); justify-content:center; }
+  .rb-photos figure { margin:0; position:relative; }
+  .rb-photos img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:10px; background:var(--oat); display:block; }
+  .rb-photos figcaption { font-size:0.68rem; color:var(--text-mid); margin-top:4px; text-align:center; }
+  .rb-notes p { font-size:0.78rem; color:var(--text-mid); line-height:1.5; margin:0 0 7px; }
+  .rb-notes b { color:var(--text-dark); font-weight:600; }
+  .rb-doux { background:#fdf1e6; border-radius:12px; padding:11px 13px; font-size:0.78rem; color:var(--text-dark); line-height:1.5; margin:0 0 10px; }
+  .rb-lien { display:block; margin-top:6px; padding:8px 0; min-height:44px; background:none; border:none; text-align:left; color:var(--sage); text-decoration:underline; font-family:'DM Sans',sans-serif; font-size:0.76rem; cursor:pointer; }
+  .rb-hab { display:flex; flex-direction:column; }
+  .rb-hab-l { padding:9px 0; border-bottom:1px solid var(--oat); }
+  .rb-hab-l:last-child { border-bottom:none; }
+  .rb-hab-n { font-size:0.84rem; color:var(--text-dark); display:flex; justify-content:space-between; gap:8px; }
+  .rb-hab-n b { font-weight:500; }
+  .rb-hab-n em { font-style:normal; color:var(--text-light); font-size:0.7rem; }
+  .rb-hab-n span { color:var(--text-mid); white-space:nowrap; }
+  .rb-hab-lien { font-size:0.72rem; color:var(--text-mid); margin-top:3px; line-height:1.45; }
   .rout-modale-avant { font-size:0.78rem; color:rgba(255,255,255,0.95); line-height:1.55; background:rgba(255,255,255,0.16); border-radius:12px; padding:10px 12px; margin-bottom:16px; }
   .rout-modale-note { font-size:0.74rem; color:rgba(255,255,255,0.9); line-height:1.55; margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.25); }
   /* ===== ROUTINES — PROGRAMMES DE 21 JOURS ===== */
@@ -597,7 +638,7 @@ if (typeof supabase === 'undefined') {
   /* ===== RECETTES — ÉCRAN LISTE ===== */
   #screen-recipes { background: var(--cream); }
   .rec-screen-header {
-    padding: 52px 24px 0;
+    padding: calc(var(--safe-top) + 16px) 24px 0;
     display: flex; align-items: center; gap: 12px;
   }
   .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
@@ -641,12 +682,12 @@ if (typeof supabase === 'undefined') {
 
   /* ===== ÉCRAN DÉTAIL RECETTE ===== */
   #screen-recipe-detail { background: var(--cream); }
-  .recipe-detail-inner { display: flex; flex-direction: column; height: 100%; }
+  .recipe-detail-inner { display: flex; flex-direction: column; height: 100%; background: #FFFAF2; }
   .recipe-hero {
-    padding: 52px 24px 20px; position: relative; flex-shrink: 0;
+    padding: calc(var(--safe-top) + 16px) 24px 20px; position: relative; flex-shrink: 0;
   }
   .recipe-hero-back {
-    position: absolute; top: 52px; left: 20px;
+    position: absolute; top: calc(var(--safe-top) + 16px); left: 20px;
     width: 36px; height: 36px; border-radius: 50%;
     background: rgba(255,255,255,0.85); display: flex; align-items: center;
     justify-content: center; font-size: 0.9rem; cursor: pointer; z-index: 10;
@@ -795,12 +836,12 @@ if (typeof supabase === 'undefined') {
     background: rgba(0,0,0,0.08); z-index: 50;
   }
   .art-progress-fill { height: 100%; width: 0%; transition: width 0.2s; border-radius: 0 2px 2px 0; }
-  .art-detail-inner { display: flex; flex-direction: column; height: 100%; }
+  .art-detail-inner { display: flex; flex-direction: column; height: 100%; background: #FFFAF2; }
   .art-hero {
-    flex-shrink: 0; padding: 48px 24px 22px; position: relative;
+    flex-shrink: 0; padding: calc(var(--safe-top) + 16px) 24px 22px; position: relative;
   }
   .art-back-btn {
-    position: absolute; top: 48px; left: 18px; width: 34px; height: 34px;
+    position: relative; margin-bottom: 12px; width: 34px; height: 34px;
     border-radius: 50%; background: rgba(255,255,255,0.3);
     display: flex; align-items: center; justify-content: center;
     font-size: 0.9rem; cursor: pointer; z-index: 10;
@@ -3307,7 +3348,7 @@ if (typeof supabase === 'undefined') {
     <!-- SCREEN 3 — JOURNAL -->
     <div class="screen" id="screen-journal">
       <div class="screen-header" id="jrn-screen-header">
-        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="back-btn" onclick="routRetour('home')">←</div>
         <div class="screen-title">Mon journal</div>
         <button onclick="go('gallery')" style="background:var(--honey);border:1.5px solid var(--oat);border-radius:12px;padding:6px 12px;font-size:0.72rem;color:var(--text-mid);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Galerie</button>
       </div>
@@ -3620,7 +3661,9 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '16/11 · 15 h 02';   // date et heure (Paris) de la livraison, affichée en bas du profil
+const APP_VERSION = '17/11 · 20 h 54';   // date et heure (Paris) de la livraison, affichée en bas du profil
+// iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
+(function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 let jrnValues = {};
 let jrnEditMode = false;
 let jrnCurrentMeal = 'matin'; // moment de repas actif
@@ -4338,18 +4381,30 @@ const SCREEN_BG = {
   library: '#FFFAF2', routines: '#FFFAF2', recipes: '#FFFAF2',
   'article-detail': '#FFFAF2', 'routine-detail': '#FFFAF2', 'recipe-detail': '#FFFAF2',
 };
+// Pages à en-tête coloré : id de l'en-tête dont on lit la première couleur (elle devient celle de la zone de la barre d'état)
+const HERO_HAUT = { 'routine-detail': 'rout-detail-hero', 'article-detail': 'art-hero', 'recipe-detail': 'recipe-hero' };
+function couleurHaut(id) {
+  const h = HERO_HAUT[id] && document.getElementById(HERO_HAUT[id]);
+  if (h) { const m = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgb\([^)]*\)/.exec(h.style.background || h.style.backgroundImage || ''); if (m) return m[0]; }
+  return SCREEN_BG[id] || '#FFFAF2';
+}
 
 function showScreen(id, btn) {
-  if (id !== 'recipe-detail' && id !== 'article-detail') routRetourVers = null;   // la flèche retour d'une recette / d'un article ne ramène à une routine que si on en vient
+  if (id !== 'recipe-detail' && id !== 'article-detail' && !_routNav) routRetourVers = null;   // la mémoire « je viens d'une routine » ne survit qu'aux écrans ouverts depuis une routine
+  _routNav = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
   if (btn) btn.classList.add('active');
   // Sync body background avec l'écran actif — empêche toute bande blanche/parasite
-  const bg = SCREEN_BG[id] || '#FFFAF2';
-  document.documentElement.style.setProperty('--current-screen-bg', bg);
-  document.body.style.background = bg;
+  // Sur les pages à en-tête coloré (routine, article, recette), la zone de la barre d'état prend la couleur de l'en-tête : iOS la teinte avec le fond de la page puis la floute
+  // par-dessus le contenu (sinon : bande claire sur un en-tête foncé). Sur tablette, la crème est gardée autour de la colonne.
+  const bg = SCREEN_BG[id] || '#FFFAF2', haut = couleurHaut(id), teinte = window.innerWidth < 700 ? haut : bg;
+  document.documentElement.style.setProperty('--current-screen-bg', teinte);
+  document.body.style.background = teinte;
+  if (el && HERO_HAUT[id]) el.style.background = teinte;
+  const metaCouleur = document.querySelector('meta[name="theme-color"]'); if (metaCouleur) metaCouleur.setAttribute('content', haut);     // Android : barre d'état de la couleur du haut de page
   if (id === 'recipes') renderRecettes();
   if (id === 'library') try { renderBibliotheque(); } catch(e) { console.warn("[Nara] renderBiblio:", e); }
   if (id === 'routines') renderRoutines();
@@ -4806,7 +4861,7 @@ const routinesData = [
         titre: "Massage abdominal",
         duree: "5 min",
         type: "pratique_guidee",
-        description: "Massage en cercles dans le sens des aiguilles d'une montre pour stimuler le transit.",
+        description: "Massage en cercles dans le sens des aiguilles d'une montre pour accompagner le transit.",
         action: { a: "guide", modale: "modal-massage" }
       },
       massage_av: {
@@ -4860,7 +4915,7 @@ const routinesData = [
         titre: "Yoga digestif doux",
         duree: "10 min",
         type: "pratique_guidee",
-        description: "Postures douces pour relâcher les tensions abdominales et stimuler la motilité.",
+        description: "Postures douces pour relâcher les tensions du ventre.",
         action: { a: "guide", modale: "modal-yoga" }
       },
       bouillon: {
@@ -5432,6 +5487,7 @@ let routJourVu = null;                 // jour (1 à 21) affiché dans le pannea
 let routVueSemaine = false;            // vue par semaine dépliée ?
 let routRetourVers = null;             // « routine-detail » quand une recette / un article a été ouvert depuis une routine
 let routRetourScroll = 0;
+let _routNav = false;                    // vrai le temps d'une navigation ouverte depuis une routine (voir showScreen)
 let _routSheetActions = [];
 
 // ── Dates (calcul pur sur des textes AAAA-MM-JJ, insensible à l'heure d'été) ──
@@ -5862,13 +5918,13 @@ function routJourHtml(r, e) {
 }
 function routCarteHtml(r, t, ctx) {
   const a = t.action, on = !!(ctx.run && ctx.run.cases[t.k]);
-  const agit = !!a && (a.a === 'journal' || a.a === 'guide' || a.a === 'recette' || a.a === 'article' || a.a === 'gluten' || (a.a === 'tags' && !!a.modale));
+  const agit = routOuvrable(t, true);
   const verrou = !routEditable(ctx.date);
   return `<div class="rout-carte${on ? ' fait' : ''}${t.opt ? ' opt' : ''}${verrou ? ' verrou' : ''}" id="rtc-${t.k}" style="--rc:${r.couleur}">
     <div class="rout-carte-ligne">
       <button type="button" class="rout-case" role="checkbox" aria-checked="${on}" aria-label="Marquer « ${escHtml(t.titre)} » comme fait" onclick="routBasculer('${t.k}')"><span class="rout-case-boite">✓</span></button>
       <div class="rout-carte-main"${agit ? ` onclick="routAgir('${t.k}')"` : ''}>
-        <div class="rout-tache-type">${typeIcons[t.type] || '•'} ${typeLabels[t.type] || t.type}${t.opt ? ' · optionnel' : ''}</div>
+        <div class="rout-tache-type">${routIcone(t)} ${typeLabels[t.type] || t.type}${t.opt ? ' · optionnel' : ''}</div>
         <div class="rout-tache-titre">${escHtml(t.titre)}</div>
         ${t.description ? `<div class="rout-tache-desc">${escHtml(t.description)}</div>` : ''}
         ${t.duree ? `<div class="rout-tache-duree">⏱ ${escHtml(t.duree)}</div>` : ''}
@@ -5894,7 +5950,8 @@ function routExtrasHtml(r, t, ctx) {
   }
   if (a.a === 'texte') {
     const tx = (run && run.textes[t.k]) || {}, ok = routTexteEditable(ctx, t.k);
-    return a.champs.map(ch => `<div class="rout-extra"><label class="rout-extra-titre" for="rtx-${t.k}-${ch.f}">${escHtml(ch.q)}</label>
+    const avant = !ctx.e ? '' : t.k === 'bilan' ? routBilanHtml(r, ctx) : t.k === 'reflexion' ? routHabitudesGarderHtml(r, ctx) : '';     // bilan final enrichi (prompt 8)
+    return avant + a.champs.map(ch => `<div class="rout-extra"><label class="rout-extra-titre" for="rtx-${t.k}-${ch.f}">${escHtml(ch.q)}</label>
       <textarea class="rout-texte" id="rtx-${t.k}-${ch.f}" data-f="${ch.f}" maxlength="300" rows="3" placeholder="Quelques mots suffisent"${ok ? '' : ' readonly'} onblur="routEnregistrerTexte('${t.k}','${ch.f}',this.value)">${escHtml(tx[ch.f] || '')}</textarea></div>`).join('')
       + (ok ? `<button type="button" class="rout-texte-btn" onclick="routEnregistrerCarte('${t.k}')">Enregistrer</button>` : '');
   }
@@ -5957,7 +6014,7 @@ function routSemainesHtml(r, e) {
     for (let j = idx * 7 + 1; j <= idx * 7 + 7; j++) {
       jours += `<div class="rout-sj${demarre && e.statut === 'active' && j === e.jour ? ' auj' : ''}">
         <div class="rout-sj-entete"${demarre ? ` onclick="routChoisirJour(${j})"` : ''}><span class="rout-sj-num">Jour ${j}</span>${demarre ? `<span class="rout-sj-date">${routCourt(routAjouter(e.debut, j - 1))}</span>` : ''}</div>
-        ${routTachesDuJour(r, j).map(t => routLigneSemaine(t)).join('')}
+        ${routTachesDuJour(r, j).map(t => routLigneSemaine(t, j, e)).join('')}
       </div>`;
     }
     return `<div class="rout-semaine-block">
@@ -5970,13 +6027,13 @@ function routSemainesHtml(r, e) {
     </div>`;
   }).join('');
 }
-function routLigneSemaine(t) {
-  const guide = !!t.action && (t.action.a === 'guide' || (t.action.a === 'tags' && !!t.action.modale));
+function routLigneSemaine(t, j, e) {
+  const ouvre = routOuvrable(t, e.statut !== 'disponible');
   const titre = t.article ? 'Lecture · ' + t.description : t.titre;
-  return `<div class="rout-sl${t.opt ? ' opt' : ''}"${guide ? ` onclick="openRoutModale('${t.action.modale}')"` : ''}>
-    <span class="rout-sl-ico">${typeIcons[t.type] || '•'}</span>
+  return `<div class="rout-sl${t.opt ? ' opt' : ''}"${ouvre ? ` onclick="routAgir('${t.k}', ${j})"` : ''}>
+    <span class="rout-sl-ico">${routIcone(t)}</span>
     <span class="rout-sl-titre">${escHtml(titre)}${t.opt ? ' <em>(optionnel)</em>' : ''}</span>
-    ${guide ? '<span class="rout-sl-fl">›</span>' : ''}
+    ${ouvre ? '<span class="rout-sl-fl">›</span>' : ''}
   </div>`;
 }
 function toggleSemaine(idx) {
@@ -6052,16 +6109,27 @@ function routEnregistrerCarte(k) {
 }
 
 // ── Toucher une carte : la bonne destination ─────────────────────────────────
-function routAgir(k) {
-  const c = routContexte();
-  if (!c) return;
-  const t = routTachesDuJour(c.r, c.j).find(x => x.k === k), a = t && t.action;
+// Une tâche s'ouvre-t-elle ? Même règle dans « Aujourd'hui » et dans « Voir tout le programme » (avant le démarrage : seulement guide, recette, lecture — il n'y a pas encore de dates)
+function routOuvrable(t, demarre) {
+  const a = t.action;
+  if (!a) return false;
+  if (a.a === 'guide' || a.a === 'recette' || a.a === 'article' || (a.a === 'tags' && !!a.modale)) return true;
+  return !!demarre && (a.a === 'journal' || a.a === 'gluten');
+}
+const ROUT_ICONES_TACHE = { photo: '📸' };
+function routIcone(t) { return ROUT_ICONES_TACHE[t.k] || typeIcons[t.type] || '•'; }
+// jourDemande : le jour de la ligne touchée dans « Voir tout le programme » ; sinon le jour regardé
+function routAgir(k, jourDemande) {
+  const r = currentRoutine;
+  if (!r) return;
+  const e = routEtat(r.id), j = jourDemande || (e.statut !== 'disponible' ? (routJourVu || e.jour) : 1);
+  const t = routTachesDuJour(r, j).find(x => x.k === k), a = t && t.action, date = e.debut ? routAjouter(e.debut, j - 1) : null;
   if (!a) return;
-  if (a.a === 'journal') routOuvrirJournal(a.slide, c.date);
+  if (a.a === 'journal') { if (date) routOuvrirJournal(a.slide, date); }
   else if (a.a === 'guide' || a.a === 'tags') openRoutModale(a.modale);
   else if (a.a === 'recette') routOuvrirRecette(a.id);
   else if (a.a === 'article') routOuvrirArticle(t.article);
-  else if (a.a === 'gluten') routOuvrirGluten();
+  else if (a.a === 'gluten') { if (date) routOuvrirGluten(); }
 }
 // Journal du jour regardé, sur la bonne partie (Repas, Peau, Mode de vie…) — jamais dans le futur, 30 jours en arrière au plus
 function routOuvrirJournal(section, date) {
@@ -6069,6 +6137,7 @@ function routOuvrirJournal(section, date) {
   if (date > auj) { showToast("Ce jour n'est pas encore arrivé"); return; }
   if (routEcart(date, auj) > 30) { showToast('Le journal se remplit sur les 30 derniers jours'); return; }
   jrnCurrentDate = date === auj ? null : date;
+  routMemoriserRetour();                                         // la flèche retour du Journal ramène à la routine, sur le jour consulté
   go('journal');
   const idx = JRN_SECTIONS.findIndex(s => s.id === section);
   if (idx > 0) requestAnimationFrame(() => {
@@ -6081,12 +6150,13 @@ function routOuvrirJournal(section, date) {
 }
 function routMemoriserRetour() {         // la flèche retour d'une recette / d'un article ouvert depuis une routine ramène à la routine
   const s = document.getElementById('rout-detail-scroll');
-  routRetourVers = 'routine-detail'; routRetourScroll = s ? s.scrollTop : 0;
+  routRetourVers = 'routine-detail'; routRetourScroll = s ? s.scrollTop : 0; _routNav = true;
 }
 function routRetour(defaut) {
   const vers = routRetourVers, haut = routRetourScroll;
   routRetourVers = null;
   if (vers === 'routine-detail' && currentRoutine) {
+    jrnCurrentDate = null; jrnCurrentSlide = 0;                 // le Journal rouvert plus tard repart d'aujourd'hui (pas du jour consulté dans la routine)
     go('routine-detail');
     routRafraichirDetail();
     requestAnimationFrame(() => { const s = document.getElementById('rout-detail-scroll'); if (s) s.scrollTop = haut; });
@@ -6165,6 +6235,237 @@ function routOuvrirEnergie() {
   if (!id) return;
   openRoutineDetail(id);
   requestAnimationFrame(() => { const c = document.getElementById('rtc-energie3'); if (c) c.scrollIntoView({ block: 'center' }); });
+}
+
+// ===== ROUTINES × JOURNAL : HABITUDES, CARTE « TA ROUTINE », BILAN ENRICHI (prompt 8) =====
+// Une habitude est binaire : la case est cochée (faite) ou non (pas faite). On compare les jours « faite » et « pas faite » avec le même test que
+// l'avant / après (Mann-Whitney, p < 0,01, écart notable propre à chaque indicateur), 5 jours minimum de chaque côté, sinon rien ne s'affiche.
+// Jours retenus : la routine était en cours (au moins une case touchée ce jour-là), l'habitude y était prévue, la journée est terminée.
+// Le sommeil se note le matin pour la nuit passée : l'habitude du jour J se compare au sommeil noté le jour J + 1.
+const ROUT_HAB_MIN = 5;
+const ROUT_HAB_EXCLUES = { journal: 1, stress_soir: 1, energie3: 1 };   // habitudes de mesure : les croiser avec le journal serait circulaire
+const ROUT_HAB_OC = { transit: 'transit', ballonnements: 'bal', douleurs: 'doul', peau: 'peau', sommeil: 'som', energie: 'ener', stress: 'stress', humeur: 'hum' };   // indicateur de l'avant / après → clé des liens
+const ROUT_HAB_PHRASE = {
+  massage: 'tu fais ton massage abdominal', massage_av: 'tu fais ton massage abdominal avancé', coherence: 'tu fais ta cohérence cardiaque',
+  ferment: 'tu manges un aliment fermenté', sans_gluten: 'tu passes une journée sans gluten', etirements: 'tu fais tes étirements doux',
+  etirements_enrichis: 'tu fais tes étirements enrichis', resp_478: 'tu fais ta respiration 4-7-8', hydratation: "tu bois ton verre d'eau au réveil",
+  douche_froide: 'tu prends ta douche froide', rituel_eveil: "tu fais ton rituel d'éveil", rituel_presommeil: 'tu fais ton rituel avant le sommeil',
+  fenetre_12h: 'tu respectes ta fenêtre de 12 h la nuit'
+};
+// Indicateurs du thème de chaque programme : ils passent en premier dans « Depuis le début »
+const ROUT_THEME = { archetype_1: ['transit', 'ballonnements', 'douleurs', 'peau'], archetype_2: ['stress', 'sommeil', 'humeur'], archetype_3: ['energie', 'sommeil', 'stress'] };
+
+// Jours exploitables : { clé d'habitude : { date : { date, faite } } } (filtre : ne garder que certains passages dans un programme)
+function routJoursHabitudes(de, a, filtre) {
+  const out = {}, auj = getTodayStr();
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = /^nara_rjour_(\d{4}-\d{2}-\d{2})$/.exec(localStorage.key(i) || '');
+    if (!m || m[1] < de || m[1] > a || m[1] >= auj) continue;
+    const v = routLireJour(m[1]);
+    if (!v) continue;
+    Object.keys(v.runs).forEach(cle => {
+      const run = v.runs[cle], r = run && routinesData.find(x => x.id === run.r);
+      if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(String(run.d0)) || (filtre && !filtre(run))) return;
+      const j = routEcart(run.d0, m[1]) + 1;
+      if (j < 1 || j > ROUT_DUREE) return;
+      r.habitudes.forEach(h => {
+        if (ROUT_HAB_EXCLUES[h.k] || !h.plages.some(p => j >= p[0] && j <= p[1])) return;
+        const l = out[h.k] = out[h.k] || {}, x = l[m[1]] = l[m[1]] || { date: m[1], faite: false };
+        if (run.cases && run.cases[h.k] === 1) x.faite = true;
+      });
+    });
+  }
+  return out;
+}
+// Toutes les comparaisons (habitude × indicateur) de la période, avec ce qu'il faut pour les afficher : affiche = passe le test
+function routCalculerHabitudes(de, a, filtre) {
+  const jours = routJoursHabitudes(de, a, filtre), idx = b1BuildDayIndex(), res = [];
+  Object.keys(jours).forEach(h => {
+    const liste = Object.keys(jours[h]).sort().map(d => jours[h][d]);
+    B1_IND.filter(ind => ROUT_HAB_OC[ind.key]).forEach(ind => {
+      const vf = [], vp = [], xs = [], ys = [];
+      liste.forEach(x => {
+        const d = ind.key === 'sommeil' ? routAjouter(x.date, 1) : x.date, v = idx[d] ? idx[d][ind.key] : undefined;
+        if (v === undefined) return;
+        (x.faite ? vf : vp).push(v); xs.push(x.faite ? 1 : 0); ys.push(v);
+      });
+      const o = { h: h, ind: ind, oc: ROUT_HAB_OC[ind.key], nFaite: vf.length, nPas: vp.length, affiche: false };
+      if (vf.length >= ROUT_HAB_MIN && vp.length >= ROUT_HAB_MIN) {
+        const ma = b1Mean(vf), mb = b1Mean(vp), delta = ind.kind === 'pct' ? (ma - mb) * 100 : ma - mb, rho = spearmanCorr(xs, ys);
+        Object.assign(o, { ma: ma, mb: mb, p: b1MannWhitneyP(vf, vp), haut: delta > 0, mieux: ind.good === 'up' ? delta > 0 : delta < 0, rho: rho === null ? 0 : rho, n: vf.length + vp.length });
+        o.notable = Math.abs(delta) >= ind.seuil;
+        o.affiche = o.notable && o.p < B1_P_MAX;
+        o.force = Math.abs(o.rho) >= 0.55 ? 3 : 2;
+      }
+      res.push(o);
+    });
+  });
+  return res;
+}
+// Liens d'habitude qui passent le test (30 derniers jours par défaut), du plus fort au plus faible ; bloc = celui du symptôme concerné (même règle que les autres liens)
+function routLiensHabitudes(de, a, filtre) {
+  const auj = getTodayStr();
+  const liens = routCalculerHabitudes(de || routAjouter(auj, -29), a || routAjouter(auj, -1), filtre).filter(x => x.affiche);
+  liens.forEach(l => { l.habit = true; l.bloc = l.oc === 'peau' ? 'peau' : (l.oc === 'transit' || l.oc === 'bal' || l.oc === 'doul') ? 'ventre' : 'sommeil'; });
+  return liens.sort((x, y) => Math.abs(y.rho) - Math.abs(x.rho) || y.n - x.n);
+}
+function routResultatHabitude(l) { return CORR_MOTS[l.oc].cl[l.haut ? 'haut' : 'bas'] + (l.oc === 'som' ? ' la nuit suivante' : ''); }
+function routPointsHabitude(l) { return '&nbsp;<span class="ins-dots">' + (l.force === 3 ? '●●●' : '●●') + '</span>'; }
+function routPhraseHabitude(l) { return 'Les jours où ' + ROUT_HAB_PHRASE[l.h] + ', ' + routResultatHabitude(l) + routPointsHabitude(l) + '.'; }
+function routLigneHabitudeHtml(l) {          // une ligne courte (« Voir les autres liens », Vue d'ensemble), comme les autres liens
+  const V = CORR_VOC[l.oc], icone = (!l.haut && V.iconeBas) || V.icone;
+  return '<div class="ins-lien" data-lien="h:' + l.h + '|' + l.oc + '"><span>' + icone + ' Les jours où ' + ROUT_HAB_PHRASE[l.h] + ', ' + routResultatHabitude(l) + '</span><span class="ins-dots">' + (l.force === 3 ? '●●●' : '●●') + '</span></div>';
+}
+// Les 3 liens de la Vue d'ensemble : les 3 plus forts liens entre indicateurs (corrTopLiens) et les liens d'habitude, classés ensemble (|rho| puis nombre de jours), dont 1 lien d'habitude au plus (48 comparaisons : un lien dû au hasard reste possible)
+function routTopLiens() {
+  const tous = corrTopLiens().map(l => ({ l: l, f: Math.abs(l.rho), n: l.n, habit: false })).concat(routLiensHabitudes().map(l => ({ l: l, f: Math.abs(l.rho), n: l.n, habit: true })));
+  tous.sort((x, y) => y.f - x.f || y.n - x.n);
+  const out = []; let h = 0;
+  tous.forEach(x => { if (out.length >= 3 || (x.habit && h >= 1)) return; if (x.habit) h++; out.push(x); });
+  return out;
+}
+
+// ── Suivi de la routine en cours : résumé dans la carte « Ta routine », pas répété dans « Avant / Après tes nouveaux suivis » ──
+function routSuiviActif(sv) {
+  const id = routIdActive();
+  if (!id || !sv || typeof sv.id !== 'string') return false;
+  const e = routEtat(id);
+  return e.statut === 'active' && sv.id === 'routine-' + id + '-' + e.debut;
+}
+// Avant / après du suivi créé au démarrage (moteur existant) : lignes ordonnées (indicateurs du thème d'abord, puis par ampleur) ; null si le suivi n'existe plus
+function routDepuisLeDebut(rid, debut) {
+  let suivis = [];
+  try { suivis = getSuivisContext(); } catch (e) { return null; }
+  const groups = b1Groups(suivis), i = groups.findIndex(g => g.precision === 'jour' && g.date === debut);
+  if (i < 0) return null;
+  const idx = b1BuildDayIndex(), w = b1Windows(groups, i, getTodayStr()), res = b1GroupResult(idx, w), th = ROUT_THEME[rid] || [];
+  const rang = x => (th.indexOf(x.ind.key) >= 0 ? 0 : 1);
+  return { comparables: res.comparables, rows: res.rows.slice().sort((x, y) => rang(x) - rang(y) || y.ratio - x.ratio), semaines: Math.max(2, Math.round((b1DaysBetween(w.avantStart, w.avantEnd) + 1) / 7)) };
+}
+function routLigneDepuis(x) { return x.ind.label.toLowerCase() + ' ' + b1Fmt(x.ind, x.avant) + ' → ' + b1Fmt(x.ind, x.apres) + x.ind.suffixe + ' ' + (x.apres > x.avant ? '↑' : '↓'); }
+
+// ── Carte « Ta routine » (Vue d'ensemble) : seulement si une routine est en cours ──
+function routCarteInsightsHtml() {
+  const id = routIdActive();
+  if (!id) return '';
+  const r = routinesData.find(x => x.id === id), e = routEtat(id);
+  if (!r || e.statut !== 'active') return '';
+  const obl = routTachesDuJour(r, e.jour).filter(t => !t.opt), run = routRun(getTodayStr(), id, e.debut), c = (run && run.cases) || {};
+  const dep = routDepuisLeDebut(id, e.debut);
+  return '<div class="ins-routine-card" style="--rc:' + r.couleur + '"><div class="ins-routine-haut"><span class="ins-routine-emoji">' + r.emoji + '</span><div><div class="ins-routine-lib">Ta routine</div><div class="ins-routine-nom">' + escHtml(r.titre) + '</div></div>'
+    + '<div class="ins-routine-jour">Jour ' + e.jour + ' sur ' + ROUT_DUREE + '</div></div>'
+    + '<div class="ins-routine-barre"><i style="width:' + Math.round(e.jour / ROUT_DUREE * 100) + '%"></i></div>'
+    + (obl.length ? '<div class="ins-routine-ligne">Aujourd\'hui : <b>' + obl.filter(t => c[t.k]).length + '/' + obl.length + '</b> tâches faites</div>' : '')
+    + (dep && dep.rows.length ? '<div class="ins-routine-depuis">Depuis le début : ' + dep.rows.slice(0, 2).map(routLigneDepuis).join(' · ') + '</div>' : '')
+    + '<button type="button" class="ins-routine-btn" onclick="openRoutineDetail(\'' + id + '\')">Voir aujourd\'hui →</button></div>';
+}
+
+// ── Bilan final enrichi : au-dessus du champ de texte de « Bilan » (jour 20 et écran Terminée) et de « Mes 3 habitudes à garder » (jour 21) ──
+const ROUT_DOUX = {
+  ballonnements: { sujet: 'Tes ballonnements', baisse: 'ont baissé depuis le début, mais restent assez présents', eleve: 'restent assez élevés', pire: "sont un peu plus marqués qu'avant le programme", ech: 5, seuil: 3.5 },
+  douleurs:      { sujet: 'Tes douleurs',      baisse: 'ont baissé depuis le début, mais restent assez présentes', eleve: 'restent assez présentes', pire: "sont un peu plus fréquentes qu'avant le programme", ech: 2, seuil: 1.5 },
+  stress:        { sujet: 'Ton stress',        baisse: 'a baissé depuis le début, mais reste assez présent', eleve: 'reste assez élevé', pire: "est un peu plus haut qu'avant le programme", ech: 5, seuil: 3.5 }
+};
+// Moyenne des notes d'énergie de chaque moment (Matin · Midi · Soir) sur les jours j1 à j2 ; null s'il y a moins de 3 notes
+function routMoyEnergie(rid, debut, j1, j2) {
+  return ROUT_ENERGIE.map(c => {
+    const v = [];
+    for (let j = j1; j <= j2; j++) { const run = routRun(routAjouter(debut, j - 1), rid, debut); if (run && run.energie && run.energie[c[0]] > 0) v.push(run.energie[c[0]]); }
+    return v.length >= 3 ? Math.round(b1Mean(v) * 10) / 10 : null;
+  });
+}
+// Même style que les graphiques de l'onglet Liens : semaine 1 en aire douce, semaine 3 en trait plein ; échelle commune de 1 à 5
+function routGraphEnergieSvg(s1, s3) {
+  const W = 300, H = 118, padL = 30, padR = 22, padT = 10, padB = 24, ih = H - padT - padB, base = padT + ih, col = CORR_COUL.ener, xs = [58, 150, 242];
+  const y = v => padT + ih - (v - 1) / 4 * ih, pts = a => a.map((v, i) => ({ x: xs[i], y: y(v) })), p1 = pts(s1), p3 = pts(s3), d1 = corrCourbe(p1), d3 = corrCourbe(p3);
+  const grille = [1, 3, 5].map(v => '<line x1="' + padL + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--oat)" stroke-width="0.6" stroke-dasharray="2 3"/><text x="' + (padL - 6) + '" y="' + (y(v) + 3).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="var(--text-light)">' + v + '</text>').join('');
+  const noms = ['Matin', 'Midi', 'Soir'].map((t, i) => '<text x="' + xs[i] + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" fill="var(--text-mid)">' + t + '</text>').join('');
+  const val = (p, a, dy, c) => p.map((q, i) => '<text x="' + q.x.toFixed(1) + '" y="' + (q.y + dy).toFixed(1) + '" text-anchor="middle" font-size="10.5" font-weight="600" fill="' + c + '">' + b1Num(a[i]) + '</text>').join('');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;overflow:visible" role="img" aria-label="Énergie moyenne le matin, à midi et le soir : semaine 1 (aire) et semaine 3 (trait)">'
+    + '<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + base + '" stroke="var(--oat)"/><line x1="' + padL + '" y1="' + base + '" x2="' + (W - padR) + '" y2="' + base + '" stroke="var(--oat)"/>' + grille
+    + '<path d="' + d1 + ' L' + p1[2].x.toFixed(1) + ',' + base + ' L' + p1[0].x.toFixed(1) + ',' + base + ' Z" fill="' + corrRgba(col, 0.25) + '"/>'
+    + '<path d="' + d3 + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' + val(p1, s1, 14, '#7a7a8c') + val(p3, s3, -8, col) + noms + '</svg>';
+}
+function routEnergieHtml(rid, debut) {
+  const s1 = routMoyEnergie(rid, debut, 1, 7), s3 = routMoyEnergie(rid, debut, 15, 21);
+  const t = '<div class="rb"><div class="rb-t">Ton énergie dans la journée</div>';
+  if (s1.indexOf(null) >= 0 || s3.indexOf(null) >= 0) return t + '<div class="rb-note">Pas assez de notes d\'énergie pour comparer les semaines 1 et 3.</div></div>';
+  return t + '<div class="rb-leg"><span><i style="background:' + corrRgba(CORR_COUL.ener, 0.25) + ';border:1px solid ' + corrRgba(CORR_COUL.ener, 0.5) + '"></i>Semaine 1</span><span><i style="background:' + CORR_COUL.ener + '"></i>Semaine 3</span></div>'
+    + routGraphEnergieSvg(s1, s3) + '<div class="rb-note">Moyenne de tes notes, échelle de 1 à 5</div></div>';
+}
+// Photos de peau : départ = la plus ancienne des jours 1 à 3, fin = la plus récente des jours 19 à 23 (une photo est datée du jour où elle est prise)
+function routPhotoRef(date) {
+  const h = loadSkinPhotoHistory().filter(p => p.date === date)[0];
+  if (h && h.path) return h.path;
+  const s = localStorage.getItem('nara_photo_' + date);
+  return s ? (s.indexOf('data:') === 0 ? s : photoPathFrom(s)) : null;
+}
+function routPhotosProgramme(debut) {
+  const dates = {};
+  loadSkinPhotoHistory().forEach(p => { dates[p.date] = 1; });
+  for (let i = 0; i < localStorage.length; i++) { const m = /^nara_photo_(\d{4}-\d{2}-\d{2})$/.exec(localStorage.key(i) || ''); if (m) dates[m[1]] = 1; }
+  const ds = Object.keys(dates).sort(), choix = (a, b, dernier) => { const l = ds.filter(d => d >= routAjouter(debut, a) && d <= routAjouter(debut, b) && routPhotoRef(d)); return l.length ? (dernier ? l[l.length - 1] : l[0]) : null; };
+  return { depart: choix(0, 2, false), fin: choix(18, 22, true) };
+}
+function routPhotosHtml(debut, actif) {
+  const p = routPhotosProgramme(debut);
+  if (!p.depart && !p.fin) return '';
+  const fig = (d, nom) => d ? '<figure>' + photoImgHtml(routPhotoRef(d), { alt: 'Photo de ' + nom.toLowerCase() }) + '<figcaption>' + nom + ' · ' + routCourt(d) + '</figcaption></figure>' : '';
+  const note = !p.fin ? (actif ? 'Pas de photo de fin pour l\'instant : elle est prévue au jour 21.' : 'Pas de photo de fin.') : (!p.depart ? 'Pas de photo de départ.' : '');
+  return '<div class="rb"><div class="rb-t">Ta peau, au départ et à la fin</div><div class="rb-photos' + (p.depart && p.fin ? '' : ' une') + '">' + fig(p.depart, 'Départ') + fig(p.fin, 'Fin') + '</div>' + (note ? '<div class="rb-note">' + note + '</div>' : '') + '</div>';
+}
+function routNotesHtml(rid, debut) {
+  const ligne = (j, n) => {
+    const run = routRun(routAjouter(debut, j - 1), rid, debut), tx = (run && run.textes && run.textes.point) || {}, c = String(tx.change || '').trim(), d = String(tx.difficile || '').trim();
+    return (c || d) ? '<p><b>Semaine ' + n + '</b>' + (c ? ' · Ce qui a changé : « ' + escHtml(c) + ' »' : '') + (d ? ' · Ce qui a été difficile : « ' + escHtml(d) + ' »' : '') + '</p>' : '';
+  };
+  const h = ligne(7, 1) + ligne(14, 2);
+  return h ? '<div class="rb rb-notes"><div class="rb-t">Tes notes des semaines 1 et 2</div>' + h + '</div>' : '';
+}
+// Ligne douce : jamais en contradiction avec l'avant / après affiché au-dessus (un indicateur amélioré mais encore élevé le dit)
+function routLigneDouceHtml(debut, dep) {
+  const idx = b1BuildDayIndex(), fin = routAjouter(debut, ROUT_DUREE - 1), auj = getTodayStr(), bout = fin < auj ? fin : auj, phrases = [];
+  let pire = false;
+  Object.keys(ROUT_DOUX).forEach(k => {
+    const d = ROUT_DOUX[k], v = [];
+    for (let i = 0; i < 7; i++) { const x = idx[routAjouter(bout, -i)]; if (x && x[k] !== undefined) v.push(x[k]); }
+    const moy = v.length >= 4 ? b1Mean(v) : null, eleve = moy !== null && moy >= d.seuil, row = dep ? dep.rows.filter(x => x.ind.key === k)[0] : null;
+    if (row && !row.mieux) { phrases.push(d.sujet + ' ' + d.pire + '.'); pire = true; }
+    else if (row && row.mieux && eleve) phrases.push(d.sujet + ' ' + d.baisse + ' ces derniers jours (moyenne ' + b1Num(moy) + ' sur ' + d.ech + ').');
+    else if (!row && eleve) phrases.push(d.sujet + ' ' + d.eleve + ' ces derniers jours (moyenne ' + b1Num(moy) + ' sur ' + d.ech + ').');
+  });
+  if (!phrases.length) return '';
+  return '<div class="rb-doux">' + phrases.join(' ') + (pire ? ' Ça peut arriver.' : '') + ' Si cela dure ou te pèse, en parler à un professionnel de santé peut t\'aider.'
+    + '<button type="button" class="rb-lien" onclick="routOuvrirArticle(\'034\')">Quand consulter un professionnel : les signaux d\'alerte →</button></div>';
+}
+function routBilanHtml(r, ctx) {
+  const e = ctx.e, dep = routDepuisLeDebut(r.id, e.debut);
+  let h = '<div class="rb"><div class="rb-t">Depuis le début de ton programme</div>';
+  if (dep && dep.rows.length) h += '<div class="rb-rows">' + dep.rows.slice(0, 4).map(b1RowHtml).join('') + '</div><div class="rb-note">Comparé aux ' + dep.semaines + ' semaines précédentes</div>';
+  else h += '<div class="rb-note">' + (dep && dep.comparables ? 'Pas de changement net depuis le début de ton programme.' : 'Pas encore assez de jours renseignés pour comparer avant et après.') + '</div>';
+  h += '</div>';
+  if (r.id === 'archetype_3') h += routEnergieHtml(r.id, e.debut);
+  if (r.id === 'archetype_1') h += routPhotosHtml(e.debut, e.statut === 'active');
+  return h + routNotesHtml(r.id, e.debut) + routLigneDouceHtml(e.debut, dep);
+}
+// « Mes 3 habitudes à garder » : chaque habitude du programme, les jours où elle a été faite, et le lien observé s'il existe
+function routHabitudesGarderHtml(r, ctx) {
+  const e = ctx.e, auj = getTodayStr(), fin = routAjouter(e.debut, ROUT_DUREE - 1), bout = fin < auj ? fin : auj;
+  const liens = routLiensHabitudes(e.debut, bout, run => run.r === r.id && run.d0 === e.debut);
+  const lignes = r.habitudes.map(h => {
+    let prevus = 0, faits = 0;
+    for (let j = 1; j <= ROUT_DUREE; j++) {
+      const date = routAjouter(e.debut, j - 1);
+      if (date > bout || !h.plages.some(p => j >= p[0] && j <= p[1])) continue;
+      prevus++;
+      const run = routRun(date, r.id, e.debut);
+      if (run && run.cases && run.cases[h.k] === 1) faits++;
+    }
+    const lien = liens.filter(l => l.h === h.k)[0];
+    return '<div class="rb-hab-l"><div class="rb-hab-n"><b>' + escHtml(r.taches[h.k].titre) + (h.opt ? ' <em>(facultatif)</em>' : '') + '</b><span>fait ' + faits + ' jour' + (faits > 1 ? 's' : '') + ' sur ' + prevus + '</span></div>'
+      + (lien ? '<div class="rb-hab-lien">Les jours où tu le fais, ' + routResultatHabitude(lien) + routPointsHabitude(lien) + '</div>' : '') + '</div>';
+  }).join('');
+  return '<div class="rb"><div class="rb-t">Pour t\'aider à choisir</div><div class="rb-hab">' + lignes + '</div><div class="rb-note">Des liens observés, pas des causes.</div></div>';
 }
 
 // Init
@@ -8462,9 +8763,11 @@ function b1Render() {
     const w = b1Windows(groups, i, today);
     const res = b1GroupResult(idx, w);
     if (!res.comparables) return;                              // pas assez de données : on n'affiche rien
+    const visibles = g.suivis.filter(sv => !routSuiviActif(sv));   // le suivi de la routine en cours est résumé dans la carte « Ta routine » : pas répété ici
+    if (!visibles.length) return;
     const quand = (g.precision === 'jour' ? 'le ' : '') + suivisDateLabel(g.date);
     // Titre : le nom du suivi (champ « Précision libre ») s'il en a un, sinon son type
-    const titre = g.suivis.map(sv => escHtml(sv.note && String(sv.note).trim() ? String(sv.note).trim() : (sv.type || 'Suivi')) + (sv.problo ? ' · ' + escHtml(sv.problo) : '')).join(' + ');
+    const titre = visibles.map(sv => escHtml(sv.note && String(sv.note).trim() ? String(sv.note).trim() : (sv.type || 'Suivi')) + (sv.problo ? ' · ' + escHtml(sv.problo) : '')).join(' + ');
     const semaines = Math.max(2, Math.round((b1DaysBetween(w.avantStart, w.avantEnd) + 1) / 7));
     // Version compacte : les 3 changements les plus marqués ; les autres sont dans « Voir le détail »
     const tries = res.rows.slice().sort((x, y) => y.ratio - x.ratio);
@@ -8557,10 +8860,10 @@ function insightsOpenWeekCard(key) {
 
 // Les 3 liens les plus forts des 30 derniers jours, hors liens évidents (même classement que l'onglet Liens : chacun y figure) ; bloc absent s'il n'y en a aucun
 function insightsTopLiensHtml() {
-  const liens = corrTopLiens();
+  const liens = routTopLiens();
   if (!liens.length) return '';
   return '<div class="ins-liens"><div class="ins-liens-titre">Liens repérés</div><div class="ins-liens-liste">'
-    + liens.map(l => { const p = corrPhrase(l); return '<div class="ins-lien"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('')
+    + liens.map(x => { if (x.habit) return routLigneHabitudeHtml(x.l); const p = corrPhrase(x.l); return '<div class="ins-lien"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('')
     + '</div><div class="ins-liens-pied"><span class="ins-liens-legende">●●● lien marqué · ●● lien modéré</span>'
     + '<button class="ins-link-btn" onclick="insightsSetTab(\'liens\')">Voir tous les liens</button></div></div>';
 }
@@ -8600,7 +8903,7 @@ function insightsPdfHtml(totalEntries) {
 }
 
 function insightsTabOverview(ctx) {
-  let html = insightsAlertesHtml(ctx);
+  let html = insightsAlertesHtml(ctx) + routCarteInsightsHtml();
   if (ctx.totalEntries < ctx.SEUIL_INSIGHTS) html += insightsEmptyHtml(ctx);
   else html += insightsResumeHtml(ctx) + insightsTopLiensHtml();
   return html + ctx.brique1Html + insightsPdfHtml(ctx.totalEntries);
@@ -9096,22 +9399,26 @@ function corrGraphiqueHtml(l, idx) {
 }
 
 // ── Un bloc : texte, graphique du lien le plus fort, « Voir les N autres liens » (une ligne courte par lien, comme la Vue d'ensemble) ──
-function corrBlocHtml(bloc, liens, idx) {
+function corrBlocHtml(bloc, liens, idx, hab) {
+  hab = hab || [];                                                                     // liens d'habitude de ce bloc (du plus fort au plus faible), sans plafond
   const tete = '<div class="lk-bloc" style="border-color:' + bloc.bordure + '"><div class="lk-titre">' + bloc.titre + '</div>';
-  if (!liens.length) return tete + '<div class="lk-vide">Pas de lien net pour l\'instant.</div></div>';
+  if (!liens.length && !hab.length) return tete + '<div class="lk-vide">Pas de lien net pour l\'instant.</div></div>';
   const nets = liens.filter(l => !corrEvident(l)), evidents = liens.filter(corrEvident);
+  const phHab = hab.slice(0, 2).map(routPhraseHabitude), habAutres = hab.slice(2);      // les 2 plus forts rejoignent le texte, les autres vont dans « Voir les autres liens »
   let h = tete, cites = [];
   if (nets.length) {
     const t = corrTexteBloc(nets, bloc.id);
     cites = t.cites;
     const tracer = nets.filter(l => cites.indexOf(l) >= 0)[0] || nets[0];            // le lien le plus fort du texte
-    h += '<p class="lk-texte" data-liens="' + cites.map(corrCle).join(' ') + '">' + t.phrases.join(' ') + '</p>' + corrGraphiqueHtml(tracer, idx);
-  } else h += '<div class="lk-vide">Pas de lien net pour l\'instant.</div>';
-  const autres = nets.filter(l => cites.indexOf(l) < 0).concat(evidents);              // les liens évidents viennent en dernier
-  if (autres.length) {
-    const id = 'lk-autres-' + bloc.id, voir = autres.length === 1 ? 'Voir 1 autre lien' : 'Voir les ' + autres.length + ' autres liens';
+    h += '<p class="lk-texte" data-liens="' + cites.map(corrCle).join(' ') + '">' + t.phrases.concat(phHab).join(' ') + '</p>' + corrGraphiqueHtml(tracer, idx);
+  } else if (phHab.length) h += '<p class="lk-texte">' + phHab.join(' ') + '</p>';
+  else h += '<div class="lk-vide">Pas de lien net pour l\'instant.</div>';
+  const ligne = l => { const p = corrPhrase(l); return '<div class="ins-lien" data-lien="' + corrCle(l) + '"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; };
+  const lignes = nets.filter(l => cites.indexOf(l) < 0).map(ligne).concat(habAutres.map(routLigneHabitudeHtml), evidents.map(ligne));   // les liens évidents viennent en dernier
+  if (lignes.length) {
+    const id = 'lk-autres-' + bloc.id, voir = lignes.length === 1 ? 'Voir 1 autre lien' : 'Voir les ' + lignes.length + ' autres liens';
     h += '<div class="lk-autres" id="' + id + '">'
-      + autres.map(l => { const p = corrPhrase(l); return '<div class="ins-lien" data-lien="' + corrCle(l) + '"><span>' + p.icone + ' ' + p.texte + '</span><span class="ins-dots">' + p.points + '</span></div>'; }).join('')
+      + lignes.join('')
       + '</div><button class="ins-link-btn" onclick="insToggleDetail(\'' + id + '\', this, \'' + voir + '\', \'Masquer\')">' + voir + '</button>';
   }
   return h + '</div>';
@@ -9119,9 +9426,9 @@ function corrBlocHtml(bloc, liens, idx) {
 function insightsTabLiens(ctx) {
   const det = corrCatalogueDetail();
   if (det.nMax < CORR_MIN_JOURS) return '<div class="ichart-empty" style="padding:32px 16px">Les liens entre tes indicateurs apparaîtront ici dès ' + CORR_MIN_JOURS + ' jours de données.</div>';
-  const liens = corrTrier(corrDedoublonner(det.liens));
+  const liens = corrTrier(corrDedoublonner(det.liens)), hab = routLiensHabitudes();
   return '<div class="lk-intro">Sur tes 30 derniers jours · des liens observés, pas des causes.</div>'
-    + CORR_BLOCS.map(b => corrBlocHtml(b, liens.filter(l => corrBloc(l) === b.id), det.idx)).join('');
+    + CORR_BLOCS.map(b => corrBlocHtml(b, liens.filter(l => corrBloc(l) === b.id), det.idx, hab.filter(l => l.bloc === b.id))).join('');
 }
 
 function renderInsightsPage() {
@@ -9369,7 +9676,7 @@ const CORR_TRANSIT = { transit: 1, selle: 1, bristol: 1, freq: 1, freqTous: 1 };
 function corrEvident(l) { return !!(CORR_TRANSIT[l.a] && CORR_TRANSIT[l.b]); }
 // Liens à mettre en avant : la liste classée sans les liens évidents
 function corrLiensNets(opts) { return corrListeClassee(opts).filter(l => !corrEvident(l)); }
-// Les 3 liens de la Vue d'ensemble : les plus forts des 30 derniers jours ; chacun apparaît dans l'onglet Liens
+// Les 3 liens entre indicateurs les plus forts des 30 derniers jours (routTopLiens y ajoute au plus 1 lien d'habitude pour la Vue d'ensemble) ; chacun apparaît dans l'onglet Liens
 function corrTopLiens() { return corrLiensNets().slice(0, 3); }
 // Un thème = un indicateur, sauf le transit (4 mesures = 1 thème)
 function corrTheme(k) { return CORR_TRANSIT[k] ? 'transit' : (CORR_CANON[k] || k); }

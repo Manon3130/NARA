@@ -112,9 +112,9 @@ if (typeof supabase === 'undefined') {
   }
   .screen.active { display: flex; }
 
-  /* Masque TOUTES les navs quand l'écran est non-authentifié.
-     Utilise une classe sur le body plutôt que display:none sur le parent,
-     car position:fixed échappe au display:none de son parent sur Safari iOS. */
+  /* Masque toutes les barres de menu sur les écrans sans connexion (accueil de l'app, inscription, connexion…).
+     Une seule classe sur le body suffit : pas besoin de cacher chaque barre une par une.
+     Depuis le prompt 9, chaque barre est rangée dans son propre écran, donc déjà cachée avec lui quand il est inactif ; cette règle est une sécurité en plus. */
   body.no-nav .bottom-nav,
   body.no-nav .bottom-nav-shared {
     display: none !important;
@@ -830,7 +830,7 @@ if (typeof supabase === 'undefined') {
   .lib-art-alert { display: inline-block; font-size: 0.6rem; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
 
   /* ===== ARTICLE DÉTAIL ===== */
-  #screen-article-detail { background: var(--cream); position: relative; }
+  #screen-article-detail { background: var(--cream); }   /* pas de « position: relative » : l'écran reste fixe et plein écran comme les autres, sinon il prend la hauteur de son contenu et le texte ne défile plus */
   .art-progress-bar {
     position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: rgba(0,0,0,0.08); z-index: 50;
@@ -851,7 +851,7 @@ if (typeof supabase === 'undefined') {
   .art-hero-titre { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400; line-height: 1.3; margin-bottom: 6px; }
   .art-hero-sous { font-size: 0.82rem; opacity: 0.75; font-style: italic; margin-bottom: 14px; }
   .art-hero-meta { font-size: 0.7rem; opacity: 0.65; }
-  .art-body-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 24px 24px; scrollbar-width: none; }
+  .art-body-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px)); scrollbar-width: none; }
   .art-body-scroll::-webkit-scrollbar { display: none; }
 
   /* Corps article */
@@ -1134,6 +1134,32 @@ if (typeof supabase === 'undefined') {
 
   /* Version de l'appli (bas du profil) */
   .app-version { text-align: center; font-size: 0.68rem; color: var(--text-light); opacity: 0.75; padding: 18px 0 4px; letter-spacing: 0.02em; }
+
+  /* Diagnostic d'affichage caché : appui long sur « Version du … » (voir diagOuvrir). Sur l'iPhone, l'appui long ne doit ni sélectionner le texte ni ouvrir de loupe */
+  #app-version { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #diag-overlay {
+    position: fixed; inset: 0; z-index: 10000; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    padding: calc(var(--safe-top) + 8px) 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    background: rgba(40,35,25,0.55);
+  }
+  .diag-carte {
+    width: 100%; max-width: 460px; max-height: 100%; box-sizing: border-box;
+    display: flex; flex-direction: column;
+    background: #FFFAF2; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); padding: 14px 14px 12px;
+  }
+  .diag-titre { font-size: 0.95rem; font-weight: 600; color: var(--text-dark); }
+  .diag-aide { font-size: 0.72rem; color: var(--text-light); margin: 4px 0 8px; line-height: 1.45; }
+  .diag-texte {
+    flex: 1; min-height: 0; margin: 0; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    -webkit-user-select: text; user-select: text;
+    background: #fff; border: 1px solid var(--oat); border-radius: 10px; padding: 8px 10px;
+    font: 10.5px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text-dark);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .diag-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .diag-btn { flex: 1; min-height: 44px; border: 0; border-radius: 12px; padding: 12px 10px; font-size: 0.82rem; font-weight: 600; background: var(--sage); color: #fff; cursor: pointer; }
+  .diag-btn-sec { background: var(--oat); color: var(--text-dark); }
 
   /* ===== MOT DE PASSE OUBLIÉ — MODALE ===== */
   .fp-overlay {
@@ -3355,7 +3381,6 @@ if (typeof supabase === 'undefined') {
       <div id="journal-scroll" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
         <!-- Rendu dynamique par renderJournal() -->
       </div>
-      </div>
       <!-- shared bottom nav -->
       <div class="bottom-nav-shared">
         <div class="bnav-item" id="jrn-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
@@ -3547,7 +3572,7 @@ if (typeof supabase === 'undefined') {
         </div>
       </div>
     </div>
-
+</div><!-- fin de #app : tous les écrans principaux sont à l'intérieur -->
 
 
 <script>
@@ -3661,9 +3686,273 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '17/11 · 20 h 54';   // date et heure (Paris) de la livraison, affichée en bas du profil
+const APP_VERSION = '22/11 · 6 h 26';   // date et heure (Paris) de la livraison, affichée en bas du profil
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
+
+// ══ DIAGNOSTIC D'AFFICHAGE (caché) : appui long (environ 1 seconde) sur « Version du … », tout en bas du profil ═══════════════
+// Sert à voir, sur l'iPhone lui-même, ce que l'écran mesure réellement (barre du bas remontée, bande colorée en bas de page).
+// Lecture seule : il ne change rien à l'affichage, n'écrit ni dans le stockage de l'appareil ni dans Supabase, n'envoie rien sur le réseau.
+// Le texte reste sur l'appareil jusqu'à ce qu'on appuie sur « Copier le texte » et qu'on le colle soi-même.
+const DIAG_T0 = routMaintenant();    // instant de lancement de l'app (l'horloge de l'appli est unique : routMaintenant(), règle 7 du document de synchronisation)
+const DIAG_JOURNAL = [];             // derniers événements d'affichage (changements d'écran, clavier, retour dans l'app…), en mémoire seulement
+const DIAG_JOURNAL_MAX = 18;
+const DIAG_APPUI_MS = 800;           // durée de l'appui long
+let _diagOuvertA = 0;                // instant d'ouverture de la fenêtre (ignore le « clic fantôme » de la fin de l'appui)
+const _diagDernierEv = {};           // dernier relevé par type d'événement fréquent (limite le bruit)
+
+function diagN(n) { return (typeof n === 'number' && isFinite(n)) ? String(Math.round(n * 10) / 10) : '?'; }
+function diagNomEl(el) {
+  if (!el || !el.tagName) return '—';
+  const c = typeof el.className === 'string' ? el.className.trim().split(/\s+/)[0] : '';
+  return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (c ? '.' + c : '');
+}
+// Couleur « rgb(…) » → #RRGGBB ; « ∅ » si transparente
+function diagHex(css) {
+  const m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?/.exec(css || '');
+  if (!m) return css || '—';
+  if (m[4] !== undefined && parseFloat(m[4]) === 0) return '∅';
+  return '#' + [m[1], m[2], m[3]].map(v => ('0' + parseInt(v, 10).toString(16)).slice(-2)).join('').toUpperCase();
+}
+function diagDuree(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 90) return s + ' s';
+  const mn = Math.round(s / 60);
+  return mn < 90 ? mn + ' min' : Math.floor(mn / 60) + ' h ' + ('0' + (mn % 60)).slice(-2) + ' min';
+}
+
+// Éléments peints à un point de l'écran, du dessus vers le dessous (avec la couleur de fond de ceux qui en ont une)
+function diagPile(x, y, max) {
+  try {
+    const l = document.elementsFromPoint ? document.elementsFromPoint(x, y) : [document.elementFromPoint(x, y)];
+    return l.filter(Boolean).slice(0, max || 6).map(e => {
+      const f = diagHex(getComputedStyle(e).backgroundColor);
+      return diagNomEl(e) + (f && f !== '∅' ? '{' + f + '}' : '');
+    });
+  } catch (e) { return ['?']; }
+}
+
+// Sondes : éléments invisibles, retirés aussitôt, qui donnent les vraies valeurs des unités et des marges de l'appareil
+function diagSondes() {
+  const r = {};
+  const s = document.createElement('div');
+  s.setAttribute('aria-hidden', 'true');
+  s.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;';
+  const mk = css => { const d = document.createElement('div'); d.style.cssText = css; s.appendChild(d); return d; };
+  const base = 'position:absolute;left:0;top:0;width:1px;';
+  const pVh = mk(base + 'height:100vh;'), pDvh = mk(base + 'height:100dvh;'), pSvh = mk(base + 'height:100svh;'), pLvh = mk(base + 'height:100lvh;');
+  const pPlein = mk('position:fixed;left:0;top:0;right:0;bottom:0;');
+  const pBas = mk('position:fixed;left:0;bottom:0;width:1px;height:1px;');
+  const pBord = mk(base + 'height:1px;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);');
+  const pHaut = mk(base + 'height:1px;padding-top:var(--safe-top,0px);');
+  try {
+    document.body.appendChild(s);
+    const px = v => parseFloat(v) || 0, cs = getComputedStyle(pBord);
+    r.vh = pVh.getBoundingClientRect().height; r.dvh = pDvh.getBoundingClientRect().height;
+    r.svh = pSvh.getBoundingClientRect().height; r.lvh = pLvh.getBoundingClientRect().height;
+    r.plein = pPlein.getBoundingClientRect().height; r.fixeBas = pBas.getBoundingClientRect().bottom;
+    r.bord = { haut: px(cs.paddingTop), droite: px(cs.paddingRight), bas: px(cs.paddingBottom), gauche: px(cs.paddingLeft) };
+    r.safeTop = px(getComputedStyle(pHaut).paddingTop);
+  } catch (e) { r.erreur = String(e && e.message || e); }
+  finally { if (s.parentNode) s.parentNode.removeChild(s); }
+  r.svhOk = !!(window.CSS && CSS.supports && CSS.supports('height', '100svh'));
+  return r;
+}
+
+// Un relevé : fenêtre, écran actif, barres de menu visibles, éléments tout en bas
+function diagMesurer() {
+  const d = document, vv = window.visualViewport;
+  const m = { iw: window.innerWidth, ih: window.innerHeight, sy: window.scrollY || 0 };
+  if (vv) { m.vw = vv.width; m.vh = vv.height; m.vt = vv.offsetTop; m.vl = vv.offsetLeft; m.vs = vv.scale; }
+  const actif = d.querySelector('.screen.active');
+  m.ecr = actif && actif.id ? actif.id.replace(/^screen-/, '') : null;
+  if (actif) {
+    const q = actif.getBoundingClientRect(); m.et = q.top; m.eb = q.bottom;
+    m.enf = Array.from(actif.children).filter(c => c.getClientRects().length).slice(0, 6).map(c => { const k = c.getBoundingClientRect(); return diagNomEl(c) + ' ' + diagN(k.top) + '→' + diagN(k.bottom); });
+  }
+  m.nav = Array.from(d.querySelectorAll('.bottom-nav, .bottom-nav-shared')).filter(n => n.getClientRects().length && getComputedStyle(n).visibility !== 'hidden').map(n => {
+    const q = n.getBoundingClientRect();
+    return { n: diagNomEl(n), p: n.parentElement ? diagNomEl(n.parentElement) : '—', h: q.top, b: q.bottom };
+  });
+  const x = Math.round(m.iw / 2);
+  m.pile = diagPile(x, Math.max(0, m.ih - 2), 5);
+  return m;
+}
+function diagSignature(m) {
+  if (!m) return '';
+  return [m.ih, m.vh, m.vt, m.sy, m.ecr, m.eb, (m.nav || []).map(n => diagN(n.b)).join(','), (m.pile || []).join('<')].join('|');
+}
+function diagLigne(m) {
+  if (!m) return '(pas de relevé : l\'app était en arrière-plan)';
+  const p = ['fen ' + m.iw + '×' + diagN(m.ih)];
+  if (m.vh != null) p.push('vv ' + diagN(m.vw) + '×' + diagN(m.vh) + ' +' + diagN(m.vt));
+  p.push('défil ' + diagN(m.sy));
+  p.push('écran ' + (m.ecr || '—') + (m.et != null ? ' ' + diagN(m.et) + '→' + diagN(m.eb) : ''));
+  p.push(m.nav.length ? 'barre' + (m.nav.length > 1 ? ' ×' + m.nav.length : '') + ' bas ' + m.nav.map(n => diagN(n.b)).join(' / ') + ' (écart ' + m.nav.map(n => diagN(m.ih - n.b)).join(' / ') + ')' : 'barre —');
+  if (m.enf && m.enf.length) p.push('enfants : ' + m.enf.join(' ; '));
+  p.push('tout en bas : ' + m.pile.join(' < '));
+  return p.join(' · ');
+}
+
+// Note un événement d'affichage (le relevé a lieu à l'image suivante, puis 0,6 s et 2,5 s plus tard, une fois les animations et le clavier posés)
+function diagNoter(ev) {
+  try {
+    const e = { t: routMaintenant() - DIAG_T0, ev: ev, m: null, s1: null, s2: null };
+    DIAG_JOURNAL.push(e);
+    if (DIAG_JOURNAL.length > DIAG_JOURNAL_MAX) DIAG_JOURNAL.shift();
+    const mesure = champ => () => { try { e[champ] = diagMesurer(); } catch (x) {} };
+    if (window.requestAnimationFrame) requestAnimationFrame(mesure('m')); else setTimeout(mesure('m'), 0);
+    setTimeout(mesure('s1'), 600);
+    setTimeout(mesure('s2'), 2500);
+  } catch (x) {}
+}
+function diagNoterLimite(ev) {
+  const t = routMaintenant();
+  if (_diagDernierEv[ev] && t - _diagDernierEv[ev] < 400) return;
+  _diagDernierEv[ev] = t;
+  diagNoter(ev);
+}
+
+// Le texte du rapport
+function diagTexte() {
+  const d = document, h = d.documentElement, nav = navigator, vv = window.visualViewport;
+  const m = diagMesurer(), s = diagSondes();      // relevés faits AVANT d'ajouter la fenêtre : elle ne fausse rien
+  const L = [], add = t => L.push(t);
+  const oui = v => v === undefined ? 'n/a' : (v ? 'oui' : 'non');
+  const ecart = v => diagN(v) + (Math.abs(v) > 0.5 ? ' ⚠' : '');
+  const sup = (el, p) => el ? diagHex(getComputedStyle(el).getPropertyValue(p)) : '—';
+  const app = d.getElementById('app'), actif = d.querySelector('.screen.active');
+  add('NARA — diagnostic d\'affichage');
+  add('Version du ' + APP_VERSION);
+  add('Relevé le ' + new Date(routMaintenant()).toLocaleString('fr-FR') + ', ' + diagDuree(routMaintenant() - DIAG_T0) + ' après le lancement de l\'app');
+  add('');
+  add('À COMPLÉTER APRÈS LE COLLAGE');
+  add('  Modèle d\'iPhone : ');
+  add('  Version d\'iOS : ');
+  add('  La barre remontée apparaît : à l\'ouverture / après le clavier / au retour dans l\'app / je ne sais pas');
+  add('');
+  add('— APPAREIL —');
+  add('Mode écran d\'accueil : navigator.standalone = ' + oui(nav.standalone) + ' · display-mode standalone = ' + oui(window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+  add('Agent : ' + (nav.userAgent || '?'));
+  add('Écran : ' + screen.width + '×' + screen.height + ' (disponible ' + screen.availWidth + '×' + screen.availHeight + ') · ratio ' + window.devicePixelRatio + ' · orientation ' + ((screen.orientation && screen.orientation.type) || window.orientation));
+  const vp = d.querySelector('meta[name="viewport"]'), barreEtat = d.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  add('viewport : ' + (vp ? vp.getAttribute('content') : '—') + ' · barre d\'état : ' + (barreEtat ? barreEtat.getAttribute('content') : '—'));
+  add('');
+  add('— FENÊTRE —');
+  add('innerWidth × innerHeight : ' + m.iw + ' × ' + diagN(m.ih) + ' · documentElement client : ' + h.clientWidth + ' × ' + h.clientHeight);
+  add('visualViewport : ' + (vv ? diagN(vv.width) + ' × ' + diagN(vv.height) + ' · décalage haut ' + diagN(vv.offsetTop) + ' · gauche ' + diagN(vv.offsetLeft) + ' · zoom ' + diagN(vv.scale) : 'indisponible'));
+  add('écart screen.height − innerHeight : ' + ecart(screen.height - m.ih) + (vv ? ' · écart innerHeight − visualViewport (haut + hauteur) : ' + ecart(m.ih - (vv.offsetTop + vv.height)) : ''));
+  add('défilement de la page : y ' + diagN(m.sy) + ' · x ' + diagN(window.scrollX || 0) + ' · body.scrollTop ' + diagN(d.body.scrollTop) + ' · scrollingElement.scrollTop ' + diagN(d.scrollingElement ? d.scrollingElement.scrollTop : NaN));
+  add('');
+  add('— MARGES SÛRES ET HAUTEURS (px) —');
+  if (s.bord) add('marges de sécurité : haut ' + diagN(s.bord.haut) + ' · droite ' + diagN(s.bord.droite) + ' · bas ' + diagN(s.bord.bas) + ' · gauche ' + diagN(s.bord.gauche));
+  add('marge haute utilisée par les en-têtes (--safe-top) : ' + diagN(s.safeTop) + ' · plancher iOS (--top-floor) : ' + (getComputedStyle(h).getPropertyValue('--top-floor').trim() || '—') + ' · classe ios : ' + oui(h.classList.contains('ios')));
+  add('100vh ' + diagN(s.vh) + ' · 100dvh ' + diagN(s.dvh) + ' · 100svh ' + (s.svhOk ? diagN(s.svh) : 'non pris en charge') + ' · 100lvh ' + (s.svhOk ? diagN(s.lvh) : 'non pris en charge'));
+  add('plein écran fixe (haut 0, bas 0) : ' + diagN(s.plein) + ' · bas d\'un élément fixe (bottom 0) : ' + diagN(s.fixeBas) + ' · écart innerHeight − bas fixe : ' + ecart(m.ih - s.fixeBas) + ' · écart 100dvh − plein écran fixe : ' + ecart(s.dvh - s.plein));
+  add('');
+  add('— ÉCRAN ACTIF : ' + (m.ecr || '—') + ' —');
+  if (m.et != null) add('écran : haut ' + diagN(m.et) + ' · bas ' + diagN(m.eb) + ' · écart innerHeight − bas ' + ecart(m.ih - m.eb) + ' · fond ' + sup(actif, 'background-color') + (actif && actif.style.background ? ' (fond posé en ligne : ' + actif.style.background + ')' : ''));
+  if (m.enf && m.enf.length) add('contenu direct : ' + m.enf.join(' ; '));
+  add('');
+  add('— BARRES DE MENU VISIBLES : ' + m.nav.length + ' —');
+  m.nav.forEach(n => add('  ' + n.n + ' dans ' + n.p + ' : haut ' + diagN(n.h) + ' · bas ' + diagN(n.b) + ' · écart sous la barre ' + ecart(m.ih - n.b) + (vv ? ' (visualViewport : ' + ecart(vv.offsetTop + vv.height - n.b) + ')' : '')));
+  if (m.nav.length) {
+    const bas = Math.max.apply(null, m.nav.map(n => n.b));
+    if (bas + 2 < m.ih) add('  sous la barre (y = ' + diagN(bas + 2) + ') : ' + diagPile(Math.round(m.iw / 2), bas + 2, 5).join(' < '));
+  }
+  add('');
+  add('— COULEURS —');
+  add('html ' + sup(h, 'background-color') + ' · body ' + sup(d.body, 'background-color') + ' · #app ' + sup(app, 'background-color') + ' · écran actif ' + sup(actif, 'background-color') + ' · --current-screen-bg ' + (getComputedStyle(h).getPropertyValue('--current-screen-bg').trim() || '—'));
+  add('theme-color : ' + (Array.from(d.querySelectorAll('meta[name="theme-color"]')).map(x => x.getAttribute('content') + (x.getAttribute('media') ? ' [' + x.getAttribute('media') + ']' : '')).join(' · ') || '—'));
+  add('');
+  add('— ÉLÉMENTS PEINTS TOUT EN BAS ET TOUT EN HAUT (du dessus vers le dessous) —');
+  add('y = ' + diagN(m.ih - 2) + ' : ' + m.pile.join(' < '));
+  add('y = ' + diagN(m.ih - 40) + ' : ' + diagPile(Math.round(m.iw / 2), Math.max(0, m.ih - 40), 5).join(' < '));
+  add('y = 2 : ' + diagPile(Math.round(m.iw / 2), 2, 5).join(' < '));
+  add('');
+  add('— BLOCAGES DE DÉFILEMENT —');
+  add('body.style.overflow « ' + d.body.style.overflow + ' » · html.style.overflow « ' + h.style.overflow + ' » · calculé : html ' + getComputedStyle(h).overflow + ' · body ' + getComputedStyle(d.body).overflow + ' · #app ' + (app ? getComputedStyle(app).overflow : '—') + ' · body.className « ' + d.body.className + ' »');
+  add('');
+  add('— JOURNAL DES ' + DIAG_JOURNAL.length + ' DERNIERS ÉVÉNEMENTS (du plus ancien au plus récent) —');
+  DIAG_JOURNAL.forEach(e => {
+    add('+' + diagDuree(e.t) + ' · ' + e.ev);
+    add('   ' + diagLigne(e.m));
+    [['s1', '0,6 s'], ['s2', '2,5 s']].forEach(([k, lib]) => { if (e[k] && diagSignature(e[k]) !== diagSignature(e.m)) add('   ↳ ' + lib + ' après : ' + diagLigne(e[k])); });
+  });
+  return L.join('\n');
+}
+
+// La fenêtre du rapport
+function diagFermer() { const o = document.getElementById('diag-overlay'); if (o && o.parentNode) o.parentNode.removeChild(o); }
+function diagCopier(texte, bouton) {
+  const fait = oui => {
+    if (!bouton) return;
+    bouton.textContent = oui ? 'Copié ✓' : 'Copie impossible : sélectionne le texte à la main';
+    setTimeout(() => { bouton.textContent = 'Copier le texte'; }, 2500);
+  };
+  const secours = () => {
+    try {
+      const t = document.createElement('textarea');
+      t.value = texte; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;left:0;top:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(t); t.select(); t.setSelectionRange(0, texte.length);
+      const r = document.execCommand('copy');
+      if (t.parentNode) t.parentNode.removeChild(t);
+      fait(r);
+    } catch (e) { fait(false); }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texte).then(() => fait(true), secours); else secours();
+}
+function diagOuvrir() {
+  if (document.getElementById('diag-overlay')) return;
+  let texte;
+  try { texte = diagTexte(); } catch (e) { texte = 'Le relevé a échoué : ' + (e && e.message ? e.message : e); }
+  const ov = document.createElement('div');
+  ov.id = 'diag-overlay';
+  ov.innerHTML = '<div class="diag-carte" role="dialog" aria-label="Diagnostic d\'affichage">'
+    + '<div class="diag-titre">Diagnostic d\'affichage</div>'
+    + '<div class="diag-aide">Ce texte décrit uniquement l\'écran de ton téléphone (tailles, marges, couleurs). Il ne contient aucune donnée de santé ni de compte, et rien n\'est envoyé : appuie sur « Copier le texte », puis colle-le dans la conversation.</div>'
+    + '<pre class="diag-texte" id="diag-texte"></pre>'
+    + '<div class="diag-btns"><button type="button" class="diag-btn" id="diag-copier">Copier le texte</button><button type="button" class="diag-btn diag-btn-sec" id="diag-fermer">Fermer</button></div>'
+    + '</div>';
+  document.body.appendChild(ov);
+  document.getElementById('diag-texte').textContent = texte;
+  document.getElementById('diag-copier').addEventListener('click', () => diagCopier(texte, document.getElementById('diag-copier')));
+  document.getElementById('diag-fermer').addEventListener('click', diagFermer);
+  ov.addEventListener('click', e => { if (e.target === ov && routMaintenant() - _diagOuvertA > 700) diagFermer(); });
+  _diagOuvertA = routMaintenant();
+}
+
+// Mise en place : appui long sur « Version du … » + suivi des événements d'affichage
+(function diagInstaller() {
+  try {
+    let minuteur = null, x0 = 0, y0 = 0;
+    const surVersion = e => !!(e.target && e.target.closest && e.target.closest('#app-version'));
+    const annuler = () => { if (minuteur) { clearTimeout(minuteur); minuteur = null; } };
+    const opts = { passive: true, capture: true };
+    document.addEventListener('pointerdown', e => {
+      if (!surVersion(e)) return;
+      annuler(); x0 = e.clientX; y0 = e.clientY;
+      minuteur = setTimeout(() => { minuteur = null; diagOuvrir(); }, DIAG_APPUI_MS);
+    }, opts);
+    document.addEventListener('pointerup', annuler, opts);
+    document.addEventListener('pointercancel', annuler, opts);
+    document.addEventListener('pointermove', e => { if (minuteur && (Math.abs(e.clientX - x0) > 10 || Math.abs(e.clientY - y0) > 10)) annuler(); }, opts);
+    document.addEventListener('contextmenu', e => { if (surVersion(e)) e.preventDefault(); }, true);   // pas de menu ni de loupe de sélection sur l'iPhone
+    const champ = t => !!(t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    window.addEventListener('load', () => setTimeout(() => diagNoter('ouverture de l\'app (page chargée)'), 500));
+    window.addEventListener('pageshow', e => diagNoter('pageshow' + (e.persisted ? ' (retour depuis le cache)' : '')));
+    document.addEventListener('visibilitychange', () => diagNoter('app ' + (document.visibilityState === 'visible' ? 'revenue au premier plan' : 'passée en arrière-plan')));
+    window.addEventListener('resize', () => diagNoterLimite('fenêtre redimensionnée'));
+    window.addEventListener('orientationchange', () => diagNoter('rotation de l\'écran'));
+    document.addEventListener('focusin', e => { if (champ(e.target)) diagNoter('clavier : champ ' + diagNomEl(e.target) + ' touché'); });
+    document.addEventListener('focusout', e => { if (champ(e.target)) diagNoter('clavier : champ ' + diagNomEl(e.target) + ' quitté'); });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => diagNoterLimite('zone visible redimensionnée'));
+      window.visualViewport.addEventListener('scroll', () => diagNoterLimite('zone visible déplacée'));
+    }
+    diagNoter('démarrage du script');
+  } catch (e) {}
+})();
 let jrnValues = {};
 let jrnEditMode = false;
 let jrnCurrentMeal = 'matin'; // moment de repas actif
@@ -4349,10 +4638,9 @@ const BNAV_MAP = {
 const NO_NAV_SCREENS = new Set(['onboarding','signup','login','profile-invite','profile-later']);
 
 function updateBottomNav(screenId) {
-  // Masquer TOUTES les navs sur les écrans non-authentifiés.
-  // On utilise une classe CSS sur le body plutôt que display:none
-  // sur chaque nav individuelle, car position:fixed échappe au
-  // display:none de son parent sur Safari iOS (bug WebKit connu).
+  // Masquer toutes les barres de menu sur les écrans sans connexion.
+  // Une seule classe sur le body suffit (règle CSS « body.no-nav ») : pas besoin de cacher chaque barre une par une.
+  // Depuis le prompt 9, chaque barre est dans son propre écran, donc cachée aussi avec lui quand il est inactif ; cette classe est une sécurité en plus.
   if (NO_NAV_SCREENS.has(screenId)) {
     document.body.classList.add('no-nav');
   } else {
@@ -4428,6 +4716,7 @@ function showScreen(id, btn) {
   if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
+  diagNoter('écran → ' + id);   // diagnostic caché (profil, appui long sur « Version du … ») : garde la trace des derniers changements d'écran
 }
 
 // Simplified nav function — use this everywhere instead of showScreen(id, querySelector(...))

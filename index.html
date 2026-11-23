@@ -94,11 +94,12 @@ if (typeof supabase === 'undefined') {
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
   }
-  /* ===== STRUCTURE EN ÉTAGES (prompt 11) =====
-     #app = colonne de hauteur --app-h (mesurée en JS sur la zone visible : visualViewport, sinon innerHeight ; 100dvh avant la première mesure)
+  /* ===== STRUCTURE EN ÉTAGES (prompt 11, barre corrigée au correctif A1) =====
+     #app = colonne de hauteur --app-h (mesurée en JS sur la zone visible : visualViewport, sinon innerHeight ; 100dvh avant la première mesure ; jamais plus courte que l'écran en mode écran d'accueil : voir le plancher ci-dessous)
        étage 0  #app-band : bande du haut, hauteur = marge sous la barre d'état, fond PLEIN (rien ne défile ici)
-       étage 1  #stage    : zone de contenu, tous les écrans ; seules leurs zones de défilement défilent, et elles commencent sous la bande
-       étage 2  #bnav     : la barre du bas, DERNIER enfant, dans le flux (pas de position fixe) : le contenu s'arrête où la barre commence */
+       étage 1  #stage    : zone de contenu, tous les écrans, sur TOUTE la hauteur restante de #app ; seules leurs zones de défilement défilent, et elles commencent sous la bande
+       étage 2  #bnav     : la barre du bas, DERNIER enfant de #app, en position absolue en bas de #app (pas de position fixe), SANS fond ni hauteur réservée :
+                            la pilule flotte par-dessus la zone de contenu (les zones qui défilent gardent un espace libre en bas : --bar-pad) */
   #app {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -107,6 +108,12 @@ if (typeof supabase === 'undefined') {
     overflow: hidden;
     background: var(--current-screen-bg, #F6EAD4);
   }
+  /* Plancher de hauteur (correctif A1) : au lancement, iOS annonce parfois une hauteur trop petite et ne signale pas toujours la correction (pas d'événement « resize ») : --app-h reste alors trop courte.
+     100vh est tenu à jour par le navigateur lui-même : en mode écran d'accueil, #app ne peut donc jamais être plus courte que l'écran.
+     Pas de plancher clavier ouvert (la zone visible est alors plus basse que l'écran : classe kb-open) ni dans un onglet de navigateur (100vh y dépasse la zone visible, sous les barres du navigateur).
+     Deux déclencheurs : la requête display-mode: standalone (dès la première image) et la classe « standalone » posée par le script d'après navigator.standalone (iOS). */
+  @media (display-mode: standalone) { html:not(.kb-open) #app { min-height: 100vh; } }
+  html.standalone:not(.kb-open) #app { min-height: 100vh; }
   #app-band { flex: 0 0 auto; height: var(--safe-top); background: var(--band-bg, #F6EAD4); }
   #stage { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; }
   .screen {
@@ -276,7 +283,7 @@ if (typeof supabase === 'undefined') {
   .home-greeting { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 400; color: var(--text-dark); line-height: 1.2; }
   .home-greeting span { color: var(--sage); }
   .avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--blush), var(--peach)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-  .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
+  .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .home-scroll::-webkit-scrollbar { display: none; }
   .score-card { background: linear-gradient(135deg, var(--sage) 0%, #6b6e52 100%); border-radius: clamp(16px, 5vw, 24px); padding: clamp(16px, 5vw, 24px); margin-bottom: 20px; color: white; position: relative; overflow: hidden; }
   .score-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: rgba(255,255,255,0.08); border-radius: 50%; }
@@ -343,7 +350,7 @@ if (typeof supabase === 'undefined') {
 
   /* ===== INSIGHTS ===== */
   #screen-insights { background: var(--cream); }
-  .insights-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
+  .insights-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .insights-scroll::-webkit-scrollbar { display: none; }
   .insight-big-card { background: linear-gradient(135deg, var(--sage), #5a5e40); border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; }
   .ibc-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 10px; }
@@ -394,7 +401,7 @@ if (typeof supabase === 'undefined') {
   /* ===== ROUTINES — LISTE ===== */
   #screen-routines { background: var(--cream); }
   .rout-list-header { padding: 16px 24px 16px; }
-  .rout-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
+  .rout-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .rout-scroll::-webkit-scrollbar { display: none; }
   .rout-hero-card { border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; cursor: pointer; }
   .rout-hero-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:rgba(255,255,255,0.07); border-radius:50%; }
@@ -597,7 +604,7 @@ if (typeof supabase === 'undefined') {
   .home-rout-fl { color:var(--text-light); font-size:1.1rem; }
 
   /* ===== RECETTES — ÉCRAN LISTE ===== */
-  .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
+  .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .rec-scroll::-webkit-scrollbar { display: none; }
   .rec-tabs-wrap { padding: 14px clamp(16px, 6vw, 28px) 0; }
   .rec-tabs {
@@ -758,7 +765,7 @@ if (typeof supabase === 'undefined') {
     color: var(--text-mid); background: white; flex-shrink: 0; transition: all 0.2s;
   }
   .lib-tab.active { color: white; border-color: transparent; }
-  .lib-scroll-dyn { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
+  .lib-scroll-dyn { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .lib-scroll-dyn::-webkit-scrollbar { display: none; }
 
   /* Card à la une */
@@ -1209,6 +1216,9 @@ if (typeof supabase === 'undefined') {
 
   /* ===== JOURNAL CARROUSEL ===== */
 
+  /* La pilule flotte par-dessus le bas de l'écran : tout le carrousel (progression, slides, points, boutons) s'arrête au-dessus d'elle (--bar-pad n'existe que barre visible) */
+  #journal-scroll { padding-bottom: var(--bar-pad, 0px); }
+
   /* Container scrollable horizontal */
   .jrn-carousel-outer {
     display: flex; flex-direction: column;
@@ -1348,7 +1358,7 @@ if (typeof supabase === 'undefined') {
 
   /* Badge enregistré dans l'auto-save */
   .jrn-autosave-toast {
-    position: absolute; bottom: 80px;      /* dans l'écran Journal, au-dessus des boutons précédent/suivant */
+    position: absolute; bottom: calc(80px + var(--bar-pad, 0px));      /* dans l'écran Journal, au-dessus des boutons précédent/suivant (eux-mêmes au-dessus de la pilule) */
     left: 50%; transform: translateX(-50%);
     background: var(--avocado); color: white;
     font-size: 0.75rem; padding: 7px 16px; border-radius: 20px;
@@ -1535,7 +1545,7 @@ if (typeof supabase === 'undefined') {
   }
   .gallery-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 16px clamp(12px,4vw,20px) 24px;
+    padding: 16px clamp(12px,4vw,20px) var(--bar-pad, 24px);
     scrollbar-width: none;
   }
   .gallery-scroll::-webkit-scrollbar { display: none; }
@@ -2496,7 +2506,7 @@ if (typeof supabase === 'undefined') {
   /* Feedback de sauvegarde */
   .jrn-save-feedback {
     position: absolute;
-    bottom: 84px;
+    bottom: calc(84px + var(--bar-pad, 0px));
     left: 50%; transform: translateX(-50%) scale(0.85);
     background: var(--avocado); color: white;
     padding: 12px 24px; border-radius: 24px;
@@ -2865,7 +2875,7 @@ if (typeof supabase === 'undefined') {
 
   .cal-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 0 clamp(12px,4vw,20px) 24px;
+    padding: 0 clamp(12px,4vw,20px) var(--bar-pad, 24px);
     scrollbar-width: none;
   }
   .cal-scroll::-webkit-scrollbar { display: none; }
@@ -2964,14 +2974,19 @@ if (typeof supabase === 'undefined') {
     transition: background 0.2s;
   }
   .cal-access-btn:active { background: var(--oat); }
-  /* ===== BARRE DU BAS — une seule, dernier étage de #app (prompt 11) =====
-     Pilule flottante : elle n'est PAS en position fixe, elle occupe sa propre ligne sous la zone de contenu (rien ne défile derrière).
-     Autour de la pilule : le même crème que les écrans. Marge du bas = zone de sécurité de l'appareil + un petit espace. */
-  :root { --bar-pill-h: 54px; --bar-gap: 6px; --bar-room: calc(var(--bar-pill-h) + 2 * var(--bar-gap) + env(safe-area-inset-bottom, 0px)); }
+  /* ===== BARRE DU BAS — une seule, flottante PAR-DESSUS le contenu (prompt 11, correctif A1) =====
+     #bnav est un conteneur TRANSPARENT, sans hauteur réservée : dernier enfant de #app, en position absolue (left 0, right 0, bottom 0) À L'INTÉRIEUR de #app — pas en position fixe —, avec pointer-events: none ;
+     seule la pilule reçoit les touchers (pointer-events: auto). Rien n'est peint derrière : le contenu se voit tout autour de la pilule, posée 8 px au-dessus de la marge de sécurité du bas.
+     La zone de contenu (#stage) prend toute la hauteur de #app ; ses zones qui défilent gardent en bas un espace libre = pilule + marge de sécurité + 16 px (--bar-pad), pour que le bas de chaque page reste lisible au-dessus de la pilule.
+     --bar-pad n'existe que barre visible : sans elle (page de détail, clavier ouvert), chaque zone garde son espace habituel. --bar-room = la même mesure, pour les messages flottants (.ql-toast) ; sans barre, seule la marge de sécurité reste.
+     z-index 100 : au-dessus du contenu des écrans, sous toutes les fenêtres superposées (z-index 200 et plus), qui passent donc toujours au-dessus de la pilule. */
+  :root { --bar-pill-h: 54px; --bar-room: calc(var(--bar-pill-h) + env(safe-area-inset-bottom, 0px) + 16px); }
   html.bar-off, html.kb-open { --bar-room: env(safe-area-inset-bottom, 0px); }
-  #bnav { flex: 0 0 auto; padding: var(--bar-gap) 12px calc(env(safe-area-inset-bottom, 0px) + var(--bar-gap)); background: #FFFAF2; }
+  html:not(.bar-off):not(.kb-open) { --bar-pad: var(--bar-room); }
+  #bnav { position: absolute; left: 0; right: 0; bottom: 0; z-index: 100; padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 8px); background: transparent; pointer-events: none; }
   html.bar-off #bnav, html.kb-open #bnav { display: none; }
   .bnav-pill {
+    pointer-events: auto;
     display: flex; align-items: stretch; gap: 2px; padding: 4px; min-height: var(--bar-pill-h);
     background: #4F5140; border-radius: 999px;
     box-shadow: 0 6px 18px rgba(61, 58, 48, 0.22), 0 1px 3px rgba(61, 58, 48, 0.18);
@@ -3671,7 +3686,7 @@ if (typeof supabase === 'undefined') {
       </div>
     </div>
   </div><!-- fin de #stage : tous les écrans sont à l'intérieur -->
-  <!-- Étage 2 : la barre du bas. UNE seule, dernier enfant de #app, dans le flux (pas de position fixe). Cachée par la classe « bar-off » de <html> (pages de détail, profil, connexion) et par « kb-open » (clavier ouvert). -->
+  <!-- Étage 2 : la barre du bas. UNE seule, dernier enfant de #app, en position absolue en bas de #app (pas de position fixe), sans fond ni hauteur réservée : la pilule flotte par-dessus le contenu. Cachée par la classe « bar-off » de <html> (pages de détail, profil, connexion) et par « kb-open » (clavier ouvert). -->
   <nav id="bnav" aria-label="Navigation principale">
     <div class="bnav-pill">
       <button type="button" class="bnav-tab" id="bnav-home" onclick="go('home')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 3.8l8.5 7"/><path d="M5.8 9.6V19a1.2 1.2 0 0 0 1.2 1.2h3.2v-5.4h3.6v5.4H17a1.2 1.2 0 0 0 1.2-1.2V9.6"/></svg><span class="bnav-lbl">Accueil</span></button>
@@ -3795,7 +3810,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '23/11 · 0 h 26';   // date et heure (Paris) de la livraison, affichée en bas du profil
+const APP_VERSION = '23/11 · 13 h 29';   // date et heure (Paris) de la livraison, affichée en bas du profil
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -3809,6 +3824,8 @@ const DIAG_JOURNAL_MAX = 18;
 const DIAG_APPUI_MS = 800;           // durée de l'appui long
 let _diagOuvertA = 0;                // instant d'ouverture de la fenêtre (ignore le « clic fantôme » de la fin de l'appui)
 const _diagDernierEv = {};           // dernier relevé par type d'événement fréquent (limite le bruit)
+const DIAG_HAUTEURS = [];            // hauteurs mesurées depuis le lancement (une ligne à chaque CHANGEMENT) : montre si iOS a annoncé une hauteur trop petite au démarrage, et quand l'app l'a rattrapée
+const DIAG_HAUTEURS_MAX = 24;
 
 function diagN(n) { return (typeof n === 'number' && isFinite(n)) ? String(Math.round(n * 10) / 10) : '?'; }
 function diagNomEl(el) {
@@ -3868,6 +3885,18 @@ function diagSondes() {
   return r;
 }
 
+// Une ligne de l'historique des hauteurs, ajoutée seulement si l'une des valeurs a changé (appelée par appMesurerFenetre, donc à chaque image pendant la rafale du lancement : elle ne note que les changements)
+function diagHauteur() {
+  try {
+    const vv = window.visualViewport, h = document.documentElement, a = document.getElementById('app');
+    const e = { t: routMaintenant() - DIAG_T0, ih: window.innerHeight, vh: vv ? vv.height : null, st: h.style.getPropertyValue('--app-h') || '—', ch: h.clientHeight, app: a ? a.getBoundingClientRect().height : null };
+    const d = DIAG_HAUTEURS[DIAG_HAUTEURS.length - 1];
+    if (d && d.ih === e.ih && d.vh === e.vh && d.st === e.st && d.ch === e.ch && d.app === e.app) return;
+    DIAG_HAUTEURS.push(e);
+    if (DIAG_HAUTEURS.length > DIAG_HAUTEURS_MAX) DIAG_HAUTEURS.splice(8, 1);   // les 8 premières lignes (le lancement) restent ; ensuite les plus anciennes partent d'abord
+  } catch (x) {}
+}
+
 // Un relevé : fenêtre, écran actif, barres de menu visibles, éléments tout en bas
 function diagMesurer() {
   const d = document, vv = window.visualViewport;
@@ -3889,7 +3918,7 @@ function diagMesurer() {
   if (pil && pil.getClientRects().length) { const q = pil.getBoundingClientRect(); m.pilule = { h: q.top, b: q.bottom }; }
   if (actif) {      // première zone qui défile dans l'écran actif : elle doit commencer sous la bande du haut
     const dfl = Array.from(actif.querySelectorAll('*')).find(e => e.getClientRects().length && /^(auto|scroll)$/.test(getComputedStyle(e).overflowY) && e.getBoundingClientRect().height > 40);
-    if (dfl) { const q = dfl.getBoundingClientRect(); m.defil = { n: diagNomEl(dfl), h: q.top, b: q.bottom }; }
+    if (dfl) { const q = dfl.getBoundingClientRect(); m.defil = { n: diagNomEl(dfl), h: q.top, b: q.bottom, pb: parseFloat(getComputedStyle(dfl).paddingBottom) || 0 }; }
   }
   const x = Math.round(m.iw / 2);
   m.pile = diagPile(x, Math.max(0, m.ih - 2), 5);
@@ -3903,6 +3932,7 @@ function diagLigne(m) {
   if (!m) return '(pas de relevé : l\'app était en arrière-plan)';
   const p = ['fen ' + m.iw + '×' + diagN(m.ih)];
   if (m.vh != null) p.push('vv ' + diagN(m.vw) + '×' + diagN(m.vh) + ' +' + diagN(m.vt));
+  p.push('#app ' + (m.app ? diagN(m.app.b - m.app.h) : '—'));
   p.push('défil ' + diagN(m.sy));
   p.push('écran ' + (m.ecr || '—') + (m.et != null ? ' ' + diagN(m.et) + '→' + diagN(m.eb) : ''));
   p.push(m.nav.length ? 'barre' + (m.nav.length > 1 ? ' ×' + m.nav.length : '') + ' bas ' + m.nav.map(n => diagN(n.b)).join(' / ') + ' (écart ' + m.nav.map(n => diagN(m.ih - n.b)).join(' / ') + ')' : 'barre —');
@@ -3971,15 +4001,22 @@ function diagTexte() {
   if (m.et != null) add('écran : haut ' + diagN(m.et) + ' · bas ' + diagN(m.eb) + ' · écart innerHeight − bas ' + ecart(m.ih - m.eb) + ' · fond ' + sup(actif, 'background-color') + (actif && actif.style.background ? ' (fond posé en ligne : ' + actif.style.background + ')' : ''));
   if (m.enf && m.enf.length) add('contenu direct : ' + m.enf.join(' ; '));
   add('');
+  add('— HAUTEUR DE L\'APP —');
+  const hApp = m.app ? m.app.b - m.app.h : NaN;
+  add('innerHeight ' + diagN(m.ih) + ' · visualViewport.height ' + (vv ? diagN(vv.height) : 'indisponible') + ' · screen.height ' + diagN(screen.height) + ' · #app (hauteur réelle) ' + diagN(hApp) + ' · --app-h « ' + (h.style.getPropertyValue('--app-h') || '—') + ' »');
+  add('écart screen.height − #app : ' + ecart(screen.height - hApp) + ' · écart innerHeight − #app : ' + ecart(m.ih - hApp) + ' · plancher min-height de #app : ' + (app ? getComputedStyle(app).minHeight : '—') + ' (mode écran d\'accueil : ' + oui(nav.standalone) + ' · classe standalone : ' + oui(h.classList.contains('standalone')) + ' · clavier ouvert : ' + oui(h.classList.contains('kb-open')) + ')');
+  add('hauteurs depuis le lancement (une ligne à chaque changement ; temps écoulé depuis le lancement) :');
+  DIAG_HAUTEURS.forEach(e => add('  +' + (Math.round(e.t / 100) / 10) + ' s : innerHeight ' + diagN(e.ih) + ' · visualViewport ' + diagN(e.vh) + ' · --app-h ' + e.st + ' · #app ' + diagN(e.app) + ' · html ' + diagN(e.ch)));
+  add('');
   add('— STRUCTURE EN ÉTAGES : bande · zone de contenu · barre —');
   const rp = (r, nom) => r ? nom + ' : haut ' + diagN(r.h) + ' · bas ' + diagN(r.b) + ' (hauteur ' + diagN(r.b - r.h) + ')' : nom + ' : absent ou caché';
   add('--app-h posé : ' + (h.style.getPropertyValue('--app-h') || '—') + ' · zone visible mesurée (visualViewport) : ' + (vv ? diagN(vv.height) : 'indisponible') + ' · innerHeight ' + diagN(m.ih) + ' · classes de <html> : « ' + h.className + ' »');
   add(rp(m.app, '#app') + ' · écart innerHeight − bas de #app : ' + (m.app ? ecart(m.ih - m.app.b) : '?'));
   add(rp(m.bande, 'bande du haut') + ' · marge --safe-top ' + diagN(s.safeTop) + ' · fond ' + sup(d.getElementById('app-band'), 'background-color'));
-  add(rp(m.scene, 'zone de contenu (#stage)'));
-  if (m.defil) { const ec = m.defil.h - (m.bande ? m.bande.b : 0); add('première zone qui défile : ' + m.defil.n + ' · haut ' + diagN(m.defil.h) + ' · bas ' + diagN(m.defil.b) + ' · écart avec le bas de la bande : ' + diagN(ec) + (ec < -0.5 ? ' ⚠ (elle remonte sous la bande)' : ' ✓ (elle commence sous la bande)')); }
+  add(rp(m.scene, 'zone de contenu (#stage)') + (m.scene && m.app ? ' · écart bas de #stage − bas de #app : ' + ecart(m.scene.b - m.app.b) + ' (0 : la zone occupe toute la hauteur, la pilule flotte par-dessus)' : ''));
+  if (m.defil) { const ec = m.defil.h - (m.bande ? m.bande.b : 0); add('première zone qui défile : ' + m.defil.n + ' · haut ' + diagN(m.defil.h) + ' · bas ' + diagN(m.defil.b) + ' · écart avec le bas de la bande : ' + diagN(ec) + (ec < -0.5 ? ' ⚠ (elle remonte sous la bande)' : ' ✓ (elle commence sous la bande)') + ' · padding bas ' + diagN(m.defil.pb)); }
   else add('aucune zone qui défile dans cet écran');
-  add(rp(m.pilule, 'pilule de la barre'));
+  add(rp(m.pilule, 'pilule de la barre') + (m.pilule ? ' · écart sous la pilule (jusqu\'au bas de la fenêtre) ' + diagN(m.ih - m.pilule.b) + ' (attendu : 8 + marge de sécurité du bas ' + diagN(s.bord ? s.bord.bas : NaN) + ')' : ''));
   add('');
   add('— BARRES DE MENU VISIBLES : ' + m.nav.length + ' —');
   m.nav.forEach(n => add('  ' + n.n + ' dans ' + n.p + ' : haut ' + diagN(n.h) + ' · bas ' + diagN(n.b) + ' · écart sous la barre ' + ecart(m.ih - n.b) + (vv ? ' (visualViewport : ' + ecart(vv.offsetTop + vv.height - n.b) + ')' : '')));
@@ -4850,27 +4887,48 @@ function go(screenId) {
 
 // ── Mesure de la zone visible : hauteur de #app (--app-h) et clavier ──────────────────────────────────────────────
 // #app est une colonne de la hauteur EXACTE de la zone visible : window.visualViewport, sinon window.innerHeight (100dvh tant qu'aucune mesure n'a eu lieu).
-// Mesure refaite à chaque redimensionnement, rotation, retour dans l'app et fermeture du clavier. Clavier ouvert = la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
+// Mesure refaite à chaque redimensionnement, rotation, retour dans l'app et fermeture du clavier, et en rafale au lancement (appMesurerRafale). Clavier ouvert = la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
 function appMesurerFenetre() {
   try {
     const vv = window.visualViewport, h = document.documentElement;
     if (vv && vv.scale && Math.abs(vv.scale - 1) > 0.02) return;        // pincement en cours : la zone visible n'est pas la fenêtre
     const haut = Math.round((vv && vv.height) || window.innerHeight || 0);
     if (haut < 200) return;                                              // mesure absurde (démarrage) : on garde la précédente
-    h.style.setProperty('--app-h', haut + 'px');
+    if (h.style.getPropertyValue('--app-h') !== haut + 'px') h.style.setProperty('--app-h', haut + 'px');   // seulement si elle change : la rafale ci-dessous ne provoque aucun recalcul inutile
     const clavier = vv ? (window.innerHeight - vv.height) > 120 : /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
     h.classList.toggle('kb-open', !!clavier);
+    diagHauteur();                                                       // diagnostic caché : trace des changements de hauteur depuis le lancement
+  } catch (e) {}
+}
+// Rafale de mesures. Au lancement (et au retour dans l'app), iOS peut annoncer une hauteur trop petite puis la corriger SANS événement « resize » : une seule mesure au chargement resterait fausse.
+// On mesure donc à chaque image pendant 2 s, puis à 500 ms et à 1500 ms (au cas où les images seraient suspendues pendant l'animation d'ouverture). La rafale la plus récente remplace la précédente.
+let _appRafale = 0;
+function appMesurerRafale() {
+  try {
+    const n = ++_appRafale; let fin = 0, images = 0;
+    appMesurerFenetre();
+    setTimeout(appMesurerFenetre, 500); setTimeout(appMesurerFenetre, 1500);
+    if (!window.requestAnimationFrame) return;
+    const appRafalePas = t => {
+      if (n !== _appRafale) return;                                      // une rafale plus récente a pris le relais
+      appMesurerFenetre();
+      if (!fin) fin = t + 2000;                                          // 2 s d'images, comptées sur l'horloge des images (pas sur l'heure de l'appareil)
+      if (t < fin && ++images < 600) requestAnimationFrame(appRafalePas);
+    };
+    requestAnimationFrame(appRafalePas);
   } catch (e) {}
 }
 (function appInstallerMesures() {
   try {
+    if (navigator.standalone === true) document.documentElement.classList.add('standalone');   // mode écran d'accueil d'iOS : le plancher de hauteur de #app (CSS) s'applique même si la requête display-mode ne répond pas
     window.addEventListener('resize', appMesurerFenetre);
     window.addEventListener('orientationchange', () => { appMesurerFenetre(); setTimeout(appMesurerFenetre, 300); });
-    window.addEventListener('pageshow', appMesurerFenetre);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appMesurerFenetre(); });
+    window.addEventListener('pageshow', appMesurerRafale);
+    window.addEventListener('load', appMesurerRafale);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appMesurerRafale(); });
     document.addEventListener('focusout', () => { setTimeout(appMesurerFenetre, 120); setTimeout(appMesurerFenetre, 450); });   // fermeture du clavier : iOS signale parfois la fin en retard
     if (window.visualViewport) window.visualViewport.addEventListener('resize', appMesurerFenetre);
-    appMesurerFenetre();
+    appMesurerRafale();
   } catch (e) {}
 })();
 

@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="bar-off">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- PWA iOS -->
 <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- black-translucent : la page passe sous l'heure et la batterie, qui reposent sur la bande du haut (#app-band, fond plein de la couleur du haut de page). Ne pas changer sans essai sur iPhone : iOS lit cette balise à l'ajout à l'écran d'accueil. -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nara">
 <!-- PWA Android / Chrome -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Nara">
-<meta name="theme-color" content="#818263">
+<meta name="theme-color" content="#F6EAD4">
 <meta name="background-color" content="#FFFAF2">
 <!-- SEO / Share -->
 <meta name="description" content="Nara — Ta santé holistique. Intestin, peau, énergie, sommeil.">
@@ -18,7 +19,7 @@
 <meta property="og:description" content="Ton application santé & bien-être holistique.">
 <meta property="og:type" content="website">
 <!-- Manifest PWA inline -->
-<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Nara%22%2C%22short_name%22%3A%22Nara%22%2C%22description%22%3A%22Ta%20sant%C3%A9%20holistique%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23FFFAF2%22%2C%22theme_color%22%3A%22%23818263%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520fill%3D'%23818263'%2520rx%3D'20'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'80'%2520x%3D'10'%253E%F0%9F%8C%BF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Nara%22%2C%22short_name%22%3A%22Nara%22%2C%22description%22%3A%22Ta%20sant%C3%A9%20holistique%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23FFFAF2%22%2C%22theme_color%22%3A%22%23FFFAF2%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520fill%3D'%23818263'%2520rx%3D'20'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'80'%2520x%3D'10'%253E%F0%9F%8C%BF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <title>Nara</title>
 <script>
 // ── Filet de sécurité de démarrage ─────────────────────────────────────────
@@ -81,8 +82,10 @@ if (typeof supabase === 'undefined') {
     width: 100%; height: 100%; height: 100dvh;
     min-height: 100dvh;
     overflow: hidden;
-    /* honey = couleur de l'écran d'accueil/onboarding, visible par défaut */
-    background: #F6EAD4;
+    /* html, body et #app ont TOUJOURS la même couleur : celle du haut de la page affichée (variable --current-screen-bg, posée par showScreen) ;
+       #FFFAF2 (crème, comme les écrans) sur les 5 onglets et partout dans l'app ; miel à la connexion ; couleur de l'en-tête sur une routine, un article, une recette.
+       Valeur de départ = miel : l'écran affiché avant toute navigation est l'accueil de l'app (onboarding, fond miel). */
+    background: var(--current-screen-bg, #F6EAD4);
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -91,34 +94,30 @@ if (typeof supabase === 'undefined') {
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
   }
+  /* ===== STRUCTURE EN ÉTAGES (prompt 11) =====
+     #app = colonne de hauteur --app-h (mesurée en JS sur la zone visible : visualViewport, sinon innerHeight ; 100dvh avant la première mesure)
+       étage 0  #app-band : bande du haut, hauteur = marge sous la barre d'état, fond PLEIN (rien ne défile ici)
+       étage 1  #stage    : zone de contenu, tous les écrans ; seules leurs zones de défilement défilent, et elles commencent sous la bande
+       étage 2  #bnav     : la barre du bas, DERNIER enfant, dans le flux (pas de position fixe) : le contenu s'arrête où la barre commence */
   #app {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    width: 100vw;
-    height: 100dvh;
-    min-height: 100dvh;
+    top: 0; left: 0; right: 0;
+    height: 100dvh; height: var(--app-h, 100dvh);
+    display: flex; flex-direction: column;
     overflow: hidden;
     background: var(--current-screen-bg, #F6EAD4);
   }
+  #app-band { flex: 0 0 auto; height: var(--safe-top); background: var(--band-bg, #F6EAD4); }
+  #stage { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; }
   .screen {
-    position: fixed;
+    position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    width: 100%;
-    min-height: 100dvh;
     overflow: hidden;
     display: none;
     flex-direction: column;
     background: #FFFAF2; /* cream */
   }
   .screen.active { display: flex; }
-
-  /* Masque toutes les barres de menu sur les écrans sans connexion (accueil de l'app, inscription, connexion…).
-     Une seule classe sur le body suffit : pas besoin de cacher chaque barre une par une.
-     Depuis le prompt 9, chaque barre est rangée dans son propre écran, donc déjà cachée avec lui quand il est inactif ; cette règle est une sécurité en plus. */
-  body.no-nav .bottom-nav,
-  body.no-nav .bottom-nav-shared {
-    display: none !important;
-  }
 
   /* Loader de démarrage — masqué automatiquement par hideBootLoader() */
   #boot-loader {
@@ -144,7 +143,6 @@ if (typeof supabase === 'undefined') {
   #screen-insights    { background: #FFFAF2; }
   #screen-library     { background: #FFFAF2; }
   #screen-routines    { background: #FFFAF2; }
-  #screen-recipes     { background: #FFFAF2; }
   #screen-calendar    { background: #FFFAF2; }
   #screen-gallery     { background: #FFFAF2; }
   #screen-article-detail   { background: #FFFAF2; }
@@ -268,17 +266,17 @@ if (typeof supabase === 'undefined') {
   .onboarding-tagline { font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--text-mid); letter-spacing: 0.08em; margin-bottom: 48px; }
   .btn-primary { width: 100%; padding: 18px; background: var(--sage); color: white; border: none; border-radius: 16px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; margin-bottom: 12px; }
   .btn-secondary { width: 100%; padding: 18px; background: transparent; color: var(--text-mid); border: 1.5px solid var(--oat); border-radius: 16px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; }
-  .onboarding-top { position: absolute; top: clamp(60px, 12vh, 100px); left: 0; right: 0; text-align: center; z-index: 2; }
+  .onboarding-top { position: absolute; top: calc(clamp(60px, 12vh, 100px) - var(--safe-top)); left: 0; right: 0; text-align: center; z-index: 2; }
   .onboarding-illustration { font-size: clamp(3rem, 12vw, 5rem); margin-bottom: 16px; display: block; animation: float1 4s ease-in-out infinite; }
 
   /* ===== HOME ===== */
   #screen-home { background: var(--cream); }
 
-  .home-header { padding: calc(env(safe-area-inset-top, 0px) + 16px) clamp(16px, 6vw, 28px) 20px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .home-header { padding: 16px clamp(16px, 6vw, 28px) 20px; display: flex; justify-content: space-between; align-items: center; position: relative; }
   .home-greeting { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 400; color: var(--text-dark); line-height: 1.2; }
   .home-greeting span { color: var(--sage); }
   .avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--blush), var(--peach)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-  .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
+  .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
   .home-scroll::-webkit-scrollbar { display: none; }
   .score-card { background: linear-gradient(135deg, var(--sage) 0%, #6b6e52 100%); border-radius: clamp(16px, 5vw, 24px); padding: clamp(16px, 5vw, 24px); margin-bottom: 20px; color: white; position: relative; overflow: hidden; }
   .score-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: rgba(255,255,255,0.08); border-radius: 50%; }
@@ -313,47 +311,12 @@ if (typeof supabase === 'undefined') {
   .insight-tag { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mid); margin-bottom: 6px; }
   .insight-text { font-size: 0.85rem; color: var(--text-dark); line-height: 1.5; }
   .insight-text strong { color: var(--sage); }
-  .bottom-nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 60px;
-    padding: 8px 4px;
-    background: white;
-    border-top: 1px solid var(--oat);
-    display: flex; align-items: center; justify-content: space-around;
-    box-sizing: border-box;
-    z-index: 100;
-    overflow: hidden;
-  }
-  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 0 4px; border-radius: 8px; transition: background 0.2s; flex: 1; min-width: 0; justify-content: center; }
-  .nav-item.active { background: var(--honey); }
-  .nav-icon { font-size: 1.5rem; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; }
-  .nav-label { font-size: 10px; color: var(--text-light); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1; }
-  .nav-item.active .nav-label { color: var(--sage); }
-  .nav-add {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 2px;
-    cursor: pointer; flex: 1; min-width: 0;
-  }
-  .nav-add-inner {
-    width: 48px; height: 48px; border-radius: 24px;
-    background: var(--sage);
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 1px;
-    box-shadow: 0 2px 8px rgba(129,130,99,0.3);
-    transition: background 0.2s;
-  }
-  .nav-add-inner .nav-icon { font-size: 1.1rem; width: auto; height: auto; color: white; }
-  .nav-add-inner .nav-label { font-size: 9px; color: rgba(255,255,255,0.85); letter-spacing: 0.02em; line-height: 1; }
-  .nav-add.active .nav-add-inner { background: var(--avocado); }
 
   /* ===== JOURNAL ===== */
   #screen-journal { background: var(--cream); }
-  .screen-header { padding: calc(env(safe-area-inset-top, 0px) + 16px) clamp(16px, 6vw, 28px) 20px; display: flex; align-items: center; gap: 12px; }
+  .screen-header { padding: 16px clamp(16px, 6vw, 28px) 20px; display: flex; align-items: center; gap: 12px; }
   .back-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--honey); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; cursor: pointer; }
   .screen-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.6rem); font-weight: 400; color: var(--text-dark); }
-  .journal-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
-  .journal-scroll::-webkit-scrollbar { display: none; }
   .date-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--honey); border-radius: 20px; padding: 6px 14px; font-size: 0.75rem; color: var(--text-mid); margin-bottom: 24px; }
   .journal-section { margin-bottom: 24px; }
   .journal-section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
@@ -380,7 +343,7 @@ if (typeof supabase === 'undefined') {
 
   /* ===== INSIGHTS ===== */
   #screen-insights { background: var(--cream); }
-  .insights-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
+  .insights-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
   .insights-scroll::-webkit-scrollbar { display: none; }
   .insight-big-card { background: linear-gradient(135deg, var(--sage), #5a5e40); border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; }
   .ibc-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 10px; }
@@ -411,8 +374,6 @@ if (typeof supabase === 'undefined') {
 
   /* ===== LIBRARY ===== */
   #screen-library { background: var(--cream); }
-  .lib-scroll { flex: 1; overflow-y: auto; padding: 0 24px 100px; scrollbar-width: none; }
-  .lib-scroll::-webkit-scrollbar { display: none; }
   .lib-featured { background: linear-gradient(135deg, var(--blush), var(--peach)); border-radius: 24px; padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden; }
   .lib-feat-label { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-mid); margin-bottom: 10px; }
   .lib-feat-title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 400; color: var(--text-dark); line-height: 1.3; margin-bottom: 12px; }
@@ -432,8 +393,8 @@ if (typeof supabase === 'undefined') {
 
   /* ===== ROUTINES — LISTE ===== */
   #screen-routines { background: var(--cream); }
-  .rout-list-header { padding: calc(env(safe-area-inset-top) + 16px) 24px 16px; }
-  .rout-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
+  .rout-list-header { padding: 16px 24px 16px; }
+  .rout-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
   .rout-scroll::-webkit-scrollbar { display: none; }
   .rout-hero-card { border-radius: 24px; padding: 24px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; cursor: pointer; }
   .rout-hero-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:rgba(255,255,255,0.07); border-radius:50%; }
@@ -466,7 +427,7 @@ if (typeof supabase === 'undefined') {
   /* ===== ROUTINE DÉTAIL ===== */
   #screen-routine-detail { background: var(--cream); }
   .rout-detail-inner { display:flex; flex-direction:column; height:100%; background:#FFFAF2; }
-  .rout-detail-hero { flex-shrink:0; padding:calc(var(--safe-top) + 16px) clamp(16px, 6vw, 28px) 22px; position:relative; }
+  .rout-detail-hero { flex-shrink:0; padding:16px clamp(16px, 6vw, 28px) 22px; position:relative; }
   .rout-detail-back { position:relative; width:34px; height:34px; margin-bottom:12px; border-radius:50%; background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; color:white; }
   .rout-detail-emoji { font-size:2.4rem; margin-bottom:6px; display:block; }
   .rout-detail-titre { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:400; color:white; margin-bottom:4px; }
@@ -636,14 +597,9 @@ if (typeof supabase === 'undefined') {
   .home-rout-fl { color:var(--text-light); font-size:1.1rem; }
 
   /* ===== RECETTES — ÉCRAN LISTE ===== */
-  #screen-recipes { background: var(--cream); }
-  .rec-screen-header {
-    padding: calc(var(--safe-top) + 16px) 24px 0;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
+  .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
   .rec-scroll::-webkit-scrollbar { display: none; }
-  .rec-tabs-wrap { padding: 16px 24px 0; }
+  .rec-tabs-wrap { padding: 14px clamp(16px, 6vw, 28px) 0; }
   .rec-tabs {
     display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
     margin-bottom: 20px; -webkit-overflow-scrolling: touch;
@@ -684,10 +640,10 @@ if (typeof supabase === 'undefined') {
   #screen-recipe-detail { background: var(--cream); }
   .recipe-detail-inner { display: flex; flex-direction: column; height: 100%; background: #FFFAF2; }
   .recipe-hero {
-    padding: calc(var(--safe-top) + 16px) 24px 20px; position: relative; flex-shrink: 0;
+    padding: 16px 24px 20px; position: relative; flex-shrink: 0;
   }
   .recipe-hero-back {
-    position: absolute; top: calc(var(--safe-top) + 16px); left: 20px;
+    position: absolute; top: 16px; left: 20px;
     width: 36px; height: 36px; border-radius: 50%;
     background: rgba(255,255,255,0.85); display: flex; align-items: center;
     justify-content: center; font-size: 0.9rem; cursor: pointer; z-index: 10;
@@ -725,7 +681,8 @@ if (typeof supabase === 'undefined') {
   .info-card-label { font-size: 0.62rem; color: var(--text-light); margin-top: 2px; }
   .tags-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
   .tag-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; background: var(--oat); color: var(--text-mid); }
-  .article-link-card { background: var(--honey); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; cursor: pointer; }
+  .article-link-card { background: var(--honey); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; cursor: pointer; transition: transform 0.15s; -webkit-tap-highlight-color: transparent; }
+  .article-link-card:active { transform: scale(0.98); }
   .article-link-icon { font-size: 1.6rem; }
   .article-link-label { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-light); margin-bottom: 2px; }
   .article-link-title { font-size: 0.82rem; color: var(--text-dark); }
@@ -778,7 +735,17 @@ if (typeof supabase === 'undefined') {
 
   /* ===== BIBLIOTHÈQUE — LISTE ===== */
   #screen-library { background: var(--cream); }
-  .lib-header { padding: calc(env(safe-area-inset-top, 0px) + 16px) clamp(16px, 6vw, 28px) 0; }
+  .lib-header { padding: 16px clamp(16px, 6vw, 28px) 0; }
+  /* Deux vues dans la Bibliothèque : Articles | Recettes */
+  .lib-vues { display: flex; gap: 4px; flex-shrink: 0; margin: 12px clamp(16px, 6vw, 28px) 0; padding: 4px; background: var(--honey); border-radius: 16px; }
+  .lib-vue {
+    flex: 1; min-height: 44px; padding: 0 8px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: transparent; color: var(--text-mid);
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; cursor: pointer; -webkit-appearance: none; appearance: none;
+    -webkit-tap-highlight-color: transparent; transition: background 0.2s, color 0.2s;
+  }
+  .lib-vue.active { background: white; color: var(--text-dark); font-weight: 500; box-shadow: 0 1px 4px rgba(61, 58, 48, 0.12); }
+  .lib-pane { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .lib-pane.on { display: flex; }
   .lib-tabs-wrap { padding: 14px clamp(16px, 6vw, 28px) 0; }
   .lib-tabs {
     display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
@@ -791,7 +758,7 @@ if (typeof supabase === 'undefined') {
     color: var(--text-mid); background: white; flex-shrink: 0; transition: all 0.2s;
   }
   .lib-tab.active { color: white; border-color: transparent; }
-  .lib-scroll-dyn { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px clamp(16px, 6vw, 28px) calc(60px + 12px); scrollbar-width: none; }
+  .lib-scroll-dyn { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px clamp(16px, 6vw, 28px) 24px; scrollbar-width: none; }
   .lib-scroll-dyn::-webkit-scrollbar { display: none; }
 
   /* Card à la une */
@@ -838,7 +805,7 @@ if (typeof supabase === 'undefined') {
   .art-progress-fill { height: 100%; width: 0%; transition: width 0.2s; border-radius: 0 2px 2px 0; }
   .art-detail-inner { display: flex; flex-direction: column; height: 100%; background: #FFFAF2; }
   .art-hero {
-    flex-shrink: 0; padding: calc(var(--safe-top) + 16px) 24px 22px; position: relative;
+    flex-shrink: 0; padding: 16px 24px 22px; position: relative;
   }
   .art-back-btn {
     position: relative; margin-bottom: 12px; width: 34px; height: 34px;
@@ -1358,7 +1325,7 @@ if (typeof supabase === 'undefined') {
   /* Boutons navigation slide */
   .jrn-nav-bar {
     display: flex; gap: 10px;
-    padding: 8px clamp(16px,6vw,28px) calc(env(safe-area-inset-bottom,0px) + 68px);
+    padding: 8px clamp(16px,6vw,28px) 12px;
     flex-shrink: 0;
   }
   .jrn-nav-prev {
@@ -1381,7 +1348,7 @@ if (typeof supabase === 'undefined') {
 
   /* Badge enregistré dans l'auto-save */
   .jrn-autosave-toast {
-    position: fixed; bottom: calc(env(safe-area-inset-bottom,0px) + 124px);
+    position: absolute; bottom: 80px;      /* dans l'écran Journal, au-dessus des boutons précédent/suivant */
     left: 50%; transform: translateX(-50%);
     background: var(--avocado); color: white;
     font-size: 0.75rem; padding: 7px 16px; border-radius: 20px;
@@ -1554,7 +1521,7 @@ if (typeof supabase === 'undefined') {
   #screen-gallery { background: var(--cream); }
 
   .gallery-header {
-    padding: calc(env(safe-area-inset-top, 0px) + 14px) clamp(16px,6vw,28px) 0;
+    padding: 14px clamp(16px,6vw,28px) 0;
     display: flex; align-items: center; justify-content: space-between;
   }
   .gallery-title {
@@ -1568,7 +1535,7 @@ if (typeof supabase === 'undefined') {
   }
   .gallery-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 16px clamp(12px,4vw,20px) calc(60px + 16px);
+    padding: 16px clamp(12px,4vw,20px) 24px;
     scrollbar-width: none;
   }
   .gallery-scroll::-webkit-scrollbar { display: none; }
@@ -2090,12 +2057,12 @@ if (typeof supabase === 'undefined') {
 
   /* Screen profil principal */
   .profile-header {
-    padding: calc(env(safe-area-inset-top,0px) + 14px) clamp(16px,6vw,28px) 0;
+    padding: 14px clamp(16px,6vw,28px) 0;
     display: flex; align-items: center; gap: 12px;
   }
   .profile-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 16px clamp(12px,4vw,20px) calc(60px + 12px); scrollbar-width: none;
+    padding: 16px clamp(12px,4vw,20px) calc(24px + env(safe-area-inset-bottom,0px)); scrollbar-width: none;
   }
   .profile-scroll::-webkit-scrollbar { display: none; }
 
@@ -2528,8 +2495,8 @@ if (typeof supabase === 'undefined') {
 
   /* Feedback de sauvegarde */
   .jrn-save-feedback {
-    position: fixed;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    position: absolute;
+    bottom: 84px;
     left: 50%; transform: translateX(-50%) scale(0.85);
     background: var(--avocado); color: white;
     padding: 12px 24px; border-radius: 24px;
@@ -2877,7 +2844,7 @@ if (typeof supabase === 'undefined') {
   #screen-calendar { background: var(--cream); }
 
   .cal-header {
-    padding: calc(env(safe-area-inset-top, 0px) + 14px) clamp(16px,6vw,28px) 12px;
+    padding: 14px clamp(16px,6vw,28px) 12px;
     display: flex; align-items: center; justify-content: space-between;
   }
   .cal-nav { display: flex; align-items: center; gap: 12px; }
@@ -2898,7 +2865,7 @@ if (typeof supabase === 'undefined') {
 
   .cal-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 0 clamp(12px,4vw,20px) calc(60px + 12px);
+    padding: 0 clamp(12px,4vw,20px) 24px;
     scrollbar-width: none;
   }
   .cal-scroll::-webkit-scrollbar { display: none; }
@@ -2997,44 +2964,27 @@ if (typeof supabase === 'undefined') {
     transition: background 0.2s;
   }
   .cal-access-btn:active { background: var(--oat); }
-  /* ===== SHARED BOTTOM NAV ===== */
-  .bottom-nav-shared {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 60px;
-    padding: 8px 4px;
-    background: white;
-    border-top: 1px solid var(--oat);
-    display: flex; align-items: center; justify-content: space-around;
-    box-sizing: border-box;
-    z-index: 100;
-    overflow: hidden;
+  /* ===== BARRE DU BAS — une seule, dernier étage de #app (prompt 11) =====
+     Pilule flottante : elle n'est PAS en position fixe, elle occupe sa propre ligne sous la zone de contenu (rien ne défile derrière).
+     Autour de la pilule : le même crème que les écrans. Marge du bas = zone de sécurité de l'appareil + un petit espace. */
+  :root { --bar-pill-h: 54px; --bar-gap: 6px; --bar-room: calc(var(--bar-pill-h) + 2 * var(--bar-gap) + env(safe-area-inset-bottom, 0px)); }
+  html.bar-off, html.kb-open { --bar-room: env(safe-area-inset-bottom, 0px); }
+  #bnav { flex: 0 0 auto; padding: var(--bar-gap) 12px calc(env(safe-area-inset-bottom, 0px) + var(--bar-gap)); background: #FFFAF2; }
+  html.bar-off #bnav, html.kb-open #bnav { display: none; }
+  .bnav-pill {
+    display: flex; align-items: stretch; gap: 2px; padding: 4px; min-height: var(--bar-pill-h);
+    background: #4F5140; border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(61, 58, 48, 0.22), 0 1px 3px rgba(61, 58, 48, 0.18);
   }
-  .bnav-item {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    cursor: pointer; padding: 0 4px; border-radius: 8px; transition: background 0.2s;
-    flex: 1; min-width: 0; justify-content: center;
+  .bnav-tab {
+    flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 6px 2px 5px; margin: 0; border: 0; border-radius: 999px; background: transparent; color: #D9D6C4;
+    font: inherit; font-family: 'DM Sans', sans-serif; font-size: 10px; line-height: 1; letter-spacing: 0.01em;
+    cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
-  .bnav-item.active { background: var(--honey); }
-  .bnav-icon { font-size: 1.5rem; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; }
-  .bnav-label { font-size: 10px; color: var(--text-light); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1; }
-  .bnav-item.active .bnav-label { color: var(--sage); }
-  .bnav-add {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 2px;
-    cursor: pointer; flex: 1; min-width: 0;
-  }
-  .bnav-add-inner {
-    width: 48px; height: 48px; border-radius: 24px;
-    background: var(--sage);
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 1px;
-    box-shadow: 0 2px 8px rgba(129,130,99,0.3);
-    transition: background 0.2s;
-  }
-  .bnav-add-inner .bnav-icon { font-size: 1.1rem; width: auto; height: auto; color: white; }
-  .bnav-add-inner .bnav-label { font-size: 9px; color: rgba(255,255,255,0.85); letter-spacing: 0.02em; line-height: 1; }
-  .bnav-add.active .bnav-add-inner { background: var(--avocado); }
+  .bnav-tab svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .bnav-lbl { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bnav-tab.active { background: #F3EAD6; color: #3d3a30; font-weight: 700; }
 
   /* ===== RESPONSIVE TABLETTE / DESKTOP ===== */
   @media (min-width: 480px) {
@@ -3045,13 +2995,6 @@ if (typeof supabase === 'undefined') {
       width: 480px;
       box-shadow: 0 0 60px rgba(0,0,0,0.15);
     }
-    .screen {
-      position: absolute; /* relatif à #app sur desktop */
-      left: 50%;
-      transform: translateX(-50%);
-      width: 480px;
-      min-height: 100dvh;
-    }
     .modale-overlay, .rout-modale-overlay {
       left: 50%;
       transform: translateX(-50%);
@@ -3059,8 +3002,7 @@ if (typeof supabase === 'undefined') {
     }
   }
   @media (min-width: 768px) {
-    body { background: #d8d3c8; }
-    #app { border-radius: 0; }
+    #app { border-radius: 0; }          /* fond autour de la colonne : celui de la page (html et body suivent --current-screen-bg) */
   }
 
   /* ===== EMPTY STATE INSIGHTS ===== */
@@ -3170,7 +3112,7 @@ if (typeof supabase === 'undefined') {
 
   /* Confirmation toast */
   .ql-toast {
-    position: fixed; bottom: calc(60px + 12px);
+    position: fixed; bottom: calc(var(--bar-room) + 12px);
     left: 50%; transform: translateX(-50%);
     background: var(--sage); color: white;
     padding: 12px 24px; border-radius: 20px;
@@ -3183,13 +3125,17 @@ if (typeof supabase === 'undefined') {
 
 </style>
 </head>
-<body class="no-nav">
+<body>
 
 
 <div id="app">
   <div id="boot-loader">
     <span class="boot-loader-leaf">🌿</span>
   </div>
+  <!-- Étage 0 : bande du haut (hauteur = marge sous la barre d'état, fond plein ; rien ne défile ici) -->
+  <div id="app-band"></div>
+  <!-- Étage 1 : zone de contenu. Tous les écrans sont ici ; seules leurs zones de défilement défilent. -->
+  <div id="stage">
     <!-- SCREEN 1 — ONBOARDING -->
     <div class="screen active" id="screen-onboarding">
       <div class="onboarding-bg">
@@ -3375,14 +3321,6 @@ if (typeof supabase === 'undefined') {
           <button class="quicklog-save" onclick="saveQuickLog()">Enregistrer ✓</button>
         </div>
       </div>
-      <div class="bottom-nav" id="bottom-nav-home">
-        <div class="nav-item active" id="bnav-home" onclick="go('home')"><span class="nav-icon">🏠</span><span class="nav-label">Accueil</span></div>
-        <div class="nav-item" id="bnav-insights" onclick="go('insights')"><span class="nav-icon">📊</span><span class="nav-label">Insights</span></div>
-        <div class="nav-add" id="bnav-journal" onclick="go('journal')"><div class="nav-add-inner"><span class="nav-icon">📓</span><span class="nav-label">Journal</span></div></div>
-        <div class="nav-item" id="bnav-routines" onclick="go('routines')"><span class="nav-icon">🌿</span><span class="nav-label">Routines</span></div>
-        <div class="nav-item" id="bnav-library" onclick="go('library')"><span class="nav-icon">📚</span><span class="nav-label">Apprendre</span></div>
-        <div class="nav-item" id="bnav-recipes" onclick="go('recipes')"><span class="nav-icon">🍽️</span><span class="nav-label">Recettes</span></div>
-      </div>
     </div>
 
     <!-- SCREEN 3 — JOURNAL -->
@@ -3394,15 +3332,6 @@ if (typeof supabase === 'undefined') {
       </div>
       <div id="journal-scroll" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
         <!-- Rendu dynamique par renderJournal() -->
-      </div>
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="jrn-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="jrn-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="jrn-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="jrn-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="jrn-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="jrn-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
       </div>
       <!-- Auto-save toast -->
       <div class="jrn-autosave-toast" id="jrn-autosave-toast">✓ Section enregistrée</div>
@@ -3425,38 +3354,36 @@ if (typeof supabase === 'undefined') {
 
       </div>
 
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="ins-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="ins-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="ins-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="ins-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="ins-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="ins-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
-      </div>
     </div>
 
-    <!-- SCREEN 5 — LIBRARY -->
+    <!-- SCREEN 5 — LIBRARY (deux vues : Articles | Recettes) -->
     <div class="screen" id="screen-library">
       <div class="lib-header">
         <div class="screen-title" style="padding:0;font-size:1.4rem">Ma bibliothèque</div>
       </div>
-      <div class="lib-tabs-wrap">
-        <div class="lib-tabs" id="lib-tabs"></div>
+      <div class="lib-vues" id="lib-vues" role="tablist" aria-label="Articles ou recettes">
+        <button type="button" class="lib-vue active" id="lib-vue-articles" role="tab" aria-selected="true" onclick="libChoisirVue('articles')">📖 Articles</button>
+        <button type="button" class="lib-vue" id="lib-vue-recettes" role="tab" aria-selected="false" onclick="libChoisirVue('recettes')">🍽️ Recettes</button>
       </div>
-      <div class="lib-scroll-dyn" id="lib-list-scroll">
-        <div id="lib-featured-zone"></div>
-        <div class="lib-grid-dyn" id="lib-grid"></div>
+      <!-- Vue Articles : inchangée -->
+      <div class="lib-pane on" id="lib-pane-articles" role="tabpanel">
+        <div class="lib-tabs-wrap">
+          <div class="lib-tabs" id="lib-tabs"></div>
+        </div>
+        <div class="lib-scroll-dyn" id="lib-list-scroll">
+          <div id="lib-featured-zone"></div>
+          <div class="lib-grid-dyn" id="lib-grid"></div>
+        </div>
       </div>
-
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="lib-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="lib-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="lib-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="lib-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="lib-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="lib-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
+      <!-- Vue Recettes : l'ancienne page « Cuisine Inside-Out », rangée ici -->
+      <div class="lib-pane" id="lib-pane-recettes" role="tabpanel">
+        <div class="rec-tabs-wrap">
+          <div class="rec-tabs" id="rec-tabs"></div>
+        </div>
+        <div class="rec-scroll">
+          <div class="lib-section-label">Cuisine Inside-Out</div>
+          <div class="rec-list" id="rec-list"></div>
+        </div>
       </div>
     </div>
 
@@ -3465,7 +3392,7 @@ if (typeof supabase === 'undefined') {
       <div class="art-progress-bar"><div class="art-progress-fill" id="art-progress-fill"></div></div>
       <div class="art-detail-inner">
         <div class="art-hero" id="art-hero">
-          <div class="art-back-btn" onclick="routRetour('library')">←</div>
+          <div class="art-back-btn" onclick="artRetour()">←</div>
           <div class="art-hero-label" id="art-hero-label"></div>
           <div class="art-hero-titre" id="art-hero-titre"></div>
           <div class="art-hero-sous" id="art-hero-sous"></div>
@@ -3485,15 +3412,6 @@ if (typeof supabase === 'undefined') {
       </div>
       <div class="rout-scroll" id="rout-list-scroll"></div>
 
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="rout-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="rout-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="rout-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="rout-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="rout-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="rout-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
-      </div>
     </div>
 
     <!-- SCREEN ROUTINE DÉTAIL -->
@@ -3525,29 +3443,6 @@ if (typeof supabase === 'undefined') {
           <div class="rout-modale-etapes" id="rout-modale-etapes"></div>
           <div class="rout-modale-note" id="rout-modale-note" style="display:none"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- SCREEN 7 — RECETTES LISTE -->
-    <div class="screen" id="screen-recipes">
-      <div class="rec-screen-header">
-        <div class="screen-title" style="padding:0;font-size:1.4rem">Cuisine Inside-Out</div>
-      </div>
-      <div class="rec-tabs-wrap">
-        <div class="rec-tabs" id="rec-tabs"></div>
-      </div>
-      <div class="rec-scroll">
-        <div class="rec-list" id="rec-list"></div>
-      </div>
-
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="rec-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="rec-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="rec-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="rec-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="rec-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="rec-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
       </div>
     </div>
 
@@ -3586,7 +3481,207 @@ if (typeof supabase === 'undefined') {
         </div>
       </div>
     </div>
-</div><!-- fin de #app : tous les écrans principaux sont à l'intérieur -->
+
+    <!-- SCREEN GALERIE PEAU -->
+    <div class="screen" id="screen-gallery">
+      <div class="gallery-header">
+        <div>
+          <div style="font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:2px">Suivi photo</div>
+          <div class="gallery-title">Ma galerie peau</div>
+        </div>
+        <div class="gallery-count" id="gallery-count">0 photo</div>
+      </div>
+
+      <div class="gallery-scroll" id="gallery-scroll">
+        <!-- Rendu dynamique par renderGallery() -->
+      </div>
+
+      <!-- Modale plein écran -->
+      <div class="gallery-fullscreen" id="gallery-fullscreen" onclick="closeGalleryFullscreen()">
+        <button class="gallery-fs-close" onclick="event.stopPropagation(); closeGalleryFullscreen()">✕</button>
+        <img class="gallery-fs-img" id="gallery-fs-img" alt="">
+        <div class="photo-soft photo-soft-msg photo-soft-fs"><span class="ps-ico">📷</span><span>Photo indisponible pour l'instant<small>Elle s'affichera dès le retour de la connexion.</small></span></div>
+        <div class="gallery-fs-info" id="gallery-fs-info"></div>
+      </div>
+
+    </div>
+
+    <!-- SCREEN SUIVI DES SELLES -->
+    <div class="screen" id="screen-calendar">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
+          <div class="cal-month-label" id="cal-month-label">Août <span class="cal-year">2026</span></div>
+          <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-light);letter-spacing:0.06em">Suivi des selles 🌿</div>
+      </div>
+
+      <div class="cal-scroll">
+        <!-- Jours de la semaine -->
+        <div class="cal-weekdays">
+          <div class="cal-wd">Lun</div>
+          <div class="cal-wd">Mar</div>
+          <div class="cal-wd">Mer</div>
+          <div class="cal-wd">Jeu</div>
+          <div class="cal-wd">Ven</div>
+          <div class="cal-wd">Sam</div>
+          <div class="cal-wd">Dim</div>
+        </div>
+        <!-- Grille dynamique -->
+        <div class="cal-grid" id="cal-grid"></div>
+
+        <!-- Note médicale permanente sous le calendrier -->
+        <div style="background:#fff8f0;border:1.5px solid #f9a82555;border-radius:14px;padding:14px 16px;margin-top:12px;font-size:0.78rem;color:#8a5200;line-height:1.6;">
+          🩺 <strong>À noter :</strong> si tu observes des changements persistants sur plusieurs semaines — douleurs récurrentes, selles très dures ou très liquides de façon durable, ou tout autre symptôme inhabituel — il peut être utile d'en parler à ton médecin. Nara n'est pas un outil de diagnostic : une consultation reste le meilleur moyen d'être accompagnée.
+        </div>
+      </div>
+
+      <!-- Modale log d'un jour -->
+      <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="calHandleOverlay(event)">
+        <div class="cal-modal-card">
+          <div class="cal-modal-handle"></div>
+          <div class="cal-modal-date" id="cal-modal-date"></div>
+
+          <!-- OUI / NON -->
+          <span class="cal-section-label">As-tu eu une selle ce jour ?</span>
+          <div class="cal-yn-row">
+            <div class="cal-yn-btn" id="cal-btn-oui" onclick="calSelectYN('oui')">
+              <span class="yn-emoji">🌿</span>
+              <span class="yn-label">Oui, aujourd'hui</span>
+            </div>
+            <div class="cal-yn-btn" id="cal-btn-non" onclick="calSelectYN('non')">
+              <span class="yn-emoji">💤</span>
+              <span class="yn-label">Non, pas ce jour</span>
+            </div>
+          </div>
+
+          <!-- Section détaillée — visible uniquement si OUI -->
+          <div id="cal-detail-section" style="display:none">
+
+            <!-- ÉCHELLE DE BRISTOL -->
+            <span class="cal-section-label">Consistance — Échelle de Bristol</span>
+            <div class="bristol-grid" id="bristol-grid">
+              <!-- Rendu JS -->
+            </div>
+
+
+            <!-- FRÉQUENCE -->
+            <span class="cal-section-label">Nombre de passages dans la journée</span>
+            <div class="cal-stepper">
+              <button class="cal-stepper-btn" onclick="calStepFreq(-1)">−</button>
+              <div class="cal-stepper-val" id="cal-freq-val">
+                1<span class="cal-stepper-unit">passage</span>
+              </div>
+              <button class="cal-stepper-btn" onclick="calStepFreq(1)">+</button>
+            </div>
+
+            <!-- CONFORT -->
+            <span class="cal-section-label">Confort associé <span style="font-weight:300;text-transform:none;letter-spacing:0">(optionnel, sélection multiple)</span></span>
+            <div class="cal-chips" id="cal-confort-chips">
+              <div class="cal-chip chip-none selected" id="chip-aucun" onclick="calToggleConfort('aucun', this)">✓ Aucun inconfort</div>
+              <div class="cal-chip" id="chip-ballonnements" onclick="calToggleConfort('ballonnements', this)">💨 Ballonnements</div>
+              <div class="cal-chip" id="chip-douleur" onclick="calToggleConfort('douleur', this)">😣 Douleur</div>
+              <div class="cal-chip" id="chip-urgence" onclick="calToggleConfort('urgence', this)">⚡ Urgence</div>
+              <div class="cal-chip" id="chip-incomplete" onclick="calToggleConfort('incomplete', this)">🔄 Évacuation incomplète</div>
+            </div>
+
+            <!-- TIMING -->
+            <span class="cal-section-label">Moment(s) de la journée <span style="font-weight:300;text-transform:none;letter-spacing:0">(multi-sélection)</span></span>
+            <div class="cal-timing-row">
+              <div class="cal-timing-btn" id="timing-matin" onclick="calToggleTiming('matin', this)">
+                <span class="t-icon">🌅</span><span class="t-lbl">Matin</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-apmidi" onclick="calToggleTiming('apmidi', this)">
+                <span class="t-icon">☀️</span><span class="t-lbl">Après-midi</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-repas" onclick="calToggleTiming('repas', this)">
+                <span class="t-icon">🍽️</span><span class="t-lbl">Après repas</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-soir" onclick="calToggleTiming('soir', this)">
+                <span class="t-icon">🌙</span><span class="t-lbl">Soir</span>
+              </div>
+            </div>
+
+
+
+          </div>
+
+          <button class="cal-modal-save" onclick="calSaveDay()">Enregistrer ✓</button>
+          <button class="cal-modal-delete" id="cal-delete-btn" onclick="calDeleteDay()" style="display:none">
+            Supprimer cette entrée
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SCREEN PROFIL SANTÉ -->
+    <div class="screen" id="screen-profile">
+      <div class="profile-header">
+        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="screen-title">Mon profil santé</div>
+        <div id="profile-completion-badge" style="font-size:0.72rem;color:var(--text-light);margin-left:auto"></div>
+      </div>
+      <div class="profile-scroll" id="profile-scroll">
+        <!-- Rendu dynamique par renderProfile() -->
+      </div>
+    </div>
+
+    <!-- SCREEN INVITATION POST-INSCRIPTION -->
+    <div class="screen" id="screen-profile-invite">
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div class="profile-invite-screen">
+          <div class="profile-invite-icon">🌿</div>
+          <div class="profile-invite-title">Bienvenue dans Nara</div>
+          <div class="profile-invite-text">
+            Pour que les insights soient pertinents dès le début, Nara a besoin de comprendre ta situation de base. 5 minutes pour remplir ton Profil Santé, et l'app pourra contextualiser chaque donnée que tu notes.
+            <br><br>
+            <span style="color:var(--text-light);font-size:0.82rem">Tu peux le faire maintenant ou plus tard — c'est toi qui choisis.</span>
+          </div>
+          <button class="profile-invite-btn-primary" onclick="profileStartNow()">Remplir mon profil maintenant →</button>
+          <button class="profile-invite-btn-later" onclick="profileLater()">Plus tard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN "PLUS TARD" -->
+    <div class="screen" id="screen-profile-later">
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div class="profile-later-screen">
+          <div class="profile-invite-icon">✅</div>
+          <div class="profile-invite-title" style="font-size:1.2rem">Pas de souci</div>
+          <div class="profile-later-note">
+            📍 Tu peux accéder à ton Profil Santé à tout moment via le <strong>menu avatar</strong> → <strong>Mon profil santé</strong>.<br><br>
+            Plus tu le complètes, plus Nara pourra distinguer ce qui est "normal pour toi" d'un vrai changement — et plus les insights seront précis et personnalisés.
+          </div>
+          <button class="profile-invite-btn-primary" onclick="go('home')">Accéder à l'appli →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN MES NOUVEAUX SUIVIS -->
+    <div class="screen" id="screen-suivis">
+      <div class="profile-header">
+        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="screen-title">Mes nouveaux suivis</div>
+      </div>
+      <div class="suivis-scroll" id="suivis-scroll">
+        <!-- Rendu dynamique par renderSuivis() -->
+      </div>
+    </div>
+  </div><!-- fin de #stage : tous les écrans sont à l'intérieur -->
+  <!-- Étage 2 : la barre du bas. UNE seule, dernier enfant de #app, dans le flux (pas de position fixe). Cachée par la classe « bar-off » de <html> (pages de détail, profil, connexion) et par « kb-open » (clavier ouvert). -->
+  <nav id="bnav" aria-label="Navigation principale">
+    <div class="bnav-pill">
+      <button type="button" class="bnav-tab" id="bnav-home" onclick="go('home')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 3.8l8.5 7"/><path d="M5.8 9.6V19a1.2 1.2 0 0 0 1.2 1.2h3.2v-5.4h3.6v5.4H17a1.2 1.2 0 0 0 1.2-1.2V9.6"/></svg><span class="bnav-lbl">Accueil</span></button>
+      <button type="button" class="bnav-tab" id="bnav-insights" onclick="go('insights')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6"/><path d="M12 20V5"/><path d="M19 20v-9"/></svg><span class="bnav-lbl">Insights</span></button>
+      <button type="button" class="bnav-tab" id="bnav-journal" onclick="go('journal')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2.2"/><path d="M9 3.5v17"/><path d="M12.5 8.5H16"/><path d="M12.5 12H16"/></svg><span class="bnav-lbl">Journal</span></button>
+      <button type="button" class="bnav-tab" id="bnav-routines" onclick="go('routines')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19c0-8 4.5-13.5 14-14.5.4 9.5-5 14.5-12 14.5"/><path d="M5 19c2-4.5 5-7.5 9.5-10"/></svg><span class="bnav-lbl">Routines</span></button>
+      <button type="button" class="bnav-tab" id="bnav-library" onclick="go('library')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.8C10.3 5.4 8 4.8 4.5 4.8v12.9c3.5 0 5.8.6 7.5 2 1.7-1.4 4-2 7.5-2V4.8c-3.5 0-5.8.6-7.5 2Z"/><path d="M12 6.8v12.9"/></svg><span class="bnav-lbl">Biblio</span></button>
+    </div>
+  </nav>
+</div><!-- fin de #app : bande, zone de contenu, barre -->
 
 
 <script>
@@ -3700,7 +3795,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '22/11 · 15 h 33';   // date et heure (Paris) de la livraison, affichée en bas du profil
+const APP_VERSION = '23/11 · 0 h 26';   // date et heure (Paris) de la livraison, affichée en bas du profil
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -3784,17 +3879,25 @@ function diagMesurer() {
     const q = actif.getBoundingClientRect(); m.et = q.top; m.eb = q.bottom;
     m.enf = Array.from(actif.children).filter(c => c.getClientRects().length).slice(0, 6).map(c => { const k = c.getBoundingClientRect(); return diagNomEl(c) + ' ' + diagN(k.top) + '→' + diagN(k.bottom); });
   }
-  m.nav = Array.from(d.querySelectorAll('.bottom-nav, .bottom-nav-shared')).filter(n => n.getClientRects().length && getComputedStyle(n).visibility !== 'hidden').map(n => {
+  m.nav = Array.from(d.querySelectorAll('#bnav')).filter(n => n.getClientRects().length && getComputedStyle(n).visibility !== 'hidden').map(n => {
     const q = n.getBoundingClientRect();
     return { n: diagNomEl(n), p: n.parentElement ? diagNomEl(n.parentElement) : '—', h: q.top, b: q.bottom };
   });
+  const ex = id => { const e = d.getElementById(id); if (!e || !e.getClientRects().length) return null; const q = e.getBoundingClientRect(); return { h: q.top, b: q.bottom }; };
+  m.app = ex('app'); m.bande = ex('app-band'); m.scene = ex('stage');
+  const pil = d.querySelector('#bnav .bnav-pill');
+  if (pil && pil.getClientRects().length) { const q = pil.getBoundingClientRect(); m.pilule = { h: q.top, b: q.bottom }; }
+  if (actif) {      // première zone qui défile dans l'écran actif : elle doit commencer sous la bande du haut
+    const dfl = Array.from(actif.querySelectorAll('*')).find(e => e.getClientRects().length && /^(auto|scroll)$/.test(getComputedStyle(e).overflowY) && e.getBoundingClientRect().height > 40);
+    if (dfl) { const q = dfl.getBoundingClientRect(); m.defil = { n: diagNomEl(dfl), h: q.top, b: q.bottom }; }
+  }
   const x = Math.round(m.iw / 2);
   m.pile = diagPile(x, Math.max(0, m.ih - 2), 5);
   return m;
 }
 function diagSignature(m) {
   if (!m) return '';
-  return [m.ih, m.vh, m.vt, m.sy, m.ecr, m.eb, (m.nav || []).map(n => diagN(n.b)).join(','), (m.pile || []).join('<')].join('|');
+  return [m.ih, m.vh, m.vt, m.sy, m.ecr, m.eb, (m.nav || []).map(n => diagN(n.b)).join(','), (m.app ? diagN(m.app.b) : ''), (m.bande ? diagN(m.bande.b) : ''), (m.pile || []).join('<')].join('|');
 }
 function diagLigne(m) {
   if (!m) return '(pas de relevé : l\'app était en arrière-plan)';
@@ -3860,13 +3963,23 @@ function diagTexte() {
   add('');
   add('— MARGES SÛRES ET HAUTEURS (px) —');
   if (s.bord) add('marges de sécurité : haut ' + diagN(s.bord.haut) + ' · droite ' + diagN(s.bord.droite) + ' · bas ' + diagN(s.bord.bas) + ' · gauche ' + diagN(s.bord.gauche));
-  add('marge haute utilisée par les en-têtes (--safe-top) : ' + diagN(s.safeTop) + ' · plancher iOS (--top-floor) : ' + (getComputedStyle(h).getPropertyValue('--top-floor').trim() || '—') + ' · classe ios : ' + oui(h.classList.contains('ios')));
+  add('marge haute utilisée par la bande du haut (--safe-top) : ' + diagN(s.safeTop) + ' · plancher iOS (--top-floor) : ' + (getComputedStyle(h).getPropertyValue('--top-floor').trim() || '—') + ' · classe ios : ' + oui(h.classList.contains('ios')));
   add('100vh ' + diagN(s.vh) + ' · 100dvh ' + diagN(s.dvh) + ' · 100svh ' + (s.svhOk ? diagN(s.svh) : 'non pris en charge') + ' · 100lvh ' + (s.svhOk ? diagN(s.lvh) : 'non pris en charge'));
   add('plein écran fixe (haut 0, bas 0) : ' + diagN(s.plein) + ' · bas d\'un élément fixe (bottom 0) : ' + diagN(s.fixeBas) + ' · écart innerHeight − bas fixe : ' + ecart(m.ih - s.fixeBas) + ' · écart 100dvh − plein écran fixe : ' + ecart(s.dvh - s.plein));
   add('');
   add('— ÉCRAN ACTIF : ' + (m.ecr || '—') + ' —');
   if (m.et != null) add('écran : haut ' + diagN(m.et) + ' · bas ' + diagN(m.eb) + ' · écart innerHeight − bas ' + ecart(m.ih - m.eb) + ' · fond ' + sup(actif, 'background-color') + (actif && actif.style.background ? ' (fond posé en ligne : ' + actif.style.background + ')' : ''));
   if (m.enf && m.enf.length) add('contenu direct : ' + m.enf.join(' ; '));
+  add('');
+  add('— STRUCTURE EN ÉTAGES : bande · zone de contenu · barre —');
+  const rp = (r, nom) => r ? nom + ' : haut ' + diagN(r.h) + ' · bas ' + diagN(r.b) + ' (hauteur ' + diagN(r.b - r.h) + ')' : nom + ' : absent ou caché';
+  add('--app-h posé : ' + (h.style.getPropertyValue('--app-h') || '—') + ' · zone visible mesurée (visualViewport) : ' + (vv ? diagN(vv.height) : 'indisponible') + ' · innerHeight ' + diagN(m.ih) + ' · classes de <html> : « ' + h.className + ' »');
+  add(rp(m.app, '#app') + ' · écart innerHeight − bas de #app : ' + (m.app ? ecart(m.ih - m.app.b) : '?'));
+  add(rp(m.bande, 'bande du haut') + ' · marge --safe-top ' + diagN(s.safeTop) + ' · fond ' + sup(d.getElementById('app-band'), 'background-color'));
+  add(rp(m.scene, 'zone de contenu (#stage)'));
+  if (m.defil) { const ec = m.defil.h - (m.bande ? m.bande.b : 0); add('première zone qui défile : ' + m.defil.n + ' · haut ' + diagN(m.defil.h) + ' · bas ' + diagN(m.defil.b) + ' · écart avec le bas de la bande : ' + diagN(ec) + (ec < -0.5 ? ' ⚠ (elle remonte sous la bande)' : ' ✓ (elle commence sous la bande)')); }
+  else add('aucune zone qui défile dans cet écran');
+  add(rp(m.pilule, 'pilule de la barre'));
   add('');
   add('— BARRES DE MENU VISIBLES : ' + m.nav.length + ' —');
   m.nav.forEach(n => add('  ' + n.n + ' dans ' + n.p + ' : haut ' + diagN(n.h) + ' · bas ' + diagN(n.b) + ' · écart sous la barre ' + ecart(m.ih - n.b) + (vv ? ' (visualViewport : ' + ecart(vv.offsetTop + vv.height - n.b) + ')' : '')));
@@ -4533,102 +4646,102 @@ const onglets = [
 ];
 
 const recettes = [
-  { id:"001", titre:"Bouillon lacto-fermenté au gingembre & curcuma", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🫖", badge:"Anti-inflammatoire", hero_gradient:"linear-gradient(160deg, #f5e8d0, #d4a850)", couleur_accent:"#818263", note_nara:"Le miso non pasteurisé contient des bactéries lactiques vivantes. Curcuma + poivre noir : la pipérine augmente l'absorption de la curcumine jusqu'à 2000%.", tags:["Anti-inflammatoire","Probiotiques","Intestin","Sans gluten","Vegan"], article:"Le microbiome intestinal expliqué", precaution:"Le curcuma en quantité peut interagir avec certains médicaments (anticoagulants notamment) : demande conseil à ton pharmacien si tu en prends.",
+  { id:"001", titre:"Bouillon lacto-fermenté au gingembre & curcuma", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🫖", badge:"Anti-inflammatoire", hero_gradient:"linear-gradient(160deg, #f5e8d0, #d4a850)", couleur_accent:"#818263", note_nara:"Le miso non pasteurisé contient des bactéries lactiques vivantes. Curcuma + poivre noir : la pipérine augmente l'absorption de la curcumine jusqu'à 2000%.", tags:["Anti-inflammatoire","Probiotiques","Intestin","Sans gluten","Vegan"], articleId:"003", precaution:"Le curcuma en quantité peut interagir avec certains médicaments (anticoagulants notamment) : demande conseil à ton pharmacien si tu en prends.",
     ingredients:[{nom:"Bouillon de légumes",qty:"600 ml"},{nom:"Miso non pasteurisé",qty:"2 c.s.",key:true},{nom:"Gingembre frais",qty:"3 cm",key:true},{nom:"Curcuma en poudre",qty:"1 c.c.",key:true},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Algues wakamé",qty:"1 c.s."},{nom:"Citron",qty:"½"}],
     conseil:"Le miso ne doit jamais bouillir — ajoute-le hors du feu pour préserver les probiotiques.",
     etapes:[{titre:"Préparer le bouillon",duree:"5 min",instruction:"Faire chauffer le bouillon de légumes à feu doux sans le porter à ébullition.",conseil:null},{titre:"Ajouter les aromates",duree:"3 min",instruction:"Râper le gingembre frais et l'ajouter au bouillon. Incorporer curcuma et poivre noir.",conseil:"La pipérine du poivre noir multiplie par 20 l'absorption du curcuma."},{titre:"Réhydrater les algues",duree:"5 min",instruction:"Faire tremper les algues wakamé dans un bol d'eau tiède pendant 5 minutes.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Ajouter les algues réhydratées au bouillon. Retirer du feu.",conseil:null},{titre:"Incorporer le miso",duree:"1 min",instruction:"Délayer le miso dans une louche de bouillon tiède (pas bouillant) puis verser dans la casserole.",conseil:"Ne jamais cuire le miso : ses bactéries lactiques seraient détruites au-delà de 60°C."},{titre:"Finition",duree:"1 min",instruction:"Presser le demi-citron. Servir chaud dans un bol. Déguster lentement.",conseil:null}]
   },
-  { id:"002", titre:"Salade saumon, avocat, graines de courge & roquette", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Midi", temps:"15 min", portions:2, niveau:"Facile", regime:"Sans gluten", emoji:"🥗", badge:"Oméga-3", hero_gradient:"linear-gradient(160deg, #e8f0d8, #88b850)", couleur_accent:"#6a8c50", note_nara:"Saumon riche en oméga-3 EPA/DHA. Avocat : vitamine E + acides gras mono-insaturés. Graines de courge : zinc essentiel à la cicatrisation.", tags:["Oméga-3","Zinc","Peau","Anti-inflammatoire","Sans gluten"], article:"Oméga-3 et inflammation cutanée", precaution:null,
+  { id:"002", titre:"Salade saumon, avocat, graines de courge & roquette", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Midi", temps:"15 min", portions:2, niveau:"Facile", regime:"Sans gluten", emoji:"🥗", badge:"Oméga-3", hero_gradient:"linear-gradient(160deg, #e8f0d8, #88b850)", couleur_accent:"#6a8c50", note_nara:"Saumon riche en oméga-3 EPA/DHA. Avocat : vitamine E + acides gras mono-insaturés. Graines de courge : zinc essentiel à la cicatrisation.", tags:["Oméga-3","Zinc","Peau","Anti-inflammatoire","Sans gluten"], articleId:"014", precaution:null,
     ingredients:[{nom:"Saumon fumé ou frais cuit",qty:"200 g",key:true},{nom:"Avocat mûr",qty:"1",key:true},{nom:"Roquette",qty:"80 g"},{nom:"Graines de courge",qty:"2 c.s.",key:true},{nom:"Citron",qty:"1"},{nom:"Huile d'olive",qty:"2 c.s."},{nom:"Sel, poivre",qty:"à goût"}],
     conseil:"Choisir du saumon sauvage si possible : teneur en oméga-3 plus élevée que l'élevage.",
     etapes:[{titre:"Préparer la base",duree:"3 min",instruction:"Laver et essorer la roquette. La disposer dans un grand bol.",conseil:null},{titre:"Préparer les ingrédients",duree:"5 min",instruction:"Trancher l'avocat en lamelles. Couper le saumon en morceaux. Presser le citron.",conseil:"Citronner l'avocat immédiatement pour éviter l'oxydation."},{titre:"Assembler",duree:"2 min",instruction:"Disposer le saumon et l'avocat sur la roquette. Parsemer de graines de courge.",conseil:null},{titre:"Assaisonner et servir",duree:"1 min",instruction:"Arroser d'huile d'olive et de jus de citron. Saler, poivrer. Servir immédiatement.",conseil:"Manger dans les 20 minutes pour bénéficier au maximum des oméga-3 non oxydés."}]
   },
-  { id:"003", titre:"Golden milk au lait d'avoine, cannelle & miel", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"8 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"✨", badge:"Système nerveux", hero_gradient:"linear-gradient(160deg, #f5e8c0, #c8880a)", couleur_accent:"#b87820", note_nara:"La cannelle stabilise la glycémie en soirée. Curcuma + poivre noir. Le rituel lui-même active le système nerveux parasympathique.", tags:["Anti-inflammatoire","Stress","Sommeil","Sans gluten","Vegan"], article:"Stress et alimentation : le lien oublié", precaution:"Le curcuma en quantité peut interagir avec certains médicaments (anticoagulants notamment) : demande conseil à ton pharmacien si tu en prends.",
+  { id:"003", titre:"Golden milk au lait d'avoine, cannelle & miel", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"8 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"✨", badge:"Système nerveux", hero_gradient:"linear-gradient(160deg, #f5e8c0, #c8880a)", couleur_accent:"#b87820", note_nara:"La cannelle stabilise la glycémie en soirée. Curcuma + poivre noir. Le rituel lui-même active le système nerveux parasympathique.", tags:["Anti-inflammatoire","Stress","Sommeil","Sans gluten","Vegan"], articleId:"023", precaution:"Le curcuma en quantité peut interagir avec certains médicaments (anticoagulants notamment) : demande conseil à ton pharmacien si tu en prends.",
     ingredients:[{nom:"Lait d'avoine",qty:"250 ml"},{nom:"Curcuma",qty:"½ c.c.",key:true},{nom:"Cannelle",qty:"½ c.c.",key:true},{nom:"Gingembre en poudre",qty:"¼ c.c."},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Miel",qty:"1 c.c."},{nom:"Vanille (optionnel)",qty:"1 pincée"}],
     conseil:"Préparer ce rituel sans écran, dans le calme. Le contexte influence autant que les ingrédients.",
     etapes:[{titre:"Chauffer le lait",duree:"3 min",instruction:"Faire chauffer doucement le lait d'avoine sans le bouillir.",conseil:null},{titre:"Ajouter les épices",duree:"2 min",instruction:"Incorporer curcuma, cannelle, gingembre et poivre noir. Mélanger au fouet.",conseil:"Le poivre noir est indispensable : il active la curcumine."},{titre:"Finition douce",duree:"1 min",instruction:"Hors du feu, ajouter le miel et la vanille. Fouetter jusqu'à légère mousse.",conseil:"Le miel chauffé au-delà de 40°C perd ses propriétés — toujours l'ajouter hors feu."},{titre:"Savourer",duree:"2 min",instruction:"Verser dans une belle tasse. Boire lentement, sans écran, idéalement 1h avant le coucher.",conseil:"Ce rituel en lui-même active le système parasympathique : prends le temps."}]
   },
-  { id:"004", titre:"Porridge banane verte, graines de lin & amandes", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"15 min", portions:1, niveau:"Facile", regime:"Vegan", emoji:"🥣", badge:"Tryptophane", hero_gradient:"linear-gradient(160deg, #f0e8d0, #b88820)", couleur_accent:"#9a7830", note_nara:"Avoine + banane : tryptophane, précurseur de la mélatonine. Banane semi-verte : amidon résistant prébiotique. Lin moulu : oméga-3 végétaux.", tags:["Sommeil","Tryptophane","Microbiome","Sans gluten","Vegan"], article:"Alimentation et qualité du sommeil", precaution:null,
+  { id:"004", titre:"Porridge banane verte, graines de lin & amandes", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"15 min", portions:1, niveau:"Facile", regime:"Vegan", emoji:"🥣", badge:"Tryptophane", hero_gradient:"linear-gradient(160deg, #f0e8d0, #b88820)", couleur_accent:"#9a7830", note_nara:"Avoine + banane : tryptophane, précurseur de la mélatonine. Banane semi-verte : amidon résistant prébiotique. Lin moulu : oméga-3 végétaux.", tags:["Sommeil","Tryptophane","Microbiome","Sans gluten","Vegan"], articleId:"029", precaution:null,
     ingredients:[{nom:"Flocons d'avoine",qty:"60 g"},{nom:"Lait végétal",qty:"200 ml"},{nom:"Banane semi-verte",qty:"1",key:true},{nom:"Graines de lin moulues",qty:"1 c.s.",key:true},{nom:"Amandes effilées",qty:"1 c.s."},{nom:"Cannelle",qty:"½ c.c."},{nom:"Miel ou sirop d'érable",qty:"1 c.c."}],
     conseil:"La banane semi-verte (légèrement jaune) contient plus d'amidon résistant que la banane mûre : meilleur carburant pour les bactéries du côlon.",
     etapes:[{titre:"Cuire l'avoine",duree:"5 min",instruction:"Faire chauffer les flocons d'avoine avec le lait végétal à feu moyen, en remuant jusqu'à consistance crémeuse.",conseil:null},{titre:"Incorporer les graines",duree:"1 min",instruction:"Hors du feu, mélanger les graines de lin moulues et la cannelle.",conseil:"Lin moulu = oméga-3 biodisponibles. Entiers, ils passent sans être assimilés."},{titre:"Garnir",duree:"2 min",instruction:"Trancher la banane. Disposer sur le porridge avec les amandes effilées.",conseil:null},{titre:"Finaliser",duree:"1 min",instruction:"Ajouter le miel ou sirop d'érable. Servir tiède, pas brûlant.",conseil:"Un petit-déjeuner riche en tryptophane prépare la synthèse de mélatonine pour la nuit suivante."}]
   },
-  { id:"005", titre:"Smoothie anti-inflammatoire myrtilles, gingembre & curcuma", onglet:"corps", rubrique:"Comprendre mon corps", moment:"Matin", temps:"5 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"🫐", badge:"Antioxydants", hero_gradient:"linear-gradient(160deg, #e8d0f0, #6030a0)", couleur_accent:"#6a3a90", note_nara:"Myrtilles : anthocyanines parmi les antioxydants les plus puissants. Manger coloré = diversité de composés protecteurs que les compléments ne reproduisent pas.", tags:["Antioxydants","Anti-inflammatoire","Intestin","Peau","Vegan","Express"], article:"Antioxydants et inflammation", precaution:null,
+  { id:"005", titre:"Smoothie anti-inflammatoire myrtilles, gingembre & curcuma", onglet:"corps", rubrique:"Comprendre mon corps", moment:"Matin", temps:"5 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"🫐", badge:"Antioxydants", hero_gradient:"linear-gradient(160deg, #e8d0f0, #6030a0)", couleur_accent:"#6a3a90", note_nara:"Myrtilles : anthocyanines parmi les antioxydants les plus puissants. Manger coloré = diversité de composés protecteurs que les compléments ne reproduisent pas.", tags:["Antioxydants","Anti-inflammatoire","Intestin","Peau","Vegan","Express"], articleId:"009", precaution:null,
     ingredients:[{nom:"Myrtilles (fraîches ou surgelées)",qty:"150 g",key:true},{nom:"Banane",qty:"½"},{nom:"Lait végétal",qty:"150 ml"},{nom:"Gingembre frais",qty:"1 cm",key:true},{nom:"Curcuma",qty:"¼ c.c.",key:true},{nom:"Poivre noir",qty:"1 pincée"},{nom:"Graines de chia (optionnel)",qty:"1 c.c."}],
     conseil:"Les myrtilles surgelées sont souvent plus riches en anthocyanines que les fraîches — la congélation préserve les polyphénols.",
     etapes:[{titre:"Préparer",duree:"1 min",instruction:"Mettre tous les ingrédients dans le blender.",conseil:"Si myrtilles surgelées : pas besoin de les décongeler."},{titre:"Mixer",duree:"1 min",instruction:"Mixer à haute vitesse 60 secondes jusqu'à consistance lisse.",conseil:null},{titre:"Ajuster",duree:"1 min",instruction:"Goûter. Ajouter du lait végétal si trop épais, une datte si pas assez sucré.",conseil:"La couleur violette intense = signe de richesse en anthocyanines."},{titre:"Boire immédiatement",duree:"2 min",instruction:"Consommer dans les 10 minutes. Les antioxydants s'oxydent rapidement à l'air.",conseil:"Ce smoothie vaut mieux le matin à jeun ou avant l'activité physique."}]
   },
-  { id:"006", titre:"Bowl riz complet, légumes rôtis & sauce tahini-citron", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Midi", temps:"40 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🥙", badge:"Repas traceur", hero_gradient:"linear-gradient(160deg, #d8e8c8, #4a7030)", couleur_accent:"#4a6828", note_nara:"Repas de référence pour décoder les patterns digestifs. Fibres solubles (pois chiches) + insolubles (riz, légumes) + protéines végétales.", tags:["Fibres","Équilibré","Microbiome","Repas traceur","Sans gluten","Vegan"], article:"Décoder ses patterns digestifs", precaution:null,
+  { id:"006", titre:"Bowl riz complet, légumes rôtis & sauce tahini-citron", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Midi", temps:"40 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🥙", badge:"Repas traceur", hero_gradient:"linear-gradient(160deg, #d8e8c8, #4a7030)", couleur_accent:"#4a6828", note_nara:"Repas de référence pour décoder les patterns digestifs. Fibres solubles (pois chiches) + insolubles (riz, légumes) + protéines végétales.", tags:["Fibres","Équilibré","Microbiome","Repas traceur","Sans gluten","Vegan"], articleId:"032", precaution:null,
     ingredients:[{nom:"Riz complet",qty:"160 g"},{nom:"Courgette",qty:"1"},{nom:"Poivron",qty:"1"},{nom:"Pois chiches cuits",qty:"200 g",key:true},{nom:"Tahini",qty:"2 c.s.",key:true},{nom:"Citron",qty:"1"},{nom:"Ail",qty:"1 gousse"},{nom:"Huile d'olive",qty:"2 c.s."}],
     conseil:"Note dans ton journal comment tu te sens 2h et 4h après ce repas. C'est le point de référence de tes patterns.",
     etapes:[{titre:"Cuire le riz",duree:"30 min",instruction:"Rincer le riz complet. Cuire dans 2 fois son volume d'eau salée pendant 25-30 min.",conseil:"Le riz complet met plus longtemps mais son IG bas est clé pour ce repas traceur."},{titre:"Rôtir les légumes",duree:"20 min",instruction:"Couper courgette et poivron en dés. Arroser d'huile. Rôtir à 200°C pendant 20 min.",conseil:null},{titre:"Préparer la sauce",duree:"3 min",instruction:"Mélanger tahini, jus de citron, ail pressé et 3 c.s. d'eau. Fouetter jusqu'à consistance crémeuse.",conseil:"La sauce peut sembler solide au départ : continue de fouetter, elle s'allège."},{titre:"Chauffer les pois chiches",duree:"3 min",instruction:"Faire revenir les pois chiches à la poêle avec un filet d'huile et du cumin.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Disposer riz, légumes et pois chiches dans un bol. Napper de sauce tahini.",conseil:"Ce repas, bien toléré, devient ta référence. Si inconfort après = note dans Nara."}]
   },
-  { id:"007", titre:"Soupe miso aux légumes racines & algues wakamé", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"25 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🍜", badge:"Miso · Wakamé", hero_gradient:"linear-gradient(160deg, #d0e8e0, #106040)", couleur_accent:"#106040", note_nara:"Miso non pasteurisé : bactéries lactiques. Wakamé : fucanes prébiotiques. Shiitake : bêta-glucane immunomodulateur. Ne jamais faire bouillir le miso.", tags:["Probiotiques","Microbiome","Minéraux","Sans gluten","Vegan"], article:"Les aliments fermentés et le microbiome", precaution:null,
+  { id:"007", titre:"Soupe miso aux légumes racines & algues wakamé", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Soir", temps:"25 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🍜", badge:"Miso · Wakamé", hero_gradient:"linear-gradient(160deg, #d0e8e0, #106040)", couleur_accent:"#106040", note_nara:"Miso non pasteurisé : bactéries lactiques. Wakamé : fucanes prébiotiques. Shiitake : bêta-glucane immunomodulateur. Ne jamais faire bouillir le miso.", tags:["Probiotiques","Microbiome","Minéraux","Sans gluten","Vegan"], articleId:"008", precaution:null,
     ingredients:[{nom:"Miso non pasteurisé",qty:"2 c.s.",key:true},{nom:"Algues wakamé séchées",qty:"1 c.s.",key:true},{nom:"Champignons shiitake",qty:"6"},{nom:"Carotte",qty:"1"},{nom:"Panais",qty:"1"},{nom:"Eau",qty:"700 ml"},{nom:"Gingembre frais",qty:"2 cm"}],
     conseil:"Achète le miso au rayon réfrigéré des épiceries asiatiques ou bio. Le miso en sachet stable est pasteurisé = plus de probiotiques.",
     etapes:[{titre:"Préparer les légumes",duree:"5 min",instruction:"Couper carotte et panais en rondelles fines. Émincer les champignons shiitake.",conseil:null},{titre:"Réhydrater les algues",duree:"5 min",instruction:"Faire tremper les algues wakamé 5 min dans l'eau froide.",conseil:null},{titre:"Cuire les légumes",duree:"12 min",instruction:"Porter l'eau à frémissement. Ajouter carotte, panais, shiitake et gingembre râpé. Cuire 12 min.",conseil:null},{titre:"Ajouter les algues",duree:"1 min",instruction:"Égoutter les algues et les ajouter à la soupe. Retirer du feu.",conseil:null},{titre:"Incorporer le miso",duree:"2 min",instruction:"Délayer le miso dans une louche de bouillon tiède. Verser dans la casserole hors feu.",conseil:"La température idéale pour préserver les probiotiques : moins de 60°C."},{titre:"Servir",duree:"1 min",instruction:"Répartir dans des bols. Déguster chaud, en silence si possible.",conseil:null}]
   },
-  { id:"008", titre:"Kefir bowl aux fruits rouges & granola maison", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Matin", temps:"30 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🫙", badge:"Probiotiques", hero_gradient:"linear-gradient(160deg, #f0d8e8, #903060)", couleur_accent:"#903060", note_nara:"Kefir : jusqu'à 30 souches de bactéries et levures. Fruits rouges : polyphénols = carburant pour les bonnes bactéries. Avoine : bêta-glucane favorable au microbiome.", tags:["Probiotiques","Fermenté","Fibres","Microbiome","Végétarien"], article:"Kéfir et santé intestinale", precaution:null,
+  { id:"008", titre:"Kefir bowl aux fruits rouges & granola maison", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Matin", temps:"30 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🫙", badge:"Probiotiques", hero_gradient:"linear-gradient(160deg, #f0d8e8, #903060)", couleur_accent:"#903060", note_nara:"Kefir : jusqu'à 30 souches de bactéries et levures. Fruits rouges : polyphénols = carburant pour les bonnes bactéries. Avoine : bêta-glucane favorable au microbiome.", tags:["Probiotiques","Fermenté","Fibres","Microbiome","Végétarien"], articleId:"008", precaution:null,
     ingredients:[{nom:"Kéfir de lait",qty:"250 ml",key:true},{nom:"Flocons d'avoine",qty:"80 g"},{nom:"Noisettes",qty:"30 g"},{nom:"Miel",qty:"1 c.s."},{nom:"Fruits rouges",qty:"150 g",key:true},{nom:"Graines de chanvre",qty:"1 c.s."},{nom:"Noix de coco râpée",qty:"1 c.s."}],
     conseil:"Si tu ne trouves pas de kéfir de lait, le kéfir de coco (vegan) contient aussi des souches probiotiques variées.",
     etapes:[{titre:"Granola maison",duree:"20 min",instruction:"Mélanger flocons d'avoine, noisettes concassées, miel et noix de coco. Étaler sur plaque. Cuire 15-18 min à 170°C. Laisser refroidir.",conseil:"Le granola refroidit en devenant croustillant — ne pas s'inquiéter si mou à la sortie du four."},{titre:"Préparer les fruits",duree:"2 min",instruction:"Laver les fruits rouges. Les laisser entiers ou les couper selon leur taille.",conseil:null},{titre:"Assembler",duree:"3 min",instruction:"Verser le kéfir dans un bol. Ajouter granola, fruits rouges, graines de chanvre.",conseil:"Ajouter le granola au dernier moment pour conserver le croquant."},{titre:"Déguster",duree:"5 min",instruction:"Consommer immédiatement. Le kéfir froid + fruits froids = microbiome heureux.",conseil:"Ce bowl est encore meilleur quand tu as préparé le granola la veille."}]
   },
-  { id:"009", titre:"Wrap de laitue, quinoa & sauce yaourt-citron", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Midi", temps:"30 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🥬", badge:"Sans gluten", hero_gradient:"linear-gradient(160deg, #d8f0d8, #287028)", couleur_accent:"#287028", note_nara:"La laitue remplace le pain — naturellement sans gluten, plus digeste. Quinoa : protéine complète, 9 acides aminés. Yaourt : probiotiques doux sans alourdir.", tags:["Sans gluten","Digestion","Léger","Protéines végétales","Végétarien"], article:"Sans gluten : quand et pourquoi ?", precaution:null,
+  { id:"009", titre:"Wrap de laitue, quinoa & sauce yaourt-citron", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Midi", temps:"30 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🥬", badge:"Sans gluten", hero_gradient:"linear-gradient(160deg, #d8f0d8, #287028)", couleur_accent:"#287028", note_nara:"La laitue remplace le pain — naturellement sans gluten, plus digeste. Quinoa : protéine complète, 9 acides aminés. Yaourt : probiotiques doux sans alourdir.", tags:["Sans gluten","Digestion","Léger","Protéines végétales","Végétarien"], articleId:"010", precaution:null,
     ingredients:[{nom:"Feuilles de laitue iceberg",qty:"8 grandes"},{nom:"Quinoa cuit",qty:"200 g",key:true},{nom:"Avocat",qty:"1"},{nom:"Carotte râpée",qty:"1"},{nom:"Yaourt nature",qty:"100 g",key:true},{nom:"Citron",qty:"1"},{nom:"Herbes fraîches (menthe, coriandre)",qty:"1 bouquet"},{nom:"Graines de sésame",qty:"1 c.s."}],
     conseil:"Choisir des grandes feuilles de laitue bien fermes : rincer et sécher soigneusement pour qu'elles ne se déchirent pas.",
     etapes:[{titre:"Préparer le quinoa",duree:"20 min",instruction:"Rincer le quinoa. Cuire dans 2x son volume d'eau 15 min. Égrener à la fourchette.",conseil:"Rincer le quinoa retire la saponine amère en surface."},{titre:"Préparer la sauce",duree:"3 min",instruction:"Mélanger yaourt, jus de citron, herbes ciselées, sel et poivre.",conseil:null},{titre:"Préparer les garnitures",duree:"5 min",instruction:"Écraser l'avocat grossièrement. Râper la carotte.",conseil:null},{titre:"Assembler les wraps",duree:"3 min",instruction:"Disposer quinoa, avocat, carotte sur chaque feuille de laitue. Napper de sauce. Parsemer de graines de sésame.",conseil:"Manger avec les mains, comme des rouleaux de printemps — c'est le but."}]
   },
-  { id:"010", titre:"Compote pomme-poire au gingembre & cardamome", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Collation", temps:"20 min", portions:3, niveau:"Très facile", regime:"Vegan", emoji:"🍏", badge:"Transit doux", hero_gradient:"linear-gradient(160deg, #f5ecd0, #a07020)", couleur_accent:"#a07020", note_nara:"Pectine des pommes/poires : gel apaisant qui régule le transit dans les deux sens. Gingembre : antispasmodique. Cardamome : propriétés digestives ayurvédiques.", tags:["Digestion","Transit","Doux","Sans gluten","Vegan"], article:"Les fruits comme alliés digestifs", precaution:null,
+  { id:"010", titre:"Compote pomme-poire au gingembre & cardamome", onglet:"dig", rubrique:"Alimentation & digestion", moment:"Collation", temps:"20 min", portions:3, niveau:"Très facile", regime:"Vegan", emoji:"🍏", badge:"Transit doux", hero_gradient:"linear-gradient(160deg, #f5ecd0, #a07020)", couleur_accent:"#a07020", note_nara:"Pectine des pommes/poires : gel apaisant qui régule le transit dans les deux sens. Gingembre : antispasmodique. Cardamome : propriétés digestives ayurvédiques.", tags:["Digestion","Transit","Doux","Sans gluten","Vegan"], articleId:"007", precaution:null,
     ingredients:[{nom:"Pommes",qty:"3"},{nom:"Poires",qty:"2"},{nom:"Gingembre frais",qty:"2 cm",key:true},{nom:"Cardamome moulue",qty:"½ c.c.",key:true},{nom:"Cannelle",qty:"½ c.c."},{nom:"Eau",qty:"4 c.s."},{nom:"Citron",qty:"½"}],
     conseil:"Ne pas éplucher les pommes : la pectine se concentre juste sous la peau. Mixer avec la peau pour bénéficier de toutes les fibres.",
     etapes:[{titre:"Couper les fruits",duree:"5 min",instruction:"Laver les fruits. Couper pommes et poires en dés. Retirer les pépins mais garder la peau.",conseil:null},{titre:"Cuire",duree:"12 min",instruction:"Mettre dans une casserole avec l'eau, le gingembre râpé et les épices. Cuire à couvert 12 min à feu doux.",conseil:"Feu doux = cuisson vapeur douce. La pectine se libère mieux ainsi."},{titre:"Mixer",duree:"2 min",instruction:"Hors du feu, mixer grossièrement (pas trop lisse — les fibres restent actives).",conseil:null},{titre:"Finition",duree:"1 min",instruction:"Ajouter le jus de citron. Mélanger. Servir tiède ou froid.",conseil:"Se conserve 4-5 jours au réfrigérateur. Parfait en petite quantité à n'importe quelle heure."}]
   },
-  { id:"011", titre:"Soupe de lentilles corail, carotte & lait de coco", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Soir", temps:"35 min", portions:3, niveau:"Facile", regime:"Vegan", emoji:"🍲", badge:"Bêta-carotène", hero_gradient:"linear-gradient(160deg, #f8e0c0, #b04010)", couleur_accent:"#b04010", note_nara:"Carottes : bêta-carotène → vitamine A essentielle au renouvellement cutané. Lentilles corail : zinc + protéines → synthèse du collagène. Lait de coco : barrière cutanée.", tags:["Zinc","Bêta-carotène","Peau","Anti-inflammatoire","Sans gluten","Vegan"], article:"Nutri-cosmétique : nourrir sa peau de l'intérieur", precaution:null,
+  { id:"011", titre:"Soupe de lentilles corail, carotte & lait de coco", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Soir", temps:"35 min", portions:3, niveau:"Facile", regime:"Vegan", emoji:"🍲", badge:"Bêta-carotène", hero_gradient:"linear-gradient(160deg, #f8e0c0, #b04010)", couleur_accent:"#b04010", note_nara:"Carottes : bêta-carotène → vitamine A essentielle au renouvellement cutané. Lentilles corail : zinc + protéines → synthèse du collagène. Lait de coco : barrière cutanée.", tags:["Zinc","Bêta-carotène","Peau","Anti-inflammatoire","Sans gluten","Vegan"], articleId:"014", precaution:null,
     ingredients:[{nom:"Lentilles corail",qty:"200 g",key:true},{nom:"Carottes",qty:"3",key:true},{nom:"Lait de coco",qty:"200 ml"},{nom:"Oignon",qty:"1"},{nom:"Ail",qty:"2 gousses"},{nom:"Cumin",qty:"1 c.c."},{nom:"Curcuma",qty:"½ c.c."},{nom:"Bouillon de légumes",qty:"600 ml"},{nom:"Huile de coco",qty:"1 c.s."}],
     conseil:"La lentille corail ne nécessite pas de trempage : c'est la légumineuse la plus digeste, idéale si tu as le côlon sensible.",
     etapes:[{titre:"Faire revenir les aromates",duree:"4 min",instruction:"Chauffer l'huile. Faire revenir oignon émincé et ail 3-4 min. Ajouter cumin et curcuma.",conseil:null},{titre:"Ajouter les carottes",duree:"2 min",instruction:"Couper les carottes en rondelles et les ajouter à la casserole. Remuer.",conseil:"Plus les carottes sont orangées, plus elles sont riches en bêta-carotène."},{titre:"Ajouter les lentilles",duree:"1 min",instruction:"Rincer les lentilles corail et les ajouter. Verser le bouillon.",conseil:null},{titre:"Cuire",duree:"20 min",instruction:"Porter à frémissement. Cuire 18-20 min jusqu'à ce que les lentilles soient fondantes.",conseil:null},{titre:"Mixer et finir",duree:"5 min",instruction:"Mixer la soupe. Ajouter le lait de coco. Réchauffer doucement sans bouillir. Ajuster l'assaisonnement.",conseil:"Le lait de coco ajoute des acides gras à chaîne moyenne bénéfiques pour la barrière cutanée."}]
   },
-  { id:"012", titre:"Tartines de sardines, avocat & graines de tournesol", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Matin", temps:"8 min", portions:2, niveau:"Très facile", regime:"Sans sucre ajouté", emoji:"🐟", badge:"Oméga-3 · Vit. D", hero_gradient:"linear-gradient(160deg, #e8d8c0, #906030)", couleur_accent:"#8a5020", note_nara:"Sardines : source concentrée en oméga-3 EPA/DHA + vitamine D. Bas de la chaîne alimentaire = moins de métaux lourds. Petit-déjeuner salé = meilleure stabilité glycémique.", tags:["Oméga-3","Vitamine D","Peau","Protéines","Sans sucre"], article:"Vitamine D et peau : le lien méconnu", precaution:null,
+  { id:"012", titre:"Tartines de sardines, avocat & graines de tournesol", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Matin", temps:"8 min", portions:2, niveau:"Très facile", regime:"Sans sucre ajouté", emoji:"🐟", badge:"Oméga-3 · Vit. D", hero_gradient:"linear-gradient(160deg, #e8d8c0, #906030)", couleur_accent:"#8a5020", note_nara:"Sardines : source concentrée en oméga-3 EPA/DHA + vitamine D. Bas de la chaîne alimentaire = moins de métaux lourds. Petit-déjeuner salé = meilleure stabilité glycémique.", tags:["Oméga-3","Vitamine D","Peau","Protéines","Sans sucre"], articleId:"013", precaution:null,
     ingredients:[{nom:"Pain au levain ou sans gluten",qty:"4 tranches"},{nom:"Sardines à l'huile d'olive",qty:"1 boîte",key:true},{nom:"Avocat mûr",qty:"1",key:true},{nom:"Graines de tournesol",qty:"1 c.s.",key:true},{nom:"Citron",qty:"½"},{nom:"Piment d'Espelette",qty:"1 pincée"},{nom:"Herbes fraîches (persil, ciboulette)",qty:"quelques brins"}],
     conseil:"Si tu n'aimes pas les sardines : remplacer par du maquereau fumé — profil nutritionnel similaire, goût plus doux.",
     etapes:[{titre:"Écraser l'avocat",duree:"2 min",instruction:"Écraser l'avocat à la fourchette avec le jus de citron, sel et piment d'Espelette.",conseil:"Citronner immédiatement pour éviter l'oxydation."},{titre:"Toaster le pain",duree:"3 min",instruction:"Toaster les tranches de pain jusqu'à légère dorure.",conseil:null},{titre:"Égoutter les sardines",duree:"1 min",instruction:"Égoutter légèrement les sardines, garder un peu d'huile.",conseil:"L'huile d'olive de conservation contient aussi des oméga-3."},{titre:"Assembler et servir",duree:"2 min",instruction:"Tartiner d'avocat écrasé. Disposer les sardines. Parsemer de graines de tournesol et d'herbes fraîches.",conseil:"Ce petit-déjeuner protéiné stabilise la glycémie toute la matinée."}]
   },
-  { id:"013", titre:"Salade de betterave, orange & noix", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Midi", temps:"12 min", portions:2, niveau:"Très facile", regime:"Vegan", emoji:"🫐", badge:"Bétalaïnes", hero_gradient:"linear-gradient(160deg, #f0d0e8, #901050)", couleur_accent:"#901050", note_nara:"Bétalaïnes de la betterave : antioxydants anti-vieillissement cutané. Vitamine C des oranges : synthèse du collagène. Noix : oméga-3 + vitamine E → barrière lipidique.", tags:["Antioxydants","Oméga-3 végétaux","Peau","Sans gluten","Vegan"], article:"Antioxydants et vieillissement cutané", precaution:null,
+  { id:"013", titre:"Salade de betterave, orange & noix", onglet:"peau", rubrique:"Peau & signaux extérieurs", moment:"Midi", temps:"12 min", portions:2, niveau:"Très facile", regime:"Vegan", emoji:"🫐", badge:"Bétalaïnes", hero_gradient:"linear-gradient(160deg, #f0d0e8, #901050)", couleur_accent:"#901050", note_nara:"Bétalaïnes de la betterave : antioxydants anti-vieillissement cutané. Vitamine C des oranges : synthèse du collagène. Noix : oméga-3 + vitamine E → barrière lipidique.", tags:["Antioxydants","Oméga-3 végétaux","Peau","Sans gluten","Vegan"], articleId:"014", precaution:null,
     ingredients:[{nom:"Betteraves cuites",qty:"3 moyennes",key:true},{nom:"Oranges",qty:"2",key:true},{nom:"Noix",qty:"40 g",key:true},{nom:"Mâche ou roquette",qty:"60 g"},{nom:"Huile de noix",qty:"2 c.s."},{nom:"Vinaigre balsamique",qty:"1 c.s."},{nom:"Sel, poivre",qty:"à goût"}],
     conseil:"Choisir des betteraves crues et les cuire soi-même : les betteraves sous vide ont souvent du vinaigre ajouté qui détruit certains pigments.",
     etapes:[{titre:"Préparer les légumes",duree:"4 min",instruction:"Couper les betteraves en quartiers ou en rondelles. Peler les oranges à vif et couper en tranches.",conseil:"Couper les oranges à vif (sans peau blanche) = moins d'amertume."},{titre:"Concasser les noix",duree:"1 min",instruction:"Concasser grossièrement les noix à la main ou au couteau.",conseil:null},{titre:"Assembler",duree:"3 min",instruction:"Disposer la mâche dans les assiettes. Ajouter betteraves et oranges.",conseil:null},{titre:"Assaisonner",duree:"2 min",instruction:"Préparer la vinaigrette : huile de noix + vinaigre balsamique + sel. Verser. Parsemer de noix concassées.",conseil:"L'huile de noix est fragile : ne jamais la chauffer. Idéale crue."}]
   },
-  { id:"014", titre:"Tisane adaptogène ashwagandha, réglisse & camomille", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"10 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"🌿", badge:"Adaptogène", hero_gradient:"linear-gradient(160deg, #e8e0f0, #504090)", couleur_accent:"#504090", note_nara:"Ashwagandha : réduction du cortisol cliniquement prouvée. Camomille : apigénine → récepteurs GABA. ⚠️ Réglisse contre-indiquée si hypertension.", tags:["Adaptogène","Cortisol","Stress","Sans gluten","Vegan","Rituel"], article:"Adaptogènes : que dit la science ?", precaution:"Si hypertension ou médicaments : consulter avant usage régulier de réglisse",
+  { id:"014", titre:"Tisane adaptogène ashwagandha, réglisse & camomille", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Soir", temps:"10 min", portions:1, niveau:"Très facile", regime:"Vegan", emoji:"🌿", badge:"Adaptogène", hero_gradient:"linear-gradient(160deg, #e8e0f0, #504090)", couleur_accent:"#504090", note_nara:"Ashwagandha : réduction du cortisol cliniquement prouvée. Camomille : apigénine → récepteurs GABA. ⚠️ Réglisse contre-indiquée si hypertension.", tags:["Adaptogène","Cortisol","Stress","Sans gluten","Vegan","Rituel"], articleId:"022", precaution:"Si hypertension ou médicaments : consulter avant usage régulier de réglisse",
     ingredients:[{nom:"Ashwagandha en poudre",qty:"½ c.c.",key:true},{nom:"Réglisse (racine ou en poudre)",qty:"¼ c.c.",key:true},{nom:"Camomille séchée",qty:"1 c.s.",key:true},{nom:"Eau",qty:"250 ml"},{nom:"Miel",qty:"1 c.c."}],
     conseil:"L'ashwagandha a une légère amertume terreuse — le miel et la réglisse la masquent naturellement. Commence par une petite dose.",
     etapes:[{titre:"Bouillir l'eau",duree:"2 min",instruction:"Porter 250 ml d'eau à ébullition.",conseil:null},{titre:"Infuser",duree:"7 min",instruction:"Mettre camomille, ashwagandha et réglisse dans une théière ou infuseur. Verser l'eau bouillante. Laisser infuser 7 min à couvert.",conseil:"Couvrir pendant l'infusion pour ne pas perdre les composés volatils actifs."},{titre:"Filtrer et sucrer",duree:"1 min",instruction:"Filtrer la tisane. Ajouter le miel hors feu.",conseil:"Boire idéalement 1h avant le coucher dans le calme, sans écran."}]
   },
-  { id:"015", titre:"Energy balls chocolat noir, noix du Brésil & datte", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Collation", temps:"15 min", portions:12, niveau:"Très facile", regime:"Vegan", emoji:"🍫", badge:"Magnésium", hero_gradient:"linear-gradient(160deg, #2a1a10, #5a2810)", couleur_accent:"#5a2810", note_nara:"Magnésium des amandes + sélénium des noix du Brésil → régulation système nerveux. Le stress épuise le magnésium : cercle vicieux réel. 2 noix du Brésil/jour = 100% des besoins en sélénium.", tags:["Magnésium","Sélénium","Stress","Sans cuisson","Sans sucre ajouté","Vegan"], article:"Magnésium et système nerveux", precaution:null,
+  { id:"015", titre:"Energy balls chocolat noir, noix du Brésil & datte", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Collation", temps:"15 min", portions:12, niveau:"Très facile", regime:"Vegan", emoji:"🍫", badge:"Magnésium", hero_gradient:"linear-gradient(160deg, #2a1a10, #5a2810)", couleur_accent:"#5a2810", note_nara:"Magnésium des amandes + sélénium des noix du Brésil → régulation système nerveux. Le stress épuise le magnésium : cercle vicieux réel. 2 noix du Brésil/jour = 100% des besoins en sélénium.", tags:["Magnésium","Sélénium","Stress","Sans cuisson","Sans sucre ajouté","Vegan"], articleId:"005", precaution:null,
     ingredients:[{nom:"Dattes Medjool",qty:"150 g",key:true},{nom:"Amandes",qty:"100 g"},{nom:"Noix du Brésil",qty:"40 g",key:true},{nom:"Cacao en poudre non sucré",qty:"2 c.s.",key:true},{nom:"Noix de coco râpée",qty:"2 c.s. + pour enrobage"},{nom:"Sel de mer",qty:"1 pincée"},{nom:"Vanille",qty:"½ c.c."}],
     conseil:"Si les dattes sont sèches, les tremper 10 min dans l'eau tiède avant utilisation. Mixer d'abord les fruits secs, puis ajouter les dattes petit à petit.",
     etapes:[{titre:"Dénoyauter",duree:"3 min",instruction:"Dénoyauter les dattes. Réserver.",conseil:null},{titre:"Mixer les fruits secs",duree:"2 min",instruction:"Mixer amandes et noix du Brésil en poudre grossière dans un blender.",conseil:"Ne pas trop mixer : des petits morceaux donnent de la texture."},{titre:"Assembler la pâte",duree:"3 min",instruction:"Ajouter les dattes, cacao, noix de coco, vanille et sel. Mixer jusqu'à obtenir une pâte qui se tient.",conseil:"La pâte doit coller légèrement aux doigts sans être collante."},{titre:"Former et rouler",duree:"5 min",instruction:"Former des boules de la taille d'une noix. Rouler dans la noix de coco râpée.",conseil:"Se conserve 2 semaines au réfrigérateur. Parfait pour anticiper les moments de stress."}]
   },
-  { id:"016", titre:"Riz basmati aux légumes verts & amandes grillées", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Midi", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🥦", badge:"Magnésium", hero_gradient:"linear-gradient(160deg, #d0e8d0, #306030)", couleur_accent:"#306030", note_nara:"Légumes verts : meilleures sources de magnésium végétal. Riz basmati : IG plus bas que le riz blanc — évite les pics glycémiques anxiogènes.", tags:["Magnésium","Tryptophane","Stress","Sans gluten","Vegan"], article:"Alimentation anti-stress au quotidien", precaution:null,
+  { id:"016", titre:"Riz basmati aux légumes verts & amandes grillées", onglet:"stress", rubrique:"Stress & système nerveux", moment:"Midi", temps:"30 min", portions:2, niveau:"Facile", regime:"Vegan", emoji:"🥦", badge:"Magnésium", hero_gradient:"linear-gradient(160deg, #d0e8d0, #306030)", couleur_accent:"#306030", note_nara:"Légumes verts : meilleures sources de magnésium végétal. Riz basmati : IG plus bas que le riz blanc — évite les pics glycémiques anxiogènes.", tags:["Magnésium","Tryptophane","Stress","Sans gluten","Vegan"], articleId:"023", precaution:null,
     ingredients:[{nom:"Riz basmati",qty:"160 g"},{nom:"Brocoli",qty:"½ tête",key:true},{nom:"Haricots verts",qty:"150 g",key:true},{nom:"Épinards frais",qty:"80 g"},{nom:"Amandes effilées",qty:"30 g",key:true},{nom:"Ail",qty:"2 gousses"},{nom:"Huile d'olive",qty:"2 c.s."},{nom:"Citron",qty:"1"},{nom:"Sel, poivre",qty:"à goût"}],
     conseil:"Griller les amandes à sec dans une poêle anti-adhésive — elles développent des arômes et deviennent croustillantes sans matière grasse ajoutée.",
     etapes:[{titre:"Cuire le riz",duree:"18 min",instruction:"Rincer le riz. Cuire selon les instructions, à l'eau salée. Égrener à la fourchette.",conseil:null},{titre:"Cuire les légumes",duree:"8 min",instruction:"Cuire le brocoli et les haricots verts à la vapeur ou à l'eau bouillante salée — rester al dente.",conseil:"Légumes al dente = plus de magnésium conservé. La surcuisson dégrade les minéraux."},{titre:"Faire revenir",duree:"3 min",instruction:"Chauffer l'huile d'olive, faire revenir l'ail. Ajouter les épinards 1 min.",conseil:null},{titre:"Griller les amandes",duree:"3 min",instruction:"Dans une poêle sèche, griller les amandes effilées à feu moyen 2-3 min en remuant.",conseil:null},{titre:"Assembler",duree:"2 min",instruction:"Mélanger riz, légumes, épinards. Disposer dans les assiettes. Parsemer d'amandes. Zester le citron.",conseil:"Le zeste de citron ajoute de la vivacité sans acidité."}]
   },
-  { id:"017", titre:"Dîner léger : velouté de courgette & fromage de chèvre", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Soir", temps:"28 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🥣", badge:"Léger", hero_gradient:"linear-gradient(160deg, #d8f0d8, #185028)", couleur_accent:"#185028", note_nara:"Repas lourd le soir = maintien en mode actif → retarde endormissement. Fromage de chèvre : tryptophane → mélatonine. Idéalement avant 20h.", tags:["Sommeil","Tryptophane","Léger","Sans gluten","Végétarien"], article:"Ce que tu manges le soir change ton sommeil", precaution:null,
+  { id:"017", titre:"Dîner léger : velouté de courgette & fromage de chèvre", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Soir", temps:"28 min", portions:2, niveau:"Facile", regime:"Végétarien", emoji:"🥣", badge:"Léger", hero_gradient:"linear-gradient(160deg, #d8f0d8, #185028)", couleur_accent:"#185028", note_nara:"Repas lourd le soir = maintien en mode actif → retarde endormissement. Fromage de chèvre : tryptophane → mélatonine. Idéalement avant 20h.", tags:["Sommeil","Tryptophane","Léger","Sans gluten","Végétarien"], articleId:"029", precaution:null,
     ingredients:[{nom:"Courgettes",qty:"3 moyennes"},{nom:"Fromage de chèvre frais",qty:"80 g",key:true},{nom:"Oignon",qty:"1"},{nom:"Bouillon de légumes",qty:"500 ml"},{nom:"Huile d'olive",qty:"1 c.s."},{nom:"Noix de muscade",qty:"1 pincée"},{nom:"Sel, poivre",qty:"à goût"},{nom:"Graines de courge",qty:"1 c.s. pour servir"}],
     conseil:"Manger ce velouté idéalement au moins 2h avant de dormir. L'heure du dîner influence la qualité du sommeil autant que le contenu de l'assiette.",
     etapes:[{titre:"Faire revenir",duree:"4 min",instruction:"Faire revenir l'oignon émincé dans l'huile d'olive jusqu'à transparence.",conseil:null},{titre:"Ajouter les courgettes",duree:"2 min",instruction:"Couper les courgettes en rondelles. Ajouter à la casserole et faire revenir 2 min.",conseil:null},{titre:"Cuire",duree:"15 min",instruction:"Verser le bouillon. Porter à frémissement et cuire 15 min.",conseil:null},{titre:"Mixer et crémer",duree:"3 min",instruction:"Mixer finement. Ajouter le fromage de chèvre et mixer à nouveau. Assaisonner avec muscade, sel, poivre.",conseil:"Le fromage de chèvre en fin de cuisson = texte crémeuse sans matière grasse lourde."},{titre:"Servir",duree:"1 min",instruction:"Verser dans des bols. Parsemer de graines de courge. Servir chaud.",conseil:"Un dîner terminé avant 20h optimise la fenêtre de récupération nocturne."}]
   },
-  { id:"018", titre:"Overnight oats cerise, lavande & graines de courge", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"8 min", portions:1, niveau:"Très facile", regime:"Végétarien", emoji:"🍒", badge:"Mélatonine", hero_gradient:"linear-gradient(160deg, #2a1040, #7020b0)", couleur_accent:"#7020b0", note_nara:"Les cerises contiennent un peu de mélatonine. Les graines de courge apportent du magnésium et du tryptophane.", tags:["Mélatonine","Sommeil","Magnésium","Sans cuisson","Végétarien"], article:"Mélatonine alimentaire : mythe ou réalité ?", precaution:null,
+  { id:"018", titre:"Overnight oats cerise, lavande & graines de courge", onglet:"sommeil", rubrique:"Sommeil & récupération", moment:"Matin", temps:"8 min", portions:1, niveau:"Très facile", regime:"Végétarien", emoji:"🍒", badge:"Mélatonine", hero_gradient:"linear-gradient(160deg, #2a1040, #7020b0)", couleur_accent:"#7020b0", note_nara:"Les cerises contiennent un peu de mélatonine. Les graines de courge apportent du magnésium et du tryptophane.", tags:["Mélatonine","Sommeil","Magnésium","Sans cuisson","Végétarien"], articleId:"026", precaution:null,
     ingredients:[{nom:"Flocons d'avoine",qty:"60 g"},{nom:"Lait d'amande ou de vache",qty:"150 ml"},{nom:"Yaourt nature",qty:"50 g"},{nom:"Cerises (fraîches ou surgelées)",qty:"100 g",key:true},{nom:"Graines de courge",qty:"1 c.s.",key:true},{nom:"Lavande alimentaire séchée",qty:"½ c.c.",key:true},{nom:"Miel",qty:"1 c.c."}],
     conseil:"Préparer la veille au soir — 8 heures de trempage permettent aux flocons de libérer leur amidon résistant prébiotique.",
     etapes:[{titre:"Préparer la base (veille au soir)",duree:"3 min",instruction:"Mélanger flocons d'avoine, lait, yaourt, lavande et miel dans un bocal. Remuer.",conseil:"La lavande : une petite pincée suffit, l'effet est subtil et apaisant."},{titre:"Laisser reposer",duree:"0 min",instruction:"Couvrir et réfrigérer toute la nuit (minimum 6h).",conseil:"Plus le trempage est long, plus l'amidon résistant se développe : meilleur pour le microbiome."},{titre:"Garnir le matin",duree:"3 min",instruction:"Le matin, remuer les oats. Disposer les cerises dénoyautées et les graines de courge par-dessus.",conseil:"Cerises fraîches en saison, surgelées le reste de l'année — la mélatonine est préservée par la congélation."}]
   },
-  { id:"019", titre:"Omelette aux herbes fraîches & légumes sautés", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Midi", temps:"18 min", portions:1, niveau:"Facile", regime:"Sans lactose", emoji:"🍳", badge:"Traceur", hero_gradient:"linear-gradient(160deg, #f0e8d0, #907020)", couleur_accent:"#907020", note_nara:"Repas traceur idéal Nara : peu d'ingrédients, composition claire, reproductible. Œufs : protéine complète hautement biodisponible.", tags:["Protéines","Repas traceur","Digestion","Sans gluten","Sans lactose"], article:"Comment utiliser un repas traceur", precaution:null,
+  { id:"019", titre:"Omelette aux herbes fraîches & légumes sautés", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Midi", temps:"18 min", portions:1, niveau:"Facile", regime:"Sans lactose", emoji:"🍳", badge:"Traceur", hero_gradient:"linear-gradient(160deg, #f0e8d0, #907020)", couleur_accent:"#907020", note_nara:"Repas traceur idéal Nara : peu d'ingrédients, composition claire, reproductible. Œufs : protéine complète hautement biodisponible.", tags:["Protéines","Repas traceur","Digestion","Sans gluten","Sans lactose"], articleId:"032", precaution:null,
     ingredients:[{nom:"Œufs",qty:"3",key:true},{nom:"Poivron",qty:"½"},{nom:"Courgette",qty:"½"},{nom:"Herbes fraîches (persil, ciboulette)",qty:"1 bouquet"},{nom:"Huile d'olive",qty:"1 c.s."},{nom:"Sel, poivre",qty:"à goût"}],
     conseil:"Observer dans les 2h et 4h après ce repas : ballonnements ? Transit ? Énergie ? Ce sont tes données patterns.",
     etapes:[{titre:"Préparer les légumes",duree:"5 min",instruction:"Couper poivron et courgette en petits dés.",conseil:null},{titre:"Sauter les légumes",duree:"5 min",instruction:"Chauffer l'huile à feu moyen-vif. Faire sauter les légumes 4-5 min jusqu'à légère dorure.",conseil:"Feu assez vif = légumes saisis, pas bouillis. Meilleure texture et plus digeste."},{titre:"Préparer les œufs",duree:"2 min",instruction:"Battre les œufs avec sel, poivre et herbes ciselées.",conseil:null},{titre:"Cuire l'omelette",duree:"3 min",instruction:"Verser les œufs sur les légumes. Cuire à feu moyen 2-3 min. Replier et servir légèrement baveuse.",conseil:"Omelette légèrement baveuse = protéines moins dénaturées, plus faciles à digérer."},{titre:"Observer",duree:"0 min",instruction:"Manger lentement. Ouvrir Nara et noter: comment tu te sens avant le repas. Revenir 2h et 4h après.",conseil:null}]
   },
-  { id:"020", titre:"Bouillon de légumes maison à congeler", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Base culinaire", temps:"70 min", portions:8, niveau:"Facile", regime:"Vegan", emoji:"🫙", badge:"Base neutre", hero_gradient:"linear-gradient(160deg, #d8e8d8, #204820)", couleur_accent:"#204820", note_nara:"Game-changer pour les repas traceurs : contrôle total des ingrédients. Zéro glutamate, zéro additif. Quand tu sais exactement ce que tu as mangé, identifier l'inconfort devient possible.", tags:["Repas traceur","Patterns","Congélation","Sans gluten","Vegan"], article:"L'élimination alimentaire expliquée", precaution:null,
+  { id:"020", titre:"Bouillon de légumes maison à congeler", onglet:"patterns", rubrique:"Décoder mes patterns", moment:"Base culinaire", temps:"70 min", portions:8, niveau:"Facile", regime:"Vegan", emoji:"🫙", badge:"Base neutre", hero_gradient:"linear-gradient(160deg, #d8e8d8, #204820)", couleur_accent:"#204820", note_nara:"Game-changer pour les repas traceurs : contrôle total des ingrédients. Zéro glutamate, zéro additif. Quand tu sais exactement ce que tu as mangé, identifier l'inconfort devient possible.", tags:["Repas traceur","Patterns","Congélation","Sans gluten","Vegan"], articleId:"010", precaution:null,
     ingredients:[{nom:"Carottes",qty:"3"},{nom:"Branches de céleri",qty:"3"},{nom:"Oignon",qty:"2"},{nom:"Poireaux",qty:"2"},{nom:"Ail",qty:"4 gousses"},{nom:"Persil frais",qty:"1 bouquet"},{nom:"Thym frais",qty:"3 branches"},{nom:"Laurier",qty:"2 feuilles"},{nom:"Eau",qty:"2 litres"},{nom:"Sel",qty:"1 c.c."}],
     conseil:"Faire de grandes quantités et congeler en portions de 200-300 ml dans des sachets ou des bacs à glaçons : disponible en 5 min pour n'importe quelle recette.",
     etapes:[{titre:"Préparer les légumes",duree:"10 min",instruction:"Laver et couper grossièrement tous les légumes. Pas besoin d'éplucher : gratter ou laver soigneusement.",conseil:"Les pelures contiennent des minéraux : les utiliser quand elles sont bio."},{titre:"Faire revenir (optionnel)",duree:"5 min",instruction:"Dans une grande casserole, faire revenir les légumes à sec 4-5 min pour développer les saveurs.",conseil:"Cette étape n'est pas obligatoire mais donne plus de profondeur."},{titre:"Mijoter",duree:"45 min",instruction:"Couvrir d'eau froide. Porter à ébullition puis réduire à frémissement. Cuire 45 min à couvert.",conseil:"Ne jamais bouillir fort : le bouillon deviendrait trouble et amer."},{titre:"Filtrer",duree:"5 min",instruction:"Filtrer à travers une passoire fine. Presser les légumes pour extraire tout le liquide.",conseil:null},{titre:"Conditionner et congeler",duree:"5 min",instruction:"Laisser refroidir. Portionner dans des récipients adaptés à la congélation. Étiqueter avec la date.",conseil:"Se conserve 3 mois au congélateur. La base de tous tes repas traceurs."}]
@@ -4640,15 +4753,17 @@ let currentOnglet = "dig";
 let currentRecette = null;
 let currentSubTab = "resume";
 let etapeIndex = 0;
+let libVueCourante = 'articles';        // vue affichée dans la Bibliothèque : 'articles' ou 'recettes'
+let artRetourRecette = null;            // { id, sub, haut } quand un article est ouvert depuis une recette : la flèche retour de l'article y ramène (même onglet, même endroit)
 
 // ===== NAV =====
-// Screens that show the bottom nav
-const MAIN_SCREENS = ['home','journal','insights','library','routines','recipes'];
+// Écrans qui montrent la barre du bas (la barre est unique : #bnav). Les pages de détail, le profil, les suivis et la connexion n'en ont pas.
+const MAIN_SCREENS = ['home','journal','insights','library','routines','gallery','calendar'];
 // Map screen → which bnav item is "active"
 const BNAV_MAP = {
   home: 'home', journal: 'journal', insights: 'insights',
   library: 'library', routines: 'routines',
-  recipes: 'recipes', 'recipe-detail': 'recipes',
+  'recipe-detail': 'library',            // « recipes » n'est plus un écran : c'est la vue « Recettes » de la Bibliothèque (voir showScreen)
   'article-detail': 'library', 'routine-detail': 'routines',
   calendar: null,
   gallery: null,
@@ -4658,39 +4773,24 @@ const BNAV_MAP = {
   suivis: null
 };
 
-// Écrans non-authentifiés — la bottom nav ne doit pas s'afficher
-const NO_NAV_SCREENS = new Set(['onboarding','signup','login','profile-invite','profile-later']);
-
 function updateBottomNav(screenId) {
-  // Masquer toutes les barres de menu sur les écrans sans connexion.
-  // Une seule classe sur le body suffit (règle CSS « body.no-nav ») : pas besoin de cacher chaque barre une par une.
-  // Depuis le prompt 9, chaque barre est dans son propre écran, donc cachée aussi avec lui quand il est inactif ; cette classe est une sécurité en plus.
-  if (NO_NAV_SCREENS.has(screenId)) {
-    document.body.classList.add('no-nav');
-  } else {
-    document.body.classList.remove('no-nav');
-  }
-
-  // Mettre à jour l'onglet actif
-  ['home','journal','insights','routines','library','recipes'].forEach(k => {
+  // La barre est unique (#bnav). La classe « bar-off » de <html> la cache sur les écrans qui n'en ont pas ; la classe « kb-open » la cache aussi quand le clavier est ouvert (voir appMesurerFenetre).
+  document.documentElement.classList.toggle('bar-off', !MAIN_SCREENS.includes(screenId));
+  // Onglet mis en valeur
+  ['home','insights','journal','routines','library'].forEach(k => {
     const el = document.getElementById('bnav-' + k);
-    if (el) el.classList.toggle('active', BNAV_MAP[screenId] === k);
-  });
-  // Shared bottom navs (prefixed)
-  const prefixes = ['jrn','ins','lib','rout','rec'];
-  prefixes.forEach(pfx => {
-    ['home','journal','insights','routines','library','recipes'].forEach(k => {
-      const el = document.getElementById(pfx + '-bnav-' + k);
-      if (el) el.classList.toggle('active', BNAV_MAP[screenId] === k);
-    });
+    if (!el) return;
+    const actif = BNAV_MAP[screenId] === k;
+    el.classList.toggle('active', actif);
+    if (actif) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
   });
 }
 
-// Couleur de fond par screen (pour body/app/zone safe-area)
+// Couleur du HAUT de chaque écran (bande du haut, html, body et #app)
 const SCREEN_BG = {
   onboarding: '#F6EAD4', signup: '#F6EAD4', login: '#F6EAD4',
   home: '#FFFAF2', journal: '#FFFAF2', insights: '#FFFAF2',
-  library: '#FFFAF2', routines: '#FFFAF2', recipes: '#FFFAF2',
+  library: '#FFFAF2', routines: '#FFFAF2',
   'article-detail': '#FFFAF2', 'routine-detail': '#FFFAF2', 'recipe-detail': '#FFFAF2',
 };
 // Pages à en-tête coloré : id de l'en-tête dont on lit la première couleur (elle devient celle de la zone de la barre d'état)
@@ -4702,23 +4802,23 @@ function couleurHaut(id) {
 }
 
 function showScreen(id, btn) {
+  if (id === 'recipes') { libVueCourante = 'recettes'; id = 'library'; }   // l'ancien écran « Recettes » est la vue « Recettes » de la Bibliothèque : go('recipes') y mène toujours
   if (id !== 'recipe-detail' && id !== 'article-detail' && !_routNav) routRetourVers = null;   // la mémoire « je viens d'une routine » ne survit qu'aux écrans ouverts depuis une routine
+  if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
   _routNav = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
   if (btn) btn.classList.add('active');
-  // Sync body background avec l'écran actif — empêche toute bande blanche/parasite
-  // Sur les pages à en-tête coloré (routine, article, recette), la zone de la barre d'état prend la couleur de l'en-tête : iOS la teinte avec le fond de la page puis la floute
-  // par-dessus le contenu (sinon : bande claire sur un en-tête foncé). Sur tablette, la crème est gardée autour de la colonne.
+  // Couleurs : la bande du haut (#app-band) prend la couleur du HAUT de la page (crème ; miel à la connexion ; couleur de l'en-tête pour une routine, un article, une recette) ;
+  // html, body et #app suivent la même couleur (variable --current-screen-bg, crème par défaut), pour que ce qu'iOS teinte sous la barre d'état soit identique à la bande.
+  // Sur tablette, la crème est gardée autour de la colonne.
   const bg = SCREEN_BG[id] || '#FFFAF2', haut = couleurHaut(id), teinte = window.innerWidth < 700 ? haut : bg;
   document.documentElement.style.setProperty('--current-screen-bg', teinte);
-  document.body.style.background = teinte;
-  if (el && HERO_HAUT[id]) el.style.background = teinte;
+  document.documentElement.style.setProperty('--band-bg', haut);
   const metaCouleur = document.querySelector('meta[name="theme-color"]'); if (metaCouleur) metaCouleur.setAttribute('content', haut);     // Android : barre d'état de la couleur du haut de page
-  if (id === 'recipes') renderRecettes();
-  if (id === 'library') try { renderBibliotheque(); } catch(e) { console.warn("[Nara] renderBiblio:", e); }
+  if (id === 'library') try { renderBibliotheque(); const rs = document.querySelector('#lib-pane-recettes .rec-scroll'); if (rs) rs.scrollTop = 0; } catch(e) { console.warn("[Nara] renderBiblio:", e); }
   if (id === 'routines') renderRoutines();
   if (id === 'home') try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   if (id === 'insights') renderInsightsPage();
@@ -4747,6 +4847,32 @@ function showScreen(id, btn) {
 function go(screenId) {
   showScreen(screenId, null);
 }
+
+// ── Mesure de la zone visible : hauteur de #app (--app-h) et clavier ──────────────────────────────────────────────
+// #app est une colonne de la hauteur EXACTE de la zone visible : window.visualViewport, sinon window.innerHeight (100dvh tant qu'aucune mesure n'a eu lieu).
+// Mesure refaite à chaque redimensionnement, rotation, retour dans l'app et fermeture du clavier. Clavier ouvert = la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
+function appMesurerFenetre() {
+  try {
+    const vv = window.visualViewport, h = document.documentElement;
+    if (vv && vv.scale && Math.abs(vv.scale - 1) > 0.02) return;        // pincement en cours : la zone visible n'est pas la fenêtre
+    const haut = Math.round((vv && vv.height) || window.innerHeight || 0);
+    if (haut < 200) return;                                              // mesure absurde (démarrage) : on garde la précédente
+    h.style.setProperty('--app-h', haut + 'px');
+    const clavier = vv ? (window.innerHeight - vv.height) > 120 : /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
+    h.classList.toggle('kb-open', !!clavier);
+  } catch (e) {}
+}
+(function appInstallerMesures() {
+  try {
+    window.addEventListener('resize', appMesurerFenetre);
+    window.addEventListener('orientationchange', () => { appMesurerFenetre(); setTimeout(appMesurerFenetre, 300); });
+    window.addEventListener('pageshow', appMesurerFenetre);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appMesurerFenetre(); });
+    document.addEventListener('focusout', () => { setTimeout(appMesurerFenetre, 120); setTimeout(appMesurerFenetre, 450); });   // fermeture du clavier : iOS signale parfois la fin en retard
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', appMesurerFenetre);
+    appMesurerFenetre();
+  } catch (e) {}
+})();
 
 // ===== RECETTES — LISTE =====
 function getOngletColor(id) {
@@ -4802,6 +4928,24 @@ function renderList() {
   `).join('');
 }
 
+// ===== RECETTE → ARTICLE LIÉ =====
+// Un article ouvert depuis une recette : la flèche retour de l'article ramène à la recette (même onglet, même endroit).
+// Si la recette avait elle-même été ouverte depuis une routine, routRetourVers est conservé : la flèche de la recette ramène alors à la routine.
+function recetteOuvrirArticle(aid) {
+  if (!libArticles.some(x => x.id === aid)) { showToast("Cet article n'est pas disponible"); return; }
+  const c = document.getElementById(currentSubTab === 'ingredients' ? 'recipe-content-ingredients' : 'recipe-content-resume');
+  artRetourRecette = currentRecette ? { id: currentRecette.id, sub: currentSubTab, haut: c ? c.scrollTop : 0 } : null;
+  openArticle(aid);
+}
+function artRetour() {                    // flèche retour de l'article : recette d'origine, sinon routine d'origine, sinon Bibliothèque
+  const r = artRetourRecette; artRetourRecette = null;
+  if (r && recettes.some(x => x.id === r.id)) {
+    openRecette(r.id);
+    if (r.sub === 'ingredients') switchSubTab('ingredients', document.getElementById('subtab-ingredients'));
+    requestAnimationFrame(() => { const c = document.getElementById(r.sub === 'ingredients' ? 'recipe-content-ingredients' : 'recipe-content-resume'); if (c) c.scrollTop = r.haut; });
+  } else { libVueCourante = 'articles'; routRetour('library'); }   // un article ouvert hors d'une recette ramène à la vue Articles, même si la vue Recettes était la dernière affichée
+}
+
 // ===== RECETTE DÉTAIL =====
 function openRecette(id) {
   currentRecette = recettes.find(r => r.id === id);
@@ -4828,6 +4972,14 @@ function openRecette(id) {
   // Résumé
   const precaution = r.precaution ? `<div class="precaution-box">⚠️ ${r.precaution}</div>` : '';
   const tagsHtml = r.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
+  // « Article lié » : le titre est lu dans la bibliothèque (jamais recopié) ; toucher la carte ouvre l'article
+  const art = r.articleId ? libArticles.find(a => a.id === r.articleId) : null;
+  const lienArticle = art ? `
+    <div class="article-link-card" role="button" tabindex="0" onclick="recetteOuvrirArticle('${art.id}')">
+      <div class="article-link-icon">📖</div>
+      <div><div class="article-link-label">Article lié</div><div class="article-link-title">${escHtml(art.titre)}</div></div>
+      <span style="color:var(--text-light);margin-left:auto;font-size:1rem">→</span>
+    </div>` : '';
   document.getElementById('recipe-content-resume').innerHTML = `
     ${precaution}
     <div class="note-nara-box" style="border-left-color:${color}">
@@ -4841,11 +4993,7 @@ function openRecette(id) {
       <div class="info-card"><div class="info-card-icon">⚡</div><div class="info-card-val">${r.niveau}</div><div class="info-card-label">Niveau</div></div>
     </div>
     <div class="tags-pills">${tagsHtml}</div>
-    <div class="article-link-card">
-      <div class="article-link-icon">📖</div>
-      <div><div class="article-link-label">Article lié</div><div class="article-link-title">${r.article}</div></div>
-      <span style="color:var(--text-light);margin-left:auto;font-size:1rem">→</span>
-    </div>
+    ${lienArticle}
     <button class="cta-btn" style="background:${color}" onclick="openModale()">C'est parti ! →</button>
   `;
 
@@ -5013,6 +5161,24 @@ function getLibSection(id) { return libSections.find(s => s.id === id); }
 function renderBibliotheque() {
   renderLibTabs();
   renderLibList();
+  libAfficherVue();
+  if (libVueCourante === 'recettes') renderRecettes();
+}
+
+// Deux vues dans la Bibliothèque : « Articles » (inchangée) et « Recettes » (l'ancienne page « Cuisine Inside-Out »)
+function libAfficherVue() {
+  const rec = libVueCourante === 'recettes';
+  const pa = document.getElementById('lib-pane-articles'), pr = document.getElementById('lib-pane-recettes');
+  const ba = document.getElementById('lib-vue-articles'), br = document.getElementById('lib-vue-recettes');
+  if (!pa || !pr || !ba || !br) return;
+  pa.classList.toggle('on', !rec); pr.classList.toggle('on', rec);
+  ba.classList.toggle('active', !rec); br.classList.toggle('active', rec);
+  ba.setAttribute('aria-selected', String(!rec)); br.setAttribute('aria-selected', String(rec));
+}
+function libChoisirVue(v) {
+  libVueCourante = v === 'recettes' ? 'recettes' : 'articles';
+  libAfficherVue();
+  if (libVueCourante === 'recettes') renderRecettes();
 }
 
 function renderLibTabs() {
@@ -15719,201 +15885,7 @@ try { initSession(); } catch(e) { console.warn('[Nara] initSession:', e); hideBo
 window.__naraBooted = true; // atteint uniquement si le script principal s'est exécuté jusqu'au bout
 // fond géré par CSS uniquement
 </script>
-    <!-- SCREEN GALERIE PEAU -->
-    <div class="screen" id="screen-gallery">
-      <div class="gallery-header">
-        <div>
-          <div style="font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:2px">Suivi photo</div>
-          <div class="gallery-title">Ma galerie peau</div>
-        </div>
-        <div class="gallery-count" id="gallery-count">0 photo</div>
-      </div>
 
-      <div class="gallery-scroll" id="gallery-scroll">
-        <!-- Rendu dynamique par renderGallery() -->
-      </div>
-
-      <!-- Modale plein écran -->
-      <div class="gallery-fullscreen" id="gallery-fullscreen" onclick="closeGalleryFullscreen()">
-        <button class="gallery-fs-close" onclick="event.stopPropagation(); closeGalleryFullscreen()">✕</button>
-        <img class="gallery-fs-img" id="gallery-fs-img" alt="">
-        <div class="photo-soft photo-soft-msg photo-soft-fs"><span class="ps-ico">📷</span><span>Photo indisponible pour l'instant<small>Elle s'affichera dès le retour de la connexion.</small></span></div>
-        <div class="gallery-fs-info" id="gallery-fs-info"></div>
-      </div>
-
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="gal-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="gal-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="gal-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="gal-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="gal-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="gal-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
-      </div>
-    </div>
-
-    <!-- SCREEN SUIVI DES SELLES -->
-    <div class="screen" id="screen-calendar">
-      <div class="cal-header">
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
-          <div class="cal-month-label" id="cal-month-label">Août <span class="cal-year">2026</span></div>
-          <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
-        </div>
-        <div style="font-size:0.7rem;color:var(--text-light);letter-spacing:0.06em">Suivi des selles 🌿</div>
-      </div>
-
-      <div class="cal-scroll">
-        <!-- Jours de la semaine -->
-        <div class="cal-weekdays">
-          <div class="cal-wd">Lun</div>
-          <div class="cal-wd">Mar</div>
-          <div class="cal-wd">Mer</div>
-          <div class="cal-wd">Jeu</div>
-          <div class="cal-wd">Ven</div>
-          <div class="cal-wd">Sam</div>
-          <div class="cal-wd">Dim</div>
-        </div>
-        <!-- Grille dynamique -->
-        <div class="cal-grid" id="cal-grid"></div>
-
-        <!-- Note médicale permanente sous le calendrier -->
-        <div style="background:#fff8f0;border:1.5px solid #f9a82555;border-radius:14px;padding:14px 16px;margin-top:12px;font-size:0.78rem;color:#8a5200;line-height:1.6;">
-          🩺 <strong>À noter :</strong> si tu observes des changements persistants sur plusieurs semaines — douleurs récurrentes, selles très dures ou très liquides de façon durable, ou tout autre symptôme inhabituel — il peut être utile d'en parler à ton médecin. Nara n'est pas un outil de diagnostic : une consultation reste le meilleur moyen d'être accompagnée.
-        </div>
-      </div>
-
-      <!-- Modale log d'un jour -->
-      <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="calHandleOverlay(event)">
-        <div class="cal-modal-card">
-          <div class="cal-modal-handle"></div>
-          <div class="cal-modal-date" id="cal-modal-date"></div>
-
-          <!-- OUI / NON -->
-          <span class="cal-section-label">As-tu eu une selle ce jour ?</span>
-          <div class="cal-yn-row">
-            <div class="cal-yn-btn" id="cal-btn-oui" onclick="calSelectYN('oui')">
-              <span class="yn-emoji">🌿</span>
-              <span class="yn-label">Oui, aujourd'hui</span>
-            </div>
-            <div class="cal-yn-btn" id="cal-btn-non" onclick="calSelectYN('non')">
-              <span class="yn-emoji">💤</span>
-              <span class="yn-label">Non, pas ce jour</span>
-            </div>
-          </div>
-
-          <!-- Section détaillée — visible uniquement si OUI -->
-          <div id="cal-detail-section" style="display:none">
-
-            <!-- ÉCHELLE DE BRISTOL -->
-            <span class="cal-section-label">Consistance — Échelle de Bristol</span>
-            <div class="bristol-grid" id="bristol-grid">
-              <!-- Rendu JS -->
-            </div>
-
-
-            <!-- FRÉQUENCE -->
-            <span class="cal-section-label">Nombre de passages dans la journée</span>
-            <div class="cal-stepper">
-              <button class="cal-stepper-btn" onclick="calStepFreq(-1)">−</button>
-              <div class="cal-stepper-val" id="cal-freq-val">
-                1<span class="cal-stepper-unit">passage</span>
-              </div>
-              <button class="cal-stepper-btn" onclick="calStepFreq(1)">+</button>
-            </div>
-
-            <!-- CONFORT -->
-            <span class="cal-section-label">Confort associé <span style="font-weight:300;text-transform:none;letter-spacing:0">(optionnel, sélection multiple)</span></span>
-            <div class="cal-chips" id="cal-confort-chips">
-              <div class="cal-chip chip-none selected" id="chip-aucun" onclick="calToggleConfort('aucun', this)">✓ Aucun inconfort</div>
-              <div class="cal-chip" id="chip-ballonnements" onclick="calToggleConfort('ballonnements', this)">💨 Ballonnements</div>
-              <div class="cal-chip" id="chip-douleur" onclick="calToggleConfort('douleur', this)">😣 Douleur</div>
-              <div class="cal-chip" id="chip-urgence" onclick="calToggleConfort('urgence', this)">⚡ Urgence</div>
-              <div class="cal-chip" id="chip-incomplete" onclick="calToggleConfort('incomplete', this)">🔄 Évacuation incomplète</div>
-            </div>
-
-            <!-- TIMING -->
-            <span class="cal-section-label">Moment(s) de la journée <span style="font-weight:300;text-transform:none;letter-spacing:0">(multi-sélection)</span></span>
-            <div class="cal-timing-row">
-              <div class="cal-timing-btn" id="timing-matin" onclick="calToggleTiming('matin', this)">
-                <span class="t-icon">🌅</span><span class="t-lbl">Matin</span>
-              </div>
-              <div class="cal-timing-btn" id="timing-apmidi" onclick="calToggleTiming('apmidi', this)">
-                <span class="t-icon">☀️</span><span class="t-lbl">Après-midi</span>
-              </div>
-              <div class="cal-timing-btn" id="timing-repas" onclick="calToggleTiming('repas', this)">
-                <span class="t-icon">🍽️</span><span class="t-lbl">Après repas</span>
-              </div>
-              <div class="cal-timing-btn" id="timing-soir" onclick="calToggleTiming('soir', this)">
-                <span class="t-icon">🌙</span><span class="t-lbl">Soir</span>
-              </div>
-            </div>
-
-
-
-          </div>
-
-          <button class="cal-modal-save" onclick="calSaveDay()">Enregistrer ✓</button>
-          <button class="cal-modal-delete" id="cal-delete-btn" onclick="calDeleteDay()" style="display:none">
-            Supprimer cette entrée
-          </button>
-        </div>
-      </div>
-
-      <!-- shared bottom nav -->
-      <div class="bottom-nav-shared">
-        <div class="bnav-item" id="cal-bnav-home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Accueil</span></div>
-        <div class="bnav-item" id="cal-bnav-insights" onclick="go('insights')"><span class="bnav-icon">📊</span><span class="bnav-label">Insights</span></div>
-        <div class="bnav-add" id="cal-bnav-journal" onclick="go('journal')"><div class="bnav-add-inner"><span class="bnav-icon">📓</span><span class="bnav-label">Journal</span></div></div>
-        <div class="bnav-item" id="cal-bnav-routines" onclick="go('routines')"><span class="bnav-icon">🌿</span><span class="bnav-label">Routines</span></div>
-        <div class="bnav-item" id="cal-bnav-library" onclick="go('library')"><span class="bnav-icon">📚</span><span class="bnav-label">Apprendre</span></div>
-        <div class="bnav-item" id="cal-bnav-recipes" onclick="go('recipes')"><span class="bnav-icon">🍽️</span><span class="bnav-label">Recettes</span></div>
-      </div>
-    </div>
-
-    <!-- SCREEN PROFIL SANTÉ -->
-    <div class="screen" id="screen-profile">
-      <div class="profile-header">
-        <div class="back-btn" onclick="go('home')">←</div>
-        <div class="screen-title">Mon profil santé</div>
-        <div id="profile-completion-badge" style="font-size:0.72rem;color:var(--text-light);margin-left:auto"></div>
-      </div>
-      <div class="profile-scroll" id="profile-scroll">
-        <!-- Rendu dynamique par renderProfile() -->
-      </div>
-    </div>
-
-    <!-- SCREEN INVITATION POST-INSCRIPTION -->
-    <div class="screen" id="screen-profile-invite">
-      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div class="profile-invite-screen">
-          <div class="profile-invite-icon">🌿</div>
-          <div class="profile-invite-title">Bienvenue dans Nara</div>
-          <div class="profile-invite-text">
-            Pour que les insights soient pertinents dès le début, Nara a besoin de comprendre ta situation de base. 5 minutes pour remplir ton Profil Santé, et l'app pourra contextualiser chaque donnée que tu notes.
-            <br><br>
-            <span style="color:var(--text-light);font-size:0.82rem">Tu peux le faire maintenant ou plus tard — c'est toi qui choisis.</span>
-          </div>
-          <button class="profile-invite-btn-primary" onclick="profileStartNow()">Remplir mon profil maintenant →</button>
-          <button class="profile-invite-btn-later" onclick="profileLater()">Plus tard</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- SCREEN "PLUS TARD" -->
-    <div class="screen" id="screen-profile-later">
-      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div class="profile-later-screen">
-          <div class="profile-invite-icon">✅</div>
-          <div class="profile-invite-title" style="font-size:1.2rem">Pas de souci</div>
-          <div class="profile-later-note">
-            📍 Tu peux accéder à ton Profil Santé à tout moment via le <strong>menu avatar</strong> → <strong>Mon profil santé</strong>.<br><br>
-            Plus tu le complètes, plus Nara pourra distinguer ce qui est "normal pour toi" d'un vrai changement — et plus les insights seront précis et personnalisés.
-          </div>
-          <button class="profile-invite-btn-primary" onclick="go('home')">Accéder à l'appli →</button>
-        </div>
-      </div>
-    </div>
 
     <!-- MODALE CONSENTEMENT RGPD DONNÉES DE SANTÉ -->
     <div class="profile-consent-overlay" id="profile-consent-overlay">
@@ -15934,17 +15906,6 @@ window.__naraBooted = true; // atteint uniquement si le script principal s'est e
         <button class="profile-consent-btn" id="profile-consent-btn" onclick="profileConsentOk()">
           Accéder à mon profil santé →
         </button>
-      </div>
-    </div>
-
-    <!-- SCREEN MES NOUVEAUX SUIVIS -->
-    <div class="screen" id="screen-suivis">
-      <div class="profile-header">
-        <div class="back-btn" onclick="go('home')">←</div>
-        <div class="screen-title">Mes nouveaux suivis</div>
-      </div>
-      <div class="suivis-scroll" id="suivis-scroll">
-        <!-- Rendu dynamique par renderSuivis() -->
       </div>
     </div>
 
@@ -16030,6 +15991,5 @@ window.__naraBooted = true; // atteint uniquement si le script principal s'est e
       </div>
     </div>
 
-</div><!-- /app -->
 </body>
 </html>

@@ -329,24 +329,115 @@ if (typeof supabase === 'undefined') {
   /* ===== HOME ===== */
   #screen-home { background: var(--cream); }
 
-  .home-header { padding: 16px clamp(16px, 6vw, 28px) 20px; display: flex; justify-content: space-between; align-items: center; }
+  .home-header { padding: 16px clamp(16px, 6vw, 28px) 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .home-greeting { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 400; color: var(--text-dark); line-height: 1.2; }
-  .home-greeting span { color: var(--sage); }
   .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .home-scroll::-webkit-scrollbar { display: none; }
-  .score-card { background: linear-gradient(135deg, var(--sage) 0%, #6b6e52 100%); border-radius: clamp(16px, 5vw, 24px); padding: clamp(16px, 5vw, 24px); margin-bottom: 20px; color: white; position: relative; overflow: hidden; }
-  .score-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: rgba(255,255,255,0.08); border-radius: 50%; }
-  .score-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; margin-bottom: 8px; }
-  .score-value { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 10vw, 3.5rem); font-weight: 300; line-height: 1; margin-bottom: 4px; }
-  .score-sub { font-size: 0.8rem; opacity: 0.75; margin-bottom: 20px; }
-  .score-bars-wrap { margin-top: 4px; }
-  .score-bars { display: flex; gap: 8px; align-items: flex-end; height: 40px; }
-  .score-bar { flex: 1; background: rgba(255,255,255,0.2); border-radius: 4px; position: relative; overflow: hidden; }
-  .score-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.6); border-radius: 4px; }
-  .score-days { display: flex; gap: 8px; margin-top: 5px; }
-  .score-day-lbl { flex: 1; text-align: center; font-size: 0.55rem; text-transform: uppercase;
-    letter-spacing: 0.04em; opacity: 0.55; color: white; line-height: 1; }
-  .score-day-lbl.today { opacity: 0.95; font-weight: 700; }
+  /* ===== ACCUEIL (lot 12) : en-tête, puis sept cartes dans cet ordre — Aujourd'hui · Ma routine en cours · Ma semaine · Cycle · Pour toi aujourd'hui · Ce que tu remarques ===== */
+  :root { --olive-fonce: #5f6147; }
+  .home-head-txt { min-width: 0; }
+  .home-greeting #home-user-name { color: var(--sage); }
+  .home-date { font-size: 0.84rem; color: var(--text-mid); margin-top: 4px; }
+  .home-phase { font-size: 0.78rem; color: var(--text-mid); margin-top: 3px; line-height: 1.4; }
+  .hm-carte { background: white; border: 1.5px solid var(--oat); border-radius: 18px; padding: 14px 16px; margin-bottom: 16px; }
+  .hm-sec { margin-bottom: 16px; }
+  .hm-sec-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; margin-bottom: 8px; }
+  .hm-sec-titre { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-mid); }
+  .hm-lien {
+    display: inline-flex; align-items: center; justify-content: flex-end; min-width: 44px; min-height: 44px; margin: -8px -4px -8px 0; padding: 0 4px 0 12px;
+    background: none; border: 0; font: inherit; font-size: 0.8rem; color: var(--olive-fonce); cursor: pointer;
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  /* Aujourd'hui : fond olive (assez foncé pour que le texte crème reste bien lisible) */
+  .hm-auj { position: relative; overflow: hidden; background: linear-gradient(135deg, #6d6e52 0%, #5a5c42 100%); color: #FFFAF2; border-radius: clamp(16px, 5vw, 22px); padding: 16px 18px; margin-bottom: 14px; }
+  .hm-auj::before { content: ''; position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: rgba(255, 250, 242, 0.07); border-radius: 50%; }
+  .hm-auj-ligne { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hm-auj-txt { min-width: 0; }
+  .hm-auj-etiq { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+  .hm-auj-titre { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.25rem, 5vw, 1.5rem); line-height: 1.2; }
+  .hm-auj-btn {
+    flex-shrink: 0; min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #FFFAF2; color: #4a4c34;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .hm-auj-btn:active { transform: scale(0.97); }
+  .hm-auj-lien {
+    flex-shrink: 0; min-height: 44px; padding: 0 2px 0 10px; border: 0; background: none; color: #FFFAF2; text-decoration: underline;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem; cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .hm-auj-hier { position: relative; margin-top: 6px; font-size: 0.78rem; line-height: 1.4; }
+  .hm-pastilles { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .hm-pastille-txt { background: rgba(35, 37, 22, 0.28); border-radius: 14px; padding: 5px 10px; font-size: 0.76rem; white-space: nowrap; }
+  /* Une ligne discrète sous « Aujourd'hui », tant que le profil santé est incomplet */
+  .hm-profil {
+    display: flex; align-items: center; gap: 4px; width: 100%; min-height: 44px; margin: -6px 0 4px; padding: 0 4px; text-align: left;
+    background: none; border: 0; font: inherit; font-size: 0.78rem; line-height: 1.4; color: var(--text-mid); cursor: pointer;
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  /* Ma routine en cours */
+  .hm-rout { border-left: 4px solid var(--rc, var(--sage)); }
+  .hm-rout-nom { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--text-dark); line-height: 1.2; }
+  .hm-rout-jour { font-size: 0.78rem; color: var(--text-mid); margin-top: 2px; }
+  .hm-barre-ligne { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; }
+  .hm-barre { flex: 1; height: 6px; border-radius: 3px; background: var(--oat); overflow: hidden; }
+  .hm-barre-rempli { height: 100%; border-radius: 3px; background: var(--rc, var(--sage)); transition: width 0.3s; }
+  .hm-barre-txt { font-size: 0.74rem; color: var(--text-mid); white-space: nowrap; }
+  .hm-tache { display: flex; align-items: center; min-height: 44px; }
+  .hm-tache-txt {
+    flex: 1; min-width: 0; align-self: stretch; min-height: 44px; padding: 6px 0; text-align: left; background: none; border: 0; font: inherit; font-size: 0.88rem; line-height: 1.35; color: var(--text-dark);
+    cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .hm-tache-txt em { font-style: normal; font-size: 0.76rem; color: var(--text-mid); }
+  .hm-tache.fait .hm-tache-txt { color: var(--text-mid); text-decoration: line-through; text-decoration-color: rgba(107, 102, 85, 0.5); }
+  .hm-tache.fait .rout-case-boite { background: var(--rc, var(--sage)); border-color: var(--rc, var(--sage)); color: white; }
+  .hm-plus {
+    display: flex; align-items: center; min-height: 44px; width: 100%; margin-top: 2px; padding: 0 4px; text-align: left; background: none; border: 0; border-top: 1px solid var(--oat);
+    font: inherit; font-size: 0.82rem; color: var(--olive-fonce); cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  /* Ma semaine : sept pastilles rondes — sauge (sereine), doré (quelques inconforts), rose terracotta clair (chargée), pointillés (pas noté) ; jamais de rouge */
+  .hm-jours { display: flex; justify-content: space-between; gap: 4px; padding: 8px 2px 4px; }
+  .hm-jour { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .hm-pastille { display: block; width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; }
+  .hm-p-serein { background: #A9B78A; }
+  .hm-p-inconfort { background: #E7C98F; }
+  .hm-p-charge { background: #E3B1A0; }
+  .hm-p-nonnote { background: transparent; border: 2px dashed #BDB398; }
+  .hm-pastille.auj { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--olive-fonce); }
+  .hm-jour-lib { font-size: 0.68rem; color: var(--text-mid); }
+  .hm-legende { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; font-size: 0.68rem; color: var(--text-mid); }
+  .hm-legende span { display: inline-flex; align-items: center; gap: 5px; }
+  .hm-legende i { display: inline-block; width: 10px; height: 10px; box-sizing: border-box; border-radius: 50%; }
+  .hm-legende i.hm-p-nonnote { border-width: 1.5px; }
+  .hm-sem-phrase { margin-top: 10px; font-size: 0.86rem; line-height: 1.4; color: var(--text-dark); }
+  /* Cycle compact : une seule ligne ; toucher la carte déplie le texte détaillé */
+  .home-cycle-block.hm-cyc { padding: 0; }
+  .hm-cyc-tete {
+    display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 16px; text-align: left; background: none; border: 0; font: inherit;
+    cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .hm-cyc-tete .home-cycle-title { min-width: 0; }
+  .hm-cyc-points { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .hm-cyc-points .cycle-dot-node { width: 8px; height: 8px; }
+  .hm-cyc-fl { flex-shrink: 0; font-size: 1.1rem; color: var(--text-light); transition: transform 0.2s; }
+  .hm-cyc.ouvert .hm-cyc-fl { transform: rotate(90deg); }
+  .hm-cyc-detail { display: none; padding: 0 16px 14px; }
+  .hm-cyc.ouvert .hm-cyc-detail { display: block; }
+  .hm-cyc-detail .home-cycle-title { display: block; margin-bottom: 6px; }
+  /* Pour toi aujourd'hui */
+  .hm-pourtoi .hm-sec-tete { margin-bottom: 2px; }
+  .hm-pourquoi { margin: 0 0 12px; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.05rem; line-height: 1.35; color: var(--text-dark); }
+  .hm-sugg {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; margin-bottom: 8px; padding: 10px 14px; text-align: left;
+    background: white; border: 1.5px solid var(--oat); border-radius: 16px; font: inherit; cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .hm-sugg:active { background: var(--honey); }
+  .hm-sugg-ico { flex-shrink: 0; width: 34px; text-align: center; font-size: 1.5rem; line-height: 1; }
+  .hm-sugg-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .hm-sugg-type { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-mid); }
+  .hm-sugg-titre { font-size: 0.88rem; line-height: 1.3; color: var(--text-dark); }
+  .hm-sugg-fl { flex-shrink: 0; font-size: 1.1rem; color: var(--text-light); }
+  /* Ce que tu remarques */
+  .hm-rem-txt { font-size: 0.92rem; line-height: 1.45; color: var(--text-dark); }
+  .hm-rem-vide { font-size: 0.84rem; color: var(--text-mid); }
   .section-title { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); margin-bottom: 12px; }
   .quick-log { background: var(--honey); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
   .quick-log-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--text-dark); margin-bottom: 16px; }
@@ -360,13 +451,6 @@ if (typeof supabase === 'undefined') {
     position: absolute; top: 4px; right: 5px;
     font-size: 0.6rem; color: var(--sage); line-height: 1;
   }
-  .insight-card { border-radius: 20px; padding: 20px; margin-bottom: 12px; }
-  .insight-card.gut { background: linear-gradient(135deg, var(--avocado) 0%, #d4d7a8 100%); }
-  .insight-card.skin { background: linear-gradient(135deg, var(--peach) 0%, var(--blush) 100%); }
-  .insight-icon { font-size: 1.6rem; margin-bottom: 8px; }
-  .insight-tag { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mid); margin-bottom: 6px; }
-  .insight-text { font-size: 0.85rem; color: var(--text-dark); line-height: 1.5; }
-  .insight-text strong { color: var(--sage); }
 
   /* ===== JOURNAL ===== */
   #screen-journal { background: var(--cream); }
@@ -648,13 +732,6 @@ if (typeof supabase === 'undefined') {
   .rout-sheet-texte { font-size:0.8rem; color:var(--text-mid); line-height:1.55; margin-bottom:18px; }
   .rout-sheet-btn { display:block; width:100%; padding:15px; background:var(--sage); color:white; border:none; border-radius:14px; font-family:'DM Sans',sans-serif; font-size:0.88rem; cursor:pointer; margin-top:8px; }
   .rout-sheet-btn.neutre { background:none; color:var(--text-light); font-size:0.8rem; text-decoration:underline; padding:11px; }
-  /* Accueil : rappel d'énergie */
-  .home-rout-block { display:flex; align-items:center; gap:12px; background:white; border:1.5px solid var(--oat); border-left:4px solid var(--sage); border-radius:16px; padding:13px 16px; margin-bottom:16px; cursor:pointer; }
-  .home-rout-ico { font-size:1.2rem; }
-  .home-rout-txt { flex:1; min-width:0; }
-  .home-rout-titre { font-size:0.88rem; color:var(--text-dark); font-weight:500; }
-  .home-rout-sous { font-size:0.7rem; color:var(--text-light); margin-top:2px; }
-  .home-rout-fl { color:var(--text-light); font-size:1.1rem; }
 
   /* ===== RECETTES — ÉCRAN LISTE ===== */
   .rec-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
@@ -2255,67 +2332,6 @@ if (typeof supabase === 'undefined') {
   .prof-bristol-item.selected span { color: var(--sage); }
 
 
-  /* ===== BLOC CONTEXTUEL ACCUEIL ===== */
-  .home-context-card {
-    background: white; border-radius: 18px;
-    padding: 16px 18px; margin-bottom: 14px;
-    border: 1.5px solid var(--oat); cursor: pointer;
-    transition: border-color 0.2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .home-context-card:active { background: var(--honey); }
-
-  /* État 1 — profil incomplet */
-  .hcc-profile-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .hcc-profile-label {
-    font-size: 0.68rem; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--text-light);
-  }
-  .hcc-profile-count {
-    font-size: 0.72rem; color: var(--sage); font-weight: 500;
-  }
-  .hcc-profile-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem; color: var(--text-dark);
-    margin-bottom: 10px; line-height: 1.4;
-  }
-  .hcc-profile-bar-track {
-    height: 5px; background: var(--oat); border-radius: 3px; overflow: hidden;
-    margin-bottom: 8px;
-  }
-  .hcc-profile-bar-fill {
-    height: 100%; border-radius: 3px; background: var(--sage);
-    transition: width 0.5s cubic-bezier(.4,0,.2,1);
-  }
-  .hcc-profile-cta {
-    font-size: 0.72rem; color: var(--sage);
-    display: flex; align-items: center; gap: 4px;
-  }
-
-  /* État 2 — résumé veille */
-  .hcc-yesterday-header {
-    font-size: 0.65rem; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--text-light);
-    margin-bottom: 8px;
-  }
-  .hcc-yesterday-pills {
-    display: flex; flex-wrap: wrap; gap: 6px;
-  }
-  .hcc-pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 5px 10px; border-radius: 16px;
-    font-size: 0.75rem; background: var(--honey);
-    color: var(--text-dark); border: 1px solid var(--oat);
-    white-space: nowrap;
-  }
-  .hcc-no-data {
-    font-size: 0.82rem; color: var(--text-light);
-    font-style: italic; line-height: 1.5;
-  }
-
   /* ===== MODULE TEST ALIMENTAIRE ===== */
 
   /* Bandeau dans le journal */
@@ -2446,66 +2462,6 @@ if (typeof supabase === 'undefined') {
 
 
 
-  /* ===== BLOC CONTEXTUEL ACCUEIL ===== */
-  .ctx-block {
-    background: white; border-radius: 18px;
-    padding: 16px 18px; margin-bottom: 16px;
-    border: 1.5px solid var(--oat);
-  }
-
-  /* État 1 : invitation profil */
-  .ctx-profile-label {
-    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--text-light); margin-bottom: 10px;
-  }
-  .ctx-profile-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem; color: var(--text-dark); margin-bottom: 12px; line-height: 1.4;
-  }
-  .ctx-profile-progress {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
-  }
-  .ctx-profile-bar-wrap {
-    flex: 1; height: 5px; border-radius: 3px; background: var(--oat); overflow: hidden;
-  }
-  .ctx-profile-bar-fill {
-    height: 100%; border-radius: 3px; background: var(--sage); transition: width 0.4s;
-  }
-  .ctx-profile-count {
-    font-size: 0.72rem; color: var(--text-light); white-space: nowrap; flex-shrink: 0;
-  }
-  .ctx-profile-btn {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; background: var(--honey);
-    border-radius: 12px; border: 1px solid var(--oat);
-    cursor: pointer; transition: background 0.18s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .ctx-profile-btn:active { background: var(--oat); }
-  .ctx-profile-btn-label { font-size: 0.82rem; color: var(--text-dark); }
-  .ctx-profile-btn-arrow { font-size: 0.85rem; color: var(--text-light); }
-
-  /* État 2 : résumé de la veille */
-  .ctx-yesterday-label {
-    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--text-light); margin-bottom: 10px;
-  }
-  .ctx-yesterday-row {
-    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-  }
-  .ctx-kw {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 0.82rem; color: var(--text-dark);
-  }
-  .ctx-sep {
-    color: var(--text-light); font-size: 0.7rem; opacity: 0.5;
-  }
-  .ctx-no-data {
-    font-size: 0.82rem; color: var(--text-light); line-height: 1.5;
-    font-style: italic;
-  }
-
-
   /* ===== CHAMP DATE MOIS/ANNÉE PROFIL ===== */
   .prof-since-wrap {
     display: flex; align-items: center; gap: 8px;
@@ -2592,16 +2548,13 @@ if (typeof supabase === 'undefined') {
     font-size: 0.85rem; font-weight: 500; color: var(--text-dark); flex: 1;
   }
   .home-cycle-update {
-    font-size: 0.68rem; color: var(--text-light);
+    display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0; background: none; border: 0; font: inherit;
+    font-size: 0.78rem; color: var(--text-mid);
     cursor: pointer; text-decoration: underline;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
 
   /* Chemin de points (règles) */
-  .cycle-dots-track {
-    display: flex; align-items: center; gap: 4px; margin-bottom: 8px;
-    padding: 4px 0;
-  }
   .cycle-dot-node {
     width: 10px; height: 10px; border-radius: 50%;
     background: rgba(220,60,60,0.18); border: 1.5px solid rgba(220,60,60,0.3);
@@ -2613,10 +2566,6 @@ if (typeof supabase === 'undefined') {
   }
   .cycle-dot-node.past {
     background: rgba(220,60,60,0.55); border-color: rgba(220,60,60,0.6);
-  }
-  .cycle-dot-connector {
-    flex: 1; height: 1.5px;
-    background: rgba(220,60,60,0.2); border-radius: 1px;
   }
   .home-cycle-desc {
     font-size: 0.75rem; color: var(--text-mid); line-height: 1.5;
@@ -3018,18 +2967,18 @@ if (typeof supabase === 'undefined') {
   .bnav-pill {
     pointer-events: auto;
     display: flex; align-items: stretch; gap: 2px; padding: 4px; min-height: var(--bar-pill-h);
-    background: #4F5140; border-radius: 999px;
-    box-shadow: 0 6px 18px rgba(61, 58, 48, 0.22), 0 1px 3px rgba(61, 58, 48, 0.18);
+    background: #EBD3CC; border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(125, 79, 87, 0.16), 0 1px 3px rgba(125, 79, 87, 0.12);
   }
   .bnav-tab {
     flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    padding: 6px 2px 5px; margin: 0; border: 0; border-radius: 999px; background: transparent; color: #D9D6C4;
+    padding: 6px 2px 5px; margin: 0; border: 0; border-radius: 999px; background: transparent; color: #7d4f57;
     font: inherit; font-family: 'DM Sans', sans-serif; font-size: 10px; line-height: 1; letter-spacing: 0.01em;
     cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
   .bnav-tab svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .bnav-lbl { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bnav-tab.active { background: #F3EAD6; color: #3d3a30; font-weight: 700; }
+  .bnav-tab.active { background: #FFFAF2; color: #5f3b3e; font-weight: 700; }
 
   /* ===== RESPONSIVE TABLETTE / DESKTOP ===== */
   @media (min-width: 480px) {
@@ -3048,25 +2997,6 @@ if (typeof supabase === 'undefined') {
   }
   @media (min-width: 768px) {
     #app { border-radius: 0; }          /* fond autour de la colonne : celui de la page (html et body suivent --current-screen-bg) */
-  }
-
-  /* ===== EMPTY STATE INSIGHTS ===== */
-  .insight-empty-state {
-    background: var(--honey);
-    border-radius: 20px;
-    padding: 28px 20px;
-    text-align: center;
-    margin-bottom: 16px;
-  }
-  .insight-empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
-  .insight-empty-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.1rem; color: var(--text-dark);
-    margin-bottom: 8px;
-  }
-  .insight-empty-text {
-    font-size: 0.8rem; color: var(--text-mid);
-    line-height: 1.6;
   }
 
   /* ===== QUICK LOG MODALE ===== */
@@ -3287,60 +3217,26 @@ if (typeof supabase === 'undefined') {
       </div>
     </div>
 
-    <!-- SCREEN 4 — HOME -->
+    <!-- SCREEN 4 — HOME (lot 12 : refonte de l'Accueil) -->
     <div class="screen" id="screen-home">
 
       <div class="home-header">
-        <div>
-          <div id="home-hello" style="display:none;font-size:0.72rem;color:var(--text-light);letter-spacing:0.06em;margin-bottom:2px;">Bonjour,</div>
-          <div class="home-greeting"><span id="home-user-name">Bonjour</span> ✨</div>
+        <div class="home-head-txt">
+          <div class="home-greeting"><span id="home-salut">Bonjour</span> <span id="home-user-name"></span> ✨</div>
+          <div class="home-date" id="home-date"></div>
+          <div class="home-phase" id="home-phase" style="display:none"></div>
         </div>
         <button type="button" class="espace-rond espace-bulle" id="espace-bulle" onclick="go('espace')" aria-label="Mon espace"><span class="espace-lettre"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.6-3.7 3.4-5.8 7.2-5.8s6.6 2.1 7.2 5.8"/></svg></button>
       </div>
-      <div class="home-scroll">
-
-        <!-- Score dynamique — vide au départ -->
-        <div class="score-card" id="score-card-empty" style="text-align:center;padding:28px 24px;">
-          <div class="score-label">Mon équilibre</div>
-          <div style="font-size:2.8rem;margin:12px 0;">🌱</div>
-          <div class="score-sub" style="opacity:1;font-size:0.88rem;line-height:1.5;">
-            Commence à noter ton quotidien.<br>Ton score apparaîtra ici.
-          </div>
-        </div>
-        <div class="score-card" id="score-card-data" style="display:none;">
-          <div class="score-label">Équilibre global</div>
-          <div class="score-value"><span id="score-num">—</span><span style="font-size:1.5rem;opacity:0.6">/100</span></div>
-          <div class="score-sub" id="score-sub">Complète ton journal pour suivre ta progression</div>
-          <div class="score-bars-wrap">
-            <div class="score-bars" id="score-bars"></div>
-            <div class="score-days" id="score-days"></div>
-          </div>
-        </div>
-
-        <!-- Rappel de la routine en cours (énergie en 3 points) — rendu par renderHomeRoutineBlock() -->
-        <div id="home-routine-block"></div>
-
-        <!-- Bloc contextuel : profil incomplet → invitation ; profil complet → résumé veille -->
-        <div id="home-context-block">
-          <!-- Rendu dynamique par renderHomeContextBlock() -->
-        </div>
-
-        <!-- Bloc cycle (affiché si module activé) -->
-        <div id="home-cycle-block">
-          <!-- Rendu dynamique par renderHomeCycleBlock() -->
-        </div>
-
-        <!-- Insights — vides au départ, remplis après 7 jours de données -->
-        <div id="insights-zone">
-          <div class="section-title">Insights</div>
-          <div id="insights-empty" class="insight-empty-state">
-            <div class="insight-empty-icon">🔍</div>
-            <div class="insight-empty-title">Pas encore d'insights</div>
-            <div class="insight-empty-text">Note ton état pendant quelques jours. Nara détectera alors tes patterns et te donnera des insights personnalisés.</div>
-          </div>
-          <div id="insights-list"></div>
-        </div>
-
+      <div class="home-scroll" id="home-scroll">
+        <!-- Les cartes sont dessinées par renderHome(), dans cet ordre : Aujourd'hui · profil (petite ligne) · Ma routine en cours · Ma semaine · Cycle · Pour toi aujourd'hui · Ce que tu remarques -->
+        <div id="home-auj"></div>
+        <div id="home-profil"></div>
+        <div id="home-routine"></div>
+        <div id="home-semaine"></div>
+        <div id="home-cycle-block"></div>
+        <div id="home-pourtoi"></div>
+        <div id="home-remarque"></div>
       </div>
 
       <!-- Modale quick log -->
@@ -3575,7 +3471,7 @@ if (typeof supabase === 'undefined') {
     <div class="screen" id="screen-routine-detail">
       <div class="rout-detail-inner">
         <div class="rout-detail-hero" id="rout-detail-hero">
-          <div class="rout-detail-back" onclick="go('routines')">←</div>
+          <div class="rout-detail-back" onclick="routRetour('routines')">←</div>
           <span class="rout-detail-emoji" id="rout-detail-emoji"></span>
           <div class="rout-detail-titre" id="rout-detail-titre"></div>
           <div class="rout-detail-sous" id="rout-detail-sous"></div>
@@ -3927,7 +3823,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '23/11 · 15 h 23';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '23/11 · 20 h 31';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -4301,10 +4197,8 @@ function updateHomeUser(user) {
   if (!user) return;
   // Un AUTRE compte sur le même appareil : le local de l'ancien compte est nettoyé avant tout chargement
   try { syncEnsureOwner(user.id); } catch (e) { console.warn('[Nara] syncEnsureOwner:', e); }
-  const prenom = prenomAffiche(userPrenom(user));
-  // Sans prénom saisi : « Bonjour ✨ » à l'Accueil, et la bulle montre une silhouette à la place de l'initiale
-  document.getElementById('home-hello').style.display = prenom ? '' : 'none';
-  document.getElementById('home-user-name').textContent = prenom || 'Bonjour';
+  // Sans prénom saisi : « Bonjour ✨ » à l'Accueil (« Bonsoir » à partir de 18 h), et la bulle montre une silhouette à la place de l'initiale
+  homeMajEntete(user);
   espaceMajCompte(user);
   if (prenomAttenteLire() && !_prenomEnvoi) setTimeout(prenomEnvoyer, 0);      // un nouveau prénom resté en attente repart dès qu'une session est connue
 }
@@ -4727,157 +4621,408 @@ function routineCacheKey(userId, routineId) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SCORE — calculé à partir des entrées localStorage
+// ACCUEIL (lot 12) — en-tête · Aujourd'hui · Ma routine en cours · Ma semaine · Cycle · Pour toi aujourd'hui · Ce que tu remarques
+// L'Accueil LIT les mêmes données que le reste de l'app (journal, routines, cycle, profil) et n'en écrit aucune lui-même, sauf :
+//   • cocher une tâche de routine : même fonction d'écriture que l'onglet Routines (routEcrireJour), donc même donnée et même synchronisation ;
+//   • la petite mémoire des suggestions (nara_home_sugg) : sur l'appareil seulement, jamais envoyée à la base, effacée avec le reste à la déconnexion.
+// Toutes les dates viennent de getTodayStr() / routAjouter() (date locale) ; l'heure vient de routHeure().
 // ══════════════════════════════════════════════════════════════════════════════
-function updateHomeScore() {
-  // Lire les données depuis le journal complet (nara_journal_YYYY-MM-DD)
-  // qui contient TOUTES les données y compris les saisies rétroactives.
-  // Fallback sur nara_log_* pour la compatibilité avec les anciennes entrées.
-  function getDayValues(dateStr) {
-    // Priorité 1 : journal complet
-    const jRaw = localStorage.getItem(`nara_journal_${dateStr}`);
-    if (jRaw) {
-      try {
-        const j = JSON.parse(jRaw);
-        return {
-          transit_etat: j.transit,
-          ballonnements: j.ballonnements,
-          peau_etat: j.peau,
-          stress: j.stress,
-          energie: j.energie,
-          sommeil: j.sommeil,
-          hasData: j.transit !== null || j.peau !== null || j.stress > 0 || j.energie > 0,
-        };
-      } catch {}
-    }
-    // Fallback : clés log séparées
-    const v = {};
-    let hasData = false;
-    ['transit','peau','stress'].forEach(type => {
-      const raw = localStorage.getItem(`nara_log_${dateStr}_${type}`);
-      if (raw) { try { Object.assign(v, JSON.parse(raw).values); hasData = true; } catch {} }
-    });
-    return hasData ? { ...v, hasData } : null;
-  }
 
-  // Compter les jours avec données sur 30 jours (insights) et 7 jours (score/barres)
-  const daysWithAnyData = [];
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = localDateStr(d);
-    const vals = getDayValues(dateStr);
-    if (vals && vals.hasData) daysWithAnyData.push({ dateStr, vals });
-  }
+// ── Lecture du journal : les 8 indicateurs, avec les mêmes règles de lecture que les Insights (corrDayIndex) ──
+const HOME_CHAMPS = ['transit', 'bal', 'doul', 'peau', 'som', 'ener', 'stress', 'hum'];
+const HOME_LIB_TRANSIT = ['Transit lent', 'Transit normal', 'Transit rapide'];
+const HOME_LIB_PEAU = ['Peau en poussée', 'Peau stable', 'Peau calme'];
+// Une journée est « notée » dès qu'au moins un de ces indicateurs est renseigné
+function homeEstNote(j) { return !!j && HOME_CHAMPS.some(k => j[k] !== undefined); }
+function homeEstActif() { const el = document.getElementById('screen-home'); return !!(el && el.classList.contains('active')); }
 
-  const emptyEl  = document.getElementById('score-card-empty');
-  const dataEl   = document.getElementById('score-card-data');
-  const insEmpty = document.getElementById('insights-empty');
-  const insList  = document.getElementById('insights-list');
-
-  // Seuil minimal pour afficher quelque chose : 3 jours avec données
-  if (daysWithAnyData.length < 3) {
-    if (emptyEl) emptyEl.style.display = '';
-    if (dataEl)  dataEl.style.display  = 'none';
-    if (insEmpty) insEmpty.style.display = '';
-    if (insList)  insList.innerHTML = '';
-    try { updateQuickBtns(); } catch(e) {}
-    try { renderHomeContextBlock(); } catch(e) {}
-    try { renderHomeCycleBlock(); }  catch(e) {}
-    try { renderHomeRoutineBlock(); }  catch(e) {}
-    return;
-  }
-
-  // ── Score sur les 7 derniers jours ──────────────────────────────────────────
-  let scoreTotal = 0, scoreCount = 0;
-  const barsData = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = localDateStr(d);
-    const v = getDayValues(dateStr);
-    let dayScore = 0, dayCount = 0;
-    if (v) {
-      if (v.transit_etat !== null && v.transit_etat !== undefined) {
-        dayScore += v.transit_etat === 1 ? 100 : v.transit_etat === 0 ? 40 : 70; dayCount++;
-      }
-      if (v.ballonnements !== undefined && v.ballonnements !== null) {
-        dayScore += Math.round((1 - v.ballonnements / 5) * 100); dayCount++;
-      }
-      if (v.peau_etat !== null && v.peau_etat !== undefined) {
-        dayScore += v.peau_etat === 2 ? 100 : v.peau_etat === 1 ? 60 : 20; dayCount++;
-      }
-      if (v.stress !== undefined && v.stress > 0) {
-        dayScore += Math.round((1 - v.stress / 5) * 100); dayCount++;
-      }
-      if (v.energie !== undefined && v.energie > 0) {
-        dayScore += Math.round(v.energie / 5 * 100); dayCount++;
-      }
-      if (v.sommeil !== undefined && v.sommeil > 0) {
-        dayScore += Math.round(v.sommeil / 5 * 100); dayCount++;
-      }
-    }
-    const dScore = dayCount > 0 ? Math.round(dayScore / dayCount) : null;
-    barsData.push(dScore);
-    if (dScore !== null) { scoreTotal += dScore; scoreCount++; }
-  }
-
-  const avgScore = scoreCount > 0 ? Math.round(scoreTotal / scoreCount) : null;
-  if (avgScore !== null && emptyEl && dataEl) {
-    emptyEl.style.display = 'none';
-    dataEl.style.display  = '';
-    const numEl  = document.getElementById('score-num');
-    const subEl  = document.getElementById('score-sub');
-    const barsEl = document.getElementById('score-bars');
-    if (numEl) numEl.textContent = avgScore;
-    const daysWithData = barsData.filter(Boolean).length;
-    if (subEl) subEl.textContent = daysWithData >= 6
-      ? `${daysWithData} jours sur 7 notés · Continue comme ça 🌱`
-      : daysWithData >= 3
-        ? `${daysWithData} jours notés sur 7 — chaque jour affine tes insights`
-        : `${daysWithData} jour${daysWithData > 1 ? 's' : ''} noté${daysWithData > 1 ? 's' : ''} sur 7`;
-    const maxBar = Math.max(...barsData.filter(Boolean), 1);
-    const joursFull = ['D','L','M','M','J','V','S'];
-    const dayLabels = Array.from({length:7}, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (6 - i));
-      return { lbl: joursFull[d.getDay()], isToday: i === 6 };
-    });
-    if (barsEl) barsEl.innerHTML = barsData.map((v, i) =>
-      `<div class="score-bar" title="${dayLabels[i].lbl}${dayLabels[i].isToday ? ' (auj.)' : ''}">` +
-      `<div class="score-bar-fill" style="height:${v ? Math.round(v/maxBar*100) : 0}%"></div></div>`
-    ).join('');
-    const daysEl = document.getElementById('score-days');
-    if (daysEl) daysEl.innerHTML = dayLabels.map(d =>
-      `<div class="score-day-lbl${d.isToday ? ' today' : ''}">${d.lbl}</div>`
-    ).join('');
-  }
-
-  // ── Insights home (seuil : 5 jours avec données sur 30j) ────────────────────
-  try { updateQuickBtns(); } catch(e) {}
-  try { renderHomeContextBlock(); } catch(e) { console.warn('[Nara] contextBlock:', e); }
-  try { renderHomeCycleBlock(); }  catch(e) { console.warn('[Nara] cycleBlock:', e); }
-  try { renderHomeRoutineBlock(); }  catch(e) { console.warn('[Nara] routineBlock:', e); }
-
-  if (insEmpty && insList) {
-    if (daysWithAnyData.length >= 5) {
-      insEmpty.style.display = 'none';
-      // Construire entries au format attendu par generateInsights
-      const insEntries = [];
-      daysWithAnyData.slice(0, 30).forEach(({ dateStr, vals: v }) => {
-        if (v.transit_etat !== null && v.transit_etat !== undefined)
-          insEntries.push({ type:'transit', date:dateStr, values:{ transit_etat:v.transit_etat, ballonnements:v.ballonnements||0 }});
-        if (v.peau_etat !== null && v.peau_etat !== undefined)
-          insEntries.push({ type:'peau', date:dateStr, values:{ peau_etat:v.peau_etat }});
-        if (v.stress > 0 || v.energie > 0 || v.sommeil > 0)
-          insEntries.push({ type:'stress', date:dateStr, values:{ stress:v.stress||0, energie:v.energie||0, sommeil:v.sommeil||0 }});
-      });
-      insList.innerHTML = generateInsights(insEntries).map(ins =>
-        `<div class="insight-card ${ins.type}"><div class="insight-icon">${ins.icon}</div><div class="insight-tag">${ins.tag}</div><div class="insight-text">${ins.text}</div></div>`
-      ).join('');
-    } else {
-      insEmpty.style.display = '';
-      insList.innerHTML = '';
-    }
-  }
+// ── En-tête : « Bonjour » avant 18 h, « Bonsoir » ensuite, puis le prénom du compte (jamais en dur) ; la date ; une phrase selon la phase du cycle ──
+const HOME_PHRASE_CYCLE = { regles: 'sois douce avec toi', preovul: 'ton énergie remonte souvent', ovulation: "souvent un moment d'élan", luteale: 'ta peau et ton ventre peuvent varier' };
+function homePhraseCycle() {
+  const s = cycleLoad();
+  if (!s || !s.active || !s.startDate) return '';                       // cycle pas suivi : pas de phrase
+  const info = getCyclePhase(getTodayStr());
+  if (!info || !HOME_PHRASE_CYCLE[info.phase]) return '';
+  return '🌸 Jour ' + info.dayInCycle + ' de ton cycle · ' + HOME_PHRASE_CYCLE[info.phase];
 }
+function homeMajEntete(user) {                // user : le compte qui vient d'arriver (sinon le compte connecté)
+  const prenom = prenomAffiche(userPrenom(user || currentUser));
+  const salut = document.getElementById('home-salut'), nom = document.getElementById('home-user-name'), date = document.getElementById('home-date'), phase = document.getElementById('home-phase');
+  if (salut) salut.textContent = routHeure() < 18 ? 'Bonjour' : 'Bonsoir';
+  if (nom) { nom.textContent = prenom; nom.style.display = prenom ? '' : 'none'; }
+  if (date) date.textContent = getTodayLabel();
+  if (phase) { const t = homePhraseCycle(); phase.textContent = t; phase.style.display = t ? '' : 'none'; }
+}
+
+// ── Carte « Aujourd'hui » ────────────────────────────────────────────────────
+function homeAvecRepas(date) {            // au moins un aliment noté ce jour-là
+  try {
+    const j = JSON.parse(localStorage.getItem('nara_journal_' + date) || 'null');
+    return !!(j && j.repas && Object.keys(j.repas).some(m => j.repas[m] && j.repas[m].aliments && j.repas[m].aliments.length > 0));
+  } catch (e) { return false; }
+}
+function homeResume(j, date) {            // les petites pastilles du jour : transit, peau, énergie, sommeil, repas (seulement ce qui est noté)
+  const p = [];
+  if (HOME_LIB_TRANSIT[j.transit]) p.push('🌿 ' + HOME_LIB_TRANSIT[j.transit]);
+  if (HOME_LIB_PEAU[j.peau]) p.push('✨ ' + HOME_LIB_PEAU[j.peau]);
+  if (j.ener !== undefined) p.push('⚡ Énergie ' + j.ener + '/5');
+  if (j.som !== undefined) p.push('😴 Sommeil ' + j.som + '/5');
+  if (homeAvecRepas(date)) p.push('🍽️ Repas');
+  return p;
+}
+function homeHierTexte(idx) {             // « Hier : transit normal · peau calme · énergie 4/5 » (rien si hier n'a rien de noté)
+  const j = idx[routAjouter(getTodayStr(), -1)] || {}, p = [];
+  if (HOME_LIB_TRANSIT[j.transit]) p.push(HOME_LIB_TRANSIT[j.transit].toLowerCase());
+  if (HOME_LIB_PEAU[j.peau]) p.push(HOME_LIB_PEAU[j.peau].toLowerCase());
+  if (j.ener !== undefined) p.push('énergie ' + j.ener + '/5');
+  return p.length ? 'Hier : ' + p.join(' · ') : '';
+}
+function homeHtmlAujourdhui(idx, st) {
+  const auj = getTodayStr(), j = idx[auj] || {};
+  if (!homeEstNote(j)) {
+    const hier = homeHierTexte(idx);
+    return `<div class="hm-auj">
+      <div class="hm-auj-ligne">
+        <div class="hm-auj-txt"><div class="hm-auj-etiq">Aujourd'hui</div><div class="hm-auj-titre">Comment tu te sens ?</div></div>
+        <button type="button" class="hm-auj-btn" onclick="homeNoter()">📓 Noter</button>
+      </div>
+      ${hier ? `<div class="hm-auj-hier">${escHtml(hier)}</div>` : ''}
+      ${st && st.faite ? '<div class="hm-pastilles"><span class="hm-pastille-txt">🌿 Routine faite</span></div>' : ''}
+    </div>`;                                // routine du jour terminée : sa carte a disparu, la pastille la remplace même si la journée n'est pas encore notée
+  }
+  const pastilles = homeResume(j, auj);
+  if (st && st.faite) pastilles.push('🌿 Routine faite');
+  return `<div class="hm-auj">
+    <div class="hm-auj-ligne">
+      <div class="hm-auj-txt"><div class="hm-auj-etiq">Aujourd'hui</div><div class="hm-auj-titre">✓ Journée notée, merci 🌿</div></div>
+      <button type="button" class="hm-auj-lien" onclick="homeNoter()">Modifier ›</button>
+    </div>
+    ${pastilles.length ? `<div class="hm-pastilles">${pastilles.map(t => `<span class="hm-pastille-txt">${escHtml(t)}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+function homeNoter() { jrnCurrentDate = null; go('journal'); }                  // le Journal s'ouvre sur aujourd'hui ; sa flèche retour ramène à l'Accueil
+
+// ── « Complète ton profil » : petite ligne discrète, tant que le profil santé est incomplet ──
+// Incomplet = une des cinq sections de base est vide (« Cycle menstruel », optionnel, ne compte pas) ou le régime alimentaire n'est pas indiqué (il sert aux garde-fous des recettes).
+function homeProfilIncomplet() {
+  const p = profileLoad();
+  if (!p) return true;
+  const reg = p.alim_regime;
+  const regimeOk = Array.isArray(reg) ? reg.length > 0 : !!reg;
+  return !regimeOk || PROFILE_SECTIONS.some(s => s.badge !== 'Optionnel' && !profileSectionComplete(p, s));
+}
+function homeHtmlProfil() {
+  if (!homeProfilIncomplet()) return '';
+  return '<button type="button" class="hm-profil" onclick="openProfileFromMenu()">🌱 Complète ton profil pour affiner tes suggestions <span aria-hidden="true">›</span></button>';
+}
+
+// ── Carte « Ma routine en cours » ────────────────────────────────────────────
+// La routine en cours et ses tâches d'aujourd'hui (null : aucune). « Faite » = toutes les tâches obligatoires du jour cochées
+// (les tâches optionnelles ne comptent pas : même règle que les ronds de l'onglet Routines).
+function homeEtatRoutine() {
+  const id = routIdActive();
+  if (!id) return null;
+  const r = routinesData.find(x => x.id === id), e = routEtat(id);
+  if (!r || e.statut !== 'active') return null;
+  const date = routAjouter(e.debut, e.jour - 1), run = routRun(date, id, e.debut), cases = (run && run.cases) || {};
+  const taches = routTachesDuJour(r, e.jour), obl = taches.filter(t => !t.opt), faites = obl.filter(t => cases[t.k]).length;
+  return { r: r, e: e, date: date, cases: cases, taches: taches, obl: obl.length, faites: faites, faite: obl.length > 0 && faites === obl.length };
+}
+function homeHtmlRoutine(st) {
+  if (!st || st.faite) return '';             // pas de routine en cours, ou tout est coché aujourd'hui : la carte n'existe pas
+  const nonFaites = st.taches.filter(t => !st.cases[t.k]);
+  const ordre = nonFaites.filter(t => !t.opt).concat(nonFaites.filter(t => t.opt), st.taches.filter(t => st.cases[t.k]));   // ce qui reste à faire d'abord
+  const vues = ordre.slice(0, 3), reste = ordre.length - vues.length, pct = st.obl ? Math.round(st.faites / st.obl * 100) : 0;
+  const lignes = vues.map(t => {
+    const fait = !!st.cases[t.k];
+    return `<div class="hm-tache${fait ? ' fait' : ''}" data-k="${t.k}">
+      <button type="button" class="rout-case" role="checkbox" aria-checked="${fait}" aria-label="Marquer « ${escHtml(t.titre)} » comme fait" onclick="homeBasculerTache('${t.k}')"><span class="rout-case-boite">✓</span></button>
+      <button type="button" class="hm-tache-txt" onclick="homeOuvrirRoutine('${st.r.id}','${t.k}')">${escHtml(t.titre)}${t.opt ? ' <em>(optionnel)</em>' : ''}</button>
+    </div>`;
+  }).join('');
+  return `<div class="hm-carte hm-rout" style="--rc:${st.r.couleur}">
+    <div class="hm-sec-tete"><span class="hm-sec-titre">Ma routine en cours</span></div>
+    <div class="hm-rout-nom">${st.r.emoji} ${escHtml(st.r.titre)}</div>
+    <div class="hm-rout-jour">Jour ${st.e.jour} sur ${ROUT_DUREE}</div>
+    <div class="hm-barre-ligne"><div class="hm-barre" role="progressbar" aria-label="Avancement du jour" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><div class="hm-barre-rempli" style="width:${pct}%"></div></div><span class="hm-barre-txt">${st.faites} sur ${st.obl}</span></div>
+    <div class="hm-taches">${lignes}</div>
+    ${reste > 0 ? `<button type="button" class="hm-plus" onclick="homeOuvrirRoutine('${st.r.id}')">+ ${reste} autre${reste > 1 ? 's' : ''} tâche${reste > 1 ? 's' : ''} ›</button>` : ''}
+  </div>`;
+}
+// Cocher ici = cocher dans l'onglet Routines : même fonction d'écriture, même donnée, même synchronisation
+function homeBasculerTache(k) {
+  const st = homeEtatRoutine();
+  if (!st || !routPeutEcrire(st.date)) return;
+  const ch = {};
+  ch['cases.' + k] = st.cases[k] ? 0 : 1;
+  if (!routEcrireJour(st.date, st.r.id, st.e.debut, st.e.jour, ch)) return;
+  const apres = homeEtatRoutine();
+  if (!apres || apres.faite) { renderHome(); if (apres) showToast('🌿 Routine du jour faite'); return; }   // tout est coché : la carte disparaît, la pastille « Routine faite » apparaît
+  homeMajRoutine(apres);
+}
+function homeMajRoutine(st) {             // mise à jour sur place (cases, barre) : la liste ne bouge pas sous le doigt
+  document.querySelectorAll('#home-routine .hm-tache').forEach(li => {
+    const fait = !!st.cases[li.dataset.k], b = li.querySelector('.rout-case');
+    li.classList.toggle('fait', fait);
+    if (b) b.setAttribute('aria-checked', fait ? 'true' : 'false');
+  });
+  const pct = st.obl ? Math.round(st.faites / st.obl * 100) : 0, barre = document.querySelector('#home-routine .hm-barre'), rempli = document.querySelector('#home-routine .hm-barre-rempli'), txt = document.querySelector('#home-routine .hm-barre-txt');
+  if (rempli) rempli.style.width = pct + '%';
+  if (barre) barre.setAttribute('aria-valuenow', String(pct));
+  if (txt) txt.textContent = st.faites + ' sur ' + st.obl;
+}
+
+// ── Ouvrir un article, une recette ou une routine depuis l'Accueil : la flèche retour ramène à l'Accueil, au même endroit de la page ──
+function homeMemoriserRetour() {
+  const s = document.getElementById('home-scroll');
+  routRetourVers = 'home'; routRetourScroll = s ? s.scrollTop : 0; _routNav = true;
+}
+function homeOuvrirRoutine(id, k) {       // k : la tâche touchée (la routine s'ouvre sur sa carte)
+  if (!routinesData.some(x => x.id === id)) return;
+  homeMemoriserRetour();
+  openRoutineDetail(id);
+  if (k) requestAnimationFrame(() => { const c = document.getElementById('rtc-' + k); if (c) c.scrollIntoView({ block: 'center' }); });
+}
+function homeOuvrirArticle(id) {
+  if (!libArticles.some(x => x.id === id)) { showToast("Cet article n'est pas disponible"); return; }
+  homeMemoriserRetour();
+  openArticle(id);
+}
+function homeOuvrirRecette(id) {
+  if (!recettes.some(x => x.id === id)) { showToast("Cette recette n'est pas disponible"); return; }
+  homeMemoriserRetour();
+  openRecette(id);
+}
+
+// ── Carte « Ma semaine » : les 7 derniers jours en pastilles rondes ──────────
+// Chaque signal d'inconfort vaut des points : 0 = journée sereine · 1 à 2 = quelques inconforts · 3 et plus = journée chargée ; pas noté = cercle en pointillés. Jamais de rouge.
+//   ballonnements 3 → 1 · 4-5 → 2 · douleurs légères → 1 · douleurs intenses → 3 (journée chargée d'office) · transit lent ou rapide → 1 · peau en poussée → 2
+//   stress 4 → 1 · 5 → 2 · sommeil 2 → 1 · 1 → 2 · énergie 2 → 1 · 1 → 2 · humeur basse → 1
+function homePoints(j) {
+  let p = 0;
+  if (j.bal >= 4) p += 2; else if (j.bal === 3) p += 1;
+  if (j.doul === 2) p += 3; else if (j.doul === 1) p += 1;
+  if (j.transit === 0 || j.transit === 2) p += 1;
+  if (j.peau === 0) p += 2;
+  if (j.stress === 5) p += 2; else if (j.stress === 4) p += 1;
+  if (j.som === 1) p += 2; else if (j.som === 2) p += 1;
+  if (j.ener === 1) p += 2; else if (j.ener === 2) p += 1;
+  if (j.hum === 1) p += 1;
+  return p;
+}
+function homeCouleur(j) {
+  if (!homeEstNote(j)) return 'nonnote';
+  const p = homePoints(j);
+  return p === 0 ? 'serein' : p <= 2 ? 'inconfort' : 'charge';
+}
+function homeJours(idx) {                 // les 7 derniers jours, du plus ancien à aujourd'hui
+  const auj = getTodayStr(), jours = [];
+  for (let i = 6; i >= 0; i--) { const date = routAjouter(auj, -i); jours.push({ date: date, j: idx[date] || {}, auj: i === 0 }); }
+  return jours;
+}
+const HOME_ETATS = { serein: 'journée sereine', inconfort: 'quelques inconforts', charge: 'journée chargée', nonnote: 'pas noté' };
+function homeHtmlSemaine(idx) {
+  let sereines = 0, notees = 0;
+  const pastilles = homeJours(idx).map(x => {
+    const c = homeCouleur(x.j), nom = ROUT_JOURS[new Date(x.date + 'T12:00:00').getDay()];
+    if (c !== 'nonnote') notees++;
+    if (c === 'serein') sereines++;
+    return `<div class="hm-jour"><span class="hm-pastille hm-p-${c}${x.auj ? ' auj' : ''}" role="img" aria-label="${nom}${x.auj ? " (aujourd'hui)" : ''} : ${HOME_ETATS[c]}"></span><span class="hm-jour-lib">${nom.charAt(0).toUpperCase()}</span></div>`;
+  }).join('');
+  let phrase = '';
+  if (notees > 0) {
+    phrase = sereines > 0
+      ? sereines + ' journée' + (sereines > 1 ? 's' : '') + ' sereine' + (sereines > 1 ? 's' : '') + ' sur ' + notees + (notees === 7 ? ' cette semaine' : ' notée' + (notees > 1 ? 's' : '') + ' cette semaine') + ' 🌱'
+      : "Une semaine plus chargée pour ton corps, une journée après l'autre 🤍";
+  }
+  return `<div class="hm-carte hm-sem">
+    <div class="hm-sec-tete"><span class="hm-sec-titre">Ma semaine</span><button type="button" class="hm-lien" onclick="homeVoirSemaine()">Voir ›</button></div>
+    <div class="hm-jours">${pastilles}</div>
+    <div class="hm-legende"><span><i class="hm-p-serein"></i>sereine</span><span><i class="hm-p-inconfort"></i>quelques inconforts</span><span><i class="hm-p-charge"></i>chargée</span><span><i class="hm-p-nonnote"></i>pas noté</span></div>
+    ${phrase ? `<div class="hm-sem-phrase">${phrase}</div>` : ''}
+  </div>`;
+}
+function homeVoirSemaine() { _insightsTab = 'semaine'; _ichartWeekOffset = 0; go('insights'); }
+
+// ── Cycle compact : une seule ligne ; toucher la carte déplie le texte détaillé (le détail reste dans renderHomeCycleBlock) ──
+let _homeCycleOuvert = false;              // détail déplié ? (gardé pendant la session, pour qu'un rafraîchissement ne le referme pas)
+function homeBasculerCycle() {
+  _homeCycleOuvert = !_homeCycleOuvert;
+  const carte = document.querySelector('#home-cycle-block .hm-cyc');
+  if (!carte) return;
+  carte.classList.toggle('ouvert', _homeCycleOuvert);
+  const tete = carte.querySelector('.hm-cyc-tete');
+  if (tete) tete.setAttribute('aria-expanded', _homeCycleOuvert ? 'true' : 'false');
+}
+
+// ── « Pour toi aujourd'hui » : jusqu'à 3 suggestions (1 article, 1 recette, 1 routine) choisies d'après ce qui a été noté sur les 7 derniers jours ──
+// Un signal compte un jour dès qu'il a été noté ce jour-là ; un thème est retenu à partir de 2 jours. Peu de données (moins de 3 jours notés) : l'article 001.
+// Le cycle ne fait que donner un petit coup de pouce au choix du thème ; la phrase ne cite que les jours réellement notés.
+const HOME_SIGNAUX = ['peau', 'ventre', 'stress', 'sommeil', 'energie'];
+function homeSignaux(j) {
+  return {
+    peau: j.peau === 0,                                                                                                          // peau en poussée
+    ventre: (j.bal !== undefined && j.bal >= 3) || (j.doul !== undefined && j.doul >= 1) || j.transit === 0 || j.transit === 2,   // ballonnements, douleurs, transit lent ou rapide
+    stress: j.stress !== undefined && j.stress >= 4,
+    sommeil: j.som !== undefined && j.som <= 2,
+    energie: j.ener !== undefined && j.ener <= 2
+  };
+}
+// Les thèmes désignent des articles (bibliothèque), des onglets de recettes et une routine, par leurs identifiants
+const HOME_THEMES = {
+  peau:    { art: ['014', '013', '018'], rec: ['peau'],              rout: 'archetype_1' },
+  ventre:  { art: ['011', '007', '012'], rec: ['dig'],               rout: 'archetype_1' },
+  axe:     { art: ['002', '014', '011'], rec: ['peau', 'dig'],       rout: 'archetype_1' },
+  stress:  { art: ['021', '019', '022'], rec: ['stress'],            rout: 'archetype_2' },
+  sommeil: { art: ['029', '025', '028'], rec: ['sommeil'],           rout: 'archetype_3' },
+  energie: { art: ['028', '025'],        rec: ['corps', 'sommeil'],  rout: 'archetype_3' },
+  lut:     { art: ['015', '018', '013'], rec: ['peau', 'dig'],       rout: 'archetype_1' },
+  regles:  { art: ['022', '025', '021'], rec: ['stress', 'sommeil'], rout: 'archetype_2' },
+  sereine: { art: ['006', '035', '009'], rec: ['patterns', 'corps'], rout: null },
+  debut:   { art: ['001', '031', '002'], rec: null,                  rout: null }
+};
+function homeChoisirTheme(sem, phase) {
+  const notes = sem.filter(homeEstNote).length;
+  if (notes < 3) return { theme: 'debut', notes: notes, brut: {}, renfort: null };
+  const brut = { peau: 0, ventre: 0, stress: 0, sommeil: 0, energie: 0 };
+  sem.forEach(j => { const s = homeSignaux(j); HOME_SIGNAUX.forEach(k => { if (s[k]) brut[k]++; }); });
+  const cpt = Object.assign({}, brut);
+  if (phase === 'luteale') { if (cpt.peau >= 1) cpt.peau++; if (cpt.ventre >= 1) cpt.ventre++; }       // coup de pouce du cycle : il aide seulement à CHOISIR le thème
+  if (phase === 'regles') { if (cpt.energie >= 1) cpt.energie++; }
+  const retenus = HOME_SIGNAUX.filter(k => cpt[k] >= 2);
+  let theme;
+  if (!retenus.length) theme = phase === 'luteale' ? 'lut' : phase === 'regles' ? 'regles' : 'sereine';
+  else if (cpt.peau >= 2 && cpt.ventre >= 2) theme = 'axe';
+  else theme = retenus.slice().sort((a, b) => cpt[b] - cpt[a] || HOME_SIGNAUX.indexOf(a) - HOME_SIGNAUX.indexOf(b))[0];
+  // le cycle n'est cité dans la phrase que s'il a réellement fait passer le thème au seuil de 2 jours
+  const aide = (phase === 'luteale' || phase === 'regles') && (
+    (theme === 'peau' && brut.peau < 2) || (theme === 'ventre' && brut.ventre < 2) || (theme === 'energie' && brut.energie < 2) ||
+    (theme === 'axe' && (brut.peau < 2 || brut.ventre < 2)));
+  return { theme: theme, notes: notes, brut: brut, renfort: aide ? phase : null };
+}
+// La phrase « Parce que… » : ton observationnel, sans jargon, et seulement les jours réellement notés
+function homePourquoi(r) {
+  const n = r.brut[r.theme] || 0, jours = k => k + ' jour' + (k > 1 ? 's' : '');
+  const t = {
+    peau: 'ta peau a un peu réagi ' + jours(n) + ' cette semaine',
+    ventre: "ton ventre s'est fait sentir " + jours(n) + ' cette semaine',
+    axe: 'ta peau et ton ventre se sont fait sentir cette semaine',
+    stress: 'tu as noté du stress ' + jours(n) + ' cette semaine',
+    sommeil: 'ton sommeil a été léger ' + jours(n) + ' cette semaine',
+    energie: 'ton énergie a été basse ' + jours(n) + ' cette semaine',
+    lut: 'tu es dans les jours avant tes règles, un moment où la peau et le ventre peuvent varier',
+    regles: 'tu es en période de règles, un moment pour y aller en douceur',
+    sereine: 'ta semaine a été plutôt sereine, de quoi entretenir ça',
+    debut: 'tu as encore peu de jours notés : un premier regard sur ce que ton corps te dit'
+  }[r.theme];
+  const cycle = r.renfort === 'luteale' ? ' et que tu es dans les jours avant tes règles' : r.renfort === 'regles' ? ' et que tu es en période de règles' : '';
+  return 'Parce que ' + t + cycle;
+}
+// Garde-fous des recettes : jamais de recette avec précaution d'usage ; le régime du profil est respecté ; pendant l'éviction d'un test d'aliment, on ne propose pas l'aliment.
+// « Low FODMAP » et « Autre » : aucun filtre fiable n'est possible, donc aucune recette n'est proposée (il reste l'article et la routine).
+function homeSansAccent(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae'); }
+function homeContexteRecettes() {
+  const p = profileLoad(), t = testLoad();
+  // éviction en cours = phase « eviction » ET durée pas encore écoulée (la phase enregistrée peut avoir du retard tant que le Journal n'a pas été ouvert) ; sans date lisible, on reste prudente
+  let eviction = '';
+  if (t && t.phase === 'eviction' && t.food) {
+    const ecoules = /^\d{4}-\d{2}-\d{2}$/.test(String(t.startDate)) ? routEcart(t.startDate, getTodayStr()) : 0;
+    if (!(Number(t.evictionDays) > 0) || ecoules < Number(t.evictionDays)) eviction = homeSansAccent(t.food);
+  }
+  return { regimes: (p && Array.isArray(p.alim_regime)) ? p.alim_regime : [], eviction: eviction };
+}
+// Aliment évité pendant un test (texte libre : « gluten », « produits laitiers », « œufs »…) : la recette est écartée si elle en contient.
+// Les familles « gluten » et « laitier » passent par les étiquettes de la recette ; le reste, par les noms des ingrédients et le titre (un mot de l'aliment doit COMMENCER un mot du nom : « œufs » trouve « Œufs bio », pas « betterave »).
+const HOME_LAITIER = /lactose|lait|fromage|yaourt|yogourt|kefir|beurre|creme/;
+const HOME_MOTS_VIDES = ['les', 'des', 'aux', 'sur', 'par', 'pas', 'une', 'que', 'qui', 'avec', 'sans', 'dans', 'pour', 'tout', 'tous', 'plus', 'produit', 'aliment'];
+function homeContientAliment(r, f, a) {
+  if (/gluten/.test(f) && !a('Sans gluten')) return true;
+  if (HOME_LAITIER.test(f) && !(a('Sans lactose') || a('Vegan'))) return true;
+  const noms = r.ingredients.map(x => homeSansAccent(x.nom)).concat(homeSansAccent(r.titre));
+  const mots = f.split(/[^a-z0-9]+/).map(m => m.replace(/s$/, '')).filter(m => m.length >= 3 && HOME_MOTS_VIDES.indexOf(m) < 0 && !/gluten/.test(m) && !HOME_LAITIER.test(m));
+  return mots.some(m => { const re = new RegExp('(^|[^a-z0-9])' + m); return noms.some(n => re.test(n)); });
+}
+function homeRecetteOk(r, ctx) {
+  if (r.precaution) return false;
+  const reg = ctx.regimes, tags = r.tags.map(homeSansAccent), regime = homeSansAccent(r.regime);
+  const a = x => tags.indexOf(homeSansAccent(x)) >= 0 || regime === homeSansAccent(x);
+  if (reg.indexOf('Low FODMAP') >= 0 || reg.indexOf('Autre') >= 0) return false;
+  if (reg.indexOf('Végétalien') >= 0 && !a('Vegan')) return false;
+  if (reg.indexOf('Végétarien') >= 0 && !(a('Vegan') || a('Végétarien'))) return false;
+  if (reg.indexOf('Sans gluten') >= 0 && !a('Sans gluten')) return false;
+  if (reg.indexOf('Sans lactose') >= 0 && !(a('Sans lactose') || a('Vegan'))) return false;
+  if (ctx.eviction && homeContientAliment(r, ctx.eviction, a)) return false;
+  return true;
+}
+const HOME_HIST_CLE = 'nara_home_sugg';     // { 'AAAA-MM-JJ': { a: article, r: recette } } : sur l'appareil seulement
+function homeHistLire() { try { const h = JSON.parse(localStorage.getItem(HOME_HIST_CLE) || '{}'); return (h && typeof h === 'object' && !Array.isArray(h)) ? h : {}; } catch (e) { return {}; } }
+function homeHistNoter(date, sugg) {       // garde ce qui a été proposé aujourd'hui (et les 7 derniers jours)
+  const h = homeHistLire(), avant = JSON.stringify(h), limite = routAjouter(date, -7);
+  h[date] = { a: sugg.article, r: sugg.recette };
+  Object.keys(h).forEach(d => { if (d < limite) delete h[d]; });
+  if (JSON.stringify(h) !== avant) { try { localStorage.setItem(HOME_HIST_CLE, JSON.stringify(h)); } catch (e) {} }
+}
+function homeSuggestions(idx) {
+  const auj = getTodayStr(), sem = homeJours(idx).map(x => x.j), cyc = getCyclePhase(auj);
+  const r = homeChoisirTheme(sem, cyc ? cyc.phase : null), T = HOME_THEMES[r.theme], hist = homeHistLire();
+  const h1 = hist[routAjouter(auj, -1)] || {}, h2 = hist[routAjouter(auj, -2)] || {};
+  const out = { theme: r.theme, phrase: homePourquoi(r), article: null, recette: null, routine: null };
+  // article : jamais le même plus de 2 jours de suite
+  out.article = T.art.filter(id => libArticles.some(a => a.id === id)).find(id => !(h1.a === id && h2.a === id)) || null;
+  // recette : un onglet du thème, après les garde-fous ; elle change d'un jour à l'autre (jamais celle d'hier tant qu'il y en a une autre)
+  if (T.rec) {
+    const ctx = homeContexteRecettes(), ok = recettes.filter(x => T.rec.indexOf(x.onglet) >= 0 && homeRecetteOk(x, ctx));
+    const pool = ok.filter(x => x.id !== h1.r), choix = pool.length ? pool : ok;
+    if (choix.length) out.recette = choix[routJourNum(auj) % choix.length].id;
+  }
+  // routine : seulement si aucune routine n'est déjà en cours
+  if (T.rout && !routIdActive() && routinesData.some(x => x.id === T.rout)) out.routine = T.rout;
+  return out;
+}
+function homeHtmlPourToi(idx) {
+  const s = homeSuggestions(idx), lignes = [];
+  if (homeEstActif()) homeHistNoter(getTodayStr(), s);
+  const a = s.article && libArticles.find(x => x.id === s.article);
+  if (a) lignes.push({ ico: '📖', type: 'Article · ' + a.temps, titre: a.titre, clic: "homeOuvrirArticle('" + a.id + "')" });
+  const r = s.recette && recettes.find(x => x.id === s.recette);
+  if (r) lignes.push({ ico: r.emoji, type: 'Recette · ' + r.temps, titre: r.titre, clic: "homeOuvrirRecette('" + r.id + "')" });
+  const p = s.routine && routinesData.find(x => x.id === s.routine);
+  if (p) lignes.push({ ico: p.emoji, type: 'Routine · ' + ROUT_DUREE + ' jours', titre: p.titre, clic: "homeOuvrirRoutine('" + p.id + "')" });
+  if (!lignes.length) return '';
+  return `<div class="hm-sec hm-pourtoi">
+    <div class="hm-sec-tete"><span class="hm-sec-titre">Pour toi aujourd'hui</span></div>
+    <div class="hm-pourquoi">${escHtml(s.phrase)}</div>
+    ${lignes.map(l => `<button type="button" class="hm-sugg" onclick="${l.clic}"><span class="hm-sugg-ico" aria-hidden="true">${l.ico}</span><span class="hm-sugg-txt"><span class="hm-sugg-type">${escHtml(l.type)}</span><span class="hm-sugg-titre">${escHtml(l.titre)}</span></span><span class="hm-sugg-fl" aria-hidden="true">›</span></button>`).join('')}
+  </div>`;
+}
+
+// ── « Ce que tu remarques » : UN seul insight, le lien le plus net du moteur d'Insights (30 derniers jours) ──
+function homeVoirInsights() { _insightsTab = 'overview'; go('insights'); }      // la Vue d'ensemble montre la même phrase (« Liens repérés »), avec « Voir tous les liens »
+function homeHtmlRemarque() {
+  const l = corrTopLiens()[0], p = l && corrPhrase(l);
+  return `<div class="hm-carte hm-rem">
+    <div class="hm-sec-tete"><span class="hm-sec-titre">Ce que tu remarques</span><button type="button" class="hm-lien" onclick="homeVoirInsights()">Insights ›</button></div>
+    ${p ? `<div class="hm-rem-txt"><span aria-hidden="true">${p.icone}</span> ${escHtml(p.texte)}</div>`
+        : '<div class="hm-rem-txt hm-rem-vide">Continue à noter ton quotidien : tes premiers liens apparaîtront après quelques jours de données 🌱</div>'}
+  </div>`;
+}
+
+// ── L'Accueil ────────────────────────────────────────────────────────────────
+// Chaque carte est dessinée à part : si l'une échoue, les autres restent. updateHomeScore() est l'ancien nom (la synchronisation, le journal et showScreen l'appellent encore).
+function renderHome() {
+  let idx = {}, st = null;
+  try { idx = corrDayIndex(); } catch (e) { console.warn('[Nara] journal de l\'Accueil :', e); }
+  try { st = homeEtatRoutine(); } catch (e) { console.warn('[Nara] routine de l\'Accueil :', e); }
+  try { homeMajEntete(); } catch (e) { console.warn('[Nara] en-tête de l\'Accueil :', e); }
+  [['home-auj', () => homeHtmlAujourdhui(idx, st)], ['home-profil', homeHtmlProfil], ['home-routine', () => homeHtmlRoutine(st)],
+   ['home-semaine', () => homeHtmlSemaine(idx)], ['home-pourtoi', () => homeHtmlPourToi(idx)], ['home-remarque', homeHtmlRemarque]].forEach(c => {
+    const el = document.getElementById(c[0]);
+    if (!el) return;
+    try { el.innerHTML = c[1](); } catch (e) { el.innerHTML = ''; console.warn('[Nara] Accueil, ' + c[0] + ' :', e); }
+  });
+  try { renderHomeCycleBlock(); } catch (e) { console.warn('[Nara] cycleBlock:', e); }
+}
+function updateHomeScore() { renderHome(); }
 
 // Nettoyer le cache local à la déconnexion
 function clearLocalCache() {
@@ -5073,6 +5218,7 @@ function showScreen(id, btn) {
   if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
   if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
   _routNav = false;
+  if (id !== 'home') _homeCycleOuvert = false;                                                  // la carte Cycle de l'Accueil se referme quand on quitte l'Accueil
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
@@ -5233,7 +5379,7 @@ function artRetour() {                    // flèche retour de l'article : recet
     openRecette(r.id);
     if (r.sub === 'ingredients') switchSubTab('ingredients', document.getElementById('subtab-ingredients'));
     requestAnimationFrame(() => { const c = document.getElementById(r.sub === 'ingredients' ? 'recipe-content-ingredients' : 'recipe-content-resume'); if (c) c.scrollTop = r.haut; });
-  } else { libVueCourante = 'articles'; routRetour('library'); }   // un article ouvert hors d'une recette ramène à la vue Articles, même si la vue Recettes était la dernière affichée
+  } else { if (routRetourVers !== 'home') libVueCourante = 'articles'; routRetour('library'); }   // un article ouvert hors d'une recette ramène à la vue Articles, même si la vue Recettes était la dernière affichée ; ouvert depuis l'Accueil, il ramène à l'Accueil et la Bibliothèque garde sa vue
 }
 
 // ===== RECETTE DÉTAIL =====
@@ -6703,7 +6849,7 @@ function routSauverSaisie() {            // une saisie en cours est enregistrée
 function routSurReprise() {              // retour au premier plan (le jour a pu changer pendant ce temps)
   const act = document.querySelector('.screen.active'), id = act ? act.id.replace('screen-', '') : '';
   try {
-    if (id === 'home') renderHomeRoutineBlock();
+    if (id === 'home') renderHome();
     else if (id === 'routines') renderRoutines();
     else if (id === 'routine-detail') routRafraichirDetail();
   } catch (e) { console.warn('[Nara] routines au retour:', e && e.message || e); }
@@ -6980,6 +7126,9 @@ function routRetour(defaut) {
     go('routine-detail');
     routRafraichirDetail();
     requestAnimationFrame(() => { const s = document.getElementById('rout-detail-scroll'); if (s) s.scrollTop = haut; });
+  } else if (vers === 'home') {                                  // ouvert depuis l'Accueil (suggestion, tâche de routine) : retour à l'Accueil, au même endroit de la page
+    go('home');
+    requestAnimationFrame(() => { const s = document.getElementById('home-scroll'); if (s) s.scrollTop = haut; });
   } else go(defaut);
 }
 function routOuvrirRecette(id) {
@@ -7029,33 +7178,6 @@ function openRoutModale(modalId) {
 }
 function closeRoutModale() { document.getElementById('rout-modale-overlay').classList.remove('open'); }
 function handleRoutModaleClick(e) { if (e.target===document.getElementById('rout-modale-overlay')) closeRoutModale(); }
-
-// ── Accueil : petit rappel « Note ton énergie » (Énergie & Sommeil, jours 1 à 7 et 15 à 21) ──
-// Matin avant 11 h · midi de 11 h à 16 h · soir à partir de 16 h ; affiché seulement si ce moment n'est pas déjà noté
-const ROUT_RAPPEL = { matin: 'Note ton énergie du matin', midi: 'Note ton énergie de midi', soir: 'Note ton énergie du soir' };
-function routCreneau(h) { return h < 11 ? 'matin' : h < 16 ? 'midi' : 'soir'; }
-function renderHomeRoutineBlock() {
-  const bloc = document.getElementById('home-routine-block');
-  if (!bloc) return;
-  bloc.innerHTML = '';
-  const id = routIdActive();
-  if (!id) return;
-  const r = routinesData.find(x => x.id === id), e = routEtat(id);
-  if (e.statut !== 'active' || !routTachesDuJour(r, e.jour).some(t => t.k === 'energie3')) return;
-  const run = routRun(getTodayStr(), id, e.debut), c = routCreneau(routHeure());
-  if (run && run.energie && run.energie[c] > 0) return;
-  bloc.innerHTML = `<div class="home-rout-block" style="border-left-color:${r.couleur}" onclick="routOuvrirEnergie()">
-      <span class="home-rout-ico">⚡</span>
-      <div class="home-rout-txt"><div class="home-rout-titre">${ROUT_RAPPEL[c]}</div><div class="home-rout-sous">${escHtml(r.titre)} · Jour ${e.jour} sur ${ROUT_DUREE}</div></div>
-      <span class="home-rout-fl">›</span>
-    </div>`;
-}
-function routOuvrirEnergie() {
-  const id = routIdActive();
-  if (!id) return;
-  openRoutineDetail(id);
-  requestAnimationFrame(() => { const c = document.getElementById('rtc-energie3'); if (c) c.scrollIntoView({ block: 'center' }); });
-}
 
 // ===== ROUTINES × JOURNAL : HABITUDES, CARTE « TA ROUTINE », BILAN ENRICHI (prompt 8) =====
 // Une habitude est binaire : la case est cochée (faite) ou non (pas faite). On compare les jours « faite » et « pas faite » avec le même test que
@@ -13062,33 +13184,6 @@ function diagBrique2() {
 }
 
 
-function generateInsights(entries) {
-  const insights = [];
-  const sE = entries.filter(e => e.type==='stress' && e.values?.stress !== undefined);
-  const pE = entries.filter(e => e.type==='peau' && e.values?.peau_etat !== undefined);
-  const tE = entries.filter(e => e.type==='transit' && e.values?.transit_etat !== undefined);
-  if (sE.length >= 3) {
-    const avg = sE.reduce((s,e) => s+(e.values.stress||0),0)/sE.length;
-    if (avg >= 3) insights.push({ type:'gut', icon:'🧠', tag:'Stress',
-      text: `Ton stress moyen est de <strong>${avg.toFixed(1)}/5</strong>. Le stress impacte directement la digestion.` });
-  }
-  if (pE.length >= 3) {
-    const pos = pE.filter(e => e.values.peau_etat >= 1).length;
-    const pct = Math.round(pos/pE.length*100);
-    insights.push({ type:'skin', icon:'✨', tag:'Peau',
-      text: `Ta peau est stable ou calme <strong>${pct}% du temps</strong> sur les données disponibles.` });
-  }
-  if (tE.length >= 3) {
-    const normal = tE.filter(e => e.values.transit_etat===1).length;
-    const pct = Math.round(normal/tE.length*100);
-    if (pct > 60) insights.push({ type:'gut', icon:'🌿', tag:'Transit',
-      text: `Ton transit est <strong>normal ${pct}% du temps</strong>.` });
-  }
-  if (insights.length === 0) insights.push({ type:'gut', icon:'📈', tag:"En cours d'analyse",
-    text: "Continue à noter chaque jour pour des insights plus précis." });
-  return insights;
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 // SYNCHRONISATION AVEC SUPABASE — lecture avant écriture, fusion « le plus récent gagne »
 //
@@ -14057,7 +14152,7 @@ function profileConsentOk() {
   profileSave(p);
   profileData = p;
   document.getElementById('profile-consent-overlay').classList.remove('open');
-  renderProfile();
+  go('profile');
 }
 
 // ── Navigation post-inscription ────────────────────────────────────────────────
@@ -14567,114 +14662,6 @@ function getProfileContext() {
     // NOTE : les points de référence avant/après (dates) sont dans nara_suivis (getSuivisContext())
   };
 }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// BLOC CONTEXTUEL ACCUEIL
-// État 1 : profil incomplet → invitation douce + progression
-// État 2 : profil complet (6/6) → résumé veille en mots-clés
-// ══════════════════════════════════════════════════════════════════════════════
-
-function renderHomeContextBlock() {
-  const block = document.getElementById('home-context-block');
-  if (!block) return;
-
-  const p = profileLoad ? profileLoad() : null;
-  const done = p ? profileCompletionCount(p) : 0;
-  const TOTAL = 6;
-
-  // Condition de bascule : profil à 100% ET flag persisté
-  // (on mémorise la bascule pour ne jamais revenir à l'état 1)
-  const basculeKey = 'nara_profile_complete_seen';
-  if (done >= TOTAL) localStorage.setItem(basculeKey, '1');
-  const alreadySeen = localStorage.getItem(basculeKey) === '1';
-
-  if (!alreadySeen) {
-    // ── ÉTAT 1 — invitation profil ────────────────────────────────────────────
-    const pct = Math.round(done / TOTAL * 100);
-    block.innerHTML = `
-      <div class="ctx-block" onclick="openProfileFromMenu()" style="cursor:pointer">
-        <div class="ctx-profile-label">Mon profil santé</div>
-        <div class="ctx-profile-title">Complète ton profil pour des insights plus précis</div>
-        <div class="ctx-profile-progress">
-          <div class="ctx-profile-bar-wrap">
-            <div class="ctx-profile-bar-fill" style="width:${pct}%"></div>
-          </div>
-          <div class="ctx-profile-count">${done}/${TOTAL} sections</div>
-        </div>
-        <div class="ctx-profile-btn">
-          <span class="ctx-profile-btn-label">Compléter mon profil →</span>
-          <span class="ctx-profile-btn-arrow">›</span>
-        </div>
-      </div>`;
-  } else {
-    // ── ÉTAT 2 — résumé de la veille ─────────────────────────────────────────
-    block.innerHTML = `
-      <div class="ctx-block">
-        <div class="ctx-yesterday-label">Hier</div>
-        ${buildYesterdaySummary()}
-      </div>`;
-  }
-}
-
-function buildYesterdaySummary() {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const dateStr = localDateStr(yesterday);
-
-  const jrn = (() => { try { return JSON.parse(localStorage.getItem(`nara_journal_${dateStr}`) || 'null'); } catch { return null; } })();
-  const logTransit = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_transit`) || 'null'); } catch { return null; } })();
-  const logPeau    = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_peau`)    || 'null'); } catch { return null; } })();
-  const logStress  = (() => { try { return JSON.parse(localStorage.getItem(`nara_log_${dateStr}_stress`)  || 'null'); } catch { return null; } })();
-
-  const kws = [];
-
-  // Transit
-  const transitVal = (jrn && jrn.transit !== null && jrn.transit !== undefined) ? jrn.transit : (logTransit && logTransit.values ? logTransit.values.transit_etat : undefined);
-  if (transitVal !== null && transitVal !== undefined) {
-    const tLabels = ['🐢 Transit lent', '✅ Transit normal', '💨 Transit rapide'];
-    kws.push(tLabels[transitVal] || null);
-  }
-
-  // Peau
-  const peauVal = (jrn && jrn.peau !== null && jrn.peau !== undefined) ? jrn.peau : (logPeau && logPeau.values ? logPeau.values.peau_etat : undefined);
-  if (peauVal !== null && peauVal !== undefined) {
-    const pLabels = ['🔴 Peau en poussée', '🟡 Peau stable', '🟢 Peau calme'];
-    kws.push(pLabels[peauVal] || null);
-  }
-
-  // Énergie
-  const energieVal = (jrn && jrn.energie > 0) ? jrn.energie : (logStress && logStress.values ? logStress.values.energie : undefined);
-  if (energieVal !== null && energieVal !== undefined && energieVal > 0) {
-    kws.push(`⚡ Énergie ${energieVal}/5`);
-  }
-
-  // Stress
-  const stressVal = (jrn && jrn.stress > 0) ? jrn.stress : (logStress && logStress.values ? logStress.values.stress : undefined);
-  if (stressVal !== null && stressVal !== undefined && stressVal > 0) {
-    const label = stressVal <= 1 ? 'Stress faible' : stressVal <= 3 ? `Stress ${stressVal}/5` : 'Stress élevé';
-    kws.push(`😮‍💨 ${label}`);
-  }
-
-  // Sommeil
-  const sommeilVal = (jrn && jrn.sommeil > 0) ? jrn.sommeil : (logStress && logStress.values ? logStress.values.sommeil : undefined);
-  if (sommeilVal !== null && sommeilVal !== undefined && sommeilVal > 0) {
-    kws.push(`😴 Sommeil ${sommeilVal}/5`);
-  }
-
-  // Repas — juste indiquer si rempli
-  const hasRepas = jrn?.repas && Object.values(jrn.repas).some(r => r.aliments?.length > 0);
-  if (hasRepas) kws.push('🍽️ Repas noté');
-
-  if (kws.filter(Boolean).length === 0) {
-    return `<div class="ctx-no-data">Pas de données hier — pense à remplir ton journal aujourd'hui 🌿</div>`;
-  }
-
-  const parts = kws.filter(Boolean).map((k, i) =>
-    `<span class="ctx-kw">${k}</span>${i < kws.length - 1 ? '<span class="ctx-sep">·</span>' : ''}`
-  ).join('');
-  return `<div class="ctx-yesterday-row">${parts}</div>`;
-}
-
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MODULE "MES NOUVEAUX SUIVIS"
@@ -15294,28 +15281,35 @@ function renderHomeCycleBlock() {
     return;
   }
 
-  // ── Phase règles → chemin de points ──────────────────────────────────────
+  // ── Carte compacte : une seule ligne (la phrase est sans jargon) ; toucher la carte déplie le texte détaillé actuel, avec « Ajuster » ──
+  const ouvert = _homeCycleOuvert ? ' ouvert' : '';
+  const tete = (icone, titre, points) => `
+        <button type="button" class="hm-cyc-tete" aria-expanded="${_homeCycleOuvert ? 'true' : 'false'}" onclick="homeBasculerCycle()">
+          <span class="home-cycle-icon">${icone}</span>
+          <span class="home-cycle-title">${titre}</span>
+          ${points ? `<span class="hm-cyc-points">${points}</span>` : ''}
+          <span class="hm-cyc-fl" aria-hidden="true">›</span>
+        </button>`;
+
+  // ── Phase règles → « Règles · jour 5 sur ~6 » et les petits points ───────────────────────────────────────
   if (info.phase === 'regles') {
     const dayInReg = info.dayInCycle;
     let dots = '';
     for (let i = 1; i <= regDuration; i++) {
-      if (i > 1) dots += '<div class="cycle-dot-connector"></div>';
       let cls = 'cycle-dot-node';
       if (i < dayInReg) cls += ' past';
       else if (i === dayInReg) cls += ' active';
-      dots += `<div class="${cls}" title="Jour ${i}"></div>`;
+      dots += `<span class="${cls}" title="Jour ${i}"></span>`;
     }
     block.innerHTML = `
-      <div class="home-cycle-block phase-regles">
-        <div class="home-cycle-header">
-          <span class="home-cycle-icon">🩸</span>
-          <span class="home-cycle-title">Tu es probablement en période de règles</span>
-          <span class="home-cycle-update" onclick="openCycleModal()">Ajuster</span>
-        </div>
-        <div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">Phase d'élimination de la muqueuse utérine — début d'un nouveau cycle.</div>
-        <div class="cycle-dots-track">${dots}</div>
-        <div class="home-cycle-desc">
-          Jour ${dayInReg} sur ~${regDuration} · Transit souvent plus rapide, fatigue possible — écoute ton corps 🌿
+      <div class="home-cycle-block hm-cyc phase-regles${ouvert}">${tete('🩸', 'Règles · jour ' + dayInReg + ' sur ~' + regDuration, dots)}
+        <div class="hm-cyc-detail">
+          <div class="home-cycle-title">Tu es probablement en période de règles</div>
+          <div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">Phase d'élimination de la muqueuse utérine — début d'un nouveau cycle.</div>
+          <div class="home-cycle-desc">
+            Jour ${dayInReg} sur ~${regDuration} · Transit souvent plus rapide, fatigue possible — écoute ton corps 🌿
+          </div>
+          <button type="button" class="home-cycle-update" onclick="openCycleModal()">Ajuster</button>
         </div>
       </div>`;
     return;
@@ -15339,20 +15333,22 @@ function renderHomeCycleBlock() {
     ovulation: 'Moment du cycle où un ovule est libéré — généralement vers le milieu du cycle.',
     luteale:   'Après l\'ovulation, avant les prochaines règles.',
   };
+  // Ligne compacte, sans jargon
+  const phaseCourtes = { preovul:'Après tes règles', ovulation:'Ovulation probable', luteale:'Avant tes règles' };
   const desc = phaseDescs[info.phase] || info.phaseDesc;
   const icon = phaseIcons[info.phase] || info.phaseIcon;
   const name = phaseNames[info.phase] || info.phaseName;
   const def  = phaseDefs[info.phase] || '';
+  const court = phaseCourtes[info.phase] || name;
 
   block.innerHTML = `
-    <div class="home-cycle-block ${info.phaseClass}">
-      <div class="home-cycle-header">
-        <span class="home-cycle-icon">${icon}</span>
-        <span class="home-cycle-title">${name} — J${info.dayInCycle}/${cycleDuration}</span>
-        <span class="home-cycle-update" onclick="openCycleModal()">Ajuster</span>
+    <div class="home-cycle-block hm-cyc ${info.phaseClass}${ouvert}">${tete(icon, court + ' · jour ' + info.dayInCycle, '')}
+      <div class="hm-cyc-detail">
+        <div class="home-cycle-title">${name} — J${info.dayInCycle}/${cycleDuration}</div>
+        ${def ? `<div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">${def}</div>` : ''}
+        <div class="home-cycle-desc">${desc}</div>
+        <button type="button" class="home-cycle-update" onclick="openCycleModal()">Ajuster</button>
       </div>
-      ${def ? `<div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">${def}</div>` : ''}
-      <div class="home-cycle-desc">${desc}</div>
     </div>`;
 }
 
@@ -15434,7 +15430,7 @@ function cycleConfirmStart(answer) {
     localStorage.setItem('nara_cycle_calibrate_later', today);
   }
 
-  renderHomeCycleBlock();
+  renderHome();                         // la carte Cycle, la phrase sous la date et les suggestions suivent le nouveau jour du cycle
 }
 
 function cycleLoad() {

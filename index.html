@@ -150,7 +150,6 @@ if (typeof supabase === 'undefined') {
   #screen-insights    { background: #FFFAF2; }
   #screen-library     { background: #FFFAF2; }
   #screen-routines    { background: #FFFAF2; }
-  #screen-calendar    { background: #FFFAF2; }
   #screen-gallery     { background: #FFFAF2; }
   #screen-article-detail   { background: #FFFAF2; }
   #screen-routine-detail   { background: #FFFAF2; }
@@ -229,32 +228,83 @@ if (typeof supabase === 'undefined') {
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* User menu in home header */
-  .user-menu-btn {
-    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
-    background: linear-gradient(135deg, var(--blush), var(--peach));
+  /* ===== MON ESPACE (prompt 11, livraison B) : la bulle ronde d'initiale de l'Accueil ouvre cette PAGE ===== */
+  .espace-rond {
+    --d: 44px; width: var(--d); height: var(--d); border-radius: 50%; flex-shrink: 0;
+    background: #EAD6CD; color: #7d4f57;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; border: none; position: relative;
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: calc(var(--d) * 0.5); line-height: 1;
   }
-  .user-dropdown {
-    position: absolute; top: 100%; right: 0; background: white;
-    border-radius: 16px; padding: 8px; min-width: 200px; z-index: 200;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12); display: none;
-    margin-top: 8px;
+  .espace-rond-grand { --d: 56px; }
+  .espace-rond svg { width: 52%; height: 52%; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .espace-rond .espace-lettre { display: none; }
+  .espace-rond.avec-prenom .espace-lettre { display: block; }
+  .espace-rond.avec-prenom svg { display: none; }
+  .espace-bulle {
+    border: 0; padding: 0; cursor: pointer; -webkit-appearance: none; appearance: none;
+    -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
   }
-  .user-dropdown.open { display: block; }
-  .user-dropdown-name {
-    padding: 10px 12px 6px; font-size: 0.78rem; font-weight: 500; color: var(--text-dark);
+  .espace-bulle:active { transform: scale(0.94); }
+  #screen-espace, #screen-donnees { background: var(--cream); }
+  .espace-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    padding: 18px clamp(16px, 6vw, 28px) calc(24px + env(safe-area-inset-bottom, 0px));
   }
-  .user-dropdown-email { padding: 0 12px 10px; font-size: 0.68rem; color: var(--text-light); border-bottom: 1px solid var(--oat); margin-bottom: 6px; }
-  .user-dropdown-item {
-    padding: 10px 12px; font-size: 0.82rem; color: var(--text-mid); border-radius: 10px;
-    cursor: pointer; transition: background 0.15s;
+  .espace-scroll::-webkit-scrollbar { display: none; }
+  /* Carte du compte */
+  .espace-compte { background: white; border: 1.5px solid var(--oat); border-radius: 20px; padding: 16px; margin-bottom: 28px; }
+  .espace-compte-ligne { display: flex; align-items: center; gap: 14px; }
+  .espace-compte-texte { flex: 1; min-width: 0; }
+  .espace-prenom { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400; color: var(--text-dark); line-height: 1.15; overflow-wrap: anywhere; }
+  .espace-prenom.vide { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text-light); }
+  .espace-email { font-size: 0.74rem; color: var(--text-light); margin-top: 3px; overflow-wrap: anywhere; }
+  .espace-modifier {
+    flex-shrink: 0; min-height: 44px; padding: 0 2px 0 10px; border: 0; background: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--sage);
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
-  .user-dropdown-item:hover { background: var(--honey); }
-  .user-dropdown-item.danger { color: #dc2626; }
-
-
+  .espace-compte.edit .espace-modifier { display: none; }
+  .espace-attente { display: none; margin-top: 12px; padding: 9px 12px; border-radius: 12px; background: var(--honey); font-size: 0.72rem; line-height: 1.45; color: var(--text-mid); }
+  .espace-attente.on { display: block; }
+  .espace-edition { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--oat); }
+  .espace-compte.edit .espace-edition { display: block; }
+  .espace-label { display: block; margin-bottom: 6px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-light); }
+  .espace-champ {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1.5px solid var(--oat); border-radius: 14px; background: var(--cream);
+    font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text-dark); -webkit-appearance: none; appearance: none;
+  }
+  .espace-champ:focus { outline: none; border-color: var(--sage); }
+  .espace-msg { min-height: 1.1em; margin-top: 6px; font-size: 0.74rem; color: #B5524C; }
+  .espace-btns { display: flex; gap: 10px; margin-top: 10px; }
+  .espace-btn {
+    flex: 1; min-height: 44px; border-radius: 14px; border: 0; background: var(--sage); color: white; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .espace-btn-sec { background: transparent; color: var(--text-mid); border: 1.5px solid var(--oat); }
+  /* Groupes de lignes : MA SANTÉ, MES DONNÉES */
+  .espace-groupe-titre { margin: 0 4px 10px; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); }
+  .espace-groupe { background: white; border: 1.5px solid var(--oat); border-radius: 20px; overflow: hidden; margin-bottom: 28px; }
+  .espace-ligne {
+    display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; min-height: 60px; padding: 10px 16px;
+    border: 0; border-top: 1px solid var(--oat); background: none; text-align: left; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; color: var(--text-dark); -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .espace-groupe > .espace-ligne:first-child { border-top: 0; }
+  button.espace-ligne:active { background: var(--honey); }
+  .espace-ligne-ico { width: 34px; height: 34px; border-radius: 50%; background: var(--honey); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .espace-ligne-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .espace-ligne-titre { font-size: 0.9rem; color: var(--text-dark); }
+  .espace-ligne-desc { font-size: 0.72rem; line-height: 1.35; color: var(--text-light); }
+  .espace-ligne-fleche { flex-shrink: 0; font-size: 1.1rem; color: var(--text-light); }
+  .espace-ligne-off { cursor: default; }
+  .espace-ligne-off .espace-ligne-ico, .espace-ligne-off .espace-ligne-txt { opacity: 0.65; }
+  .espace-bientot { flex-shrink: 0; padding: 4px 9px; border-radius: 10px; background: var(--honey); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mid); }
+  /* Se déconnecter : rouge doux */
+  .espace-sortie {
+    display: block; width: 100%; min-height: 52px; border-radius: 18px; border: 1.5px solid #EBCFCB; background: white; color: #B5524C; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .espace-sortie:active { background: #FBEFED; }
 
   /* .screen: défini dans le premier bloc style */
 
@@ -279,10 +329,9 @@ if (typeof supabase === 'undefined') {
   /* ===== HOME ===== */
   #screen-home { background: var(--cream); }
 
-  .home-header { padding: 16px clamp(16px, 6vw, 28px) 20px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .home-header { padding: 16px clamp(16px, 6vw, 28px) 20px; display: flex; justify-content: space-between; align-items: center; }
   .home-greeting { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 400; color: var(--text-dark); line-height: 1.2; }
   .home-greeting span { color: var(--sage); }
-  .avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--blush), var(--peach)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
   .home-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 clamp(16px, 6vw, 28px) var(--bar-pad, 24px); scrollbar-width: none; }
   .home-scroll::-webkit-scrollbar { display: none; }
   .score-card { background: linear-gradient(135deg, var(--sage) 0%, #6b6e52 100%); border-radius: clamp(16px, 5vw, 24px); padding: clamp(16px, 5vw, 24px); margin-bottom: 20px; color: white; position: relative; overflow: hidden; }
@@ -321,6 +370,10 @@ if (typeof supabase === 'undefined') {
 
   /* ===== JOURNAL ===== */
   #screen-journal { background: var(--cream); }
+  /* Deux vues dans le Journal : « Aujourd'hui » (le journal du jour, inchangé) | « Calendrier » (le calendrier du transit). Le sélecteur est celui de la Bibliothèque (lib-vues / lib-vue). */
+  #jrn-vues { margin: 0 clamp(16px, 6vw, 28px) 12px; }
+  .jrn-pane { display: none; flex: 1; min-height: 0; flex-direction: column; overflow: hidden; }
+  .jrn-pane.on { display: flex; }
   .screen-header { padding: 16px clamp(16px, 6vw, 28px) 20px; display: flex; align-items: center; gap: 12px; }
   .back-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--honey); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; cursor: pointer; }
   .screen-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.3rem, 5vw, 1.6rem); font-weight: 400; color: var(--text-dark); }
@@ -1120,7 +1173,7 @@ if (typeof supabase === 'undefined') {
   .gallery-day-photo-wrap .photo-soft-msg { min-height: 120px; border-radius: 10px; }
   .photo-soft-fs { background: transparent; color: rgba(255,255,255,0.82); min-height: 0; padding: 24px; }
 
-  /* Version de l'appli (bas du profil) */
+  /* Version de l'appli (tout en bas de « Mon espace ») */
   .app-version { text-align: center; font-size: 0.68rem; color: var(--text-light); opacity: 0.75; padding: 18px 0 4px; letter-spacing: 0.02em; }
 
   /* Diagnostic d'affichage caché : appui long sur « Version du … » (voir diagOuvrir). Sur l'iPhone, l'appui long ne doit ni sélectionner le texte ni ouvrir de loupe */
@@ -2745,7 +2798,7 @@ if (typeof supabase === 'undefined') {
   .cal-yn-btn .yn-emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
   .cal-yn-btn .yn-label { font-size: 0.75rem; color: var(--text-mid); }
   .cal-yn-btn.selected-oui { border-color: #4caf50; background: #f1fdf1; }
-  .cal-yn-btn.selected-non { border-color: #e57373; background: #fff5f5; }
+  .cal-yn-btn.selected-non { border-color: #C27F58; background: #FDF3EC; }
 
   /* ÉCHELLE DE BRISTOL */
   /* Grille Bristol — liste verticale avec SVG */
@@ -2851,13 +2904,12 @@ if (typeof supabase === 'undefined') {
   }
 
 
-  #screen-calendar { background: var(--cream); }
-
   .cal-header {
     padding: 14px clamp(16px,6vw,28px) 12px;
     display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 4px 10px;        /* trop étroit : « Suivi des selles » passe sous le mois, au lieu d'être écrasé contre la flèche › */
   }
-  .cal-nav { display: flex; align-items: center; gap: 12px; }
+  .cal-nav { display: flex; align-items: center; gap: 8px; }
   .cal-nav-btn {
     width: 36px; height: 36px; border-radius: 50%;
     background: white; border: 1.5px solid var(--oat);
@@ -2869,7 +2921,7 @@ if (typeof supabase === 'undefined') {
   .cal-month-label {
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.3rem; font-weight: 400; color: var(--text-dark);
-    min-width: 150px; text-align: center;
+    min-width: 126px; text-align: center;
   }
   .cal-year { color: var(--sage); font-size: 1rem; margin-left: 4px; }
 
@@ -2923,10 +2975,12 @@ if (typeof supabase === 'undefined') {
     width: 8px; height: 8px; border-radius: 50%; margin-top: 3px;
   }
   .cal-dot.oui { background: #4caf50; }
-  .cal-dot.non { background: #e57373; }
-  .cal-dot.diff-1 { box-shadow: 0 0 0 2px #4caf5033; }
-  .cal-dot.diff-2 { box-shadow: 0 0 0 2px #ff980033; }
-  .cal-dot.diff-3 { box-shadow: 0 0 0 2px #e5737333; }
+  /* « Pas de selle ce jour » : cercle vide terracotta (jamais de rouge) ; un jour non renseigné n'a aucun point */
+  .cal-dot.non { background: #FBEDE4; border: 1.5px solid #C27F58; box-sizing: border-box; }
+  /* Halo autour du point = forme des selles (échelle de Bristol) : types 3-4 vert, 5-7 ambre, 1-2 terracotta */
+  .cal-dot.diff-1 { box-shadow: 0 0 0 3px #4caf5055; }
+  .cal-dot.diff-2 { box-shadow: 0 0 0 3px #f9a82566; }
+  .cal-dot.diff-3 { box-shadow: 0 0 0 3px #c8875666; }
 
   /* Badge difficulté */
   .cal-diff {
@@ -2935,45 +2989,21 @@ if (typeof supabase === 'undefined') {
     line-height: 1;
   }
 
-  /* Légende */
+  /* Légende du calendrier du transit (sans rouge) : les mêmes points que ceux de la grille */
   .cal-legend {
     background: white; border-radius: 16px; padding: 14px 16px;
-    margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px;
+    margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px 16px;
     align-items: center;
   }
   .cal-legend-title {
     width: 100%; font-size: 0.65rem; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--text-light); margin-bottom: 2px;
   }
-  .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-mid); }
-  .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .cal-legend-item { width: 100%; display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: var(--text-mid); }
+  .cal-legend-dot { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cal-legend-dot .cal-dot { margin-top: 0; }
+  .cal-legend-vide { width: 14px; height: 14px; border-radius: 4px; background: white; border: 1.5px solid var(--oat); box-sizing: border-box; }
   .cal-legend-sep { width: 100%; height: 1px; background: var(--oat); margin: 4px 0; }
-  .cal-legend-num {
-    width: 18px; height: 18px; border-radius: 50%;
-    background: var(--honey); border: 1.5px solid var(--oat);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.65rem; font-weight: 700; color: var(--text-dark); flex-shrink: 0;
-  }
-
-  /* Modale log transit */
-
-
-
-
-
-
-
-
-
-
-  .cal-access-btn {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--honey); border: 1.5px solid var(--oat);
-    font-size: 1.1rem; cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
-    transition: background 0.2s;
-  }
-  .cal-access-btn:active { background: var(--oat); }
   /* ===== BARRE DU BAS — une seule, flottante PAR-DESSUS le contenu (prompt 11, correctif A1) =====
      #bnav est un conteneur TRANSPARENT, sans hauteur réservée : dernier enfant de #app, en position absolue (left 0, right 0, bottom 0) À L'INTÉRIEUR de #app — pas en position fixe —, avec pointer-events: none ;
      seule la pilule reçoit les touchers (pointer-events: auto). Rien n'est peint derrière : le contenu se voit tout autour de la pilule, posée 8 px au-dessus de la marge de sécurité du bas.
@@ -3265,19 +3295,7 @@ if (typeof supabase === 'undefined') {
           <div id="home-hello" style="display:none;font-size:0.72rem;color:var(--text-light);letter-spacing:0.06em;margin-bottom:2px;">Bonjour,</div>
           <div class="home-greeting"><span id="home-user-name">Bonjour</span> ✨</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <button class="cal-access-btn" onclick="go('calendar')" title="Suivi des selles">🗓️</button>
-          <button class="user-menu-btn" onclick="toggleUserMenu()" id="user-menu-btn">🌸</button>
-        </div>
-        <div class="user-dropdown" id="user-dropdown">
-          <div class="user-dropdown-name" id="dropdown-name" style="display:none"></div>
-          <div class="user-dropdown-email" id="dropdown-email"></div>
-          <div class="user-dropdown-item" onclick="toggleUserMenu(); openProfileFromMenu()">🧬 Mon profil santé</div>
-          <div class="user-dropdown-item" onclick="toggleUserMenu(); go('suivis')">📋 Mes nouveaux suivis</div>
-          <div class="user-dropdown-item" onclick="toggleUserMenu(); openCycleModal()">🌸 Suivi de cycle</div>
-          <div class="user-dropdown-item" onclick="toggleUserMenu(); go('journal')">📓 Mon journal</div>
-          <div class="user-dropdown-item danger" onclick="handleLogout()">← Se déconnecter</div>
-        </div>
+        <button type="button" class="espace-rond espace-bulle" id="espace-bulle" onclick="go('espace')" aria-label="Mon espace"><span class="espace-lettre"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.6-3.7 3.4-5.8 7.2-5.8s6.6 2.1 7.2 5.8"/></svg></button>
       </div>
       <div class="home-scroll">
 
@@ -3338,15 +3356,139 @@ if (typeof supabase === 'undefined') {
       </div>
     </div>
 
-    <!-- SCREEN 3 — JOURNAL -->
+    <!-- SCREEN 3 — JOURNAL (deux vues : Aujourd'hui | Calendrier) -->
     <div class="screen" id="screen-journal">
       <div class="screen-header" id="jrn-screen-header">
         <div class="back-btn" onclick="routRetour('home')">←</div>
         <div class="screen-title">Mon journal</div>
         <button onclick="go('gallery')" style="background:var(--honey);border:1.5px solid var(--oat);border-radius:12px;padding:6px 12px;font-size:0.72rem;color:var(--text-mid);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Galerie</button>
       </div>
-      <div id="journal-scroll" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
-        <!-- Rendu dynamique par renderJournal() -->
+      <div class="lib-vues" id="jrn-vues" role="tablist" aria-label="Journal du jour ou calendrier du transit">
+        <button type="button" class="lib-vue active" id="jrn-vue-aujourdhui" role="tab" aria-selected="true" onclick="jrnChoisirVue('aujourdhui')">📝 Aujourd'hui</button>
+        <button type="button" class="lib-vue" id="jrn-vue-calendrier" role="tab" aria-selected="false" onclick="jrnChoisirVue('calendrier')">📅 Calendrier</button>
+      </div>
+      <!-- Vue Aujourd'hui : le journal actuel, inchangé (rendu dynamique par renderJournal()) -->
+      <div class="jrn-pane on" id="journal-scroll" role="tabpanel">
+      </div>
+      <!-- Vue Calendrier : le calendrier du transit (l'ancienne page « Suivi des selles »), rangé ici avec sa légende ; mêmes identifiants, mêmes fonctions, mêmes données -->
+      <div class="jrn-pane" id="jrn-pane-calendrier" role="tabpanel">
+        <div class="cal-header">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
+            <div class="cal-month-label" id="cal-month-label">Août <span class="cal-year">2026</span></div>
+            <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-light);letter-spacing:0.06em;white-space:nowrap">Suivi des selles 🌿</div>
+        </div>
+
+        <div class="cal-scroll">
+          <!-- Jours de la semaine -->
+          <div class="cal-weekdays">
+            <div class="cal-wd">Lun</div>
+            <div class="cal-wd">Mar</div>
+            <div class="cal-wd">Mer</div>
+            <div class="cal-wd">Jeu</div>
+            <div class="cal-wd">Ven</div>
+            <div class="cal-wd">Sam</div>
+            <div class="cal-wd">Dim</div>
+          </div>
+          <!-- Grille dynamique -->
+          <div class="cal-grid" id="cal-grid"></div>
+
+          <!-- Légende : les mêmes points que ceux de la grille (aucun rouge) -->
+          <div class="cal-legend" id="cal-legend" role="group" aria-label="Légende du calendrier">
+            <div class="cal-legend-title">Chaque jour</div>
+            <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui"></span></span>Selle notée</div>
+            <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot non"></span></span>Pas de selle ce jour</div>
+            <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-legend-vide"></span></span>Jour non renseigné</div>
+            <div class="cal-legend-sep"></div>
+            <div class="cal-legend-title">Halo : forme des selles (échelle de Bristol)</div>
+            <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui diff-3"></span></span>Types 1-2 · plutôt dures</div>
+            <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui diff-1"></span></span>Types 3-4 · formées</div>
+            <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui diff-2"></span></span>Types 5-7 · plutôt molles</div>
+          </div>
+
+          <!-- Note médicale permanente sous le calendrier -->
+          <div style="background:#fff8f0;border:1.5px solid #f9a82555;border-radius:14px;padding:14px 16px;margin-top:12px;font-size:0.78rem;color:#8a5200;line-height:1.6;">
+            🩺 <strong>À noter :</strong> si tu observes des changements persistants sur plusieurs semaines — douleurs récurrentes, selles très dures ou très liquides de façon durable, ou tout autre symptôme inhabituel — il peut être utile d'en parler à ton médecin. Nara n'est pas un outil de diagnostic : une consultation reste le meilleur moyen d'être accompagnée.
+          </div>
+        </div>
+      </div>
+      <!-- Modale log d'un jour -->
+      <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="calHandleOverlay(event)">
+        <div class="cal-modal-card">
+          <div class="cal-modal-handle"></div>
+          <div class="cal-modal-date" id="cal-modal-date"></div>
+
+          <!-- OUI / NON -->
+          <span class="cal-section-label">As-tu eu une selle ce jour ?</span>
+          <div class="cal-yn-row">
+            <div class="cal-yn-btn" id="cal-btn-oui" onclick="calSelectYN('oui')">
+              <span class="yn-emoji">🌿</span>
+              <span class="yn-label">Oui, aujourd'hui</span>
+            </div>
+            <div class="cal-yn-btn" id="cal-btn-non" onclick="calSelectYN('non')">
+              <span class="yn-emoji">💤</span>
+              <span class="yn-label">Non, pas ce jour</span>
+            </div>
+          </div>
+
+          <!-- Section détaillée — visible uniquement si OUI -->
+          <div id="cal-detail-section" style="display:none">
+
+            <!-- ÉCHELLE DE BRISTOL -->
+            <span class="cal-section-label">Consistance — Échelle de Bristol</span>
+            <div class="bristol-grid" id="bristol-grid">
+              <!-- Rendu JS -->
+            </div>
+
+
+            <!-- FRÉQUENCE -->
+            <span class="cal-section-label">Nombre de passages dans la journée</span>
+            <div class="cal-stepper">
+              <button class="cal-stepper-btn" onclick="calStepFreq(-1)">−</button>
+              <div class="cal-stepper-val" id="cal-freq-val">
+                1<span class="cal-stepper-unit">passage</span>
+              </div>
+              <button class="cal-stepper-btn" onclick="calStepFreq(1)">+</button>
+            </div>
+
+            <!-- CONFORT -->
+            <span class="cal-section-label">Confort associé <span style="font-weight:300;text-transform:none;letter-spacing:0">(optionnel, sélection multiple)</span></span>
+            <div class="cal-chips" id="cal-confort-chips">
+              <div class="cal-chip chip-none selected" id="chip-aucun" onclick="calToggleConfort('aucun', this)">✓ Aucun inconfort</div>
+              <div class="cal-chip" id="chip-ballonnements" onclick="calToggleConfort('ballonnements', this)">💨 Ballonnements</div>
+              <div class="cal-chip" id="chip-douleur" onclick="calToggleConfort('douleur', this)">😣 Douleur</div>
+              <div class="cal-chip" id="chip-urgence" onclick="calToggleConfort('urgence', this)">⚡ Urgence</div>
+              <div class="cal-chip" id="chip-incomplete" onclick="calToggleConfort('incomplete', this)">🔄 Évacuation incomplète</div>
+            </div>
+
+            <!-- TIMING -->
+            <span class="cal-section-label">Moment(s) de la journée <span style="font-weight:300;text-transform:none;letter-spacing:0">(multi-sélection)</span></span>
+            <div class="cal-timing-row">
+              <div class="cal-timing-btn" id="timing-matin" onclick="calToggleTiming('matin', this)">
+                <span class="t-icon">🌅</span><span class="t-lbl">Matin</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-apmidi" onclick="calToggleTiming('apmidi', this)">
+                <span class="t-icon">☀️</span><span class="t-lbl">Après-midi</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-repas" onclick="calToggleTiming('repas', this)">
+                <span class="t-icon">🍽️</span><span class="t-lbl">Après repas</span>
+              </div>
+              <div class="cal-timing-btn" id="timing-soir" onclick="calToggleTiming('soir', this)">
+                <span class="t-icon">🌙</span><span class="t-lbl">Soir</span>
+              </div>
+            </div>
+
+
+
+          </div>
+
+          <button class="cal-modal-save" onclick="calSaveDay()">Enregistrer ✓</button>
+          <button class="cal-modal-delete" id="cal-delete-btn" onclick="calDeleteDay()" style="display:none">
+            Supprimer cette entrée
+          </button>
+        </div>
       </div>
       <!-- Auto-save toast -->
       <div class="jrn-autosave-toast" id="jrn-autosave-toast">✓ Section enregistrée</div>
@@ -3521,120 +3663,10 @@ if (typeof supabase === 'undefined') {
 
     </div>
 
-    <!-- SCREEN SUIVI DES SELLES -->
-    <div class="screen" id="screen-calendar">
-      <div class="cal-header">
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
-          <div class="cal-month-label" id="cal-month-label">Août <span class="cal-year">2026</span></div>
-          <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
-        </div>
-        <div style="font-size:0.7rem;color:var(--text-light);letter-spacing:0.06em">Suivi des selles 🌿</div>
-      </div>
-
-      <div class="cal-scroll">
-        <!-- Jours de la semaine -->
-        <div class="cal-weekdays">
-          <div class="cal-wd">Lun</div>
-          <div class="cal-wd">Mar</div>
-          <div class="cal-wd">Mer</div>
-          <div class="cal-wd">Jeu</div>
-          <div class="cal-wd">Ven</div>
-          <div class="cal-wd">Sam</div>
-          <div class="cal-wd">Dim</div>
-        </div>
-        <!-- Grille dynamique -->
-        <div class="cal-grid" id="cal-grid"></div>
-
-        <!-- Note médicale permanente sous le calendrier -->
-        <div style="background:#fff8f0;border:1.5px solid #f9a82555;border-radius:14px;padding:14px 16px;margin-top:12px;font-size:0.78rem;color:#8a5200;line-height:1.6;">
-          🩺 <strong>À noter :</strong> si tu observes des changements persistants sur plusieurs semaines — douleurs récurrentes, selles très dures ou très liquides de façon durable, ou tout autre symptôme inhabituel — il peut être utile d'en parler à ton médecin. Nara n'est pas un outil de diagnostic : une consultation reste le meilleur moyen d'être accompagnée.
-        </div>
-      </div>
-
-      <!-- Modale log d'un jour -->
-      <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="calHandleOverlay(event)">
-        <div class="cal-modal-card">
-          <div class="cal-modal-handle"></div>
-          <div class="cal-modal-date" id="cal-modal-date"></div>
-
-          <!-- OUI / NON -->
-          <span class="cal-section-label">As-tu eu une selle ce jour ?</span>
-          <div class="cal-yn-row">
-            <div class="cal-yn-btn" id="cal-btn-oui" onclick="calSelectYN('oui')">
-              <span class="yn-emoji">🌿</span>
-              <span class="yn-label">Oui, aujourd'hui</span>
-            </div>
-            <div class="cal-yn-btn" id="cal-btn-non" onclick="calSelectYN('non')">
-              <span class="yn-emoji">💤</span>
-              <span class="yn-label">Non, pas ce jour</span>
-            </div>
-          </div>
-
-          <!-- Section détaillée — visible uniquement si OUI -->
-          <div id="cal-detail-section" style="display:none">
-
-            <!-- ÉCHELLE DE BRISTOL -->
-            <span class="cal-section-label">Consistance — Échelle de Bristol</span>
-            <div class="bristol-grid" id="bristol-grid">
-              <!-- Rendu JS -->
-            </div>
-
-
-            <!-- FRÉQUENCE -->
-            <span class="cal-section-label">Nombre de passages dans la journée</span>
-            <div class="cal-stepper">
-              <button class="cal-stepper-btn" onclick="calStepFreq(-1)">−</button>
-              <div class="cal-stepper-val" id="cal-freq-val">
-                1<span class="cal-stepper-unit">passage</span>
-              </div>
-              <button class="cal-stepper-btn" onclick="calStepFreq(1)">+</button>
-            </div>
-
-            <!-- CONFORT -->
-            <span class="cal-section-label">Confort associé <span style="font-weight:300;text-transform:none;letter-spacing:0">(optionnel, sélection multiple)</span></span>
-            <div class="cal-chips" id="cal-confort-chips">
-              <div class="cal-chip chip-none selected" id="chip-aucun" onclick="calToggleConfort('aucun', this)">✓ Aucun inconfort</div>
-              <div class="cal-chip" id="chip-ballonnements" onclick="calToggleConfort('ballonnements', this)">💨 Ballonnements</div>
-              <div class="cal-chip" id="chip-douleur" onclick="calToggleConfort('douleur', this)">😣 Douleur</div>
-              <div class="cal-chip" id="chip-urgence" onclick="calToggleConfort('urgence', this)">⚡ Urgence</div>
-              <div class="cal-chip" id="chip-incomplete" onclick="calToggleConfort('incomplete', this)">🔄 Évacuation incomplète</div>
-            </div>
-
-            <!-- TIMING -->
-            <span class="cal-section-label">Moment(s) de la journée <span style="font-weight:300;text-transform:none;letter-spacing:0">(multi-sélection)</span></span>
-            <div class="cal-timing-row">
-              <div class="cal-timing-btn" id="timing-matin" onclick="calToggleTiming('matin', this)">
-                <span class="t-icon">🌅</span><span class="t-lbl">Matin</span>
-              </div>
-              <div class="cal-timing-btn" id="timing-apmidi" onclick="calToggleTiming('apmidi', this)">
-                <span class="t-icon">☀️</span><span class="t-lbl">Après-midi</span>
-              </div>
-              <div class="cal-timing-btn" id="timing-repas" onclick="calToggleTiming('repas', this)">
-                <span class="t-icon">🍽️</span><span class="t-lbl">Après repas</span>
-              </div>
-              <div class="cal-timing-btn" id="timing-soir" onclick="calToggleTiming('soir', this)">
-                <span class="t-icon">🌙</span><span class="t-lbl">Soir</span>
-              </div>
-            </div>
-
-
-
-          </div>
-
-          <button class="cal-modal-save" onclick="calSaveDay()">Enregistrer ✓</button>
-          <button class="cal-modal-delete" id="cal-delete-btn" onclick="calDeleteDay()" style="display:none">
-            Supprimer cette entrée
-          </button>
-        </div>
-      </div>
-
-    </div>
-
     <!-- SCREEN PROFIL SANTÉ -->
     <div class="screen" id="screen-profile">
       <div class="profile-header">
-        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="back-btn" onclick="espaceRetourDepuis()">←</div>
         <div class="screen-title">Mon profil santé</div>
         <div id="profile-completion-badge" style="font-size:0.72rem;color:var(--text-light);margin-left:auto"></div>
       </div>
@@ -3667,7 +3699,7 @@ if (typeof supabase === 'undefined') {
           <div class="profile-invite-icon">✅</div>
           <div class="profile-invite-title" style="font-size:1.2rem">Pas de souci</div>
           <div class="profile-later-note">
-            📍 Tu peux accéder à ton Profil Santé à tout moment via le <strong>menu avatar</strong> → <strong>Mon profil santé</strong>.<br><br>
+            📍 Tu peux accéder à ton Profil Santé à tout moment depuis <strong>Mon espace</strong> (la bulle ronde en haut à droite de l'Accueil) → <strong>Mon profil santé</strong>.<br><br>
             Plus tu le complètes, plus Nara pourra distinguer ce qui est "normal pour toi" d'un vrai changement — et plus les insights seront précis et personnalisés.
           </div>
           <button class="profile-invite-btn-primary" onclick="go('home')">Accéder à l'appli →</button>
@@ -3678,11 +3710,96 @@ if (typeof supabase === 'undefined') {
     <!-- SCREEN MES NOUVEAUX SUIVIS -->
     <div class="screen" id="screen-suivis">
       <div class="profile-header">
-        <div class="back-btn" onclick="go('home')">←</div>
+        <div class="back-btn" onclick="espaceRetourDepuis()">←</div>
         <div class="screen-title">Mes nouveaux suivis</div>
       </div>
       <div class="suivis-scroll" id="suivis-scroll">
         <!-- Rendu dynamique par renderSuivis() -->
+      </div>
+    </div>
+
+    <!-- SCREEN MON ESPACE : ouvert par la bulle d'initiale de l'Accueil (une page, pas un menu déroulant) ; pas de barre du bas -->
+    <div class="screen" id="screen-espace">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="go('home')">←</div>
+        <div class="screen-title">Mon espace</div>
+      </div>
+      <div class="espace-scroll" id="espace-scroll">
+        <!-- Carte du compte : initiale, prénom (modifiable), e-mail (affiché seulement, jamais modifié ici) -->
+        <div class="espace-compte" id="espace-compte">
+          <div class="espace-compte-ligne">
+            <div class="espace-rond espace-rond-grand" id="espace-initiale" aria-hidden="true"><span class="espace-lettre"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.6-3.7 3.4-5.8 7.2-5.8s6.6 2.1 7.2 5.8"/></svg></div>
+            <div class="espace-compte-texte">
+              <div class="espace-prenom" id="espace-prenom"></div>
+              <div class="espace-email" id="espace-email"></div>
+            </div>
+            <button type="button" class="espace-modifier" id="espace-modifier" onclick="espaceModifierPrenom()">Modifier ›</button>
+          </div>
+          <div class="espace-attente" id="espace-attente" role="status">Ton nouveau prénom est gardé sur cet appareil. Il sera enregistré dans ton compte dès que la connexion revient.</div>
+          <form class="espace-edition" id="espace-edition" onsubmit="espaceEnregistrerPrenom(event)" novalidate>
+            <label class="espace-label" for="espace-prenom-champ">Ton prénom</label>
+            <input class="espace-champ" id="espace-prenom-champ" type="text" maxlength="40" autocomplete="given-name" autocapitalize="words" enterkeyhint="done" placeholder="Ton prénom">
+            <div class="espace-msg" id="espace-msg" role="alert"></div>
+            <div class="espace-btns">
+              <button type="button" class="espace-btn espace-btn-sec" onclick="espaceAnnulerPrenom()">Annuler</button>
+              <button type="submit" class="espace-btn">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="espace-groupe-titre">Ma santé</div>
+        <div class="espace-groupe">
+          <button type="button" class="espace-ligne" onclick="espaceAller('profile')">
+            <span class="espace-ligne-ico">🧬</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Mon profil santé</span><span class="espace-ligne-desc">Ta situation de base</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+          <button type="button" class="espace-ligne" onclick="openCycleModal()">
+            <span class="espace-ligne-ico">🌸</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Mon cycle</span><span class="espace-ligne-desc">Suivi du cycle</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+          <button type="button" class="espace-ligne" onclick="espaceAller('suivis')">
+            <span class="espace-ligne-ico">📋</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Mes nouveaux suivis</span><span class="espace-ligne-desc">Suivis et traitements</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+        </div>
+
+        <div class="espace-groupe-titre">Mes données</div>
+        <div class="espace-groupe">
+          <button type="button" class="espace-ligne" onclick="espaceAller('donnees')">
+            <span class="espace-ligne-ico">🔒</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Confidentialité et données</span><span class="espace-ligne-desc">Tes données et ton compte</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+        </div>
+
+        <button type="button" class="espace-sortie" onclick="handleLogout()">Se déconnecter</button>
+        <!-- Mention de version, tout en bas (appui long : diagnostic d'affichage caché) -->
+        <div class="app-version" id="app-version"></div>
+      </div>
+    </div>
+
+    <!-- SCREEN CONFIDENTIALITÉ ET DONNÉES : page simple ; les deux actions arrivent bientôt (non cliquables) -->
+    <div class="screen" id="screen-donnees">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="espaceRetourDepuis()">←</div>
+        <div class="screen-title">Confidentialité et données</div>
+      </div>
+      <div class="espace-scroll" id="donnees-scroll">
+        <div class="espace-groupe">
+          <div class="espace-ligne espace-ligne-off" aria-disabled="true">
+            <span class="espace-ligne-ico">📤</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Exporter mes données</span><span class="espace-ligne-desc">Recevoir une copie de ce que tu as noté</span></span>
+            <span class="espace-bientot">bientôt</span>
+          </div>
+          <div class="espace-ligne espace-ligne-off" aria-disabled="true">
+            <span class="espace-ligne-ico">🗑️</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Supprimer mon compte</span><span class="espace-ligne-desc">Effacer ton compte et tes données</span></span>
+            <span class="espace-bientot">bientôt</span>
+          </div>
+        </div>
       </div>
     </div>
   </div><!-- fin de #stage : tous les écrans sont à l'intérieur -->
@@ -3810,11 +3927,11 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '23/11 · 13 h 29';   // date et heure (Paris) de la livraison, affichée en bas du profil
+const APP_VERSION = '23/11 · 15 h 23';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
-// ══ DIAGNOSTIC D'AFFICHAGE (caché) : appui long (environ 1 seconde) sur « Version du … », tout en bas du profil ═══════════════
+// ══ DIAGNOSTIC D'AFFICHAGE (caché) : appui long (environ 1 seconde) sur « Version du … », tout en bas de « Mon espace » ═══════════════
 // Sert à voir, sur l'iPhone lui-même, ce que l'écran mesure réellement (barre du bas remontée, bande colorée en bas de page).
 // Lecture seule : il ne change rien à l'affichage, n'écrit ni dans le stockage de l'appareil ni dans Supabase, n'envoie rien sur le réseau.
 // Le texte reste sur l'appareil jusqu'à ce qu'on appuie sur « Copier le texte » et qu'on le colle soi-même.
@@ -4146,39 +4263,151 @@ function clearAuthMsgs(screen) {
 // auth badge removed (native app mode)
 function updateAuthBadge(user) {}
 
-// Le prénom que la personne a SAISI à l'inscription (jamais déduit de son adresse e-mail) ; sinon une chaîne vide
+// ══════════════════════════════════════════════════════════════════════════════
+// PRÉNOM ET « MON ESPACE » (prompt 11, livraison B)
+// Le prénom vient du compte (user_metadata.prenom, saisi à l'inscription) et se modifie à tout moment dans « Mon espace ».
+// Un nouveau prénom est d'abord gardé sur l'appareil (clé nara_prenom_attente), puis envoyé au compte (sb.auth.updateUser). Ce n'est pas une donnée de table : aucun syncMark…, aucun syncUpsert.
+// Tant qu'il n'est pas parti (hors ligne, serveur injoignable), c'est lui qui s'affiche ; il repart au retour du réseau, au retour dans l'app et à chaque session connue.
+// L'adresse e-mail s'affiche seulement : elle ne se modifie pas ici. Aucun numéro de téléphone.
+// ══════════════════════════════════════════════════════════════════════════════
+const PRENOM_ATTENTE_CLE = 'nara_prenom_attente';    // { uid, prenom } : nouveau prénom pas encore enregistré dans le compte (effacé avec le reste des données Nara à la déconnexion)
+let _prenomEnvoi = null;       // envoi en cours (un seul à la fois)
+let espaceRetour = false;      // une page (profil santé, nouveaux suivis, confidentialité) vient d'être ouverte depuis « Mon espace » : sa flèche retour y ramène
+
+function prenomAttenteLire() {
+  try {
+    const r = JSON.parse(localStorage.getItem(PRENOM_ATTENTE_CLE) || 'null');
+    return r && typeof r.prenom === 'string' && typeof r.uid === 'string' ? r : null;
+  } catch (e) { return null; }
+}
+function prenomAttenteEcrire(uid, prenom) { try { localStorage.setItem(PRENOM_ATTENTE_CLE, JSON.stringify({ uid: uid, prenom: prenom })); } catch (e) {} }
+function prenomAttenteEffacer() { try { localStorage.removeItem(PRENOM_ATTENTE_CLE); } catch (e) {} }
+
+// Le prénom que la personne a SAISI (jamais déduit de son adresse e-mail) ; sinon une chaîne vide.
+// Un nouveau prénom pas encore enregistré dans le compte (hors ligne…) l'emporte sur celui du compte, tant qu'il n'est pas parti.
 function userPrenom(user) {
+  const att = prenomAttenteLire();
+  if (att && user && att.uid === user.id) return att.prenom.trim();
   const p = user && user.user_metadata && user.user_metadata.prenom;
   return typeof p === 'string' ? p.trim() : '';
+}
+// Prénom tel qu'il s'affiche : première lettre en capitale (« léa » → « Léa »), le reste inchangé
+function prenomAffiche(prenom) {
+  const c = Array.from(prenom || '');
+  return c.length ? c[0].toLocaleUpperCase('fr') + c.slice(1).join('') : '';
 }
 
 function updateHomeUser(user) {
   if (!user) return;
   // Un AUTRE compte sur le même appareil : le local de l'ancien compte est nettoyé avant tout chargement
   try { syncEnsureOwner(user.id); } catch (e) { console.warn('[Nara] syncEnsureOwner:', e); }
-  const prenom = userPrenom(user);
-  const capitalized = prenom.charAt(0).toUpperCase() + prenom.slice(1);
-  // Sans prénom saisi : « Bonjour ✨ » à l'Accueil et aucun nom dans le menu
-  document.getElementById('home-hello').style.display = capitalized ? '' : 'none';
-  document.getElementById('home-user-name').textContent = capitalized || 'Bonjour';
-  const nomMenu = document.getElementById('dropdown-name');
-  nomMenu.textContent = capitalized;
-  nomMenu.style.display = capitalized ? '' : 'none';
-  document.getElementById('dropdown-email').textContent = user.email;
+  const prenom = prenomAffiche(userPrenom(user));
+  // Sans prénom saisi : « Bonjour ✨ » à l'Accueil, et la bulle montre une silhouette à la place de l'initiale
+  document.getElementById('home-hello').style.display = prenom ? '' : 'none';
+  document.getElementById('home-user-name').textContent = prenom || 'Bonjour';
+  espaceMajCompte(user);
+  if (prenomAttenteLire() && !_prenomEnvoi) setTimeout(prenomEnvoyer, 0);      // un nouveau prénom resté en attente repart dès qu'une session est connue
 }
 
-function toggleUserMenu() {
-  document.getElementById('user-dropdown').classList.toggle('open');
+// Envoie au compte le nouveau prénom gardé sur l'appareil. Renvoie true s'il est parti (ou s'il n'y avait rien à envoyer), false sinon : il reste gardé pour un prochain essai.
+async function prenomEnvoyer() {
+  if (_prenomEnvoi) return _prenomEnvoi;
+  _prenomEnvoi = (async () => {
+    try {
+      for (let tour = 0; tour < 3; tour++) {          // si un autre prénom a été enregistré pendant l'envoi, il part au tour suivant
+        const att = prenomAttenteLire();
+        if (!att) return true;
+        if (!sb || !currentUser || currentUser.id !== att.uid) return false;
+        const res = await withTimeout(sb.auth.updateUser({ data: { prenom: att.prenom } }), 12000, 'enregistrement du prénom');
+        if (res.error) throw res.error;
+        const encore = prenomAttenteLire();
+        if (encore && encore.uid === att.uid && encore.prenom === att.prenom) prenomAttenteEffacer();    // parti : le compte porte maintenant ce prénom
+        if (currentUser && currentUser.id === att.uid) {
+          const u = res.data && res.data.user;
+          currentUser = (u && u.id === att.uid) ? u : Object.assign({}, currentUser, { user_metadata: Object.assign({}, currentUser.user_metadata || {}, { prenom: att.prenom }) });
+          updateHomeUser(currentUser);
+        }
+      }
+      return !prenomAttenteLire();
+    } catch (e) {
+      console.warn('[Nara] prénom pas encore enregistré dans le compte :', e && e.message || e);
+      espaceMajCompte(currentUser);
+      return false;
+    } finally { _prenomEnvoi = null; }
+  })();
+  return _prenomEnvoi;
+}
+window.addEventListener('online', () => { if (prenomAttenteLire()) prenomEnvoyer(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && prenomAttenteLire()) prenomEnvoyer(); });
+
+// Avant une déconnexion : un nouveau prénom pas encore parti est envoyé une dernière fois (3 s au plus) ; s'il n'a pas pu partir, la personne choisit (il serait effacé de cet appareil)
+async function prenomConfirmerDepart() {
+  if (!prenomAttenteLire()) return true;
+  await Promise.race([prenomEnvoyer(), new Promise(resolve => setTimeout(resolve, 3000))]);
+  if (!prenomAttenteLire()) return true;
+  return window.confirm('Ton nouveau prénom n\'a pas encore pu être enregistré en ligne.\n\nSi tu te déconnectes maintenant, il sera perdu.\n\nSe déconnecter quand même ?');
 }
 
-// Ferme le menu si clic ailleurs
-document.addEventListener('click', (e) => {
-  const menu = document.getElementById('user-dropdown');
-  const btn = document.getElementById('user-menu-btn');
-  if (menu && !menu.contains(e.target) && e.target !== btn) {
-    menu.classList.remove('open');
-  }
-});
+// ── Mon espace ──
+// Bulle de l'Accueil et carte du compte : initiale (ou silhouette sans prénom), prénom, e-mail (affiché seulement), note « pas encore envoyé »
+function espaceMajCompte(user) {
+  const prenom = user ? prenomAffiche(userPrenom(user)) : '';
+  const ini = prenom ? Array.from(prenom)[0] : '';
+  ['espace-bulle', 'espace-initiale'].forEach(id => {
+    const r = document.getElementById(id);
+    if (!r) return;
+    r.classList.toggle('avec-prenom', !!ini);
+    const l = r.querySelector('.espace-lettre');
+    if (l) l.textContent = ini;
+  });
+  const nom = document.getElementById('espace-prenom'), mail = document.getElementById('espace-email'), btn = document.getElementById('espace-modifier'), att = document.getElementById('espace-attente');
+  if (nom) { nom.textContent = prenom || 'Ajoute ton prénom'; nom.classList.toggle('vide', !prenom); }
+  if (mail) mail.textContent = (user && user.email) || '';
+  if (btn) btn.textContent = prenom ? 'Modifier ›' : 'Ajouter ›';
+  const a = user ? prenomAttenteLire() : null;
+  if (att) att.classList.toggle('on', !!(a && a.uid === user.id));
+}
+function renderEspace() {
+  const v = document.getElementById('app-version');
+  if (v) v.textContent = 'Version du ' + APP_VERSION;
+  espaceAnnulerPrenom();
+  espaceMajCompte(currentUser);
+}
+function espaceModifierPrenom() {
+  if (!currentUser) return;
+  const carte = document.getElementById('espace-compte'), champ = document.getElementById('espace-prenom-champ'), msg = document.getElementById('espace-msg');
+  if (!carte || !champ) return;
+  champ.value = userPrenom(currentUser);
+  if (msg) msg.textContent = '';
+  carte.classList.add('edit');
+  champ.focus();
+  try { champ.setSelectionRange(champ.value.length, champ.value.length); } catch (e) {}
+}
+function espaceAnnulerPrenom() {
+  const carte = document.getElementById('espace-compte'), champ = document.getElementById('espace-prenom-champ'), msg = document.getElementById('espace-msg');
+  if (carte) carte.classList.remove('edit');
+  if (msg) msg.textContent = '';
+  if (champ && document.activeElement === champ) champ.blur();
+}
+async function espaceEnregistrerPrenom(ev) {
+  if (ev && ev.preventDefault) ev.preventDefault();
+  if (!currentUser) return;
+  const champ = document.getElementById('espace-prenom-champ'), msg = document.getElementById('espace-msg');
+  const v = (champ.value || '').replace(/\s+/g, ' ').trim();
+  if (!v) { msg.textContent = 'Écris ton prénom pour l’enregistrer.'; champ.focus(); return; }
+  if (v === userPrenom(currentUser)) { espaceAnnulerPrenom(); return; }          // rien à changer
+  prenomAttenteEcrire(currentUser.id, v);          // d'abord sur l'appareil…
+  updateHomeUser(currentUser);                     // …affiché tout de suite (« Bonjour », bulle, carte)…
+  espaceAnnulerPrenom();
+  const parti = await prenomEnvoyer();             // …puis enregistré dans le compte
+  showToast(parti ? 'Prénom enregistré ✓' : 'Prénom gardé sur l’appareil');
+}
+// Les lignes de « Mon espace » : la flèche retour de la page ouverte ramène ici
+function espaceAller(id) {
+  espaceRetour = true;
+  if (id === 'profile') openProfileFromMenu(); else go(id);
+}
+function espaceRetourDepuis() { go(espaceRetour ? 'espace' : 'home'); }
 
 // ===== INSCRIPTION =====
 async function handleSignup() {
@@ -4272,17 +4501,16 @@ async function handleLogin() {
 let _userRequestedLogout = false;
 
 async function handleLogout() {
-  document.getElementById('user-dropdown').classList.remove('open');
   // Avant de partir : envoyer ce qui reste ; si des données ne peuvent pas partir, le dire (elles seraient effacées de cet appareil)
   if (!(await syncConfirmLogout())) return;
+  if (!(await prenomConfirmerDepart())) return;      // idem pour un nouveau prénom pas encore enregistré dans le compte
   _userRequestedLogout = true; // AVANT signOut pour que onAuthStateChange le voie
   currentUser = null;
   syncOnLogout();
   clearLocalCache();           // Nettoyer les données Nara (pas les tokens auth)
   await sb.auth.signOut();     // signOut efface lui-même les tokens sb-*
   document.getElementById('home-user-name').textContent = '—';
-  document.getElementById('dropdown-name').textContent = '—';
-  document.getElementById('dropdown-email').textContent = '';
+  espaceMajCompte(null);        // « Mon espace » ne garde rien de la personne qui part
   go('onboarding');
 }
 
@@ -4795,15 +5023,16 @@ let artRetourRecette = null;            // { id, sub, haut } quand un article es
 
 // ===== NAV =====
 // Écrans qui montrent la barre du bas (la barre est unique : #bnav). Les pages de détail, le profil, les suivis et la connexion n'en ont pas.
-const MAIN_SCREENS = ['home','journal','insights','library','routines','gallery','calendar'];
+const MAIN_SCREENS = ['home','journal','insights','library','routines','gallery'];
 // Map screen → which bnav item is "active"
 const BNAV_MAP = {
   home: 'home', journal: 'journal', insights: 'insights',
   library: 'library', routines: 'routines',
   'recipe-detail': 'library',            // « recipes » n'est plus un écran : c'est la vue « Recettes » de la Bibliothèque (voir showScreen)
   'article-detail': 'library', 'routine-detail': 'routines',
-  calendar: null,
   gallery: null,
+  espace: null,
+  donnees: null,
   profile: null,
   'profile-invite': null,
   'profile-later': null,
@@ -4842,6 +5071,7 @@ function showScreen(id, btn) {
   if (id === 'recipes') { libVueCourante = 'recettes'; id = 'library'; }   // l'ancien écran « Recettes » est la vue « Recettes » de la Bibliothèque : go('recipes') y mène toujours
   if (id !== 'recipe-detail' && id !== 'article-detail' && !_routNav) routRetourVers = null;   // la mémoire « je viens d'une routine » ne survit qu'aux écrans ouverts depuis une routine
   if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
+  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
   _routNav = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -4860,6 +5090,7 @@ function showScreen(id, btn) {
   if (id === 'home') try { updateHomeScore(); } catch(e) { console.warn("[Nara] updateHomeScore:", e); }
   if (id === 'insights') renderInsightsPage();
   if (id === 'journal') {
+    jrnVueCourante = 'aujourdhui';       // on arrive toujours sur « Aujourd'hui » ; « Calendrier » se choisit dans le Journal
     try {
       renderJournal();
     } catch(e) {
@@ -4871,7 +5102,8 @@ function showScreen(id, btn) {
         (e.stack||'').split("\n").slice(0,5).join('<br>') + '</div>';
     }
   }
-  if (id === 'calendar') try { renderCalendar(); } catch(e) { console.warn('[Nara] renderCalendar:', e); }
+  if (id === 'journal') jrnAfficherVue();
+  if (id === 'espace') try { renderEspace(); } catch(e) { console.warn('[Nara] renderEspace:', e); }
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
   if (id === 'suivis') try { renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
   if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
@@ -7697,6 +7929,26 @@ const JRN_SECTIONS = [
 ];
 let jrnCurrentSlide = 0; // slide actif
 
+// Deux vues dans le Journal : « Aujourd'hui » (le journal du jour, inchangé) et « Calendrier » (le calendrier du transit, ancienne page « Suivi des selles »)
+let jrnVueCourante = 'aujourdhui';       // 'aujourdhui' ou 'calendrier'
+function jrnAfficherVue() {
+  const cal = jrnVueCourante === 'calendrier';
+  const pj = document.getElementById('journal-scroll'), pc = document.getElementById('jrn-pane-calendrier');
+  const bj = document.getElementById('jrn-vue-aujourdhui'), bc = document.getElementById('jrn-vue-calendrier');
+  if (!pj || !pc || !bj || !bc) return;
+  pj.classList.toggle('on', !cal); pc.classList.toggle('on', cal);
+  bj.classList.toggle('active', !cal); bc.classList.toggle('active', cal);
+  bj.setAttribute('aria-selected', String(!cal)); bc.setAttribute('aria-selected', String(cal));
+}
+function jrnChoisirVue(v) {
+  jrnVueCourante = v === 'calendrier' ? 'calendrier' : 'aujourdhui';
+  jrnAfficherVue();
+  if (jrnVueCourante === 'calendrier') {
+    try { renderCalendar(); } catch (e) { console.warn('[Nara] renderCalendar:', e); }
+    const d = document.querySelector('#jrn-pane-calendrier .cal-scroll'); if (d) d.scrollTop = 0;
+  }
+}
+
 function renderJournal() {
   const container = document.getElementById('journal-scroll');
   if (!container) return;
@@ -7978,6 +8230,7 @@ function jrnHandleScroll(track) {
   clearTimeout(jrnScrollTimeout);
   jrnScrollTimeout = setTimeout(() => {
     const slideW  = track.offsetWidth;
+    if (!slideW) return;       // journal masqué (vue « Calendrier ») : rien à mesurer
     const newIdx  = Math.round(track.scrollLeft / slideW);
     if (newIdx !== jrnCurrentSlide) {
       jrnAutoSaveSection(jrnCurrentSlide); // auto-save avant de changer
@@ -13484,10 +13737,10 @@ function syncRefreshUI(res) {
     } else if (id === 'routines') renderRoutines();
     else if (id === 'routine-detail') routRafraichirDetail();
     else if (id === 'suivis') renderSuivis();
-    else if (id === 'calendar') renderCalendar();
     else if (id === 'gallery') renderGallery();
     else if (id === 'insights') renderInsightsPage();
     else if (id === 'profile' && profileOpenSection === null) renderProfile();
+    if (id === 'journal' && jrnVueCourante === 'calendrier') renderCalendar();    // le calendrier du transit est la vue « Calendrier » du Journal : il suit lui aussi la lecture
   } catch (e) { console.warn('[Nara] rafraîchissement après lecture:', e && e.message || e); }
   const p = profileLoad();
   if (p && p.rgpdConsent) { const ov = document.getElementById('profile-consent-overlay'); if (ov) ov.classList.remove('open'); }
@@ -13910,7 +14163,6 @@ function renderProfile() {
       </div>`;
   });
 
-  html += `<div class="app-version" id="app-version">Version du ${APP_VERSION}</div>`;
   scroll.innerHTML = html;
 }
 
@@ -15371,14 +15623,6 @@ function cycleResetModule() {
   showToast('Module cycle réinitialisé');
   const jrn = document.getElementById('screen-journal');
   if (jrn && jrn.classList.contains('active')) renderJournal();
-}
-
-// ── Accès rapide depuis l'accueil ─────────────────────────────────────────────
-// Bouton paramètres cycle dans le header home — appelé depuis le menu avatar
-function openCycleFromMenu() {
-  const dd = document.getElementById('user-dropdown');
-  if (dd) dd.classList.remove('open');
-  openCycleModal();
 }
 
 // ── Corrélation cycle × données journal (pour les insights) ──────────────────

@@ -874,13 +874,15 @@ if (typeof supabase === 'undefined') {
   #screen-library { background: var(--cream); }
   .lib-header { padding: 16px clamp(16px, 6vw, 28px) 0; }
   /* Deux vues dans la Bibliothèque : Articles | Recettes */
-  .lib-vues { display: flex; gap: 4px; flex-shrink: 0; margin: 12px clamp(16px, 6vw, 28px) 0; padding: 4px; background: var(--honey); border-radius: 16px; }
+  /* Sélecteur à deux segments, le même partout (Journal, Bibliothèque, Mes nouveaux suivis) : fond avocat #C2C395 ; segment actif crème #FFFAF2, texte #4f5140 en gras ; segment inactif texte #5d6b3e */
+  .lib-vues { display: flex; gap: 4px; flex-shrink: 0; margin: 12px clamp(16px, 6vw, 28px) 0; padding: 4px; background: var(--avocado); border-radius: 16px; }
   .lib-vue {
-    flex: 1; min-height: 44px; padding: 0 8px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: transparent; color: var(--text-mid);
+    flex: 1; min-height: 44px; padding: 0 8px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: transparent; color: #5d6b3e;
     font-family: 'DM Sans', sans-serif; font-size: 0.8rem; cursor: pointer; -webkit-appearance: none; appearance: none;
     -webkit-tap-highlight-color: transparent; transition: background 0.2s, color 0.2s;
   }
-  .lib-vue.active { background: white; color: var(--text-dark); font-weight: 500; box-shadow: 0 1px 4px rgba(61, 58, 48, 0.12); }
+  .lib-vue.active { background: #FFFAF2; color: #4f5140; font-weight: 700; box-shadow: 0 1px 4px rgba(61, 58, 48, 0.12); }
+  #suivis-vues { margin-left: clamp(12px, 4vw, 20px); margin-right: clamp(12px, 4vw, 20px); }   /* aligné sur les cartes de « Mes nouveaux suivis » */
   .lib-pane { display: none; flex: 1; min-height: 0; flex-direction: column; }
   .lib-pane.on { display: flex; }
   .lib-tabs-wrap { padding: 14px clamp(16px, 6vw, 28px) 0; }
@@ -1317,20 +1319,22 @@ if (typeof supabase === 'undefined') {
   }
   .jrn-date-nav-btn {
     width: 34px; height: 34px; border-radius: 50%;
-    background: white; border: 1.5px solid var(--oat);
-    font-size: 1rem; cursor: pointer; color: var(--text-mid);
+    background: white; border: 1.5px solid var(--blush);
+    font-size: 1rem; cursor: pointer; color: #7d4f57;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: all 0.15s;
     -webkit-tap-highlight-color: transparent;
   }
   .jrn-date-nav-btn:active { background: var(--honey); }
   .jrn-date-nav-btn:disabled { opacity: 0.3; pointer-events: none; }
+  /* Bouton « 📸 Galerie » de l'en-tête du Journal : mêmes mesures qu'avant, couleurs Nara (fond blush beet, texte #5f3b3e) */
+  .jrn-galerie-btn { background: var(--blush); border: 1.5px solid var(--blush); border-radius: 12px; padding: 6px 12px; font-size: 0.72rem; color: #5f3b3e; cursor: pointer; font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
   .jrn-date-chip-wrap { flex: 1; text-align: center; }
   .jrn-date-chip {
     display: inline-flex; align-items: center; gap: 6px;
-    background: var(--honey); border: 1px solid var(--oat);
+    background: var(--peach); border: 1px solid var(--peach);
     border-radius: 20px; padding: 6px 14px;
-    font-size: 0.78rem; color: var(--text-mid);
+    font-size: 0.78rem; color: #7d4f57;
     cursor: pointer; -webkit-tap-highlight-color: transparent;
   }
   .jrn-date-chip.past-day {
@@ -1370,7 +1374,7 @@ if (typeof supabase === 'undefined') {
   }
   .jrn-progress-fill {
     height: 100%; border-radius: 2px;
-    background: var(--sage); transition: width 0.4s cubic-bezier(.4,0,.2,1);
+    background: var(--avocado); transition: width 0.4s cubic-bezier(.4,0,.2,1);
   }
   .jrn-progress-label {
     font-size: 0.7rem; color: var(--text-light);
@@ -1813,7 +1817,7 @@ if (typeof supabase === 'undefined') {
     margin-bottom: 10px; border: 1.5px solid var(--oat); position: relative;
   }
   .suivi-card-header {
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px;
     margin-bottom: 8px;
   }
   .suivi-card-date {
@@ -1822,7 +1826,7 @@ if (typeof supabase === 'undefined') {
     flex-shrink: 0;
   }
   .suivi-card-type {
-    font-size: 0.82rem; font-weight: 500; color: var(--text-dark); flex: 1;
+    font-size: 0.82rem; font-weight: 500; color: var(--text-dark); flex: 1 1 160px;
   }
   .suivi-card-tags {
     display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px;
@@ -1836,7 +1840,7 @@ if (typeof supabase === 'undefined') {
     margin-top: 4px;
   }
   .suivi-card-actions {
-    display: flex; gap: 8px; margin-top: 10px;
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
   }
   .suivi-card-btn {
     font-size: 0.72rem; padding: 5px 12px; border-radius: 10px;
@@ -1845,6 +1849,17 @@ if (typeof supabase === 'undefined') {
     -webkit-tap-highlight-color: transparent;
   }
   .suivi-card-btn.danger { border-color: #fca5a5; color: #dc2626; }
+  /* Statut d'un suivi : pastille « En cours » (fond #C2C395, texte #4f5140) ou « Terminé » (fond #DCD4C1, texte #6b6655), à côté de la date */
+  .suivi-card-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .suivi-card-statut { font-size: 0.68rem; line-height: 1.3; font-weight: 500; padding: 2px 9px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+  .suivi-card-statut.encours { background: #C2C395; color: #4f5140; }
+  .suivi-card-statut.termine { background: #DCD4C1; color: #6b6655; }
+  .suivi-card-periode { font-size: 0.75rem; color: var(--text-mid); margin-bottom: 6px; }
+  /* « Marquer comme terminé » : choix de la date de fin (facultative) dans la carte */
+  .suivi-fin { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--oat); }
+  .suivi-fin .suivi-form-label { margin-top: 0; }
+  .suivi-fin-opt { text-transform: none; letter-spacing: 0; }
+  .suivi-fin-sans { display: block; width: 100%; margin-top: 8px; padding: 8px; background: none; border: 0; color: var(--text-mid); font-family: 'DM Sans', sans-serif; font-size: 0.75rem; text-decoration: underline; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
   /* Formulaire ajout/édition */
   .suivi-form {
@@ -3257,7 +3272,7 @@ if (typeof supabase === 'undefined') {
       <div class="screen-header" id="jrn-screen-header">
         <div class="back-btn" onclick="routRetour('home')">←</div>
         <div class="screen-title">Mon journal</div>
-        <button onclick="go('gallery')" style="background:var(--honey);border:1.5px solid var(--oat);border-radius:12px;padding:6px 12px;font-size:0.72rem;color:var(--text-mid);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Galerie</button>
+        <button class="jrn-galerie-btn" onclick="go('gallery')">📸 Galerie</button>
       </div>
       <div class="lib-vues" id="jrn-vues" role="tablist" aria-label="Journal du jour ou calendrier du transit">
         <button type="button" class="lib-vue active" id="jrn-vue-aujourdhui" role="tab" aria-selected="true" onclick="jrnChoisirVue('aujourdhui')">📝 Aujourd'hui</button>
@@ -3609,6 +3624,10 @@ if (typeof supabase === 'undefined') {
         <div class="back-btn" onclick="espaceRetourDepuis()">←</div>
         <div class="screen-title">Mes nouveaux suivis</div>
       </div>
+      <div class="lib-vues" id="suivis-vues" role="tablist" aria-label="Suivis en cours ou terminés">
+        <button type="button" class="lib-vue active" id="suivis-vue-encours" role="tab" aria-selected="true" onclick="suivisChoisirVue('encours')">En cours</button>
+        <button type="button" class="lib-vue" id="suivis-vue-termines" role="tab" aria-selected="false" onclick="suivisChoisirVue('termines')">Terminés</button>
+      </div>
       <div class="suivis-scroll" id="suivis-scroll">
         <!-- Rendu dynamique par renderSuivis() -->
       </div>
@@ -3823,7 +3842,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '23/11 · 20 h 31';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '24/11 · 17 h 40';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -5251,7 +5270,7 @@ function showScreen(id, btn) {
   if (id === 'journal') jrnAfficherVue();
   if (id === 'espace') try { renderEspace(); } catch(e) { console.warn('[Nara] renderEspace:', e); }
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
-  if (id === 'suivis') try { renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
+  if (id === 'suivis') try { suivisVueCourante = 'encours'; _suiviFin = null; renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
   if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
@@ -7129,6 +7148,9 @@ function routRetour(defaut) {
   } else if (vers === 'home') {                                  // ouvert depuis l'Accueil (suggestion, tâche de routine) : retour à l'Accueil, au même endroit de la page
     go('home');
     requestAnimationFrame(() => { const s = document.getElementById('home-scroll'); if (s) s.scrollTop = haut; });
+  } else if (vers === 'gallery') {                               // ouvert depuis la galerie (« Voir le journal de ce jour ») : retour à la galerie, rouverte sur la photo consultée
+    jrnCurrentDate = null; jrnCurrentSlide = 0;                  // le Journal rouvert plus tard repart d'aujourd'hui (pas du jour consulté depuis la galerie)
+    go('gallery');
   } else go(defaut);
 }
 function routOuvrirRecette(id) {
@@ -13933,6 +13955,8 @@ window.addEventListener('pagehide', () => { syncFlushSoon(true); });
 // GALERIE PEAU — historique des photos avec accordéon par date
 // ══════════════════════════════════════════════════════════════════════════════
 
+let galRetourDate = null;     // jour de la photo dont on a ouvert le journal : la galerie rouvre cette photo au retour (vide ensuite)
+
 function renderGallery() {
   const scroll = document.getElementById('gallery-scroll');
   const countEl = document.getElementById('gallery-count');
@@ -14060,10 +14084,16 @@ function renderGallery() {
 
   scroll.innerHTML = html;
 
-  // Ouvrir automatiquement le premier accordéon (photo la plus récente)
+  // Ouvrir automatiquement un accordéon : la photo dont on revient d'ouvrir le journal (flèche retour du Journal), sinon la plus récente
   if (history.length > 0) {
-    const firstId = `gal-${history[0].date.replace(/-/g,'_')}`;
-    setTimeout(() => toggleGalleryDay(firstId), 100);
+    const retour = galRetourDate && history.some(p => p.date === galRetourDate) ? galRetourDate : '';
+    galRetourDate = null;
+    const firstId = `gal-${(retour || history[0].date).replace(/-/g,'_')}`;
+    setTimeout(() => {
+      toggleGalleryDay(firstId);
+      const hdr = document.getElementById('hdr-' + firstId);
+      if (retour && hdr && scroll.isConnected) scroll.scrollTop += hdr.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 8;   // la photo consultée remonte en haut de la liste
+    }, 100);
   }
 }
 
@@ -14106,15 +14136,20 @@ function closeGalleryFullscreen() {
   if (fs) fs.classList.remove('open');
 }
 
-// Naviguer vers le journal d'un jour passé (info seulement)
+// Naviguer vers le journal du jour de la photo : le Journal s'ouvre sur CE jour (la navigation par date existante : jrnCurrentDate, null = aujourd'hui),
+// et sa flèche retour ramène à la galerie. Mêmes limites que le Journal : jamais dans le futur, 30 jours en arrière au plus.
+function galerieMemoriserRetour(date) {
+  galRetourDate = date; routRetourVers = 'gallery'; _routNav = true;      // comme homeMemoriserRetour() / routMemoriserRetour()
+}
 function galleryGoToJournal(dateStr) {
-  const today = getTodayStr();
-  if (dateStr === today) {
-    go('journal');
-  } else {
-    showToast(`Journal du ${dateStr.split('-').reverse().join('/')}`);
-    go('journal');
-  }
+  const auj = getTodayStr();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '')) return;
+  if (dateStr > auj) { showToast("Ce jour n'est pas encore arrivé"); return; }
+  if (routEcart(dateStr, auj) > 30) { showToast('Le journal se remplit sur les 30 derniers jours'); return; }
+  jrnCurrentDate = dateStr === auj ? null : dateStr;
+  jrnCurrentSlide = 0;
+  galerieMemoriserRetour(dateStr);
+  go('journal');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -14679,12 +14714,14 @@ function suivisLoad() {
 function suivisSave(list) {
   // Chaque suivi a un identifiant stable et une date de dernière modification ; ceux qui disparaissent de la liste
   // sont enregistrés comme supprimés (les autres appareils les retirent aussi).
+  // Passer en « terminé » (ou en sortir), ou changer la date de fin, compte aussi comme une modification : la plus récente gagne à la fusion.
   const prev = {}, now = new Date().toISOString();
+  const etat = x => x.statut === 'termine' ? 'termine|' + (x.dateFin || '') : 'en_cours';     // statut absent = en cours
   suivisLoad().forEach(e => { prev[e.id] = e; });
   list.forEach(e => {
     e.id = syncSuiviId(e);
     const p = prev[e.id];
-    if (!p || syncCanon(syncSuiviCore(p), false) !== syncCanon(syncSuiviCore(e), false)) e.updatedAt = now;
+    if (!p || syncCanon(syncSuiviCore(p), false) !== syncCanon(syncSuiviCore(e), false) || etat(p) !== etat(e)) e.updatedAt = now;
     else if (!e.updatedAt && p.updatedAt) e.updatedAt = p.updatedAt;
     delete prev[e.id];
   });
@@ -14723,19 +14760,46 @@ function suivisSetDate(v) {
   if (h) h.style.display = v ? 'none' : '';
 }
 
+// ── Statut d'un suivi : « En cours » (par défaut, y compris pour tous les suivis créés avant cette version) ou « Terminé » (+ date de fin facultative) ──
+// Le statut et la date de fin sont des champs du suivi lui-même : ils partent avec lui dans la même ligne « suivis » de Supabase (aucune colonne en plus).
+let suivisVueCourante = 'encours';       // vue affichée : 'encours' ou 'termines' (on arrive toujours sur « En cours »)
+let _suiviFin = null;                    // { id, date } : suivi dont la date de fin est en cours de choix (« Marquer comme terminé »)
+function suivisEstTermine(e) { return !!e && e.statut === 'termine'; }
+function suivisAfficherVue() {
+  const t = suivisVueCourante === 'termines';
+  const bc = document.getElementById('suivis-vue-encours'), bt = document.getElementById('suivis-vue-termines');
+  if (!bc || !bt) return;
+  bc.classList.toggle('active', !t); bt.classList.toggle('active', t);
+  bc.setAttribute('aria-selected', String(!t)); bt.setAttribute('aria-selected', String(t));
+}
+function suivisChoisirVue(v) {
+  suivisVueCourante = v === 'termines' ? 'termines' : 'encours';
+  _suiviFin = null;
+  renderSuivis();
+  const sc = document.getElementById('suivis-scroll'); if (sc) sc.scrollTop = 0;
+}
+// « Du 3 novembre 2026 au 20 novembre 2026 » (ancien suivi daté au mois : « De novembre 2026 au … ») ; sans date de fin : « Commencé le … · date de fin non précisée »
+function suivisPeriodeLabel(e) {
+  const mois = !!e.date && e.date.length === 7, debut = suivisDateLabel(e.date);
+  if (!e.dateFin) return (mois ? 'Commencé en ' : 'Commencé le ') + debut + ' · date de fin non précisée';
+  return (mois ? 'De ' : 'Du ') + debut + ' au ' + suivisDateLabel(e.dateFin);
+}
+function suivisDebutJour(e) { return e.date && e.date.length === 7 ? e.date + '-01' : (e.date || ''); }   // un suivi daté au mois commence le 1er
+
 function renderSuivis() {
   const scroll = document.getElementById('suivis-scroll');
   if (!scroll) return;
-  const list = suivisLoad();
+  suivisAfficherVue();
+  const list = suivisLoad(), termines = suivisVueCourante === 'termines';
+  const visibles = list.map((e, i) => ({ ...e, _i: i })).filter(e => suivisEstTermine(e) === termines);
   let html = '';
   if (_suiviForm !== null) html += renderSuivisForm(_suiviForm);
-  if (list.length === 0 && _suiviForm === null) {
-    html += '<div class="suivis-empty">Aucun suivi enregistr\xE9 pour l\u2019instant.<br>Ajoute un suivi ou traitement pour que Nara puisse<br>observer ce qui change avant et apr\xE8s.</div>';
+  if (list.length === 0 && _suiviForm === null && !termines) {
+    html += '<div class="suivis-empty">Aucun suivi enregistr\xE9 pour l’instant.<br>Ajoute un suivi ou traitement pour que Nara puisse<br>observer ce qui change avant et apr\xE8s.</div>';
+  } else if (visibles.length === 0 && _suiviForm === null) {
+    html += '<div class="suivis-empty">' + (termines ? 'Aucun suivi terminé pour l’instant.' : 'Aucun suivi en cours pour l’instant.') + '</div>';
   } else {
-    [...list]
-      .map((e,i)=>({...e,_i:i}))
-      .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
-      .forEach(entry => { html += renderSuiviCard(entry, entry._i); });
+    visibles.sort((a, b) => (b.date || '').localeCompare(a.date || '')).forEach(entry => { html += renderSuiviCard(entry, entry._i); });
   }
   if (_suiviForm === null) html += '<button class="suivi-add-btn" onclick="suivisStartAdd()">+ Ajouter un nouveau suivi</button>';
   scroll.innerHTML = html;
@@ -14744,18 +14808,75 @@ function renderSuivis() {
 function renderSuiviCard(entry, idx) {
   const dateDisplay = suivisDateLabel(entry.date);
   const tags = [entry.problo, entry.pro].filter(Boolean);
+  const fini = suivisEstTermine(entry), enFin = !fini && _suiviFin && _suiviFin.id === entry.id;
+  const statutBtn = fini ? `<button class="suivi-card-btn" onclick="suivisReprendre(${idx})">Reprendre</button>`
+    : (enFin ? '' : `<button class="suivi-card-btn" onclick="suivisStartFin(${idx})">Marquer comme terminé</button>`);
   return `<div class="suivi-card">
     <div class="suivi-card-header">
-      <span class="suivi-card-type">${escHtml(entry.type||'\u2014')}</span>
-      <span class="suivi-card-date">\uD83D\uDCC5 ${dateDisplay}</span>
+      <span class="suivi-card-type">${escHtml(entry.type||'—')}</span>
+      <span class="suivi-card-meta">
+        <span class="suivi-card-date">📅 ${dateDisplay}</span>
+        <span class="suivi-card-statut ${fini ? 'termine' : 'encours'}">${fini ? 'Terminé' : 'En cours'}</span>
+      </span>
     </div>
+    ${fini ? `<div class="suivi-card-periode">${suivisPeriodeLabel(entry)}</div>` : ''}
     ${tags.length ? '<div class="suivi-card-tags">'+tags.map(t=>`<span class="suivi-card-tag">${escHtml(t)}</span>`).join('')+'</div>' : ''}
     ${entry.note ? `<div class="suivi-card-note">${escHtml(entry.note)}</div>` : ''}
+    ${enFin ? renderSuiviFin(entry) : ''}
     <div class="suivi-card-actions">
+      ${statutBtn}
       <button class="suivi-card-btn" onclick="suivisStartEdit(${idx})">Modifier</button>
       <button class="suivi-card-btn danger" onclick="suivisDelete(${idx})">Supprimer</button>
     </div>
   </div>`;
+}
+
+// « Marquer comme terminé » : la date de fin est demandée dans la carte (aujourd'hui par défaut, modifiable, facultative)
+function renderSuiviFin(entry) {
+  const debut = suivisDebutJour(entry);
+  return `<div class="suivi-fin">
+    <div class="suivi-form-label">Date de fin <span class="suivi-fin-opt">(facultative)</span></div>
+    <input class="suivi-form-input" id="suivi-fin-date" type="date" aria-label="Date de fin (facultative)" ${debut ? 'min="' + debut + '"' : ''} max="${suivisTodayLocal()}"
+           value="${_suiviFin.date || ''}" oninput="suivisSetFinDate(this.value)" style="max-width:220px">
+    <div class="suivi-form-actions">
+      <button class="suivi-form-save" onclick="suivisConfirmerFin()">Valider ✓</button>
+      <button class="suivi-form-cancel" onclick="suivisAnnulerFin()">Annuler</button>
+    </div>
+    <button class="suivi-fin-sans" onclick="suivisConfirmerFin(true)">Terminer sans préciser de date</button>
+  </div>`;
+}
+function suivisStartFin(idx) {
+  const e = suivisLoad()[idx];
+  if (!e || suivisEstTermine(e)) return;
+  _suiviFin = { id: e.id, date: suivisTodayLocal() };
+  renderSuivis();
+}
+function suivisSetFinDate(v) { if (_suiviFin) _suiviFin.date = v || ''; }
+function suivisAnnulerFin() { _suiviFin = null; renderSuivis(); }
+function suivisConfirmerFin(sansDate) {
+  if (!_suiviFin) return;
+  const list = suivisLoad(), i = list.findIndex(e => e && e.id === _suiviFin.id);
+  if (i < 0) { _suiviFin = null; renderSuivis(); return; }               // le suivi a disparu entre-temps (supprimé depuis un autre appareil)
+  const e = list[i], fin = sansDate ? '' : (_suiviFin.date || '');
+  if (fin) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fin)) { showToast('Date de fin non valide'); return; }
+    if (fin > suivisTodayLocal()) { showToast('La date de fin ne peut pas être dans le futur'); return; }
+    if (fin < suivisDebutJour(e)) { showToast('La date de fin ne peut pas être avant le début'); return; }
+  }
+  e.statut = 'termine';
+  if (fin) e.dateFin = fin; else delete e.dateFin;
+  suivisSave(list);                              // suivisSave date la modification : un changement de statut l'emporte à la fusion entre appareils
+  _suiviFin = null;
+  showToast('✓ Suivi déplacé dans « Terminés »');
+  renderSuivis();
+}
+function suivisReprendre(idx) {
+  const list = suivisLoad(), e = list[idx];
+  if (!e || !suivisEstTermine(e)) return;
+  e.statut = 'en_cours'; delete e.dateFin;
+  suivisSave(list);
+  showToast('✓ Suivi remis dans « En cours »');
+  renderSuivis();
 }
 
 function renderSuivisForm(f) {
@@ -14817,12 +14938,16 @@ function suivisSaveForm() {
   if (!_suiviForm.date || !/^\d{4}-\d{2}(-\d{2})?$/.test(_suiviForm.date)) { showToast('La date de d\xE9but est obligatoire'); return; }
   if (_suiviForm.date > suivisTodayLocal().slice(0, _suiviForm.date.length)) { showToast('La date de d\xE9but ne peut pas \xEAtre dans le futur'); return; }
   if (!_suiviForm.type) { showToast('Choisis un type d\u2019\xE9v\xE9nement'); return; }
+  if (suivisEstTermine(_suiviForm) && _suiviForm.dateFin && _suiviForm.dateFin < suivisDebutJour(_suiviForm)) { showToast('La date de début ne peut pas être après la date de fin'); return; }
   const list  = suivisLoad();
   const entry = { id:_suiviForm.id, type:_suiviForm.type, problo:_suiviForm.problo||'', pro:_suiviForm.pro||'',
-    note:_suiviForm.note||'', date:_suiviForm.date, addedAt:new Date().toISOString() };
+    note:_suiviForm.note||'', date:_suiviForm.date, addedAt:new Date().toISOString(),
+    statut: suivisEstTermine(_suiviForm) ? 'termine' : 'en_cours' };
+  if (entry.statut === 'termine' && _suiviForm.dateFin) entry.dateFin = _suiviForm.dateFin;       // modifier un suivi garde son statut et sa date de fin
   if (_suiviForm.idx !== undefined) list[_suiviForm.idx] = entry;
   else list.push(entry);
   suivisSave(list);
+  if (_suiviForm.idx === undefined) suivisVueCourante = 'encours';                                  // un nouveau suivi est « en cours » : on l'affiche
   _suiviForm = null;
   showToast('\u2713 Suivi enregistr\xE9\u00A0!');
   renderSuivis();

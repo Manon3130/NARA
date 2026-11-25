@@ -2631,27 +2631,7 @@ if (typeof supabase === 'undefined') {
     cursor: pointer; text-decoration: underline; white-space: nowrap; flex-shrink: 0;
   }
 
-  /* Modale paramètres cycle */
-  .cycle-modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-    z-index: 700; display: none; align-items: flex-end; justify-content: center;
-  }
-  .cycle-modal-overlay.open { display: flex; }
-  .cycle-modal-card {
-    background: white; border-radius: 28px 28px 0 0;
-    padding: 24px clamp(16px,6vw,28px) calc(28px + env(safe-area-inset-bottom,0px));
-    width: 100%; max-height: 88vh; overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .cycle-modal-handle {
-    width: 36px; height: 4px; border-radius: 2px;
-    background: var(--oat); margin: 0 auto 20px;
-  }
-  .cycle-modal-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.3rem; color: var(--text-dark); margin-bottom: 6px;
-  }
-  .cycle-modal-sub { font-size: 0.78rem; color: var(--text-mid); line-height: 1.5; margin-bottom: 20px; }
+  /* Réglages du cycle : page « Réglages du cycle » (voir MON CYCLE, lot 14) ; les champs ci-dessous gardent le style de l'ancienne fenêtre */
 
   .cycle-field-label {
     font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
@@ -2708,7 +2688,7 @@ if (typeof supabase === 'undefined') {
     font-size: 0.9rem; cursor: pointer; margin-top: 6px;
   }
   .cycle-reset-btn {
-    width: 100%; padding: 11px; background: none; color: var(--text-light);
+    width: 100%; padding: 11px; min-height: 44px; background: none; color: var(--text-light);
     border: none; font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
     cursor: pointer; margin-top: 8px; text-decoration: underline;
   }
@@ -2968,6 +2948,135 @@ if (typeof supabase === 'undefined') {
   .cal-legend-dot .cal-dot { margin-top: 0; }
   .cal-legend-vide { width: 14px; height: 14px; border-radius: 4px; background: white; border: 1.5px solid var(--oat); box-sizing: border-box; }
   .cal-legend-sep { width: 100%; height: 1px; background: var(--oat); margin: 4px 0; }
+  .cal-legend-groupe { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+
+  /* ===== MON CYCLE (lot 14) : page « Mon cycle », panneau d'un jour, page « Réglages du cycle » =====
+     Palette Nara : règles notées #DDBAAE (texte #5f3b3e) ; estimations toujours en pointillés : règles à venir #DDBAAE, jours avant les règles #E3B9AE, période d'ovulation #A6A87A ;
+     aujourd'hui = anneau #7d4f57 ; carte du haut #EFD7CF. Pas de barre du bas sur ces pages : leurs zones qui défilent gardent l'espace habituel en bas. */
+  #screen-cycle, #screen-cycle-reglages { background: var(--cream); }
+  .cyc-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    padding: 14px clamp(12px, 4vw, 20px) calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+  .cyc-scroll::-webkit-scrollbar { display: none; }
+  .cyc-roue {
+    position: relative; margin-left: auto; width: 36px; height: 36px; flex-shrink: 0; border: 0; border-radius: 50%; background: var(--honey); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; padding: 0;
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .cyc-roue::before { content: ''; position: absolute; top: -4px; right: -4px; bottom: -4px; left: -4px; }          /* zone de toucher de 44 px, sans agrandir le rond : l'en-tête garde la hauteur des autres pages */
+  .cyc-roue:active { background: var(--peach); }
+
+  /* Carte du haut */
+  .cyc-entete { background: #EFD7CF; border-radius: 22px; padding: 18px 18px 16px; margin-bottom: 14px; color: #5f3b3e; }
+  .cyc-etiq { font-size: 0.68rem; letter-spacing: 0.12em; color: #7d4f57; }
+  .cyc-phase { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; font-weight: 400; line-height: 1.15; margin: 6px 0 8px; color: #5f3b3e; }
+  .cyc-prochaines { font-size: 0.8rem; line-height: 1.5; color: #5f3b3e; }
+  .cyc-etiq + .cyc-prochaines { margin-top: 6px; }
+
+  /* Cartes blanches */
+  .cyc-carte { background: white; border: 1.5px solid var(--oat); border-radius: 22px; padding: 14px 12px 16px; margin-bottom: 14px; }
+  #cyc-obs { padding: 16px 18px; }
+  .cyc-titre-sec { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 400; color: var(--text-dark); margin: 0 0 8px; }
+  .cyc-obs { font-size: 0.85rem; line-height: 1.55; color: var(--text-dark); margin: 0 0 8px; }
+  .cyc-obs-doux { font-size: 0.8rem; line-height: 1.55; color: var(--text-mid); margin: 0; }
+  .cyc-vide { text-align: center; padding: 22px 18px 20px; }
+  .cyc-vide-ico { font-size: 2rem; margin-bottom: 6px; }
+  .cyc-vide .cyc-obs-doux { margin-bottom: 16px; }
+  .cyc-btn-principal {
+    width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--sage); color: white; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Calendrier du mois */
+  .cyc-mois-tete { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
+  .cal-nav-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .cyc-grille { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cyc-jour {
+    aspect-ratio: 1; box-sizing: border-box; min-width: 0; margin: 0; padding: 0; border-radius: 10px; background: white; border: 1.5px solid var(--oat);
+    display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; color: var(--text-dark);
+    -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
+  }
+  .cyc-jour:active { transform: scale(0.94); }
+  .cyc-jour.vide { visibility: hidden; pointer-events: none; }
+  .cyc-num { font-size: 0.78rem; font-weight: 500; line-height: 1; }
+  .cyc-jour.note { background: #DDBAAE; border-color: #DDBAAE; color: #5f3b3e; }
+  .cyc-jour.est-regles { border: 2px dotted #DDBAAE; }
+  .cyc-jour.est-avant { border: 2px dotted #E3B9AE; }
+  .cyc-jour.est-ovul { border: 2px dotted #A6A87A; }
+  .cyc-jour.auj { box-shadow: inset 0 0 0 2px #7d4f57; }
+  .cyc-jour.auj .cyc-num { font-weight: 700; }
+  .cyc-pt { position: absolute; left: 50%; bottom: 6px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #7d4f57; }
+
+  /* Légende */
+  .cyc-legende { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--oat); }
+  .cyc-leg-item { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: var(--text-mid); }
+  .cyc-leg-pastille { position: relative; display: inline-block; width: 16px; height: 16px; box-sizing: border-box; border-radius: 5px; background: white; border: 1.5px solid var(--oat); flex-shrink: 0; }
+  .cyc-leg-pastille.note { background: #DDBAAE; border-color: #DDBAAE; }
+  .cyc-leg-pastille.est-regles { border: 2px dotted #DDBAAE; }
+  .cyc-leg-pastille.est-avant { border: 2px dotted #E3B9AE; }
+  .cyc-leg-pastille.est-ovul { border: 2px dotted #A6A87A; }
+  .cyc-leg-pastille.auj { box-shadow: inset 0 0 0 2px #7d4f57; }
+  .cyc-leg-pastille.pt::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #7d4f57; }
+
+  /* Panneau d'un jour */
+  .cyc-jour-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 650; display: none; align-items: flex-end; justify-content: center; }
+  .cyc-jour-overlay.open { display: flex; }
+  .cyc-jour-carte {
+    position: relative; width: 100%; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: var(--cream); border-radius: 28px 28px 0 0;
+    padding: 14px clamp(16px, 6vw, 24px) calc(22px + env(safe-area-inset-bottom, 0px));
+    animation: cycJourMonte 0.22s ease-out;
+  }
+  @keyframes cycJourMonte { from { transform: translateY(28px); opacity: 0.5; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .cyc-jour-carte { animation: none; } }
+  .cyc-jour-fermer {
+    position: absolute; top: 6px; right: 8px; width: 44px; height: 44px; border: 0; background: none; cursor: pointer;
+    font-size: 1rem; color: var(--text-light); -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .cyc-jour-date { font-family: 'Cormorant Garamond', serif; font-size: 1.35rem; color: var(--text-dark); text-align: center; margin: 0 44px 2px; }
+  .cyc-jour-phase { font-size: 0.78rem; color: #7d4f57; text-align: center; margin-bottom: 14px; min-height: 1.1em; }
+  .cyc-jour-msg { margin: 0 0 12px; padding: 9px 12px; border-radius: 12px; background: var(--honey); font-size: 0.75rem; line-height: 1.45; color: var(--text-mid); }
+  .cyc-actions { display: flex; gap: 10px; margin-bottom: 4px; }
+  .cyc-btn {
+    flex: 1; min-height: 48px; padding: 8px 6px; border-radius: 14px; border: 1.5px solid var(--blush); background: white; color: #5f3b3e; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .cyc-btn.on { background: #DDBAAE; border-color: #DDBAAE; font-weight: 600; }
+  .cyc-confirme { background: white; border: 1.5px solid var(--blush); border-radius: 14px; padding: 12px; }
+  .cyc-confirme p { margin: 0 0 10px; font-size: 0.8rem; line-height: 1.5; color: var(--text-dark); }
+  .cyc-sec-label { display: block; margin: 16px 0 8px; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); }
+  .cyc-chips { display: flex; gap: 8px; }
+  .cyc-chip {
+    flex: 1; min-height: 44px; padding: 0 4px; border-radius: 22px; border: 1.5px solid var(--oat); background: white; color: var(--text-mid); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .cyc-chip.on { background: #DDBAAE; border-color: #DDBAAE; color: #5f3b3e; font-weight: 600; }
+  .cyc-chip:disabled { opacity: 0.5; cursor: default; }
+  .cyc-aide { margin: 8px 0 0; font-size: 0.72rem; line-height: 1.45; color: var(--text-light); }
+  .cyc-pastilles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cyc-pastille { background: white; border: 1.5px solid var(--oat); border-radius: 14px; padding: 6px 10px; font-size: 0.78rem; color: var(--text-dark); }
+  .cyc-rien { font-size: 0.8rem; color: var(--text-light); }
+  .cyc-liens { display: flex; flex-direction: column; margin-top: 18px; }
+  .cyc-lien {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 48px; padding: 0 2px; margin: 0;
+    border: 0; border-top: 1px solid var(--oat); background: none; text-align: left; cursor: pointer; color: #7d4f57;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Page « Réglages du cycle » (les champs gardent le style de l'ancienne fenêtre : cycle-field-label, cycle-duration-*, cycle-toggle-*…) */
+  .cyc-reg-intro { margin: 0 0 18px; font-size: 0.78rem; color: var(--text-mid); line-height: 1.5; }
+  .cyc-reg-aide { margin: -4px 0 10px; font-size: 0.72rem; color: var(--text-light); line-height: 1.5; }
+  .cyc-reg-msg { margin: -10px 0 14px; font-size: 0.74rem; line-height: 1.45; color: #7d4f57; }
+  .cyc-reg-msg:empty { display: none; }
+  button.cycle-toggle { border: 0; padding: 0; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
+  .cyc-opt-ligne { margin-bottom: 0; }
+  .cyc-mention { margin: 18px 0 14px; padding: 12px 14px; border-radius: 14px; background: var(--peach); font-size: 0.76rem; line-height: 1.5; color: #5f3b3e; }
+
+  /* Calendrier du transit : petit trait sous la date d'un jour de règles noté (pas de nouveau jeu de couleurs : même #DDBAAE que « Mon cycle ») */
+  .cal-day.regles::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 16px; height: 3px; margin-left: -8px; border-radius: 2px; background: #DDBAAE; }
+  .cal-legend-regles { width: 16px; height: 3px; border-radius: 2px; background: #DDBAAE; }
   /* ===== BARRE DU BAS — une seule, flottante PAR-DESSUS le contenu (prompt 11, correctif A1) =====
      #bnav est un conteneur TRANSPARENT, sans hauteur réservée : dernier enfant de #app, en position absolue (left 0, right 0, bottom 0) À L'INTÉRIEUR de #app — pas en position fixe —, avec pointer-events: none ;
      seule la pilule reçoit les touchers (pointer-events: auto). Rien n'est peint derrière : le contenu se voit tout autour de la pilule, posée 8 px au-dessus de la marge de sécurité du bas.
@@ -3317,6 +3426,11 @@ if (typeof supabase === 'undefined') {
             <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui diff-3"></span></span>Types 1-2 · plutôt dures</div>
             <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui diff-1"></span></span>Types 3-4 · formées</div>
             <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-dot oui diff-2"></span></span>Types 5-7 · plutôt molles</div>
+            <div class="cal-legend-groupe" id="cal-legend-cycle" style="display:none">
+              <div class="cal-legend-sep"></div>
+              <div class="cal-legend-title">Cycle</div>
+              <div class="cal-legend-item"><span class="cal-legend-dot"><span class="cal-legend-regles"></span></span>Règles notées</div>
+            </div>
           </div>
 
           <!-- Note médicale permanente sous le calendrier -->
@@ -3669,7 +3783,7 @@ if (typeof supabase === 'undefined') {
             <span class="espace-ligne-txt"><span class="espace-ligne-titre">Mon profil santé</span><span class="espace-ligne-desc">Ta situation de base</span></span>
             <span class="espace-ligne-fleche">›</span>
           </button>
-          <button type="button" class="espace-ligne" onclick="openCycleModal()">
+          <button type="button" class="espace-ligne" onclick="espaceAller('cycle')">
             <span class="espace-ligne-ico">🌸</span>
             <span class="espace-ligne-txt"><span class="espace-ligne-titre">Mon cycle</span><span class="espace-ligne-desc">Suivi du cycle</span></span>
             <span class="espace-ligne-fleche">›</span>
@@ -3715,6 +3829,95 @@ if (typeof supabase === 'undefined') {
             <span class="espace-bientot">bientôt</span>
           </div>
         </div>
+      </div>
+    </div>
+    <!-- SCREEN MON CYCLE (lot 14) : calendrier du cycle. Ouvert par « Mon cycle » (Mon espace) et par la carte cycle de l'Accueil ; flèche retour, roue ⚙️ des réglages, pas de barre du bas (comme les autres pages de détail). Rendu dynamique par renderCyclePage() -->
+    <div class="screen" id="screen-cycle">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="espaceRetourDepuis()">←</div>
+        <div class="screen-title">Mon cycle</div>
+        <button type="button" class="cyc-roue" aria-label="Réglages du cycle" onclick="cycleOuvrirReglages()">⚙️</button>
+      </div>
+      <div class="cyc-scroll" id="cyc-scroll">
+        <div id="cyc-contenu"></div>
+      </div>
+      <!-- Panneau d'un jour : monte du bas quand on touche un jour du calendrier (rendu par cycleRendreJour) -->
+      <div class="cyc-jour-overlay" id="cyc-jour-overlay" onclick="cycleJourOverlay(event)">
+        <div class="cyc-jour-carte" id="cyc-jour-carte" role="dialog" aria-modal="true" aria-label="Détail du jour"></div>
+      </div>
+    </div>
+
+    <!-- SCREEN RÉGLAGES DU CYCLE (lot 14) : l'ancienne fenêtre de réglage du cycle, devenue une page ; mêmes champs, mêmes identifiants, plus les deux options et la mention sur les estimations -->
+    <div class="screen" id="screen-cycle-reglages">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="closeCycleModal()">←</div>
+        <div class="screen-title">Réglages du cycle</div>
+      </div>
+      <div class="cyc-scroll" id="cyc-reglages-scroll">
+        <p class="cyc-reg-intro">Module optionnel — te permet de croiser ton cycle avec ton transit, ta peau et ton énergie dans les insights.</p>
+
+        <!-- Toggle activation -->
+        <div class="cycle-toggle-row">
+          <div>
+            <div class="cycle-toggle-label">Activer le suivi de cycle</div>
+            <div class="cycle-toggle-sub">Désactive si tu n'es pas concernée</div>
+          </div>
+          <div class="cycle-toggle" id="cycle-toggle" onclick="cycleToggleModule()"></div>
+        </div>
+
+        <!-- Champs (masqués si désactivé) -->
+        <div id="cycle-form">
+          <span class="cycle-field-label">Quand ont commencé tes dernières règles ?</span>
+          <p class="cyc-reg-aide">Tu peux aussi noter tes règles jour par jour dans « Mon cycle ».</p>
+          <input type="date" class="cycle-date-input" id="cycle-start-date" max="" placeholder="jj/mm/aaaa" onchange="checkCycleAlerts()">
+          <div class="cyc-reg-msg" id="cycle-date-msg" role="status"></div>
+
+          <span class="cycle-field-label">Durée habituelle de ton cycle</span>
+          <div class="cycle-duration-row">
+            <button class="cycle-duration-btn" onclick="cycleDurationStep(-1)">−</button>
+            <div>
+              <div class="cycle-duration-val" id="cycle-duration-val">28</div>
+              <div class="cycle-duration-unit">jours</div>
+            </div>
+            <button class="cycle-duration-btn" onclick="cycleDurationStep(1)">+</button>
+          </div>
+
+          <span class="cycle-field-label" style="margin-top:-4px">Durée habituelle de tes règles</span>
+          <div class="cycle-duration-row">
+            <button class="cycle-duration-btn" onclick="cycleRegDurationStep(-1)">−</button>
+            <div>
+              <div class="cycle-duration-val" id="cycle-reg-duration-val">5</div>
+              <div class="cycle-duration-unit">jours</div>
+            </div>
+            <button class="cycle-duration-btn" onclick="cycleRegDurationStep(1)">+</button>
+          </div>
+          <p class="cyc-reg-aide">Ces durées servent tant que tu n'as pas noté assez de cycles. Ensuite, Nara calcule la moyenne de ce que tu notes.</p>
+
+          <span class="cycle-field-label">Options</span>
+          <div class="cycle-toggle-row cyc-opt-ligne">
+            <div>
+              <div class="cycle-toggle-label">Mon cycle est irrégulier</div>
+              <div class="cycle-toggle-sub">Aucune estimation, seulement ton historique</div>
+            </div>
+            <button type="button" class="cycle-toggle" id="cycle-opt-irregulier" role="switch" aria-checked="false" aria-label="Mon cycle est irrégulier" onclick="cycleOptionBasculer('cycle-opt-irregulier')"></button>
+          </div>
+          <div class="cycle-toggle-row cyc-opt-ligne">
+            <div>
+              <div class="cycle-toggle-label">Contraception hormonale</div>
+              <div class="cycle-toggle-sub">Pas d'estimation de l'ovulation</div>
+            </div>
+            <button type="button" class="cycle-toggle" id="cycle-opt-contraception" role="switch" aria-checked="false" aria-label="Contraception hormonale" onclick="cycleOptionBasculer('cycle-opt-contraception')"></button>
+          </div>
+
+          <!-- Alerte douleurs intenses -->
+          <div class="cycle-medical-alert" id="cycle-medical-alert">
+            🩺 Si tes règles sont très douloureuses, irrégulières, ou si tu observes des saignements inhabituels, une consultation gynécologique est conseillée. Nara ne remplace pas un avis médical.
+          </div>
+        </div>
+
+        <p class="cyc-mention" id="cycle-mention">Les dates affichées sont des estimations calculées à partir de ce que tu notes. Elles ne servent pas de méthode de contraception.</p>
+        <button class="cycle-save-btn" onclick="cycleSaveSettings()">Enregistrer ✓</button>
+        <button class="cycle-reset-btn" onclick="cycleResetModule()">Réinitialiser le module</button>
       </div>
     </div>
   </div><!-- fin de #stage : tous les écrans sont à l'intérieur -->
@@ -3842,7 +4045,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '24/11 · 17 h 40';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '24/11 · 22 h 44';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -4187,7 +4390,7 @@ function updateAuthBadge(user) {}
 // ══════════════════════════════════════════════════════════════════════════════
 const PRENOM_ATTENTE_CLE = 'nara_prenom_attente';    // { uid, prenom } : nouveau prénom pas encore enregistré dans le compte (effacé avec le reste des données Nara à la déconnexion)
 let _prenomEnvoi = null;       // envoi en cours (un seul à la fois)
-let espaceRetour = false;      // une page (profil santé, nouveaux suivis, confidentialité) vient d'être ouverte depuis « Mon espace » : sa flèche retour y ramène
+let espaceRetour = false;      // une page (profil santé, mon cycle, nouveaux suivis, confidentialité) vient d'être ouverte depuis « Mon espace » : sa flèche retour y ramène
 
 function prenomAttenteLire() {
   try {
@@ -5200,7 +5403,9 @@ const BNAV_MAP = {
   profile: null,
   'profile-invite': null,
   'profile-later': null,
-  suivis: null
+  suivis: null,
+  cycle: null,                  // « Mon cycle » et « Réglages du cycle » : pages de détail, pas de barre
+  'cycle-reglages': null
 };
 
 function updateBottomNav(screenId) {
@@ -5235,7 +5440,7 @@ function showScreen(id, btn) {
   if (id === 'recipes') { libVueCourante = 'recettes'; id = 'library'; }   // l'ancien écran « Recettes » est la vue « Recettes » de la Bibliothèque : go('recipes') y mène toujours
   if (id !== 'recipe-detail' && id !== 'article-detail' && !_routNav) routRetourVers = null;   // la mémoire « je viens d'une routine » ne survit qu'aux écrans ouverts depuis une routine
   if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
-  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
+  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees' && id !== 'cycle' && id !== 'cycle-reglages') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
   _routNav = false;
   if (id !== 'home') _homeCycleOuvert = false;                                                  // la carte Cycle de l'Accueil se referme quand on quitte l'Accueil
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -5271,6 +5476,8 @@ function showScreen(id, btn) {
   if (id === 'espace') try { renderEspace(); } catch(e) { console.warn('[Nara] renderEspace:', e); }
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
   if (id === 'suivis') try { suivisVueCourante = 'encours'; _suiviFin = null; renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
+  if (id === 'cycle') try { renderCyclePage(); } catch(e) { console.warn('[Nara] renderCyclePage:', e); }
+  if (id === 'cycle-reglages') try { renderCycleReglages(); } catch(e) { console.warn('[Nara] renderCycleReglages:', e); }
   if (id === 'gallery') try { renderGallery(); } catch(e) { console.warn('[Nara] renderGallery:', e); }
   updateBottomNav(id);
   if (el) { const scroller = el.querySelector('[class*="scroll"]'); if (scroller) scroller.scrollTop = 0; }
@@ -7151,6 +7358,10 @@ function routRetour(defaut) {
   } else if (vers === 'gallery') {                               // ouvert depuis la galerie (« Voir le journal de ce jour ») : retour à la galerie, rouverte sur la photo consultée
     jrnCurrentDate = null; jrnCurrentSlide = 0;                  // le Journal rouvert plus tard repart d'aujourd'hui (pas du jour consulté depuis la galerie)
     go('gallery');
+  } else if (vers === 'cycle') {                                 // ouvert depuis « Mon cycle » (panneau d'un jour) : retour à la page, sur le même mois
+    jrnCurrentDate = null; jrnCurrentSlide = 0;                  // le Journal rouvert plus tard repart d'aujourd'hui (pas du jour consulté depuis le cycle)
+    _cycleGardeVue = true;
+    go('cycle');
   } else go(defaut);
 }
 function routOuvrirRecette(id) {
@@ -15434,7 +15645,7 @@ function renderHomeCycleBlock() {
           <div class="home-cycle-desc">
             Jour ${dayInReg} sur ~${regDuration} · Transit souvent plus rapide, fatigue possible — écoute ton corps 🌿
           </div>
-          <button type="button" class="home-cycle-update" onclick="openCycleModal()">Ajuster</button>
+          <button type="button" class="home-cycle-update" onclick="go('cycle')">Ajuster</button>
         </div>
       </div>`;
     return;
@@ -15472,7 +15683,7 @@ function renderHomeCycleBlock() {
         <div class="home-cycle-title">${name} — J${info.dayInCycle}/${cycleDuration}</div>
         ${def ? `<div class="home-cycle-desc" style="opacity:0.7;margin-bottom:4px">${def}</div>` : ''}
         <div class="home-cycle-desc">${desc}</div>
-        <button type="button" class="home-cycle-update" onclick="openCycleModal()">Ajuster</button>
+        <button type="button" class="home-cycle-update" onclick="go('cycle')">Ajuster</button>
       </div>
     </div>`;
 }
@@ -15480,6 +15691,8 @@ function renderHomeCycleBlock() {
 // Durée effective : moyenne réelle si ≥2 cycles confirmés, sinon durée manuelle
 function cycleGetEffectiveDuration(settings) {
   try {
+    const notee = cycleLongueurNotee(settings);          // lot 14 : les débuts notés dans « Mon cycle » font foi dès qu'ils donnent 2 cycles complets
+    if (notee && notee.n >= 2) return notee.moy;
     const history = JSON.parse(localStorage.getItem('nara_cycle_history') || '[]');
     const durations = history.slice(0, 6).map(h => h.duration).filter(d => d >= 21 && d <= 45);
     if (durations.length >= 2) {
@@ -15527,6 +15740,7 @@ function cycleConfirmStart(answer) {
 
   if (answer === 'oui') {
     const settings = cycleLoad() || {};
+    const liste = cycleReglesLire(settings);        // lue AVANT l'ajout de la confirmation du jour à l'historique (les anciennes données s'appuient dessus)
     // Enregistrer la durée réelle pour affiner la moyenne
     if (settings.startDate) {
       const realDuration = Math.round(
@@ -15540,15 +15754,16 @@ function cycleConfirmStart(answer) {
         syncMarkDirty('cycle_history');
       }
     }
-    settings.startDate = today;
     settings.active    = true;
-    cycleSave(settings);
+    // Le début est noté dans la liste des règles de « Mon cycle » (même enregistrement) ; des règles déjà notées à moins d'une semaine comptent pour celles-ci
+    const statut = cycleDebutListe(liste, today), note = statut === 'ajoute' || statut === 'avance';
+    if (note) { settings.regles = cycleReglesCompacter(liste); settings.startDate = liste[liste.length - 1].debut; cycleSave(settings); }      // règles déjà notées : rien ne change, rien n'est réécrit ni envoyé
     localStorage.removeItem('nara_cycle_calibrate_later');
-    showToast("✓ Cycle recalibré à aujourd'hui");
+    showToast(note ? "✓ Cycle recalibré à aujourd'hui" : '✓ Tes règles sont déjà notées');
 
   } else if (answer === 'non') {
     localStorage.removeItem('nara_cycle_calibrate_later');
-    openCycleModal();
+    go('cycle');
     return;
 
   } else {
@@ -15640,42 +15855,63 @@ function renderCyclePhaseBanner() {
 let cycleDurationTemp = 28;
 let cycleRegDurationTemp = 5;
 
-function openCycleModal() {
+// La fenêtre de réglage est devenue la page « Réglages du cycle » (roue ⚙️ de « Mon cycle ») : openCycleModal et closeCycleModal gardent leur nom, tous les appels existants (bannière du Journal…) mènent à la page.
+// Sa flèche retour ramène à l'écran d'où elle a été ouverte.
+function openCycleModal() { cycleOuvrirReglages(); }
+function cycleOuvrirReglages() {
+  const act = document.querySelector('.screen.active'), id = act ? act.id.replace('screen-', '') : '';
+  if (id && id !== 'cycle-reglages') _cycleRetourReglages = id;
+  go('cycle-reglages');
+}
+function renderCycleReglages() {
   const settings = cycleLoad() || {};
-  const modal = document.getElementById('cycle-modal-overlay');
-  if (!modal) return;
-
-  // Init état toggle
   const toggle = document.getElementById('cycle-toggle');
   if (toggle) toggle.classList.toggle('on', !!settings.active);
 
-  // Init champs
+  // Init champs : le début affiché est le dernier début noté (ou la date de début d'origine)
   cycleDurationTemp    = settings.cycleDuration || 28;
   cycleRegDurationTemp = settings.regDuration   || 5;
+  const liste = cycleReglesLire(settings);
   const dateInput = document.getElementById('cycle-start-date');
   if (dateInput) {
-    dateInput.value = settings.startDate || '';
+    dateInput.value = liste.length ? liste[liste.length - 1].debut : (settings.startDate || '');
     dateInput.max = getTodayStr();
-    dateInput.addEventListener('change', checkCycleAlerts);
   }
+  const msg = document.getElementById('cycle-date-msg');
+  if (msg) msg.textContent = '';
   const durVal = document.getElementById('cycle-duration-val');
   if (durVal) durVal.textContent = cycleDurationTemp;
   const regVal = document.getElementById('cycle-reg-duration-val');
   if (regVal) regVal.textContent = cycleRegDurationTemp;
+  cycleOptionPoser('cycle-opt-irregulier', !!settings.irregulier);
+  cycleOptionPoser('cycle-opt-contraception', !!settings.contraception);
 
-  // Afficher/masquer formulaire selon active
+  // Les champs ne s'affichent que si le suivi est activé
   const form = document.getElementById('cycle-form');
-  if (form) form.style.display = settings.active !== false ? 'block' : 'none';
-
-  modal.classList.add('open');
+  if (form) form.style.display = settings.active ? 'block' : 'none';
+  checkCycleAlerts();
 }
-
-function cycleHandleOverlay(e) {
-  if (e.target === document.getElementById('cycle-modal-overlay')) closeCycleModal();
+function cycleOptionPoser(id, on) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('on', on);
+  el.setAttribute('aria-checked', on ? 'true' : 'false');
 }
+function cycleOptionBasculer(id) {
+  const el = document.getElementById(id);
+  if (el) cycleOptionPoser(id, !el.classList.contains('on'));
+}
+function cycleOptionActive(id) {
+  const el = document.getElementById(id);
+  return !!(el && el.classList.contains('on'));
+}
+// Quitte la page « Réglages du cycle » : retour à l'écran d'où elle a été ouverte (« Mon cycle » garde le mois qu'on regardait)
 function closeCycleModal() {
-  const modal = document.getElementById('cycle-modal-overlay');
-  if (modal) modal.classList.remove('open');
+  const el = document.getElementById('screen-cycle-reglages');
+  if (!el || !el.classList.contains('active')) return;
+  const vers = _cycleRetourReglages || 'cycle';
+  if (vers === 'cycle') _cycleGardeVue = true;
+  go(vers);
 }
 
 function cycleToggleModule() {
@@ -15713,23 +15949,45 @@ function cycleSaveSettings() {
   const toggle    = document.getElementById('cycle-toggle');
   const dateInput = document.getElementById('cycle-start-date');
   const active    = toggle ? toggle.classList.contains('on') : false;
+  const ancien    = cycleLoad() || {};
+  const liste     = cycleReglesLire(ancien);                                   // les règles déjà notées (et les anciennes données) restent : rien ne se perd
+  const date      = dateInput ? dateInput.value : '';
 
-  if (active && dateInput && !dateInput.value) {
+  if (active && !date && !liste.length) {
     showToast('Indique la date de début de tes dernières règles');
     return;
   }
+  if (date && date > getTodayStr()) {
+    showToast("Cette date n'est pas encore arrivée");
+    return;
+  }
+  // Une date de début qui change est notée comme un début de règles (même liste que dans « Mon cycle »)
+  const derniere = liste.length ? liste[liste.length - 1].debut : '';
+  const statut = active && date && date !== derniere ? cycleDebutListe(liste, date) : '';
+  const proche = statut === 'proche', ancienne = statut === 'ajoute' && date < derniere;      // « ancienne » : des règles plus anciennes que les dernières notées, ajoutées à l'historique
 
-  const data = {
+  const data = Object.assign({}, ancien, {
     active,
-    startDate:      active ? dateInput.value : null,
+    startDate:      liste.length ? liste[liste.length - 1].debut : (ancien.startDate || null),
     cycleDuration:  cycleDurationTemp,
     regDuration:    cycleRegDurationTemp,
-    updatedAt:      new Date().toISOString(),
-  };
+    irregulier:     cycleOptionActive('cycle-opt-irregulier'),
+    contraception:  cycleOptionActive('cycle-opt-contraception'),
+    regles:         cycleReglesCompacter(liste),
+  });
 
   cycleSave(data);
-  closeCycleModal();
-  showToast('✓ Cycle mis à jour !');
+  if (proche || ancienne) {                                                    // réglages enregistrés, mais les dernières règles n'ont pas changé : on le dit, sur la page
+    const dernieres = liste[liste.length - 1].debut, msg = document.getElementById('cycle-date-msg');
+    if (msg) msg.textContent = proche
+      ? "Des règles sont déjà notées autour de cette date : le début n'a pas changé. Pour le modifier, retire-le d'abord dans « Mon cycle »."
+      : 'Ces règles ont été ajoutées à ton historique. Tes dernières règles notées restent celles du ' + cycleJourMois(dernieres) + '.';
+    if (dateInput) dateInput.value = dernieres;
+    showToast('✓ Réglages enregistrés');
+  } else {
+    closeCycleModal();
+    showToast('✓ Cycle mis à jour !');
+  }
   // Recalculer immédiatement partout — phase ne doit jamais être obsolète
   try { renderHomeCycleBlock(); } catch(e) {}
   try { updateHomeScore();      } catch(e) {}
@@ -15737,13 +15995,530 @@ function cycleSaveSettings() {
   if (jrn && jrn.classList.contains('active')) renderJournal();
 }
 
+// « Réinitialiser le module » efface aussi les règles notées : la personne confirme d'abord
 function cycleResetModule() {
+  routSheet({
+    titre: 'Réinitialiser le suivi du cycle ?',
+    texte: 'Cela efface tes réglages du cycle et toutes les règles que tu as notées. Ton journal et ton calendrier du transit ne changent pas.',
+    boutons: [{ label: 'Réinitialiser', fn: cycleResetConfirme }, { label: 'Garder', neutre: true }]
+  });
+}
+function cycleResetConfirme() {
   localStorage.removeItem('nara_cycle');
   syncMarkTomb('cycle_settings');
   closeCycleModal();
   showToast('Module cycle réinitialisé');
   const jrn = document.getElementById('screen-journal');
   if (jrn && jrn.classList.contains('active')) renderJournal();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MON CYCLE (lot 14) — règles notées, estimations, phases, observations
+// Ce que la personne note est affiché en plein ; tout ce qui est calculé (règles à venir, jours avant, ovulation) est une ESTIMATION : calculée à l'affichage, jamais enregistrée.
+// Les règles notées vivent dans l'enregistrement du cycle lui-même (nara_cycle, clé « regles », synchronisé comme le reste de ce réglage : la version la plus récente gagne) :
+//   regles : [ { debut, fin (facultative), intensite: { jour: 'legere' | 'moyenne' | 'abondante' } } ]      options : irregulier, contraception
+// Les anciennes données (date de début + dates confirmées depuis l'Accueil) restent lues telles quelles : elles comptent comme des débuts notés, sans fin ni intensité inventées.
+// Elles sont recopiées dans la liste à la première modification ; ouvrir la page n'écrit rien. Tout enregistrement passe par cycleSave (qui date et marque « à envoyer »).
+// Les dates sont des textes AAAA-MM-JJ ; les jours se comptent avec routJourNum / routEcart / routAjouter ; « aujourd'hui » vient de getTodayStr() (jamais de l'horloge).
+// ══════════════════════════════════════════════════════════════════════════════
+const CYCLE_LONG_MIN = 21, CYCLE_LONG_MAX = 45;               // un cycle compte dans la moyenne entre 21 et 45 jours (mêmes bornes que les réglages)
+const CYCLE_REGLES_MAX = 14;                                  // des règles notées ne durent pas plus de 14 jours (du début à la fin)
+const CYCLE_AVANT = 5;                                        // « jours avant tes règles » : les 5 derniers jours du cycle
+const CYCLE_PREVISIONS = 3;                                   // estimations : les 3 prochains cycles au plus
+const CYCLE_MOIS_ARRIERE = 60, CYCLE_MOIS_AVANT = 6;          // le calendrier se feuillette jusqu'à 60 mois en arrière et 6 mois en avant
+const CYCLE_INTENSITES = { legere: 'Légère', moyenne: 'Moyenne', abondante: 'Abondante' };
+const CYCLE_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Phase d'un jour, en mots simples (jamais de jargon médical à l'écran)
+const CYCLE_PHASES = { regles: 'Règles', 'fin-regles': 'Fin des règles probable', 'regles-prevues': 'Règles probables', avant: 'Jours avant tes règles', ovulation: "Période d'ovulation", apres: 'Après tes règles', 'apres-ovulation': "Après l'ovulation", sans: '' };
+
+// ── Lecture : la liste des règles notées ─────────────────────────────────────
+// Triée par début : { debut, fin (null tant qu'elle n'est pas notée), intensite }. Sans la clé « regles » (anciennes données) : date de début + dates des confirmations de l'Accueil, début seulement.
+function cycleReglesLire(settings) {
+  const s = settings || cycleLoad();
+  if (!s || typeof s !== 'object') return [];
+  let brut;
+  if (Array.isArray(s.regles)) brut = s.regles;
+  else {
+    const dates = [], dernier = CYCLE_DATE_RE.test(s.startDate || '') ? s.startDate : null;
+    if (dernier) dates.push(dernier);
+    // La date de début des réglages est le dernier début (comme sur l'Accueil) : une confirmation plus récente qu'elle est une trace d'un début corrigé ensuite, elle n'est pas relue comme un nouveau début
+    try { (JSON.parse(localStorage.getItem('nara_cycle_history') || '[]') || []).forEach(h => { if (h && CYCLE_DATE_RE.test(h.date || '') && (!dernier || h.date <= dernier)) dates.push(h.date); }); } catch (e) {}
+    brut = dates.map(d => ({ debut: d }));
+  }
+  const vus = {}, liste = [];
+  brut.forEach(p => {
+    if (!p || !CYCLE_DATE_RE.test(p.debut || '') || vus[p.debut]) return;
+    vus[p.debut] = true;
+    const fin = CYCLE_DATE_RE.test(p.fin || '') && p.fin >= p.debut && routEcart(p.debut, p.fin) < CYCLE_REGLES_MAX ? p.fin : null;
+    const intensite = {};
+    Object.keys(p.intensite || {}).forEach(j => {
+      if (CYCLE_DATE_RE.test(j) && CYCLE_INTENSITES[p.intensite[j]] && j >= p.debut && routEcart(p.debut, j) < CYCLE_REGLES_MAX && (!fin || j <= fin)) intensite[j] = p.intensite[j];
+    });
+    liste.push({ debut: p.debut, fin: fin, intensite: intensite });
+  });
+  return liste.sort((a, b) => a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0);
+}
+// Forme enregistrée : seulement ce qui est noté (pas de fin vide, pas d'intensités vides)
+function cycleReglesCompacter(liste) {
+  return liste.map(p => {
+    const o = { debut: p.debut };
+    if (p.fin) o.fin = p.fin;
+    if (Object.keys(p.intensite || {}).length) o.intensite = p.intensite;
+    return o;
+  });
+}
+// Dernier jour de règles NOTÉ : la fin si elle est notée, sinon le dernier jour avec une intensité, sinon le jour du début
+function cycleFinNotee(p) {
+  if (p.fin) return p.fin;
+  let f = p.debut;
+  Object.keys(p.intensite || {}).forEach(j => { if (j > f) f = j; });
+  return f;
+}
+// Les jours de règles notés : { 'AAAA-MM-JJ': { debut, fin, intensite } }, du début au dernier jour noté
+function cycleJoursNotes(liste) {
+  const o = {};
+  (liste || cycleReglesLire()).forEach(p => {
+    const n = routEcart(p.debut, cycleFinNotee(p));
+    for (let i = 0; i <= n; i++) { const j = routAjouter(p.debut, i); o[j] = { debut: i === 0, fin: j === p.fin, intensite: p.intensite[j] || null }; }
+  });
+  return o;
+}
+
+// ── Moyennes ─────────────────────────────────────────────────────────────────
+// Durée moyenne des 6 derniers cycles notés (début → début suivant, 21 à 45 jours) ; null tant que la liste « regles » n'existe pas (anciennes données : le calcul d'origine reste)
+function cycleLongueurNotee(settings) {
+  if (!settings || !Array.isArray(settings.regles)) return null;
+  const liste = cycleReglesLire(settings), l = [];
+  for (let i = 1; i < liste.length; i++) {
+    const n = routEcart(liste[i - 1].debut, liste[i].debut);
+    if (n >= CYCLE_LONG_MIN && n <= CYCLE_LONG_MAX) l.push(n);
+  }
+  const d = l.slice(-6);
+  return d.length ? { n: d.length, moy: Math.round(d.reduce((a, b) => a + b, 0) / d.length) } : null;
+}
+// Durée des règles : moyenne des 6 dernières règles dont la fin est notée (à partir de 2), sinon la durée habituelle des réglages
+function cycleDureeReglesMoyenne(settings) {
+  const d = [];
+  cycleReglesLire(settings).forEach(p => { if (p.fin) d.push(routEcart(p.debut, p.fin) + 1); });
+  const dernieres = d.slice(-6);
+  if (dernieres.length >= 2) return Math.round(dernieres.reduce((a, b) => a + b, 0) / dernieres.length);
+  return (settings && settings.regDuration) || 5;
+}
+
+// ── Estimations ──────────────────────────────────────────────────────────────
+// Tout ce dont les jours ont besoin, calculé une fois ; null si le suivi du cycle n'est pas actif
+function cycleEstimations(settings) {
+  const s = settings || cycleLoad();
+  if (!s || !s.active) return null;
+  const liste = cycleReglesLire(s);
+  const noteeL = cycleLongueurNotee(s);
+  return {
+    s: s, liste: liste, notes: cycleJoursNotes(liste),
+    L: cycleGetEffectiveDuration(s), R: cycleDureeReglesMoyenne(s),
+    calcule: !!(noteeL && noteeL.n >= 2),
+    irregulier: !!s.irregulier, contraception: !!s.contraception,
+    dernier: liste.length ? liste[liste.length - 1] : null
+  };
+}
+// Le cycle qui contient un jour : son début (noté), le début du suivant (noté, sinon estimé = début + durée moyenne × k) et sa longueur
+function cycleCadre(date, e) {
+  let i = -1;
+  for (let j = 0; j < e.liste.length; j++) if (e.liste[j].debut <= date) i = j;
+  if (i < 0) return null;
+  const p = e.liste[i];
+  if (i + 1 < e.liste.length) return { p: p, debut: p.debut, long: routEcart(p.debut, e.liste[i + 1].debut), estime: false, k: 0 };
+  if (e.irregulier) return null;
+  const k = Math.floor(routEcart(p.debut, date) / e.L) + 1;
+  if (k > CYCLE_PREVISIONS + 1) return null;                                                 // le cycle en cours + les règles des 3 prochains cycles (et leurs jours avant / ovulation)
+  return { p: k === 1 ? p : null, debut: routAjouter(p.debut, e.L * (k - 1)), long: e.L, estime: true, k: k };
+}
+// Ce qu'on sait d'un jour : noté (plein) ou estimé (pointillés) ; « jour » = rang du jour depuis le dernier début noté
+function cycleInfoJour(date, e) {
+  const info = { date: date, type: 'sans', estime: false, debutNote: false, finNote: false, intensite: null, jour: null };
+  let dernier = null;
+  e.liste.forEach(p => { if (p.debut <= date) dernier = p; });
+  if (dernier) info.jour = routEcart(dernier.debut, date) + 1;
+  const n = e.notes[date];
+  if (n) { info.type = 'regles'; info.debutNote = n.debut; info.finNote = n.fin; info.intensite = n.intensite; return info; }
+  if (e.irregulier) return info;                                                            // « irrégulier » : aucune estimation, seulement l'historique
+  const c = cycleCadre(date, e);
+  if (!c) return info;
+  const j = routEcart(c.debut, date) + 1;                                                   // rang du jour dans ce cycle (1 = premier jour des règles)
+  info.estime = true;
+  if (c.estime && c.k >= 2) { if (j <= e.R) { info.type = 'regles-prevues'; return info; } }
+  else if (c.p && !c.p.fin && j <= e.R) { info.type = 'fin-regles'; return info; }          // règles commencées dont la fin n'est pas notée
+  if (j > c.long - CYCLE_AVANT) { info.type = 'avant'; return info; }                       // les 5 derniers jours du cycle
+  info.type = 'apres';
+  if (!e.contraception && c.long >= CYCLE_LONG_MIN && c.long <= CYCLE_LONG_MAX) {           // « contraception hormonale » : pas d'estimation d'ovulation
+    const ov = c.long - 14;                                                                 // ovulation estimée : 14 jours avant les règles suivantes
+    if (j > e.R && j >= ov - 1 && j <= ov + 1) info.type = 'ovulation';
+    else if (j > ov + 1) info.type = 'apres-ovulation';
+  }
+  return info;
+}
+// Les prochaines règles estimées : { date, enCours } (enCours : elles auraient dû commencer, pas encore notées) ; null s'il n'y a rien à estimer
+function cycleProchaines(e, auj) {
+  if (e.irregulier || !e.dernier) return null;
+  for (let k = 1; k <= CYCLE_PREVISIONS; k++) {
+    const d = routAjouter(e.dernier.debut, e.L * k);
+    if (routAjouter(d, e.R - 1) >= auj) return { date: d, enCours: d <= auj };
+  }
+  return null;
+}
+function cycleJourMois(date) { return +date.slice(8, 10) + ' ' + ROUT_MOIS[+date.slice(5, 7) - 1]; }       // « 1 décembre »
+
+// ── Enregistrer : les règles notées (un seul enregistrement : cycleSave) ──────
+// Début des règles. Statuts : 'ajoute' · 'avance' (le début est reculé jusqu'à ce jour : même période) · 'existe' · 'proche' (déjà des règles notées à moins d'une semaine)
+function cycleDebutListe(liste, date) {
+  if (liste.some(p => p.debut === date)) return 'existe';
+  if (liste.some(p => p.debut < date && routEcart(p.debut, date) <= 7)) return 'proche';
+  const q = liste.find(p => p.debut > date && routEcart(date, p.debut) <= 7);
+  if (q) { q.debut = date; return 'avance'; }
+  liste.push({ debut: date, fin: null, intensite: {} });
+  liste.sort((a, b) => a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0);
+  return 'ajoute';
+}
+// La période de règles à laquelle un jour appartient (début ≤ jour, au plus 14 jours après, avant la fin si elle est notée) ; null sinon
+function cycleReglesDuJour(liste, date) {
+  let p = null;
+  liste.forEach(x => { if (x.debut <= date) p = x; });
+  return p && routEcart(p.debut, date) < CYCLE_REGLES_MAX && (!p.fin || date <= p.fin) ? p : null;
+}
+// Fin des règles. Statuts : 'note' · 'retire' (la fin déjà notée ce jour-là est retirée) · 'sans-debut' · 'trop-loin'
+function cycleFinListe(liste, date) {
+  let p = null;
+  liste.forEach(x => { if (x.debut <= date) p = x; });
+  if (!p) return 'sans-debut';
+  if (routEcart(p.debut, date) >= CYCLE_REGLES_MAX) return 'trop-loin';
+  if (p.fin === date) { p.fin = null; return 'retire'; }
+  p.fin = date;
+  Object.keys(p.intensite).forEach(j => { if (j > date) delete p.intensite[j]; });          // pas d'intensité notée après la fin
+  return 'note';
+}
+// Intensité d'un jour de règles (facultative). Statuts : 'note' · 'retire' (même niveau touché deux fois) · 'hors-regles'
+function cycleIntensiteListe(liste, date, niveau) {
+  const p = cycleReglesDuJour(liste, date);
+  if (!p || !CYCLE_INTENSITES[niveau]) return 'hors-regles';
+  if (p.intensite[date] === niveau) { delete p.intensite[date]; return 'retire'; }
+  p.intensite[date] = niveau;
+  return 'note';
+}
+function cycleRetirerDebutListe(liste, date) {
+  const i = liste.findIndex(p => p.debut === date);
+  if (i < 0) return 'absent';
+  liste.splice(i, 1);
+  return 'retire';
+}
+// Applique une modification à la liste et enregistre (sauf refus). Les anciennes données deviennent une liste ici, à la première modification.
+// La date de début des réglages suit toujours le dernier début noté : la phase de l'Accueil reste juste.
+function cycleAppliquer(fn) {
+  const s = cycleLoad();
+  if (!s || !s.active) return 'inactif';
+  const liste = cycleReglesLire(s);
+  const statut = fn(liste);
+  if (['ajoute', 'avance', 'note', 'retire'].indexOf(statut) < 0) return statut;
+  s.regles = cycleReglesCompacter(liste);
+  s.startDate = liste.length ? liste[liste.length - 1].debut : null;
+  cycleSave(s);
+  return statut;
+}
+
+// ── « Ce que tu remarques sur ton cycle » ────────────────────────────────────
+// À partir de 2 cycles complets notés (début → début suivant, 21 à 45 jours). Pour chaque cycle, une fenêtre (les 5 jours avant les règles suivantes, ou les règles)
+// est comparée au reste du même cycle : au moins 2 jours notés dans la fenêtre, 3 dans le reste, et un écart d'au moins le seuil des Insights (CYCLE_SEUILS).
+// Une phrase n'apparaît que si l'écart va dans le même sens dans au moins 2 cycles et dans les deux tiers des cycles comparables. Observation seulement : jamais de cause, jamais de diagnostic.
+const CYCLE_SIGNAUX = [
+  { k: 'peau',     seuil: 'peau',          plus: 'Ta peau est souvent plus calme',                      moins: 'Ta peau réagit souvent' },
+  { k: 'transit',  seuil: 'transit',       plus: 'Ton transit est souvent plus rapide',                 moins: 'Ton transit est souvent plus lent' },
+  { k: 'bal',      seuil: 'ballonnements', plus: 'Tes ballonnements sont souvent plus marqués',         moins: 'Tes ballonnements sont souvent plus discrets' },
+  { k: 'ener',     seuil: 'energie',       plus: 'Ton énergie est souvent plus haute',                  moins: 'Ton énergie est souvent plus basse' },
+  { k: 'som',      seuil: 'sommeil',       plus: 'Ton sommeil est souvent meilleur',                    moins: 'Ton sommeil est souvent moins bon' },
+  { k: 'freqTous', seuil: 'selleFreq',     plus: 'Tes passages aux selles sont souvent plus nombreux',  moins: 'Tes passages aux selles sont souvent plus rares' },
+  { k: 'bristol',  seuil: 'selleBristol',  plus: 'Tes selles sont souvent plus molles',                 moins: 'Tes selles sont souvent plus fermes' }
+];
+const CYCLE_FENETRES = [{ id: 'avant', texte: 'dans les jours avant tes règles' }, { id: 'pendant', texte: 'pendant tes règles' }];
+function cycleObservations(e) {
+  const cycles = [];
+  for (let i = 0; i + 1 < e.liste.length; i++) {
+    const p = e.liste[i], suivant = e.liste[i + 1].debut, n = routEcart(p.debut, suivant);
+    if (n < CYCLE_LONG_MIN || n > CYCLE_LONG_MAX) continue;
+    const fin = p.fin || routAjouter(p.debut, e.R - 1);                                       // fin pas notée : durée moyenne des règles
+    cycles.push({ debut: p.debut, suivant: suivant, fin: fin, avant: routAjouter(suivant, -CYCLE_AVANT) });
+  }
+  if (cycles.length < 2) return { etat: 'trop-tot', n: cycles.length, phrases: [] };
+  const idx = corrDayIndex(), moy = a => a.reduce((x, y) => x + y, 0) / a.length, cand = [];
+  CYCLE_SIGNAUX.forEach(sg => CYCLE_FENETRES.forEach(fe => {
+    let plus = 0, moins = 0, n = 0, force = 0;
+    cycles.forEach(c => {
+      const dedans = [], reste = [];
+      for (let d = c.debut; d < c.suivant; d = routAjouter(d, 1)) {
+        const x = idx[d] ? idx[d][sg.k] : undefined;
+        if (x === undefined || x === null) continue;
+        const dansRegles = d <= c.fin, dansAvant = d >= c.avant;
+        if (fe.id === 'pendant' ? dansRegles : dansAvant) dedans.push(x);
+        else if (!dansRegles && !dansAvant) reste.push(x);
+      }
+      if (dedans.length < 2 || reste.length < 3) return;                                      // pas assez de jours notés pour comparer ce cycle
+      const ecart = moy(dedans) - moy(reste), seuil = CYCLE_SEUILS[sg.seuil];
+      n++;
+      if (ecart >= seuil) plus++; else if (ecart <= -seuil) moins++;
+      force += Math.abs(ecart) / seuil;
+    });
+    const k = Math.max(plus, moins);
+    if (n >= 2 && k >= 2 && plus !== moins && k / n >= 2 / 3) cand.push({ sg: sg, fe: fe, k: k, n: n, sens: plus > moins ? 'plus' : 'moins', ratio: k / n, force: force / n });
+  }));
+  cand.sort((a, b) => (b.ratio - a.ratio) || (b.k - a.k) || (b.force - a.force));
+  const phrases = [], vus = {};
+  cand.forEach(c => {
+    if (phrases.length >= 2 || vus[c.sg.k]) return;
+    vus[c.sg.k] = true;
+    phrases.push(c.sg[c.sens] + ' ' + c.fe.texte + ' (' + c.k + ' cycles sur ' + c.n + ')');
+  });
+  return { etat: 'ok', n: cycles.length, phrases: phrases };
+}
+
+// ── La page « Mon cycle » : en-tête, calendrier du mois, légende, observations ; panneau d'un jour ──
+// Ouvrir ou feuilleter la page ne fait que LIRE (rien n'est écrit) : seuls les boutons du panneau d'un jour enregistrent, par cycleAppliquer.
+let cycleVue = null;                // mois affiché : { a: année, m: mois (0 à 11) }
+let cycleJourOuvert = null;         // jour dont le panneau est ouvert (AAAA-MM-JJ) ; null = fermé
+let _cycleGardeVue = false;         // vrai le temps d'un retour (depuis le Journal, depuis les réglages) : la page rouverte garde son mois
+let _cycleRetourReglages = 'cycle'; // écran d'où la page « Réglages du cycle » a été ouverte : sa flèche retour y ramène
+let _cycleRetirerDebut = null;      // jour dont le retrait du début attend une confirmation dans le panneau
+let _cycleMsg = '';                 // petite phrase du panneau (refus doux)
+
+function renderCyclePage() {
+  const auj = getTodayStr();
+  if (!_cycleGardeVue || !cycleVue) cycleVue = { a: +auj.slice(0, 4), m: +auj.slice(5, 7) - 1 };
+  _cycleGardeVue = false;
+  cycleFermerJour();
+  cycleRendreContenu();
+}
+function cycleRendreContenu() {
+  const zone = document.getElementById('cyc-contenu');
+  if (!zone) return;
+  const e = cycleEstimations();
+  if (!e) { zone.innerHTML = cycleHtmlInactif(); return; }
+  const auj = getTodayStr();
+  zone.innerHTML = cycleHtmlEntete(e, auj) + cycleHtmlMois(e, corrDayIndex(), auj) + cycleHtmlObservations(e);
+}
+function cycleHtmlInactif() {
+  return `<section class="cyc-carte cyc-vide">
+    <div class="cyc-vide-ico" aria-hidden="true">🌸</div>
+    <h2 class="cyc-titre-sec">Le suivi du cycle n'est pas activé</h2>
+    <p class="cyc-obs-doux">Note tes règles pour voir ton calendrier, tes estimations et ce que tu remarques d'un cycle à l'autre. C'est facultatif : tu peux l'activer quand tu veux.</p>
+    <button type="button" class="cyc-btn-principal" onclick="cycleOuvrirReglages()">Activer le suivi du cycle</button>
+  </section>`;
+}
+// Carte du haut (fond #EFD7CF) : le jour du cycle, la phase en mots simples, les prochaines règles estimées
+function cycleHtmlEntete(e, auj) {
+  const info = cycleInfoJour(auj, e), pro = cycleProchaines(e, auj), phase = CYCLE_PHASES[info.type];
+  let ligne;
+  if (e.irregulier) ligne = "Cycle irrégulier : pas d'estimation, seulement ton historique.";
+  else if (!e.dernier) ligne = 'Note le début de tes dernières règles pour voir tes estimations.';
+  else if (pro) ligne = (pro.enCours ? 'Règles estimées depuis le ' : 'Prochaines règles estimées vers le ') + cycleJourMois(pro.date) + ' · cycle moyen ' + e.L + ' jours';
+  else ligne = 'Note tes dernières règles pour remettre tes estimations à jour.';
+  return `<section class="cyc-entete" id="cyc-entete">
+    <div class="cyc-etiq">${info.jour ? "AUJOURD'HUI · JOUR " + info.jour : "AUJOURD'HUI"}</div>
+    ${phase ? `<div class="cyc-phase">${escHtml(phase)}</div>` : ''}
+    <div class="cyc-prochaines">${escHtml(ligne)}</div>
+  </section>`;
+}
+// Calendrier du mois : lundi → dimanche. Plein = règles notées ; pointillés = estimations ; anneau = aujourd'hui ; petit point = journal rempli ce jour-là
+function cycleHtmlMois(e, idx, auj) {
+  const a = cycleVue.a, m = cycleVue.m, mm = String(m + 1).padStart(2, '0');
+  const d1 = a + '-' + mm + '-01', suivant = m === 11 ? (a + 1) + '-01-01' : a + '-' + String(m + 2).padStart(2, '0') + '-01';
+  const nb = routEcart(d1, suivant), decal = (routJourNum(d1) + 3) % 7;                      // lundi = 0
+  const n = a * 12 + m, nAuj = +auj.slice(0, 4) * 12 + (+auj.slice(5, 7) - 1);
+  let jours = '';
+  for (let i = 0; i < decal; i++) jours += '<span class="cyc-jour vide" aria-hidden="true"></span>';
+  for (let k = 1; k <= nb; k++) {
+    const date = a + '-' + mm + '-' + String(k).padStart(2, '0'), info = cycleInfoJour(date, e), cl = ['cyc-jour'];
+    const journal = !!(idx[date] && homeEstNote(idx[date]));
+    let aria = k + ' ' + ROUT_MOIS[m];
+    if (info.type === 'regles') { cl.push('note'); aria += ', règles notées'; }
+    else if (info.type === 'regles-prevues' || info.type === 'fin-regles') { cl.push('est-regles'); aria += ', ' + CYCLE_PHASES[info.type].toLowerCase() + ' (estimation)'; }
+    else if (info.type === 'avant') { cl.push('est-avant'); aria += ', jours avant tes règles (estimation)'; }
+    else if (info.type === 'ovulation') { cl.push('est-ovul'); aria += ", période d'ovulation (estimation)"; }
+    if (date === auj) { cl.push('auj'); aria += ", aujourd'hui"; }
+    if (journal) aria += ', journal rempli';
+    jours += `<button type="button" class="${cl.join(' ')}" data-date="${date}" aria-label="${aria}" onclick="cycleOuvrirJour('${date}')"><span class="cyc-num">${k}</span>${journal ? '<i class="cyc-pt" aria-hidden="true"></i>' : ''}</button>`;
+  }
+  return `<section class="cyc-carte" id="cyc-mois">
+    <div class="cyc-mois-tete">
+      <button type="button" class="cal-nav-btn" id="cyc-prec" aria-label="Mois précédent" onclick="cycleMoisPrec()"${n <= nAuj - CYCLE_MOIS_ARRIERE ? ' disabled' : ''}>‹</button>
+      <div class="cal-month-label" id="cyc-mois-label">${MOIS_FR[m]} <span class="cal-year">${a}</span></div>
+      <button type="button" class="cal-nav-btn" id="cyc-suiv" aria-label="Mois suivant" onclick="cycleMoisSuiv()"${n >= nAuj + CYCLE_MOIS_AVANT ? ' disabled' : ''}>›</button>
+    </div>
+    <div class="cal-weekdays"><div class="cal-wd">Lun</div><div class="cal-wd">Mar</div><div class="cal-wd">Mer</div><div class="cal-wd">Jeu</div><div class="cal-wd">Ven</div><div class="cal-wd">Sam</div><div class="cal-wd">Dim</div></div>
+    <div class="cyc-grille" id="cyc-grille" role="group" aria-label="Calendrier du mois">${jours}</div>
+    ${cycleHtmlLegende(e)}
+  </section>`;
+}
+// Légende : seulement ce qui peut apparaître (« irrégulier » : plus aucune estimation ; « contraception » : plus de période d'ovulation)
+function cycleHtmlLegende(e) {
+  const it = (cl, t) => '<div class="cyc-leg-item"><span class="cyc-leg-pastille ' + cl + '"></span>' + t + '</div>';
+  let h = it('note', 'Règles notées');
+  if (!e.irregulier) {
+    h += it('est-regles', 'Règles estimées') + it('est-avant', 'Jours avant tes règles');
+    if (!e.contraception) h += it('est-ovul', "Période d'ovulation");
+  }
+  h += it('auj', "Aujourd'hui") + it('pt', 'Journal rempli');
+  return '<div class="cyc-legende" id="cyc-legende" role="group" aria-label="Légende du calendrier">' + h + '</div>';
+}
+function cycleHtmlObservations(e) {
+  const o = cycleObservations(e);
+  let corps;
+  if (o.etat === 'trop-tot') corps = '<p class="cyc-obs-doux">Note tes règles sur 2 ou 3 cycles pour voir apparaître tes liens ici 🌱</p>';
+  else if (!o.phrases.length) corps = "<p class=\"cyc-obs-doux\">Rien ne revient d'un cycle à l'autre pour l'instant. Continue de noter : ça se précise avec le temps 🌱</p>";
+  else corps = o.phrases.map(t => '<p class="cyc-obs">' + escHtml(t) + '</p>').join('');
+  return '<section class="cyc-carte" id="cyc-obs"><h2 class="cyc-titre-sec">Ce que tu remarques sur ton cycle</h2>' + corps + '</section>';
+}
+function cycleMoisPrec() {
+  const auj = getTodayStr();
+  if (cycleVue.a * 12 + cycleVue.m <= +auj.slice(0, 4) * 12 + (+auj.slice(5, 7) - 1) - CYCLE_MOIS_ARRIERE) return;
+  if (cycleVue.m === 0) { cycleVue.m = 11; cycleVue.a--; } else cycleVue.m--;
+  cycleRendreContenu();
+}
+function cycleMoisSuiv() {
+  const auj = getTodayStr();
+  if (cycleVue.a * 12 + cycleVue.m >= +auj.slice(0, 4) * 12 + (+auj.slice(5, 7) - 1) + CYCLE_MOIS_AVANT) return;
+  if (cycleVue.m === 11) { cycleVue.m = 0; cycleVue.a++; } else cycleVue.m++;
+  cycleRendreContenu();
+}
+
+// ── Panneau d'un jour (monte du bas) ─────────────────────────────────────────
+function cycleOuvrirJour(date) {
+  if (!CYCLE_DATE_RE.test(date || '') || !cycleEstimations()) return;
+  cycleJourOuvert = date; _cycleRetirerDebut = null; _cycleMsg = '';
+  cycleRendreJour();
+  const ov = document.getElementById('cyc-jour-overlay');
+  if (ov) ov.classList.add('open');
+}
+function cycleFermerJour() {
+  cycleJourOuvert = null; _cycleRetirerDebut = null; _cycleMsg = '';
+  const ov = document.getElementById('cyc-jour-overlay');
+  if (ov) ov.classList.remove('open');
+}
+function cycleJourOverlay(ev) { if (ev.target === document.getElementById('cyc-jour-overlay')) cycleFermerJour(); }
+function cycleLibelleJour(date) {
+  const l = routLibelle(date);
+  return l.charAt(0).toUpperCase() + l.slice(1) + (date.slice(0, 4) !== getTodayStr().slice(0, 4) ? ' ' + date.slice(0, 4) : '');
+}
+function cycleRendreJour() {
+  const date = cycleJourOuvert, carte = document.getElementById('cyc-jour-carte'), e = cycleEstimations();
+  if (!date || !carte || !e) return;
+  const auj = getTodayStr(), futur = date > auj, info = cycleInfoJour(date, e);
+  let phase = CYCLE_PHASES[info.type];
+  if (phase && info.estime) phase += ' · estimation';
+  if (!phase && e.irregulier) phase = "Cycle irrégulier : pas d'estimation";
+  let corps;
+  if (futur) {
+    corps = `<p class="cyc-obs-doux cyc-jour-futur">Ce jour n'est pas encore arrivé. Tu pourras noter tes règles ici quand il sera là.</p>`;
+  } else {
+    const p = cycleReglesDuJour(e.liste, date), estDebut = e.liste.some(x => x.debut === date), estFin = e.liste.some(x => x.fin === date), niveau = p ? p.intensite[date] || null : null;
+    let actions;
+    if (_cycleRetirerDebut === date) {
+      actions = `<div class="cyc-confirme" role="alertdialog" aria-label="Retirer le début des règles">
+        <p>Retirer le début des règles du ${cycleJourMois(date)} ? Les jours notés de cette période (fin, intensité) seront retirés aussi.</p>
+        <div class="cyc-actions"><button type="button" class="cyc-btn" onclick="cycleJourRetraitDebut(true)">Retirer</button><button type="button" class="cyc-btn on" onclick="cycleJourRetraitDebut(false)">Garder</button></div>
+      </div>`;
+    } else {
+      actions = `<div class="cyc-actions">
+        <button type="button" class="cyc-btn${estDebut ? ' on' : ''}" id="cyc-btn-debut" aria-pressed="${estDebut}" onclick="cycleJourDebut()">${estDebut ? '✓ ' : ''}Début des règles</button>
+        <button type="button" class="cyc-btn${estFin ? ' on' : ''}" id="cyc-btn-fin" aria-pressed="${estFin}" onclick="cycleJourFin()">${estFin ? '✓ ' : ''}Fin des règles</button>
+      </div>`;
+    }
+    const chips = Object.keys(CYCLE_INTENSITES).map(k => `<button type="button" class="cyc-chip${niveau === k ? ' on' : ''}" data-niveau="${k}" aria-pressed="${niveau === k}"${p ? '' : ' disabled'} onclick="cycleJourIntensite('${k}')">${CYCLE_INTENSITES[k]}</button>`).join('');
+    const j = corrDayIndex()[date] || {};
+    const pastilles = homeEstNote(j) ? homeResume(j, date).filter(t => !/Repas/.test(t)) : [];                // transit, peau, énergie, sommeil (les repas ne font pas partie du panneau)
+    const cal = calLoad(date), bt = cal && cal.bristol ? BRISTOL_TYPES[cal.bristol - 1] : null;
+    let selles = 'Rien de noté';
+    if (cal && cal.yn === 'oui') { const f = cal.freq || 1; selles = f + ' passage' + (f > 1 ? 's' : '') + (bt ? ' · Type ' + cal.bristol + ' — ' + bt.label : ''); }
+    else if (cal && cal.yn === 'non') selles = 'Pas de selle ce jour';
+    corps = `${_cycleMsg ? `<div class="cyc-jour-msg" id="cyc-jour-msg" role="status">${escHtml(_cycleMsg)}</div>` : ''}
+      ${actions}
+      <span class="cyc-sec-label">Intensité (facultatif)</span>
+      <div class="cyc-chips" role="group" aria-label="Intensité des règles">${chips}</div>
+      ${p ? '' : '<p class="cyc-aide">Note d\'abord le début de tes règles pour indiquer leur intensité.</p>'}
+      <span class="cyc-sec-label">Ce jour-là dans ton journal</span>
+      ${pastilles.length ? `<div class="cyc-pastilles">${pastilles.map(t => `<span class="cyc-pastille">${escHtml(t)}</span>`).join('')}</div>` : '<div class="cyc-rien">Rien de noté</div>'}
+      <span class="cyc-sec-label">Ce jour-là pour tes selles</span>
+      <div class="${selles === 'Rien de noté' ? 'cyc-rien' : 'cyc-pastilles'}">${selles === 'Rien de noté' ? selles : `<span class="cyc-pastille">${escHtml(selles)}</span>`}</div>
+      <div class="cyc-liens">
+        <button type="button" class="cyc-lien" onclick="cycleVoirJournal()"><span>Voir le journal de ce jour</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="cyc-lien" onclick="cycleVoirCalendrierTransit()"><span>Voir le calendrier du transit</span><span aria-hidden="true">›</span></button>
+      </div>`;
+  }
+  carte.innerHTML = `<div class="cal-modal-handle"></div>
+    <button type="button" class="cyc-jour-fermer" aria-label="Fermer" onclick="cycleFermerJour()">✕</button>
+    <div class="cyc-jour-date" id="cyc-jour-date">${escHtml(cycleLibelleJour(date))}</div>
+    <div class="cyc-jour-phase" id="cyc-jour-phase">${escHtml(phase || '')}</div>
+    ${corps}`;
+}
+// Après un enregistrement : le panneau, le calendrier, l'en-tête et les observations se mettent à jour ; l'Accueil suit au prochain affichage
+function cycleApresChangement() {
+  cycleRendreContenu();
+  cycleRendreJour();
+}
+function cycleJourDebut() {
+  const date = cycleJourOuvert;
+  if (!date || date > getTodayStr()) return;
+  _cycleMsg = '';
+  const e = cycleEstimations(), p = e && e.liste.find(x => x.debut === date);
+  if (p) {                                                                                    // déjà le début : le toucher le retire (avec confirmation s'il y a plus que le début)
+    if (p.fin || Object.keys(p.intensite).length) { _cycleRetirerDebut = date; cycleRendreJour(); return; }
+    cycleAppliquer(l => cycleRetirerDebutListe(l, date));
+    _cycleMsg = 'Début des règles retiré.';
+    cycleApresChangement();
+    return;
+  }
+  const st = cycleAppliquer(l => cycleDebutListe(l, date));
+  if (st === 'proche') _cycleMsg = 'Des règles sont déjà notées autour de cette date. Pour changer leur début, retire-le d\'abord.';
+  cycleApresChangement();
+}
+function cycleJourRetraitDebut(oui) {
+  const date = _cycleRetirerDebut;
+  _cycleRetirerDebut = null;
+  if (oui && date) { cycleAppliquer(l => cycleRetirerDebutListe(l, date)); _cycleMsg = 'Début des règles retiré.'; }
+  cycleApresChangement();
+}
+function cycleJourFin() {
+  const date = cycleJourOuvert;
+  if (!date || date > getTodayStr()) return;
+  _cycleMsg = '';
+  const st = cycleAppliquer(l => cycleFinListe(l, date));
+  if (st === 'sans-debut') _cycleMsg = "Note d'abord le début de tes règles.";
+  else if (st === 'trop-loin') _cycleMsg = 'Cette date est à plus de 14 jours du début noté. Vérifie le début de tes règles.';
+  cycleApresChangement();
+}
+function cycleJourIntensite(niveau) {
+  const date = cycleJourOuvert;
+  if (!date || date > getTodayStr()) return;
+  _cycleMsg = '';
+  cycleAppliquer(l => cycleIntensiteListe(l, date, niveau));
+  cycleApresChangement();
+}
+// Liens du panneau : le Journal s'ouvre sur ce jour (ou sur le calendrier du transit, à ce mois) ; sa flèche retour ramène ici, au même mois
+function cycleMemoriserRetour() { routRetourVers = 'cycle'; _routNav = true; }
+function cycleVoirJournal() {
+  const date = cycleJourOuvert, auj = getTodayStr();
+  if (!date || date > auj) return;
+  if (routEcart(date, auj) > 30) { showToast('Le journal se remplit sur les 30 derniers jours'); return; }
+  cycleFermerJour();
+  jrnCurrentDate = date === auj ? null : date;
+  jrnCurrentSlide = 0;
+  cycleMemoriserRetour();
+  go('journal');
+}
+function cycleVoirCalendrierTransit() {
+  const date = cycleJourOuvert;
+  if (!date) return;
+  cycleFermerJour();
+  calYear = +date.slice(0, 4); calMonth = +date.slice(5, 7) - 1;
+  jrnCurrentDate = null; jrnCurrentSlide = 0;
+  cycleMemoriserRetour();
+  go('journal');
+  jrnChoisirVue('calendrier');
 }
 
 // ── Corrélation cycle × données journal (pour les insights) ──────────────────
@@ -16100,6 +16875,9 @@ function renderCalendar() {
   const offset = firstDay === 0 ? 6 : firstDay - 1;
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const todayStr = getTodayStr();
+  const sc = cycleLoad(), regles = sc && sc.active ? cycleJoursNotes(cycleReglesLire(sc)) : null;      // lot 14 : jours de règles notés (rien si le suivi du cycle n'est pas actif)
+  const lgCycle = document.getElementById('cal-legend-cycle');
+  if (lgCycle) lgCycle.style.display = regles ? '' : 'none';                                           // « Règles notées » dans la légende, seulement quand le trait peut apparaître
 
   let html = '';
   for (let i = 0; i < offset; i++) html += '<div class="cal-day empty"></div>';
@@ -16113,6 +16891,7 @@ function renderCalendar() {
     let classes = 'cal-day';
     if (isToday)  classes += ' today';
     if (isFuture) classes += ' future';
+    if (regles && regles[dateStr]) classes += ' regles';                // petit trait #DDBAAE sous la date
 
     let dot = '', badge = '';
     if (entry) {
@@ -16342,64 +17121,6 @@ window.__naraBooted = true; // atteint uniquement si le script principal s'est e
     <!-- CONFIRMATIONS DES ROUTINES (changer de routine, arrêter, gluten) — rendu par routSheet() -->
     <div class="rout-sheet-overlay" id="rout-sheet-overlay" onclick="routSheetOverlay(event)">
       <div class="rout-sheet-card" id="rout-sheet-card"></div>
-    </div>
-
-    <!-- MODALE PARAMÈTRES CYCLE -->
-    <div class="cycle-modal-overlay" id="cycle-modal-overlay" onclick="cycleHandleOverlay(event)">
-      <div class="cycle-modal-card">
-        <div class="cycle-modal-handle"></div>
-        <div class="cycle-modal-title">🌸 Suivi de cycle</div>
-        <div class="cycle-modal-sub">
-          Module optionnel — te permet de croiser ta phase hormonale avec ton transit, ta peau et ton énergie dans les insights.
-        </div>
-
-        <!-- Toggle activation -->
-        <div class="cycle-toggle-row">
-          <div>
-            <div class="cycle-toggle-label">Activer le suivi de cycle</div>
-            <div class="cycle-toggle-sub">Désactive si tu n'es pas concernée</div>
-          </div>
-          <div class="cycle-toggle" id="cycle-toggle" onclick="cycleToggleModule()"></div>
-        </div>
-
-        <!-- Formulaire (masqué si désactivé) -->
-        <div id="cycle-form">
-          <span class="cycle-field-label">Quand ont commencé tes dernières règles ?</span>
-          <p style="font-size:0.72rem;color:var(--text-light);margin:-4px 0 10px;line-height:1.5;">
-            Mets à jour ce champ à chaque nouveau cycle pour garder tes phases à jour.
-          </p>
-          <input type="date" class="cycle-date-input" id="cycle-start-date"
-                 max="" placeholder="jj/mm/aaaa">
-
-          <span class="cycle-field-label">Durée habituelle de ton cycle</span>
-          <div class="cycle-duration-row">
-            <button class="cycle-duration-btn" onclick="cycleDurationStep(-1)">−</button>
-            <div>
-              <div class="cycle-duration-val" id="cycle-duration-val">28</div>
-              <div class="cycle-duration-unit">jours</div>
-            </div>
-            <button class="cycle-duration-btn" onclick="cycleDurationStep(1)">+</button>
-          </div>
-
-          <span class="cycle-field-label" style="margin-top:-4px">Durée habituelle de tes règles</span>
-          <div class="cycle-duration-row" style="margin-bottom:20px">
-            <button class="cycle-duration-btn" onclick="cycleRegDurationStep(-1)">−</button>
-            <div>
-              <div class="cycle-duration-val" id="cycle-reg-duration-val">5</div>
-              <div class="cycle-duration-unit">jours</div>
-            </div>
-            <button class="cycle-duration-btn" onclick="cycleRegDurationStep(1)">+</button>
-          </div>
-
-          <!-- Alerte douleurs intenses -->
-          <div class="cycle-medical-alert" id="cycle-medical-alert">
-            🩺 Si tes règles sont très douloureuses, irrégulières, ou si tu observes des saignements inhabituels, une consultation gynécologique est conseillée. Nara ne remplace pas un avis médical.
-          </div>
-
-          <button class="cycle-save-btn" onclick="cycleSaveSettings()">Enregistrer ✓</button>
-          <button class="cycle-reset-btn" onclick="cycleResetModule()">Réinitialiser le module</button>
-        </div>
-      </div>
     </div>
 
     <!-- OVERLAY HISTORIQUE REPAS -->

@@ -4089,7 +4089,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '25/11 · 18 h 17';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '25/11 · 19 h 28';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -5430,10 +5430,49 @@ function homeHtmlPourToi(idx) {
   </div>`;
 }
 
+// ── « Ce que tu remarques » pendant une routine : le lien avec le journal (lot 17) ──
+// Une routine en cours depuis au moins 5 jours (Jour 5 et suivants) : la phrase DÉCRIT ce qui a été noté dans le journal depuis le début de la routine ; elle n'affirme jamais que la routine en est la cause.
+// Seuls les jours RÉELLEMENT NOTÉS comptent, signal par signal (même lecture que les alertes : peau et transit = une réponse, 0 compris ; ballonnements, énergie, sommeil = une valeur de 1 à 5, 0 = non renseigné).
+// « Bon jour » : peau « Calme » · transit « Normal » · ballonnements de 1 à 2 · énergie de 4 à 5 · sommeil de 4 à 5. Un signal ressort s'il compte au moins 4 jours notés et au moins 70 % de bons jours (en entiers, sans virgule) ;
+// on garde le plus net : la plus grande part de bons jours, puis le plus de jours notés, puis l'ordre de la liste. Rien de négatif : si aucun signal ne ressort, la fonction rend null et la carte garde son insight habituel.
+// Si une carte d'alerte est affichée (même condition que la carte elle-même : homeHtmlAlerte), la phrase reste neutre : elle dit seulement ce qui a été noté, sans rien juger de bon ni de mauvais.
+const HOME_REM_JOURS_MIN = 5;                // la routine doit être au moins à son Jour 5
+const HOME_REM_NOTES_MIN = 4;                // jours notés au moins, pour un signal
+const HOME_REM_SIGNAUX = [                   // dans cet ordre en cas d'égalité parfaite
+  { icone: '✨', nom: 'ta peau',           etat: 'a été calme',    unite: 'jours', note: j => alrRep(j.peau),      bon: j => j.peau === 2 },
+  { icone: '🌿', nom: 'ton transit',       etat: 'a été normal',   unite: 'jours', note: j => alrRep(j.transit),   bon: j => j.transit === 1 },
+  { icone: '🌀', nom: 'tes ballonnements', etat: 'ont été légers', unite: 'jours', note: j => j.ballonnements > 0, bon: j => j.ballonnements <= 2 },
+  { icone: '⚡', nom: 'ton énergie',       etat: 'a été bonne',    unite: 'jours', note: j => j.energie > 0,       bon: j => j.energie >= 4 },
+  { icone: '😴', nom: 'ton sommeil',       etat: 'a été bon',      unite: 'nuits', note: j => j.sommeil > 0,       bon: j => j.sommeil >= 4 }
+];
+function homeRemarqueRoutine() {              // { icone, texte } ou null (alors l'insight habituel)
+  try {
+    const id = routIdActive();
+    if (!id) return null;
+    const r = routinesData.find(x => x.id === id), e = routEtat(id);
+    if (!r || e.statut !== 'active' || e.jour < HOME_REM_JOURS_MIN) return null;
+    const jours = alrFenetre(getTodayStr(), e.jour);            // du jour de départ de la routine à aujourd'hui, compris
+    let best = null;
+    HOME_REM_SIGNAUX.forEach(s => {
+      const p = alrPart(jours, s.note, s.bon);                      // alrPart passe déjà le journal du jour (x.j) aux deux fonctions
+      if (p.notes < HOME_REM_NOTES_MIN || p.oui * 10 < 7 * p.notes) return;
+      const d = best ? p.oui * best.notes - best.oui * p.notes : 1;      // > 0 : une meilleure part de bons jours
+      if (d > 0 || (d === 0 && p.notes > best.notes)) best = { s: s, notes: p.notes, oui: p.oui };
+    });
+    if (!best) return null;
+    let alerte = false;
+    try { alerte = homeHtmlAlerte() !== ''; } catch (err) { alerte = true; }       // en cas de doute, on reste neutre
+    const debut = 'Depuis que tu suis ' + r.titre + ', ', s = best.s;
+    return alerte
+      ? { icone: '📝', texte: debut + 'tu as noté ' + s.nom + ' ' + best.notes + ' ' + s.unite + ' sur ' + e.jour }
+      : { icone: s.icone, texte: debut + s.nom + ' ' + s.etat + ' ' + best.oui + ' ' + s.unite + ' sur ' + best.notes };
+  } catch (err) { console.warn('[Nara] phrase routine ↔ journal :', err); return null; }
+}
+
 // ── « Ce que tu remarques » : UN seul insight, le lien le plus net du moteur d'Insights (30 derniers jours) ──
 function homeVoirInsights() { _insightsTab = 'overview'; go('insights'); }      // la Vue d'ensemble montre la même phrase (« Liens repérés »), avec « Voir tous les liens »
 function homeHtmlRemarque() {
-  const l = corrTopLiens()[0], p = l && corrPhrase(l);
+  const l = corrTopLiens()[0], p = homeRemarqueRoutine() || (l && corrPhrase(l));
   return `<div class="hm-carte hm-rem">
     <div class="hm-sec-tete"><span class="hm-sec-titre">Ce que tu remarques</span><button type="button" class="hm-lien" onclick="homeVoirInsights()">Insights ›</button></div>
     ${p ? `<div class="hm-rem-txt"><span aria-hidden="true">${p.icone}</span> ${escHtml(p.texte)}</div>`

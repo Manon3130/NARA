@@ -2608,6 +2608,49 @@ if (typeof supabase === 'undefined') {
   .cycle-calibrate-btn.later { border-color: var(--oat); color: var(--text-light); }
   .cycle-calibrate-btn.later:active { background: var(--honey); }
 
+  /* ===== LOT 16 : cases discrètes du journal, règles dans le journal, carte « signaux » de l'Accueil ===== */
+
+  /* Case discrète et facultative : bordure pointillée #E8C8BC ; le même gabarit dans le Journal et dans le panneau d'un jour de « Mon cycle » */
+  .jrn-case {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin: 12px 0 4px; padding: 10px 14px; text-align: left;
+    background: transparent; color: var(--text-dark); border: 1.5px dotted #E8C8BC; border-radius: 14px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .jrn-case.on { background: #FBF1EC; }
+  .jrn-case:disabled { opacity: 0.5; cursor: default; }
+  .jrn-case-coche {
+    flex: 0 0 22px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 7px; border: 1.5px solid #DDBAAE; background: #FFFAF2;
+    display: flex; align-items: center; justify-content: center; font-size: 0.78rem; line-height: 1; color: #FFFAF2;
+  }
+  .jrn-case.on .jrn-case-coche { background: var(--olive-fonce); border-color: var(--olive-fonce); }
+  .jrn-case.on .jrn-case-coche::after { content: '✓'; }
+  .jrn-case-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .jrn-case-titre { font-size: 0.84rem; line-height: 1.3; }
+  .jrn-case-petit { font-size: 0.68rem; color: var(--text-light); }
+
+  /* Encadré des règles du Journal : la ligne d'origine (icône, phase, « Mettre à jour ») ne change pas ; sous elle, un jour de règles noté montre l'intensité et la case des douleurs */
+  .cycle-phase-banner.cpb-regles { display: block; }
+  .cpb-ligne { display: flex; align-items: center; gap: 10px; }
+  .jrn-regles { margin-top: 12px; padding-top: 2px; border-top: 1px dotted #E8C8BC; }
+  .jrn-regles .cyc-sec-label { margin: 10px 0 8px; }
+  .jrn-regles .jrn-case { margin: 12px 0 0; }
+  .jrn-facultatif { text-transform: none; letter-spacing: 0; }
+
+  /* Carte « signaux » de l'Accueil : une seule à la fois, tout en haut, au-dessus d'Aujourd'hui ; ni rouge, ni alarme */
+  .al-carte { border: 1.5px solid; border-radius: 18px; padding: 14px 16px 12px; margin-bottom: 14px; color: var(--text-dark); }
+  .al-rapide { background: #F7E6DF; border-color: #E8C8BC; }
+  .al-oeil { background: #FBF1EC; border-color: #EFD7CF; }
+  .al-titre { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; color: var(--olive-fonce); margin-bottom: 8px; }
+  .al-texte { margin: 0; font-size: 0.88rem; line-height: 1.5; }
+  .al-urgence { margin: 10px 0 0; padding-top: 10px; border-top: 1px dotted #E8C8BC; font-size: 0.76rem; line-height: 1.45; color: var(--text-mid); }
+  .al-boutons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .al-btn {
+    flex: 1 1 calc(50% - 4px); min-height: 44px; padding: 8px 10px; border-radius: 22px; border: 1.5px solid var(--olive-fonce); background: transparent; color: var(--olive-fonce); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .al-btn-1 { flex-basis: 100%; background: var(--olive-fonce); color: #FFFAF2; }
+  .al-btn:active { transform: scale(0.98); }
+
   /* ===== MODULE CYCLE ===== */
 
   /* Bannière phase dans le journal */
@@ -3353,7 +3396,8 @@ if (typeof supabase === 'undefined') {
         <button type="button" class="espace-rond espace-bulle" id="espace-bulle" onclick="go('espace')" aria-label="Mon espace"><span class="espace-lettre"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.6-3.7 3.4-5.8 7.2-5.8s6.6 2.1 7.2 5.8"/></svg></button>
       </div>
       <div class="home-scroll" id="home-scroll">
-        <!-- Les cartes sont dessinées par renderHome(), dans cet ordre : Aujourd'hui · profil (petite ligne) · Ma routine en cours · Ma semaine · Cycle · Pour toi aujourd'hui · Ce que tu remarques -->
+        <!-- Les cartes sont dessinées par renderHome(), dans cet ordre : Signaux d'alerte (une seule carte, seulement s'il y en a) · Aujourd'hui · profil (petite ligne) · Ma routine en cours · Ma semaine · Cycle · Pour toi aujourd'hui · Ce que tu remarques -->
+        <div id="home-alerte"></div>
         <div id="home-auj"></div>
         <div id="home-profil"></div>
         <div id="home-routine"></div>
@@ -4045,7 +4089,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '24/11 · 22 h 44';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '25/11 · 18 h 17';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -4899,6 +4943,174 @@ function homeHierTexte(idx) {             // « Hier : transit normal · peau ca
   if (j.ener !== undefined) p.push('énergie ' + j.ener + '/5');
   return p.length ? 'Hier : ' + p.join(' · ') : '';
 }
+// ══════════════════════════════════════════════════════════════════════════════
+// SIGNAUX D'ALERTE (lot 16) — une seule carte tout en haut de l'Accueil, seulement quand le journal, le calendrier du transit ou le cycle l'appellent
+// Tout est calculé à l'affichage et rien n'est enregistré, sauf les choix « Plus tard » / « J'ai déjà consulté » : clé nara_alertes, sur cet appareil seulement, jamais envoyée
+// (effacée à la déconnexion avec les autres clés nara_*).
+// Seuls des jours RÉELLEMENT NOTÉS comptent : un jour sans réponse n'est ni « bon » ni « mauvais ». Transit, douleurs, peau : une réponse (0 compte : « Lent », « Aucune », « Poussée »).
+// Ballonnements, énergie : une valeur de 1 à 5 (0 = non renseigné). Pour juger une tendance, la période doit compter assez de jours notés (ALR_MIN_NOTES) : un jour isolé ne déclenche rien.
+// Deux niveaux : « rapidement » passe avant « à garder à l'œil » ; UNE seule carte à la fois (le premier signal non masqué). Les textes disent ce qui a été noté puis orientent :
+// jamais de nom de maladie, jamais de diagnostic.
+// ══════════════════════════════════════════════════════════════════════════════
+const ALR_CLE = 'nara_alertes';
+const ALR_MASQUE = { plus_tard: 7, plus_tard_rapide: 3, deja: 30 };       // jours pendant lesquels un signal reste caché
+const ALR_MIN_NOTES = { 21: 10, 28: 14 };                                 // jours notés au moins, selon la période jugée (3 ou 4 semaines)
+
+function alrJournal(date) { try { const o = JSON.parse(localStorage.getItem('nara_journal_' + date) || 'null'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+const alrRep = v => v !== null && v !== undefined;                        // une réponse a été donnée
+// Les n derniers jours (aujourd'hui compris), du plus ancien au plus récent
+function alrFenetre(auj, n) { const l = []; for (let i = n - 1; i >= 0; i--) { const d = routAjouter(auj, -i); l.push({ date: d, j: alrJournal(d) }); } return l; }
+// Parmi les jours NOTÉS (note), combien répondent à la condition (oui)
+function alrPart(jours, note, oui) { let n = 0, o = 0; jours.forEach(x => { if (note(x.j)) { n++; if (oui(x.j)) o++; } }); return { notes: n, oui: o }; }
+// Une tendance : assez de jours notés dans la période, et au moins 60 % d'entre eux (plus de la moitié si « strict ») répondent à la condition — en entiers, sans virgule
+function alrTendance(r, periode, strict) { return r.notes >= ALR_MIN_NOTES[periode] && (strict ? r.oui * 2 > r.notes : r.oui * 10 >= 6 * r.notes); }
+
+// Aucune selle notée au calendrier du transit depuis 5 jours ou plus (14 au plus : au-delà, le calendrier n'est plus tenu), avec des ballonnements marqués ou des douleurs sur cette période
+// (les 7 derniers jours au plus) — seulement si les selles étaient notées régulièrement avant (au moins 5 jours sur les 14 qui précèdent), sinon c'est un oubli
+function alrSelles(auj, j7) {
+  let dernier = null;
+  for (let i = 0; i <= 14 && !dernier; i++) { const d = routAjouter(auj, -i), c = calLoad(d); if (c && c.yn === 'oui') dernier = d; }
+  if (!dernier) return null;
+  const ecart = routEcart(dernier, auj);
+  if (ecart < 5) return null;
+  let reg = 0;
+  for (let i = 0; i < 14; i++) { const c = calLoad(routAjouter(dernier, -i)); if (c && c.yn === 'oui') reg++; }
+  if (reg < 5) return null;
+  const debut = routAjouter(dernier, 1);
+  let bal = false, dou = false;
+  j7.forEach(x => { if (x.date >= debut) { if (x.j.ballonnements >= 4) bal = true; if (alrRep(x.j.douleurs) && x.j.douleurs >= 1) dou = true; } });
+  return bal || dou ? { ecart: ecart, bal: bal, dou: dou } : null;
+}
+
+// Les signaux du jour, « rapidement » d'abord : [{ id, niveau: 'rapidement' | 'oeil', theme, texte }]
+function alrSignaux(auj) {
+  auj = auj || getTodayStr();
+  const vite = [], oeil = [];
+  const rap = (id, theme, texte) => vite.push({ id: id, niveau: 'rapidement', theme: theme, texte: texte });
+  const surv = (id, theme, texte) => oeil.push({ id: id, niveau: 'oeil', theme: theme, texte: texte });
+  const AVIS = " Ça vaut la peine d'en parler rapidement à un médecin.", SANS = " Ça vaut la peine d'en parler à ton médecin, sans urgence.";
+  const j28 = alrFenetre(auj, 28), j21 = j28.slice(7), j14 = j28.slice(14), j7 = j28.slice(21);
+  let s = null; try { s = cycleLoad(); } catch (e) {}
+  const liste = s && s.active ? cycleReglesLire(s) : [];
+
+  // ── À FAIRE VÉRIFIER RAPIDEMENT ──
+  // la case « sang ou selles noires », même une seule fois (sur les 14 derniers jours)
+  if (j14.some(x => x.j.sang === true)) rap('sang', 'transit', 'Tu as noté du sang ou des selles noires.' + AVIS);
+  // douleurs abdominales « intenses » 2 jours de suite (le dernier de ces jours dans les 7 derniers jours)
+  let serie = 0, plus = 0;
+  j28.forEach(x => { if (x.j.douleurs === 2) { serie++; if (serie >= 2 && x.date >= j7[0].date) plus = serie; } else serie = 0; });
+  if (plus >= 2) rap('douleurs_intenses', 'transit', 'Tu as noté des douleurs intenses ' + plus + ' jours de suite.' + AVIS);
+  // aucune selle depuis 5 jours ou plus, avec ballonnements ≥ 4 ou douleurs
+  const sel = alrSelles(auj, j7);
+  if (sel) rap('selles', 'transit', "Tu n'as noté aucune selle depuis " + sel.ecart + ' jours, avec ' + (sel.bal && sel.dou ? 'des ballonnements marqués et des douleurs au ventre' : sel.bal ? 'des ballonnements marqués' : 'des douleurs au ventre') + '.' + AVIS);
+  // la case « douleurs qui m'empêchent de faire mes activités » pendant les règles, sur les 2 dernières règles notées
+  if (liste.length >= 2) {
+    const a = liste[liste.length - 2], b = liste[liste.length - 1], jb = Object.keys(b.douleursActivites).sort();
+    if (Object.keys(a.douleursActivites).length && jb.length && routEcart(jb[jb.length - 1], auj) <= 90) rap('regles_douleurs', 'cycle', "Tu as noté des douleurs qui t'empêchent de faire tes activités pendant tes règles, sur 2 cycles de suite." + AVIS);
+  }
+
+  // ── À GARDER À L'ŒIL ──
+  // douleurs abdominales (légères ou intenses) sur au moins 10 des 14 derniers jours
+  const dn = j14.filter(x => alrRep(x.j.douleurs) && x.j.douleurs >= 1).length;
+  if (dn >= 10) surv('douleurs_ventre', 'transit', 'Tu as noté des douleurs au ventre sur ' + dn + ' des 14 derniers jours.' + SANS);
+  // transit lent, ou rapide, au moins 60 % des jours notés sur 3 semaines
+  const rep = x => alrRep(x.transit);
+  if (alrTendance(alrPart(j21, rep, x => x.transit === 0), 21)) surv('transit_lent', 'transit', 'Tu as noté un transit lent la plupart des jours depuis 3 semaines.' + SANS);
+  if (alrTendance(alrPart(j21, rep, x => x.transit === 2), 21)) surv('transit_rapide', 'transit', 'Tu as noté un transit rapide la plupart des jours depuis 3 semaines.' + SANS);
+  // ballonnements ≥ 4 plus de la moitié des jours notés sur 3 semaines
+  if (alrTendance(alrPart(j21, x => x.ballonnements > 0, x => x.ballonnements >= 4), 21, true)) surv('ballonnements', 'transit', "Tu as noté de gros ballonnements (4 sur 5 ou plus) plus d'un jour sur deux depuis 3 semaines." + SANS);
+  // peau « en poussée », au moins 60 % des jours notés sur 4 semaines
+  if (alrTendance(alrPart(j28, x => alrRep(x.peau), x => x.peau === 0), 28)) surv('peau', 'peau', "Tu as noté une peau en poussée la plupart des jours depuis 4 semaines. Ça vaut la peine d'en parler à ton médecin ou à un dermatologue, sans urgence.");
+  // énergie ≤ 2, au moins 60 % des jours notés sur 3 semaines
+  if (alrTendance(alrPart(j21, x => x.energie > 0, x => x.energie <= 2), 21)) surv('energie', 'energie', 'Tu as noté une énergie basse (2 sur 5 ou moins) la plupart des jours depuis 3 semaines.' + SANS);
+  // le cycle : seulement si les règles sont suivies et que « cycle irrégulier » n'est pas coché
+  if (s && s.active && !s.irregulier && liste.length) {
+    const dernier = liste[liste.length - 1], depuis = routEcart(dernier.debut, auj);
+    // pas de règles notées depuis plus de 3 mois (au moins 2 débuts notés, le dernier il y a moins d'un an, et le journal est tenu : au moins 5 jours notés sur les 21 derniers)
+    if (liste.length >= 2 && depuis > 92 && depuis <= 365 && j21.filter(x => !syncJournalIsEmpty(x.j)).length >= 5) surv('cycle_absent', 'cycle', "Tu n'as pas noté de règles depuis plus de 3 mois." + SANS);
+    // deux cycles de suite de moins de 21 jours ou de plus de 35 jours (les derniers débuts notés datent de moins de 3 mois)
+    if (liste.length >= 3 && depuis <= 92) {
+      const l1 = routEcart(liste[liste.length - 3].debut, liste[liste.length - 2].debut), l2 = routEcart(liste[liste.length - 2].debut, dernier.debut), hors = n => n < 21 || n > 35;
+      if (hors(l1) && hors(l2)) surv('cycle_longueur', 'cycle', 'Tes deux derniers cycles ont duré ' + l1 + ' et ' + l2 + ' jours, en dehors de la durée habituelle (21 à 35 jours).' + SANS);
+    }
+    // règles « abondantes » notées plus de 7 jours d'affilée (la dernière série date de moins de 3 mois)
+    let abond = false;
+    liste.forEach(p => {
+      let run = 0, prec = null, fin = null;
+      Object.keys(p.intensite).sort().forEach(d => {
+        if (p.intensite[d] === 'abondante') { run = prec && routEcart(prec, d) === 1 ? run + 1 : 1; prec = d; if (run >= 8) fin = d; }
+        else { run = 0; prec = null; }
+      });
+      if (fin && routEcart(fin, auj) <= 92) abond = true;
+    });
+    if (abond) surv('regles_abondantes', 'cycle', "Tu as noté des règles abondantes pendant plus de 7 jours d'affilée." + SANS);
+  }
+  return vite.concat(oeil);
+}
+
+// ── Les choix de la personne : « Plus tard » (7 jours ; 3 jours pour « rapidement ») et « J'ai déjà consulté » (30 jours) — cet appareil seulement ──
+function alrChoix() { try { const o = JSON.parse(localStorage.getItem(ALR_CLE) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+function alrMasque(id, auj) { const c = alrChoix()[id]; return !!(c && CYCLE_DATE_RE.test(c.jusqu || '') && auj < c.jusqu); }       // caché tant qu'on n'a pas atteint la date « jusqu »
+function alrMasquer(id, jours) {
+  const auj = getTodayStr(), c = alrChoix();
+  Object.keys(c).forEach(k => { if (!(c[k] && CYCLE_DATE_RE.test(c[k].jusqu || '') && auj < c[k].jusqu)) delete c[k]; });       // les choix échus sont oubliés
+  c[id] = { jusqu: routAjouter(auj, jours) };
+  try { localStorage.setItem(ALR_CLE, JSON.stringify(c)); } catch (e) {}
+}
+
+// ── La carte de l'Accueil ──
+let _alrSuite = null;      // « Ajouter dans Mes nouveaux suivis ? » : le signal qui vient d'être marqué « déjà consulté » (oublié quand on quitte l'Accueil)
+function homeHtmlAlerte() {
+  const auj = getTodayStr();
+  if (_alrSuite) return `<div class="al-carte al-oeil" id="al-carte" role="status">
+      <div class="al-titre">🌿 C'EST NOTÉ</div>
+      <p class="al-texte">Cette carte est masquée pendant ${ALR_MASQUE.deja} jours. Ajouter dans Mes nouveaux suivis ?</p>
+      <div class="al-boutons">
+        <button type="button" class="al-btn al-btn-1" onclick="alrSuiviOui()">Oui, ajouter</button>
+        <button type="button" class="al-btn" onclick="alrSuiviNon()">Non merci</button>
+      </div>
+    </div>`;
+  const s = alrSignaux(auj).filter(x => !alrMasque(x.id, auj))[0];
+  if (!s) return '';
+  const rapide = s.niveau === 'rapidement';
+  return `<div class="al-carte ${rapide ? 'al-rapide' : 'al-oeil'}" id="al-carte" data-signal="${s.id}" role="region" aria-label="${rapide ? 'À faire vérifier rapidement' : "À garder à l'œil"}">
+      <div class="al-titre">🌿 ${rapide ? 'À FAIRE VÉRIFIER RAPIDEMENT' : "À GARDER À L'ŒIL"}</div>
+      <p class="al-texte">${escHtml(s.texte)}</p>
+      ${rapide ? '<p class="al-urgence">Si la douleur est très forte, avec de la fièvre ou des vomissements, appelle le 15 ou le 112.</p>' : ''}
+      <div class="al-boutons">
+        <button type="button" class="al-btn al-btn-1" onclick="alrConsulter()">Quand consulter ?</button>
+        <button type="button" class="al-btn" onclick="alrDeja('${s.id}')">J'ai déjà consulté</button>
+        <button type="button" class="al-btn" onclick="alrPlusTard('${s.id}')">Plus tard</button>
+      </div>
+    </div>`;
+}
+function alrSignal(id) { return alrSignaux(getTodayStr()).find(s => s.id === id) || null; }
+function alrConsulter() { homeOuvrirArticle('034'); }                                     // « Quand consulter : les signaux à ne pas ignorer »
+function alrPlusTard(id) {
+  const s = alrSignal(id);
+  alrMasquer(id, s && s.niveau === 'rapidement' ? ALR_MASQUE.plus_tard_rapide : ALR_MASQUE.plus_tard);
+  _alrSuite = null; renderHome();
+}
+function alrDeja(id) {
+  const s = alrSignal(id);
+  alrMasquer(id, ALR_MASQUE.deja);
+  _alrSuite = s ? { id: id, theme: s.theme } : null; renderHome();
+}
+function alrSuiviNon() { _alrSuite = null; renderHome(); }
+// « Oui, ajouter » : le formulaire de « Mes nouveaux suivis » s'ouvre rempli (type, problématique, médecin généraliste, aujourd'hui) ; rien n'est enregistré avant « Enregistrer »
+function alrSuiviOui() {
+  const s = _alrSuite; _alrSuite = null;
+  espaceRetour = false;
+  go('suivis'); suivisStartAdd();
+  if (_suiviForm) {
+    const pb = { transit: 0, peau: 1, cycle: 2, energie: 4 }[s && s.theme];
+    _suiviForm.type = SUIVI_TYPES[0];
+    _suiviForm.problo = pb !== undefined ? SUIVI_PROBLO[pb] : '';
+    _suiviForm.pro = SUIVI_PROS.find(x => x.indexOf('généraliste') >= 0) || '';
+    renderSuivis();
+  }
+}
+
 function homeHtmlAujourdhui(idx, st) {
   const auj = getTodayStr(), j = idx[auj] || {};
   if (!homeEstNote(j)) {
@@ -5236,7 +5448,7 @@ function renderHome() {
   try { idx = corrDayIndex(); } catch (e) { console.warn('[Nara] journal de l\'Accueil :', e); }
   try { st = homeEtatRoutine(); } catch (e) { console.warn('[Nara] routine de l\'Accueil :', e); }
   try { homeMajEntete(); } catch (e) { console.warn('[Nara] en-tête de l\'Accueil :', e); }
-  [['home-auj', () => homeHtmlAujourdhui(idx, st)], ['home-profil', homeHtmlProfil], ['home-routine', () => homeHtmlRoutine(st)],
+  [['home-alerte', homeHtmlAlerte], ['home-auj', () => homeHtmlAujourdhui(idx, st)], ['home-profil', homeHtmlProfil], ['home-routine', () => homeHtmlRoutine(st)],
    ['home-semaine', () => homeHtmlSemaine(idx)], ['home-pourtoi', () => homeHtmlPourToi(idx)], ['home-remarque', homeHtmlRemarque]].forEach(c => {
     const el = document.getElementById(c[0]);
     if (!el) return;
@@ -5442,6 +5654,7 @@ function showScreen(id, btn) {
   if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
   if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees' && id !== 'cycle' && id !== 'cycle-reglages') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
   _routNav = false;
+  if (id !== 'home') _alrSuite = null;                                                           // « Ajouter dans Mes nouveaux suivis ? » (carte des signaux) ne survit pas à l'Accueil
   if (id !== 'home') _homeCycleOuvert = false;                                                  // la carte Cycle de l'Accueil se referme quand on quitte l'Accueil
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -8452,6 +8665,7 @@ function renderJrnSlideContent(sectionId) {
       </div>
       <div class="jrn-question">Douleurs abdominales ?</div>
       <div class="jrn-emoji-row">${douleursHtml}</div>
+      ${renderJrnCaseSang()}
       <!-- Indicateur swipe — uniquement sur la 1ère section -->
       <div class="jrn-swipe-hint">
         <span class="jrn-swipe-hint-arrow">→</span>
@@ -8676,6 +8890,66 @@ function jrnPersist(markComplete) {
 }
 
 // Gardé pour la compatibilité (appelé au changement de slide)
+// ── Lot 16 : les deux cases discrètes du Journal ─────────────────────────────
+// 1) « J'ai remarqué du sang ou des selles noires » (Intestin & Transit) : un champ de plus dans le journal du jour (sang: true), écrit seulement quand la case est touchée ;
+//    décochée après coup : sang: false (la valeur explicite est la seule façon de « défaire » la case sur un autre appareil). Il ne sert qu'à la carte « signaux » de l'Accueil.
+// 2) Dans l'encadré des règles (Mode de vie) : l'intensité et « Douleurs qui m'empêchent de faire mes activités ». Ces deux données sont celles du panneau d'un jour de « Mon cycle » :
+//    elles vivent dans l'enregistrement du cycle (cycleAppliquer), jamais dans le journal du jour ; modifier d'un côté modifie donc l'autre, sans copie.
+function renderJrnCaseSang() {
+  const on = !!jrnValues && jrnValues.sang === true;
+  return `<button type="button" class="jrn-case${on ? ' on' : ''}" id="jrn-case-sang" role="checkbox" aria-checked="${on}" onclick="jrnToggleSang()">
+        <span class="jrn-case-coche" aria-hidden="true"></span>
+        <span class="jrn-case-txt"><span class="jrn-case-titre">J'ai remarqué du sang ou des selles noires</span><span class="jrn-case-petit">Facultatif · reste privé</span></span>
+      </button>`;
+}
+function jrnToggleSang() {
+  const on = !(jrnValues.sang === true);
+  jrnValues.sang = on;
+  const b = document.getElementById('jrn-case-sang');
+  if (b) { b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }
+  jrnPersist(false);
+}
+// Le jour consulté du Journal, s'il est un jour de règles NOTÉ (module du cycle actif) ; null sinon : l'encadré garde alors sa forme d'avant
+function jrnReglesDuJour() {
+  const s = cycleLoad(), date = jrnGetDate();
+  if (!s || !s.active || !date || date > getTodayStr()) return null;
+  const p = cycleReglesDuJour(cycleReglesLire(s), date);
+  return p ? { p: p, date: date } : null;
+}
+function jrnHtmlRegles() {
+  const r = jrnReglesDuJour();
+  if (!r) return '';
+  const niveau = r.p.intensite[r.date] || null, douleurs = !!r.p.douleursActivites[r.date];
+  const chips = Object.keys(CYCLE_INTENSITES).map(k => `<button type="button" class="cyc-chip${niveau === k ? ' on' : ''}" data-niveau="${k}" aria-pressed="${niveau === k}" onclick="jrnReglesIntensite('${k}')">${CYCLE_INTENSITES[k]}</button>`).join('');
+  return `<div class="jrn-regles" id="jrn-regles-box">
+        <span class="cyc-sec-label">Intensité <span class="jrn-facultatif">· facultatif</span></span>
+        <div class="cyc-chips" role="group" aria-label="Intensité des règles">${chips}</div>
+        <button type="button" class="jrn-case${douleurs ? ' on' : ''}" id="jrn-case-douleurs" role="checkbox" aria-checked="${douleurs}" onclick="jrnReglesDouleurs()">
+          <span class="jrn-case-coche" aria-hidden="true"></span>
+          <span class="jrn-case-txt"><span class="jrn-case-titre">Douleurs qui m'empêchent de faire mes activités</span><span class="jrn-case-petit">Facultatif</span></span>
+        </button>
+      </div>`;
+}
+function jrnRafraichirRegles() {
+  const b = document.getElementById('jrn-regles-box');
+  if (!b) return;
+  const t = document.createElement('div');
+  t.innerHTML = jrnHtmlRegles();
+  if (t.firstElementChild) b.replaceWith(t.firstElementChild);
+}
+function jrnReglesIntensite(niveau) {
+  const r = jrnReglesDuJour();
+  if (!r) return;
+  cycleAppliquer(l => cycleIntensiteListe(l, r.date, niveau));
+  jrnRafraichirRegles();
+}
+function jrnReglesDouleurs() {
+  const r = jrnReglesDuJour();
+  if (!r) return;
+  cycleAppliquer(l => cycleDouleursListe(l, r.date));
+  jrnRafraichirRegles();
+}
+
 function jrnAutoSaveSection(slideIdx) {
   jrnPersist(false);
   // Toast discret
@@ -13513,6 +13787,7 @@ function syncJournalIsEmpty(j) {
   if (['transit', 'douleurs', 'peau', 'humeur', 'hydratation'].some(k => !nul(j[k]))) return false;
   if (['ballonnements', 'stress', 'sommeil', 'energie'].some(k => j[k])) return false;
   if (j.notes && String(j.notes).trim()) return false;
+  if (typeof j.sang === 'boolean') return false;                                       // lot 16 : « sang ou selles noires » cochée, ou décochée (la valeur explicite doit voyager)
   if ((Array.isArray(j.zone) && j.zone.length) || (Array.isArray(j.aliments) && j.aliments.length)) return false;
   const r = j.repas;
   if (r && typeof r === 'object') {
@@ -15840,15 +16115,18 @@ function renderCyclePhaseBanner() {
       </div>`;
   }
 
-  return `
-    <div class="cycle-phase-banner ${info.phaseClass}">
+  // Un jour de règles noté : l'intensité et la case des douleurs, sous la ligne d'origine, dans le même encadré (lot 16) ; sinon l'encadré est exactement celui d'avant
+  const regles = jrnHtmlRegles();
+  const inner = `
       <span class="cycle-phase-icon">${info.phaseIcon}</span>
       <div class="cycle-phase-text">
         <div class="cycle-phase-name">${info.phaseName} — J${info.dayInCycle}/${info.cycleDuration}</div>
         <div class="cycle-phase-day">${info.phaseDesc}</div>
       </div>
       <span class="cycle-phase-update" onclick="openCycleModal()">Mettre à jour</span>
-    </div>`;
+    `;
+  return regles ? `<div class="cycle-phase-banner ${info.phaseClass} cpb-regles"><div class="cpb-ligne">${inner}</div>${regles}</div>` : `
+    <div class="cycle-phase-banner ${info.phaseClass}">${inner}</div>`;
 }
 
 // ── Modale settings ───────────────────────────────────────────────────────────
@@ -16016,7 +16294,8 @@ function cycleResetConfirme() {
 // MON CYCLE (lot 14) — règles notées, estimations, phases, observations
 // Ce que la personne note est affiché en plein ; tout ce qui est calculé (règles à venir, jours avant, ovulation) est une ESTIMATION : calculée à l'affichage, jamais enregistrée.
 // Les règles notées vivent dans l'enregistrement du cycle lui-même (nara_cycle, clé « regles », synchronisé comme le reste de ce réglage : la version la plus récente gagne) :
-//   regles : [ { debut, fin (facultative), intensite: { jour: 'legere' | 'moyenne' | 'abondante' } } ]      options : irregulier, contraception
+//   regles : [ { debut, fin (facultative), intensite: { jour: 'legere' | 'moyenne' | 'abondante' }, douleursActivites: { jour: true } } ]      options : irregulier, contraception
+//   douleursActivites (lot 16) : les jours où « des douleurs m'empêchent de faire mes activités » ; la case du Journal et celle du panneau d'un jour sont CETTE donnée (aucune copie).
 // Les anciennes données (date de début + dates confirmées depuis l'Accueil) restent lues telles quelles : elles comptent comme des débuts notés, sans fin ni intensité inventées.
 // Elles sont recopiées dans la liste à la première modification ; ouvrir la page n'écrit rien. Tout enregistrement passe par cycleSave (qui date et marque « à envoyer »).
 // Les dates sont des textes AAAA-MM-JJ ; les jours se comptent avec routJourNum / routEcart / routAjouter ; « aujourd'hui » vient de getTodayStr() (jamais de l'horloge).
@@ -16054,7 +16333,11 @@ function cycleReglesLire(settings) {
     Object.keys(p.intensite || {}).forEach(j => {
       if (CYCLE_DATE_RE.test(j) && CYCLE_INTENSITES[p.intensite[j]] && j >= p.debut && routEcart(p.debut, j) < CYCLE_REGLES_MAX && (!fin || j <= fin)) intensite[j] = p.intensite[j];
     });
-    liste.push({ debut: p.debut, fin: fin, intensite: intensite });
+    const douleursActivites = {};
+    Object.keys(p.douleursActivites || {}).forEach(j => {
+      if (CYCLE_DATE_RE.test(j) && p.douleursActivites[j] === true && j >= p.debut && routEcart(p.debut, j) < CYCLE_REGLES_MAX && (!fin || j <= fin)) douleursActivites[j] = true;
+    });
+    liste.push({ debut: p.debut, fin: fin, intensite: intensite, douleursActivites: douleursActivites });
   });
   return liste.sort((a, b) => a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0);
 }
@@ -16064,14 +16347,16 @@ function cycleReglesCompacter(liste) {
     const o = { debut: p.debut };
     if (p.fin) o.fin = p.fin;
     if (Object.keys(p.intensite || {}).length) o.intensite = p.intensite;
+    if (Object.keys(p.douleursActivites || {}).length) o.douleursActivites = p.douleursActivites;
     return o;
   });
 }
-// Dernier jour de règles NOTÉ : la fin si elle est notée, sinon le dernier jour avec une intensité, sinon le jour du début
+// Dernier jour de règles NOTÉ : la fin si elle est notée, sinon le dernier jour avec une intensité ou des douleurs, sinon le jour du début
 function cycleFinNotee(p) {
   if (p.fin) return p.fin;
   let f = p.debut;
   Object.keys(p.intensite || {}).forEach(j => { if (j > f) f = j; });
+  Object.keys(p.douleursActivites || {}).forEach(j => { if (j > f) f = j; });
   return f;
 }
 // Les jours de règles notés : { 'AAAA-MM-JJ': { debut, fin, intensite } }, du début au dernier jour noté
@@ -16174,7 +16459,7 @@ function cycleDebutListe(liste, date) {
   if (liste.some(p => p.debut < date && routEcart(p.debut, date) <= 7)) return 'proche';
   const q = liste.find(p => p.debut > date && routEcart(date, p.debut) <= 7);
   if (q) { q.debut = date; return 'avance'; }
-  liste.push({ debut: date, fin: null, intensite: {} });
+  liste.push({ debut: date, fin: null, intensite: {}, douleursActivites: {} });
   liste.sort((a, b) => a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0);
   return 'ajoute';
 }
@@ -16193,6 +16478,7 @@ function cycleFinListe(liste, date) {
   if (p.fin === date) { p.fin = null; return 'retire'; }
   p.fin = date;
   Object.keys(p.intensite).forEach(j => { if (j > date) delete p.intensite[j]; });          // pas d'intensité notée après la fin
+  Object.keys(p.douleursActivites || {}).forEach(j => { if (j > date) delete p.douleursActivites[j]; });          // ni de douleurs
   return 'note';
 }
 // Intensité d'un jour de règles (facultative). Statuts : 'note' · 'retire' (même niveau touché deux fois) · 'hors-regles'
@@ -16201,6 +16487,15 @@ function cycleIntensiteListe(liste, date, niveau) {
   if (!p || !CYCLE_INTENSITES[niveau]) return 'hors-regles';
   if (p.intensite[date] === niveau) { delete p.intensite[date]; return 'retire'; }
   p.intensite[date] = niveau;
+  return 'note';
+}
+// Douleurs qui empêchent de faire ses activités (facultatif), un jour de règles noté. Statuts : 'note' · 'retire' (la même case touchée deux fois) · 'hors-regles'
+function cycleDouleursListe(liste, date) {
+  const p = cycleReglesDuJour(liste, date);
+  if (!p) return 'hors-regles';
+  if (!p.douleursActivites) p.douleursActivites = {};
+  if (p.douleursActivites[date]) { delete p.douleursActivites[date]; return 'retire'; }
+  p.douleursActivites[date] = true;
   return 'note';
 }
 function cycleRetirerDebutListe(liste, date) {
@@ -16415,11 +16710,11 @@ function cycleRendreJour() {
   if (futur) {
     corps = `<p class="cyc-obs-doux cyc-jour-futur">Ce jour n'est pas encore arrivé. Tu pourras noter tes règles ici quand il sera là.</p>`;
   } else {
-    const p = cycleReglesDuJour(e.liste, date), estDebut = e.liste.some(x => x.debut === date), estFin = e.liste.some(x => x.fin === date), niveau = p ? p.intensite[date] || null : null;
+    const p = cycleReglesDuJour(e.liste, date), estDebut = e.liste.some(x => x.debut === date), estFin = e.liste.some(x => x.fin === date), niveau = p ? p.intensite[date] || null : null, douleurs = p ? !!p.douleursActivites[date] : false;
     let actions;
     if (_cycleRetirerDebut === date) {
       actions = `<div class="cyc-confirme" role="alertdialog" aria-label="Retirer le début des règles">
-        <p>Retirer le début des règles du ${cycleJourMois(date)} ? Les jours notés de cette période (fin, intensité) seront retirés aussi.</p>
+        <p>Retirer le début des règles du ${cycleJourMois(date)} ? Les jours notés de cette période (fin, intensité, douleurs) seront retirés aussi.</p>
         <div class="cyc-actions"><button type="button" class="cyc-btn" onclick="cycleJourRetraitDebut(true)">Retirer</button><button type="button" class="cyc-btn on" onclick="cycleJourRetraitDebut(false)">Garder</button></div>
       </div>`;
     } else {
@@ -16439,7 +16734,12 @@ function cycleRendreJour() {
       ${actions}
       <span class="cyc-sec-label">Intensité (facultatif)</span>
       <div class="cyc-chips" role="group" aria-label="Intensité des règles">${chips}</div>
-      ${p ? '' : '<p class="cyc-aide">Note d\'abord le début de tes règles pour indiquer leur intensité.</p>'}
+      ${p ? '' : '<p class="cyc-aide">Note d\'abord le début de tes règles pour indiquer leur intensité ou tes douleurs.</p>'}
+      <span class="cyc-sec-label">Douleurs (facultatif)</span>
+      <button type="button" class="jrn-case${douleurs ? ' on' : ''}" id="cyc-case-douleurs" role="checkbox" aria-checked="${douleurs}"${p ? '' : ' disabled'} onclick="cycleJourDouleurs()">
+        <span class="jrn-case-coche" aria-hidden="true"></span>
+        <span class="jrn-case-txt"><span class="jrn-case-titre">Douleurs qui m'empêchent de faire mes activités</span></span>
+      </button>
       <span class="cyc-sec-label">Ce jour-là dans ton journal</span>
       ${pastilles.length ? `<div class="cyc-pastilles">${pastilles.map(t => `<span class="cyc-pastille">${escHtml(t)}</span>`).join('')}</div>` : '<div class="cyc-rien">Rien de noté</div>'}
       <span class="cyc-sec-label">Ce jour-là pour tes selles</span>
@@ -16466,7 +16766,7 @@ function cycleJourDebut() {
   _cycleMsg = '';
   const e = cycleEstimations(), p = e && e.liste.find(x => x.debut === date);
   if (p) {                                                                                    // déjà le début : le toucher le retire (avec confirmation s'il y a plus que le début)
-    if (p.fin || Object.keys(p.intensite).length) { _cycleRetirerDebut = date; cycleRendreJour(); return; }
+    if (p.fin || Object.keys(p.intensite).length || Object.keys(p.douleursActivites || {}).length) { _cycleRetirerDebut = date; cycleRendreJour(); return; }
     cycleAppliquer(l => cycleRetirerDebutListe(l, date));
     _cycleMsg = 'Début des règles retiré.';
     cycleApresChangement();
@@ -16489,6 +16789,13 @@ function cycleJourFin() {
   const st = cycleAppliquer(l => cycleFinListe(l, date));
   if (st === 'sans-debut') _cycleMsg = "Note d'abord le début de tes règles.";
   else if (st === 'trop-loin') _cycleMsg = 'Cette date est à plus de 14 jours du début noté. Vérifie le début de tes règles.';
+  cycleApresChangement();
+}
+function cycleJourDouleurs() {
+  const date = cycleJourOuvert;
+  if (!date || date > getTodayStr()) return;
+  _cycleMsg = '';
+  cycleAppliquer(l => cycleDouleursListe(l, date));
   cycleApresChangement();
 }
 function cycleJourIntensite(niveau) {

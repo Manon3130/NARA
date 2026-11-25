@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- PWA iOS -->
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- black-translucent : la page passe sous l'heure et la batterie, qui reposent sur la bande du haut (#app-band, fond plein de la couleur du haut de page). Ne pas changer sans essai sur iPhone : iOS lit cette balise à l'ajout à l'écran d'accueil. -->
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- default (lot 18) : la page commence SOUS la barre d'état (heure et batterie) : plus de bande du haut à gérer, et la zone visible de l'app = la hauteur de la fenêtre (window.innerHeight). Avant : black-translucent.
+     iOS FIGE ce réglage à l'ajout à l'écran d'accueil : après une mise à jour, supprimer l'icône Nara puis la ré-ajouter depuis Safari. Pour revenir à l'ancien rendu : remettre black-translucent ici (la marge du haut se recale seule) et ré-ajouter l'icône. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Nara">
 <!-- PWA Android / Chrome -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Nara">
-<meta name="theme-color" content="#F6EAD4">
+<meta name="theme-color" content="#FFFAF2">
 <meta name="background-color" content="#FFFAF2">
 <!-- SEO / Share -->
 <meta name="description" content="Nara — Ta santé holistique. Intestin, peau, énergie, sommeil.">
@@ -74,13 +75,13 @@ if (typeof supabase === 'undefined') {
   *, *::before, *::after {
     margin: 0; padding: 0; box-sizing: border-box;
   }
-  /* Marge sous la barre d'état : celle que donne l'appareil, jamais moins que le plancher (iOS peut la lire à 0 en mode écran d'accueil — bug WebKit 301994) */
+  /* Marge sous la barre d'état (lot 18) : celle que donne l'appareil (env), rien de plus. Avec « default » (balise apple-mobile-web-app-status-bar-style), iOS pose la page SOUS la barre d'état : marge 0, la bande du haut n'a plus de hauteur.
+     Le plancher ne sert que si la page passe vraiment SOUS la barre (réglage « black-translucent » encore actif sur l'icône : classe « sb-sous », posée par appMesurer) et si iOS lit alors la marge à 0 (bug WebKit 301994). */
   :root { --top-floor: 0px; --safe-top: max(env(safe-area-inset-top, 0px), var(--top-floor)); }
-  html.ios { --top-floor: 47px; }
-  @media (min-width: 700px) { html.ios { --top-floor: 24px; } }
+  html.ios.sb-sous { --top-floor: 47px; }
+  @media (min-width: 700px) { html.ios.sb-sous { --top-floor: 24px; } }
   html, body {
-    width: 100%; height: 100%; height: 100dvh;
-    min-height: 100dvh;
+    width: 100%; height: 100dvh; height: var(--app-h, 100dvh);      /* la même hauteur que #app (lot 18) : --app-h, mesurée sur window.innerHeight ; jamais 100 % ni 100svh */
     overflow: hidden;
     /* html, body et #app ont TOUJOURS la même couleur : celle du haut de la page affichée (variable --current-screen-bg, posée par showScreen) ;
        #FFFAF2 (crème, comme les écrans) sur les 5 onglets et partout dans l'app ; miel à la connexion ; couleur de l'en-tête sur une routine, un article, une recette.
@@ -95,7 +96,7 @@ if (typeof supabase === 'undefined') {
     overscroll-behavior: none;
   }
   /* ===== STRUCTURE EN ÉTAGES (prompt 11, barre corrigée au correctif A1) =====
-     #app = colonne de hauteur --app-h (mesurée en JS sur la zone visible : visualViewport, sinon innerHeight ; 100dvh avant la première mesure ; jamais plus courte que l'écran en mode écran d'accueil : voir le plancher ci-dessous)
+     #app = colonne de hauteur --app-h (mesurée en JS sur window.innerHeight ; visualViewport seulement quand un champ de saisie a le focus (clavier) ; 100dvh avant la première mesure ; jamais 100 %, 100svh ni documentElement.clientHeight : voir ci-dessous)
        étage 0  #app-band : bande du haut, hauteur = marge sous la barre d'état, fond PLEIN (rien ne défile ici)
        étage 1  #stage    : zone de contenu, tous les écrans, sur TOUTE la hauteur restante de #app ; seules leurs zones de défilement défilent, et elles commencent sous la bande
        étage 2  #bnav     : la barre du bas, DERNIER enfant de #app, en position absolue en bas de #app (pas de position fixe), SANS fond ni hauteur réservée :
@@ -108,12 +109,8 @@ if (typeof supabase === 'undefined') {
     overflow: hidden;
     background: var(--current-screen-bg, #F6EAD4);
   }
-  /* Plancher de hauteur (correctif A1) : au lancement, iOS annonce parfois une hauteur trop petite et ne signale pas toujours la correction (pas d'événement « resize ») : --app-h reste alors trop courte.
-     100vh est tenu à jour par le navigateur lui-même : en mode écran d'accueil, #app ne peut donc jamais être plus courte que l'écran.
-     Pas de plancher clavier ouvert (la zone visible est alors plus basse que l'écran : classe kb-open) ni dans un onglet de navigateur (100vh y dépasse la zone visible, sous les barres du navigateur).
-     Deux déclencheurs : la requête display-mode: standalone (dès la première image) et la classe « standalone » posée par le script d'après navigator.standalone (iOS). */
-  @media (display-mode: standalone) { html:not(.kb-open) #app { min-height: 100vh; } }
-  html.standalone:not(.kb-open) #app { min-height: 100vh; }
+  /* Hauteur de #app (lot 18) : --app-h, mesurée sur window.innerHeight (JS : appMesurer). Le plancher « min-height: 100vh » du correctif A1 est retiré : en mode écran d'accueil, iOS calcule 100vh, 100 % et 100svh sans la barre d'état
+     (812 au lieu de 874 sur un iPhone 17), ou plus grands que la zone visible selon le réglage de la barre d'état. #app ne se cale jamais dessus. */
   #app-band { flex: 0 0 auto; height: var(--safe-top); background: var(--band-bg, #F6EAD4); }
   #stage { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; }
   .screen {
@@ -4082,6 +4079,7 @@ let currentUser = null;
 
 // ── Variables globales photo et journal ──
 let currentPhotoDataUrl = null;   // aperçu local (base64) : photo en cours d'envoi, ou gardée hors ligne en attendant le réseau
+let currentPhotoDate = null;      // le JOUR de cet aperçu local : il n'est montré que sur ce jour du Journal, jamais sur un autre (lot 18)
 // Photos privées : liens temporaires, gardés en mémoire seulement (jamais dans le stockage de l'appareil)
 const PHOTO_LINK_TTL = 300;        // durée d'un lien : 5 minutes
 const PHOTO_LINK_MARGIN = 60000;   // un lien qui expire dans moins d'une minute est renouvelé avant usage
@@ -4089,7 +4087,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '25/11 · 19 h 28';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '25/11 · 21 h 05';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -5741,21 +5739,31 @@ function go(screenId) {
   showScreen(screenId, null);
 }
 
-// ── Mesure de la zone visible : hauteur de #app (--app-h) et clavier ──────────────────────────────────────────────
-// #app est une colonne de la hauteur EXACTE de la zone visible : window.visualViewport, sinon window.innerHeight (100dvh tant qu'aucune mesure n'a eu lieu).
-// Mesure refaite à chaque redimensionnement, rotation, retour dans l'app et fermeture du clavier, et en rafale au lancement (appMesurerRafale). Clavier ouvert = la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
-function appMesurerFenetre() {
+// ── Mesure de la zone visible : hauteur de #app (--app-h), clavier, page sous la barre d'état ──────────────────────────────────────────────
+// #app est une colonne de la hauteur EXACTE de la zone visible (lot 18) : window.innerHeight. Jamais documentElement.clientHeight, 100 % ni 100svh (en mode écran d'accueil, iOS les calcule sans la barre d'état : 812 au lieu de 874 sur un iPhone 17).
+// visualViewport n'est lu que quand un champ de saisie a le focus : c'est lui qui rétrécit quand le clavier s'ouvre (innerHeight, lui, ne bouge pas sur iOS). html, body et #app prennent la même hauteur (--app-h).
+// Mesure refaite à chaque redimensionnement, rotation, retour dans l'app, à la sortie d'un champ (focusout, puis 300 ms plus tard : iOS signale parfois la fin du clavier en retard) et en rafale au lancement (appMesurerRafale).
+// Clavier ouvert = un champ a le focus ET la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
+function appEstChamp(el) { return !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName || '') || el.isContentEditable === true); }
+// La page passe-t-elle SOUS la barre d'état ? Oui seulement en mode écran d'accueil (iOS), à la verticale, quand la zone visible occupe TOUT l'écran : c'est le réglage « black-translucent », encore actif sur une icône ajoutée avant le lot 18 (iOS fige le réglage à l'ajout).
+// Avec « default », la zone visible est plus basse que l'écran de la hauteur de la barre d'état (812 pour 874) : ni plancher ni bande. Résultat : classe « sb-sous » de <html> (voir le plancher de --safe-top, dans le CSS).
+function appSousBarre() {
+  try { return navigator.standalone === true && window.innerHeight > window.innerWidth && (screen.height - window.innerHeight) <= 3; } catch (e) { return false; }
+}
+function appMesurer(champ) {                                             // champ : true / false = un champ de saisie a (ou n'a pas) le focus ; absent = on le lit (document.activeElement)
   try {
     const vv = window.visualViewport, h = document.documentElement;
     if (vv && vv.scale && Math.abs(vv.scale - 1) > 0.02) return;        // pincement en cours : la zone visible n'est pas la fenêtre
-    const haut = Math.round((vv && vv.height) || window.innerHeight || 0);
+    if (champ === undefined) champ = appEstChamp(document.activeElement);
+    const haut = Math.round((champ && vv && vv.height) || window.innerHeight || 0);
     if (haut < 200) return;                                              // mesure absurde (démarrage) : on garde la précédente
     if (h.style.getPropertyValue('--app-h') !== haut + 'px') h.style.setProperty('--app-h', haut + 'px');   // seulement si elle change : la rafale ci-dessous ne provoque aucun recalcul inutile
-    const clavier = vv ? (window.innerHeight - vv.height) > 120 : /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
-    h.classList.toggle('kb-open', !!clavier);
+    h.classList.toggle('kb-open', !!champ && (vv ? (window.innerHeight - vv.height) > 120 : true));
+    h.classList.toggle('sb-sous', appSousBarre());
     diagHauteur();                                                       // diagnostic caché : trace des changements de hauteur depuis le lancement
   } catch (e) {}
 }
+function appMesurerFenetre() { appMesurer(); }                           // sans argument : les écouteurs d'événements lui passent un événement
 // Rafale de mesures. Au lancement (et au retour dans l'app), iOS peut annoncer une hauteur trop petite puis la corriger SANS événement « resize » : une seule mesure au chargement resterait fausse.
 // On mesure donc à chaque image pendant 2 s, puis à 500 ms et à 1500 ms (au cas où les images seraient suspendues pendant l'animation d'ouverture). La rafale la plus récente remplace la précédente.
 let _appRafale = 0;
@@ -5776,13 +5784,13 @@ function appMesurerRafale() {
 }
 (function appInstallerMesures() {
   try {
-    if (navigator.standalone === true) document.documentElement.classList.add('standalone');   // mode écran d'accueil d'iOS : le plancher de hauteur de #app (CSS) s'applique même si la requête display-mode ne répond pas
+    if (navigator.standalone === true) document.documentElement.classList.add('standalone');   // mode écran d'accueil d'iOS (lu par le diagnostic caché ; le plancher de hauteur de #app a été retiré au lot 18)
     window.addEventListener('resize', appMesurerFenetre);
     window.addEventListener('orientationchange', () => { appMesurerFenetre(); setTimeout(appMesurerFenetre, 300); });
     window.addEventListener('pageshow', appMesurerRafale);
     window.addEventListener('load', appMesurerRafale);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appMesurerRafale(); });
-    document.addEventListener('focusout', () => { setTimeout(appMesurerFenetre, 120); setTimeout(appMesurerFenetre, 450); });   // fermeture du clavier : iOS signale parfois la fin en retard
+    document.addEventListener('focusout', () => { setTimeout(appMesurerFenetre, 0); setTimeout(appMesurerFenetre, 300); });   // sortie d'un champ : remesure aussitôt (on sait alors si un autre champ prend le focus), puis 300 ms plus tard (iOS signale parfois la fin du clavier en retard)
     if (window.visualViewport) window.visualViewport.addEventListener('resize', appMesurerFenetre);
     appMesurerRafale();
   } catch (e) {}
@@ -9705,13 +9713,27 @@ function photoSanitizeLocal() {
   } catch (e) { console.warn('[Nara] Remise en ordre locale des photos:', e && e.message ? e.message : e); }
 }
 
-function renderPhotoZone() {
-  const today = getTodayStr();
-  // Vérifier si une photo existe déjà pour aujourd'hui
-  const stored = localStorage.getItem(`nara_photo_${today}`);
-  if (stored || currentPhotoDataUrl) {
+// Référence de la photo d'UN jour (lot 18) : une copie « data: » gardée sur l'appareil et pas encore envoyée (c'est la plus récente), sinon le chemin de l'historique des photos
+// (celui que montre la galerie : une photo venue d'un autre appareil n'a parfois que cette entrée), sinon le chemin gardé sur l'appareil. null = pas de photo ce jour-là.
+function photoRefDuJour(date) {
+  try {
+    const gardee = localStorage.getItem('nara_photo_' + date);
+    if (gardee && gardee.indexOf('data:') === 0) return gardee;
+    const h = loadSkinPhotoHistory().filter(p => p && p.date === date)[0];
+    return (h && h.path) || gardee || null;
+  } catch (e) { return null; }
+}
+
+// L'aperçu photo de la rubrique Peau montre la photo du jour AFFICHÉ dans le Journal (lot 18). Il est recalculé à chaque fois que le Journal se dessine, donc à chaque changement de date
+// (flèches, galerie « Voir le journal de ce jour », Accueil, cycle, routine). Une photo ce jour-là → son aperçu (lien temporaire du bucket privé « skin-photos », jamais d'adresse dans le HTML) ;
+// sinon l'état vide « Ajouter une photo de suivi ». Rien ne reste d'un jour à l'autre : ni la photo d'aujourd'hui, ni un aperçu local en attente d'envoi.
+function renderPhotoZone(date) {
+  const jour = date || jrnGetDate();
+  const local = currentPhotoDataUrl && currentPhotoDate === jour ? currentPhotoDataUrl : null;       // aperçu local (envoi en cours, ou photo gardée hors ligne) : seulement le jour où la photo a été choisie
+  const stored = photoRefDuJour(jour);
+  if (stored || local) {
     // Aperçu local (envoi en cours, ou photo gardée hors ligne) ; sinon photo déjà envoyée : chemin → lien temporaire
-    const ref = currentPhotoDataUrl || stored;
+    const ref = local || stored;
     return `
       <div class="photo-preview-wrap">
         ${photoImgHtml(ref, { cls: 'photo-preview-img', alt: 'Photo peau du jour', msg: true })}
@@ -9720,7 +9742,7 @@ function renderPhotoZone() {
             <button class="photo-action-btn change" onclick="event.stopPropagation(); triggerPhotoInput()">
               🔄 Changer
             </button>
-            <button class="photo-action-btn delete" onclick="event.stopPropagation(); deletePhoto()">
+            <button class="photo-action-btn delete" onclick="event.stopPropagation(); deletePhoto('${jour}')">
               🗑 Supprimer
             </button>
           </div>
@@ -9744,6 +9766,7 @@ function triggerPhotoInput() {
 async function handlePhotoSelected(input) {
   const file = input.files[0];
   if (!file) return;
+  const jour = jrnGetDate();     // lot 18 : la photo appartient au jour AFFICHÉ dans le Journal quand on la choisit (et plus toujours à aujourd'hui)
 
   // Vérif taille (max 10 Mo)
   if (file.size > 10 * 1024 * 1024) {
@@ -9754,11 +9777,11 @@ async function handlePhotoSelected(input) {
   // 1. Afficher un aperçu local immédiat (base64)
   const reader = new FileReader();
   reader.onload = async (e) => {
-    currentPhotoDataUrl = e.target.result;
+    currentPhotoDataUrl = e.target.result; currentPhotoDate = jour;
     refreshPhotoZone();
 
     // 2. Upload vers Supabase Storage en arrière-plan
-    await uploadPhotoToSupabase(file);
+    await uploadPhotoToSupabase(file, jour);
   };
   reader.readAsDataURL(file);
 
@@ -9780,16 +9803,17 @@ function showUploadingState() {
     </div>`;
 }
 
-async function uploadPhotoToSupabase(file) {
+async function uploadPhotoToSupabase(file, date) {
+  const apercu = currentPhotoDataUrl;                                                    // l'aperçu de CETTE photo : une autre photo choisie entre-temps ne prend pas sa place (lot 18)
+  const jour = /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? date : jrnGetDate();              // le jour de la photo : celui du Journal affiché quand on l'a choisie (lot 18 : plus toujours aujourd'hui)
   if (!currentUser) {
     // Pas connecté — garder seulement en local (base64 dans localStorage)
-    const today = getTodayStr();
     try {
-      localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
-      syncMarkDirty('photo', today);   // envoyée dès la connexion
+      localStorage.setItem(`nara_photo_${jour}`, apercu);
+      syncMarkDirty('photo', jour);   // envoyée dès la connexion
       showToast('📷 Photo ajoutée (connexion requise pour la sync)');
     } catch (e) {                      // photo trop lourde pour le stockage de l'appareil : on ne fait pas semblant de l'avoir gardée
-      currentPhotoDataUrl = null; refreshPhotoZone();
+      if (currentPhotoDataUrl === apercu) currentPhotoDataUrl = null; refreshPhotoZone();
       showToast('📷 Photo non enregistrée (connexion requise)');
     }
     return;
@@ -9797,10 +9821,9 @@ async function uploadPhotoToSupabase(file) {
 
   showUploadingState();
 
-  const today = getTodayStr();
   const userId = currentUser.id;
   const ext = file.type.includes('png') ? 'png' : 'jpg';
-  const path = `${userId}/${today}.${ext}`;
+  const path = `${userId}/${jour}.${ext}`;
 
   try {
     // Upload dans le bucket 'skin-photos' (privé)
@@ -9816,13 +9839,13 @@ async function uploadPhotoToSupabase(file) {
 
     // Le fichier est dans le stockage PRIVÉ : on ne garde que son chemin, jamais d'adresse web
     delete _photoLinks[path];      // photo remplacée le même jour : l'ancien lien montrerait l'ancienne image
-    saveSkinPhotoToHistory(today, path);
-    localStorage.setItem(`nara_photo_${today}`, path);
+    saveSkinPhotoToHistory(jour, path);
+    localStorage.setItem(`nara_photo_${jour}`, path);
 
     // La référence photo (chemin) est envoyée par la couche de synchronisation
-    syncMarkDirty('photo', today);
+    syncMarkDirty('photo', jour);
 
-    currentPhotoDataUrl = null; // l'affichage passe par un lien temporaire demandé à Supabase
+    if (currentPhotoDataUrl === apercu) currentPhotoDataUrl = null; // l'affichage passe par un lien temporaire demandé à Supabase
     refreshPhotoZone();
     showToast('📷 Photo synchronisée !');
 
@@ -9830,20 +9853,20 @@ async function uploadPhotoToSupabase(file) {
     console.warn('[Nara] Upload photo échoué:', err.message);
     // Fallback : garder la base64 en local ; elle sera renvoyée automatiquement au retour du réseau
     try {
-      localStorage.setItem(`nara_photo_${today}`, currentPhotoDataUrl);
-      syncMarkDirty('photo', today);
+      localStorage.setItem(`nara_photo_${jour}`, apercu);
+      syncMarkDirty('photo', jour);
       refreshPhotoZone();
       showToast('📷 Photo sauvegardée localement');
     } catch (e2) {                     // photo trop lourde pour le stockage de l'appareil : on ne fait pas semblant de l'avoir gardée
-      currentPhotoDataUrl = null; refreshPhotoZone();
+      if (currentPhotoDataUrl === apercu) currentPhotoDataUrl = null; refreshPhotoZone();
       showToast('📷 Photo non enregistrée (connexion requise)');
     }
   }
 }
 
-async function deletePhoto() {
-  const today = getTodayStr();
-  currentPhotoDataUrl = null;
+async function deletePhoto(date) {
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? date : jrnGetDate();            // lot 18 : la photo du jour AFFICHÉ (le bouton « Supprimer » est celui de l'aperçu de ce jour), plus toujours celle d'aujourd'hui
+  if (currentPhotoDate === today) currentPhotoDataUrl = null;                             // l'aperçu local d'un AUTRE jour (envoi en cours) n'est pas touché
   localStorage.removeItem(`nara_photo_${today}`);
   if (currentUser) ['jpg', 'png'].forEach(ext => { delete _photoLinks[`${currentUser.id}/${today}.${ext}`]; });   // plus aucun lien pour cette photo
 

@@ -242,7 +242,7 @@ if (typeof supabase === 'undefined') {
     -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
   }
   .espace-bulle:active { transform: scale(0.94); }
-  #screen-espace, #screen-donnees, #screen-compte { background: var(--cream); }
+  #screen-espace, #screen-donnees, #screen-compte, #screen-consentement, #screen-legal-mentions, #screen-legal-confidentialite, #screen-legal-conditions { background: var(--cream); }
   .espace-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
     padding: 18px clamp(16px, 6vw, 28px) calc(24px + env(safe-area-inset-bottom, 0px));
@@ -341,6 +341,58 @@ if (typeof supabase === 'undefined') {
     font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--sage); -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
   .compte-lien[hidden] { display: none; }
+
+  /* ===== CONSENTEMENT, PAGES LÉGALES, EXPORT ET SUPPRESSION DU COMPTE (lot 20) : mêmes cartes blanches à bordure de la palette que « Mon compte » ; bouton principal #C2C395 sur #4f5140 ; suppression en rouge doux (comme « Se déconnecter ») ===== */
+  .consent-wrap { padding-top: 26px; }
+  .consent-ico { text-align: center; font-size: 2.2rem; line-height: 1; margin-bottom: 10px; }
+  .consent-titre { margin: 0 0 14px; text-align: center; font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; font-weight: 400; line-height: 1.2; color: var(--text-dark); }
+  .consent-texte { margin: 0 0 22px; font-size: 0.9rem; line-height: 1.65; color: var(--text-mid); }
+  .consent-case { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; padding: 14px 16px; background: white; border: 1.5px solid var(--oat); border-radius: 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .consent-case input { flex-shrink: 0; width: 22px; height: 22px; margin: 0; accent-color: var(--sage); }
+  .consent-case-txt { font-size: 0.86rem; line-height: 1.5; color: var(--text-dark); }
+  .consent-lien-inline { color: var(--sage); text-decoration: underline; }
+  .consent-note { margin: 4px 2px 14px; font-size: 0.72rem; line-height: 1.4; color: var(--text-light); }
+  .consent-lien-bas {
+    display: block; min-height: 44px; margin: 4px auto 0; padding: 0 12px; border: 0; background: none; cursor: pointer; text-decoration: underline;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--sage); -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .legal-texte { margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--text-mid); }
+  /* Confidentialité et données : état de l'export, bouton « Enregistrer le fichier », mention du consentement, suppression */
+  .donnees-etat { margin: -14px 4px 22px; font-size: 0.74rem; line-height: 1.45; color: var(--text-mid); }
+  .donnees-etat:empty { display: none; }
+  .donnees-etat.err { color: #B5524C; }
+  .donnees-pret { margin: -10px 0 24px; }
+  .donnees-pret[hidden] { display: none; }
+  .donnees-note { margin: -16px 4px 24px; font-size: 0.72rem; line-height: 1.4; color: var(--text-light); }
+  .donnees-note:empty { display: none; }
+  #donnees-suppr { background: #FBEFED; }                      /* « Supprimer mon compte » : le même bouton que « Se déconnecter » (texte et bordure rouge doux), avec un fond rouge doux pour qu'on ne le confonde pas */
+  #donnees-suppr:active { background: #F6DFDB; }
+  .donnees-suppr-note { margin: 8px 4px 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-light); text-align: center; }
+  /* Fenêtre « Supprimer mon compte » : le message, puis « SUPPRIMER » à écrire. Hauteur = zone visible (--app-h) : le clavier ne la cache pas. */
+  .suppr-overlay {
+    position: fixed; top: 0; left: 0; right: 0; height: 100dvh; height: var(--app-h, 100dvh); z-index: 850; display: none; align-items: center; justify-content: center;
+    box-sizing: border-box; padding: clamp(16px, 6vw, 28px); background: rgba(40,35,25,0.55);
+  }
+  .suppr-overlay.open { display: flex; }
+  .suppr-carte { width: 100%; max-width: 360px; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; padding: 26px 22px 14px; background: white; border-radius: 24px; text-align: center; }
+  .suppr-ico { font-size: 2rem; line-height: 1; margin-bottom: 10px; }
+  .suppr-titre { margin-bottom: 10px; font-family: 'Cormorant Garamond', serif; font-size: 1.35rem; line-height: 1.25; color: var(--text-dark); }
+  .suppr-texte { margin: 0 0 10px; font-size: 0.84rem; line-height: 1.55; color: var(--text-mid); }
+  .suppr-doux { font-size: 0.78rem; color: var(--text-light); }
+  .suppr-carte .compte-btn, .suppr-carte .suppr-btn-rouge { margin-top: 10px; }
+  .suppr-carte .compte-btn[hidden] { display: none; }                  /* « Enregistrer le fichier » : caché tant que le système n'a pas demandé un nouvel appui */
+  .suppr-carte .compte-lien { margin: 6px auto 0; }
+  .suppr-carte .espace-champ { margin-top: 4px; text-align: center; letter-spacing: 0.06em; }
+  .suppr-btn-rouge {
+    display: block; width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 16px; border-radius: 14px; border: 1.5px solid #EBCFCB; background: #FBEFED; color: #B5524C; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .suppr-btn-rouge:active { background: #F6DFDB; }
+  .suppr-btn-rouge:disabled { opacity: 0.5; cursor: not-allowed; }
+  .suppr-etat { min-height: 1.2em; margin-top: 10px; font-size: 0.78rem; line-height: 1.45; color: var(--text-mid); }
+  .suppr-etat.err { color: #B5524C; }
+  .suppr-etat:empty { display: none; }
+  .suppr-carte[aria-busy="true"] .compte-lien { visibility: hidden; }
 
   /* .screen: défini dans le premier bloc style */
 
@@ -3933,25 +3985,98 @@ if (typeof supabase === 'undefined') {
       </div>
     </div>
 
-    <!-- SCREEN CONFIDENTIALITÉ ET DONNÉES : page simple ; les deux actions arrivent bientôt (non cliquables) -->
+    <!-- SCREEN CONSENTEMENT (lot 20) : montré juste après l'inscription, et une fois pour les comptes existants qui n'ont pas encore donné leur accord (showScreen : tant que consentOk(currentUser) est faux, une personne connectée n'a accès qu'à cet écran et aux pages légales).
+         Deux cases NON pré-cochées, obligatoires pour continuer ; la date et la version de l'accord sont enregistrées dans le compte (user_metadata.consentement). Pas de barre du bas. -->
+    <div class="screen" id="screen-consentement">
+      <div class="espace-scroll consent-wrap" id="consent-scroll">
+        <div class="consent-ico" aria-hidden="true">🌿</div>
+        <h1 class="consent-titre">Avant de commencer</h1>
+        <p class="consent-texte">Nara enregistre des informations sur ta santé (digestion, peau, cycle, sommeil…) pour te les montrer et repérer tes liens. Elles ne sont jamais vendues ni partagées. Tu peux les exporter ou les supprimer à tout moment.</p>
+        <label class="consent-case" for="consent-c1">
+          <input type="checkbox" id="consent-c1" onchange="consentMajBouton()">
+          <span class="consent-case-txt">J'accepte que Nara enregistre mes données de santé</span>
+        </label>
+        <label class="consent-case" for="consent-c2">
+          <input type="checkbox" id="consent-c2" onchange="consentMajBouton()">
+          <span class="consent-case-txt">J'ai lu la <a href="#" class="consent-lien-inline" id="consent-lien-confidentialite" onclick="return legalLien(event, 'confidentialite', 'consentement')">politique de confidentialité</a> et les <a href="#" class="consent-lien-inline" id="consent-lien-conditions" onclick="return legalLien(event, 'conditions', 'consentement')">conditions d'utilisation</a></span>
+        </label>
+        <div class="consent-note">Les deux cases sont nécessaires pour continuer.</div>
+        <div class="espace-msg" id="consent-msg" role="alert"></div>
+        <button type="button" class="compte-btn" id="consent-btn" onclick="consentValider()" disabled>Continuer</button>
+        <button type="button" class="consent-lien-bas" id="consent-lien-mentions" onclick="legalOuvrir('mentions', 'consentement')">Mentions légales</button>
+        <button type="button" class="consent-lien-bas" id="consent-partir" onclick="consentPartir()">Me déconnecter</button>
+      </div>
+    </div>
+
+    <!-- SCREENS PAGES LÉGALES (lot 20, provisoires) : mentions légales, politique de confidentialité, conditions d'utilisation. Ouvertes depuis l'écran de consentement et depuis « Confidentialité et données » ; la flèche retour ramène à la page d'où l'on vient (legalRetour). Pas de barre du bas. -->
+    <div class="screen" id="screen-legal-mentions">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="legalRetour()">←</div>
+        <div class="screen-title">Mentions légales</div>
+      </div>
+      <div class="espace-scroll">
+        <div class="compte-carte"><p class="legal-texte">Page en cours de rédaction</p></div>
+      </div>
+    </div>
+    <div class="screen" id="screen-legal-confidentialite">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="legalRetour()">←</div>
+        <div class="screen-title">Politique de confidentialité</div>
+      </div>
+      <div class="espace-scroll">
+        <div class="compte-carte"><p class="legal-texte">Page en cours de rédaction</p></div>
+      </div>
+    </div>
+    <div class="screen" id="screen-legal-conditions">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="legalRetour()">←</div>
+        <div class="screen-title">Conditions d'utilisation</div>
+      </div>
+      <div class="espace-scroll">
+        <div class="compte-carte"><p class="legal-texte">Page en cours de rédaction</p></div>
+      </div>
+    </div>
+
+    <!-- SCREEN CONFIDENTIALITÉ ET DONNÉES (lot 20) : exporter mes données (fichier JSON : journal, routines, suivis, cycle, réglages, liste des photos avec leur date), pages légales, supprimer mon compte (fenêtre en deux temps : #suppr-overlay) -->
     <div class="screen" id="screen-donnees">
       <div class="profile-header">
         <div class="back-btn" role="button" aria-label="Retour" onclick="espaceRetourDepuis()">←</div>
         <div class="screen-title">Confidentialité et données</div>
       </div>
       <div class="espace-scroll" id="donnees-scroll">
+        <div class="espace-groupe-titre">Mes données</div>
         <div class="espace-groupe">
-          <div class="espace-ligne espace-ligne-off" aria-disabled="true">
+          <button type="button" class="espace-ligne" id="donnees-export" onclick="exportLancer('donnees')">
             <span class="espace-ligne-ico">📤</span>
             <span class="espace-ligne-txt"><span class="espace-ligne-titre">Exporter mes données</span><span class="espace-ligne-desc">Recevoir une copie de ce que tu as noté</span></span>
-            <span class="espace-bientot">bientôt</span>
-          </div>
-          <div class="espace-ligne espace-ligne-off" aria-disabled="true">
-            <span class="espace-ligne-ico">🗑️</span>
-            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Supprimer mon compte</span><span class="espace-ligne-desc">Effacer ton compte et tes données</span></span>
-            <span class="espace-bientot">bientôt</span>
-          </div>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
         </div>
+        <div class="donnees-etat" id="donnees-export-etat" role="status" aria-live="polite"></div>
+        <button type="button" class="compte-btn donnees-pret" id="donnees-export-pret" onclick="exportEnregistrer()" hidden>Enregistrer le fichier</button>
+
+        <div class="espace-groupe-titre">Informations légales</div>
+        <div class="espace-groupe">
+          <button type="button" class="espace-ligne" id="donnees-legal-mentions" onclick="legalOuvrir('mentions', 'donnees')">
+            <span class="espace-ligne-ico">📄</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Mentions légales</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+          <button type="button" class="espace-ligne" id="donnees-legal-confidentialite" onclick="legalOuvrir('confidentialite', 'donnees')">
+            <span class="espace-ligne-ico">🔒</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Politique de confidentialité</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+          <button type="button" class="espace-ligne" id="donnees-legal-conditions" onclick="legalOuvrir('conditions', 'donnees')">
+            <span class="espace-ligne-ico">📋</span>
+            <span class="espace-ligne-txt"><span class="espace-ligne-titre">Conditions d'utilisation</span></span>
+            <span class="espace-ligne-fleche">›</span>
+          </button>
+        </div>
+        <div class="donnees-note" id="donnees-consent"></div>
+
+        <button type="button" class="espace-sortie" id="donnees-suppr" onclick="supprOuvrir()">Supprimer mon compte</button>
+        <div class="donnees-suppr-note">Effacer ton compte et tes données</div>
       </div>
     </div>
     <!-- SCREEN MON CYCLE (lot 14) : calendrier du cycle. Ouvert par « Mon cycle » (Mon espace) et par la carte cycle de l'Accueil ; flèche retour, roue ⚙️ des réglages, pas de barre du bas (comme les autres pages de détail). Rendu dynamique par renderCyclePage() -->
@@ -4169,7 +4294,21 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '25/11 · 23 h 12';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '26/11 · 16 h 47';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+// Lot 20 — consentement, pages légales, export, suppression du compte : constantes et états déclarés ICI, en haut du script, parce que showScreen les lit dès le premier écran affiché (code : « CONSENTEMENT, PAGES LÉGALES, EXPORT… », avant l'inscription).
+const CONSENT_VERSION = '1.0';                        // version du texte de consentement et des pages légales : la changer redemande l'accord à tout le monde
+const CONSENT_CLE_ATTENTE = 'nara_consent_attente';   // { uid, date, version } : accord donné mais pas encore enregistré dans le compte (hors ligne) ; effacé avec le reste des données Nara à la déconnexion
+const CONSENT_LIBRES = ['onboarding', 'signup', 'login', 'consentement', 'legal-mentions', 'legal-confidentialite', 'legal-conditions'];   // écrans montrés même sans accord
+let _consentSuite = null;        // où la personne allait quand l'écran de consentement l'a arrêtée (l'Accueil par défaut)
+let _consentRaz = false;         // l'écran vient d'être imposé par showScreen : les cases repartent décochées (pas au retour d'une page légale)
+let _consentEnvoi = null;        // envoi de l'accord au compte en cours (un seul à la fois)
+let _consentValide = false;      // « Continuer » en cours (un seul appui compte)
+let _legalRetour = 'donnees';    // page où ramène la flèche d'une page légale : 'donnees' ou 'consentement'
+let _exportEnCours = false;      // un export se prépare (un seul à la fois)
+let _exportPret = null;          // le fichier d'export prêt (gardé pour le bouton « Enregistrer le fichier »)
+let _exportZone = 'donnees';     // où s'affiche l'état de l'export : 'donnees' (la page) ou 'suppr' (la fenêtre de suppression)
+let _exportNoteTexte = '';       // précisions ajoutées au message de fin d'export (hors connexion, éléments pas encore envoyés)
+let _supprEnCours = false;       // suppression du compte en cours : plus aucun événement de session ni envoi de données
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -4547,6 +4686,7 @@ function updateHomeUser(user) {
   homeMajEntete(user);
   espaceMajCompte(user);
   if (prenomAttenteLire() && !_prenomEnvoi) setTimeout(prenomEnvoyer, 0);      // un nouveau prénom resté en attente repart dès qu'une session est connue
+  if (consentAttenteLire() && !_consentEnvoi) setTimeout(consentEnvoyer, 0);   // un accord resté en attente (lot 20) repart de même
 }
 
 // Envoie au compte le nouveau prénom gardé sur l'appareil. Renvoie true s'il est parti (ou s'il n'y avait rien à envoyer), false sinon : il reste gardé pour un prochain essai.
@@ -4774,6 +4914,477 @@ function espaceAller(id) {
   if (id === 'profile') openProfileFromMenu(); else go(id);
 }
 function espaceRetourDepuis() { go(espaceRetour ? 'espace' : 'home'); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONSENTEMENT, PAGES LÉGALES, EXPORT ET SUPPRESSION DU COMPTE (lot 20)
+// 1. Consentement. Tant que l'accord n'est pas donné, showScreen n'ouvre à une personne connectée que l'écran « Avant de commencer » (et les pages légales) : juste après l'inscription, et une fois pour les comptes existants.
+//    La date et la version de l'accord vont dans le compte (sb.auth.updateUser({ data: { consentement: { date, version } } }) → user_metadata.consentement), comme le prénom : d'abord gardées sur l'appareil
+//    (nara_consent_attente), puis envoyées. Hors ligne, la personne entre quand même ; l'accord repart au retour du réseau, au retour dans l'app et à chaque session connue.
+//    Ce n'est pas une donnée de table : aucun syncMark…, aucun syncUpsert. Les deux cases ne sont jamais pré-cochées.
+// 2. Export. Un fichier JSON construit à partir des données de l'appareil, remises à jour juste avant par les fonctions de synchro existantes (appelées, pas modifiées), plus la liste COMPLÈTE des photos lue dans
+//    le dossier de la personne du stockage privé (l'historique de l'appareil n'en garde que 90). Aucune table n'est lue ici. Téléchargement : partage du système sur iPhone / en mode application, sinon fichier téléchargé.
+// 3. Suppression. Essai à blanc de la fonction SQL nara_supprimer_mon_compte (rien n'est effacé) → synchro coupée (comme à la déconnexion) → photos effacées par l'API de stockage (liste par pages, suppression par lots,
+//    relecture : le dossier doit être vide) → la fonction SQL efface d'un coup les lignes des deux tables ET le compte (une seule transaction) → appareil nettoyé, déconnexion locale, retour à l'accueil.
+//    Si quelque chose échoue, la personne reste connectée et la synchro repart ; rien n'est supprimé à moitié côté base.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── 1. Consentement ──────────────────────────────────────────────────────────
+function consentAttenteLire() {
+  try {
+    const r = JSON.parse(localStorage.getItem(CONSENT_CLE_ATTENTE) || 'null');
+    return r && typeof r.uid === 'string' && typeof r.date === 'string' && typeof r.version === 'string' ? r : null;
+  } catch (e) { return null; }
+}
+function consentAttenteEcrire(uid, date, version) { try { localStorage.setItem(CONSENT_CLE_ATTENTE, JSON.stringify({ uid: uid, date: date, version: version })); } catch (e) {} }
+function consentAttenteEffacer() { try { localStorage.removeItem(CONSENT_CLE_ATTENTE); } catch (e) {} }
+// L'accord de CE compte : { date, version } (d'abord un accord gardé sur l'appareil et pas encore parti, puis celui du compte) ; null = pas encore donné
+function consentDe(user) {
+  if (!user) return null;
+  const att = consentAttenteLire();
+  if (att && att.uid === user.id) return { date: att.date, version: att.version };
+  const c = user.user_metadata && user.user_metadata.consentement;
+  return c && typeof c === 'object' && typeof c.date === 'string' && c.date && typeof c.version === 'string' ? { date: c.date, version: c.version } : null;
+}
+// Vrai si la personne a donné son accord à la version actuelle du texte (une autre version → on le redemande)
+function consentOk(user) { const c = consentDe(user); return !!c && c.version === CONSENT_VERSION; }
+
+// Envoie au compte l'accord gardé sur l'appareil. Renvoie true s'il est parti (ou s'il n'y avait rien à envoyer), false sinon : il reste gardé pour un prochain essai.
+async function consentEnvoyer() {
+  if (_consentEnvoi) return _consentEnvoi;
+  _consentEnvoi = (async () => {
+    try {
+      if (_prenomEnvoi) { try { await _prenomEnvoi; } catch (e) {} }          // un seul changement du compte à la fois (le prénom et l'accord vivent dans les mêmes informations)
+      const att = consentAttenteLire();
+      if (!att) return true;
+      if (!sb || !currentUser || currentUser.id !== att.uid) return false;
+      const accord = { date: att.date, version: att.version };
+      const res = await withTimeout(sb.auth.updateUser({ data: { consentement: accord } }), 12000, 'enregistrement du consentement');
+      if (res && res.error) throw res.error;
+      const encore = consentAttenteLire();
+      if (encore && encore.uid === att.uid && encore.date === att.date) consentAttenteEffacer();       // parti : le compte porte maintenant cet accord
+      if (currentUser && currentUser.id === att.uid) {
+        const u = res && res.data && res.data.user;
+        const base = (u && u.id === att.uid) ? u : currentUser;
+        currentUser = (base.user_metadata && base.user_metadata.consentement) ? base : Object.assign({}, base, { user_metadata: Object.assign({}, base.user_metadata || {}, { consentement: accord }) });
+      }
+      return true;
+    } catch (e) {
+      console.warn('[Nara] consentement pas encore enregistré dans le compte :', e && e.message || e);
+      return false;
+    } finally { _consentEnvoi = null; }
+  })();
+  return _consentEnvoi;
+}
+window.addEventListener('online', () => { if (consentAttenteLire()) consentEnvoyer(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && consentAttenteLire()) consentEnvoyer(); });
+
+// « Continuer » n'est actif que si les deux cases sont cochées (et qu'un enregistrement n'est pas déjà en cours)
+function consentBoutonEtat() {
+  const c1 = document.getElementById('consent-c1'), c2 = document.getElementById('consent-c2'), b = document.getElementById('consent-btn');
+  if (c1 && c2 && b) b.disabled = _consentValide || !(c1.checked && c2.checked);
+}
+// Quand la personne coche / décoche : le bouton suit, et le message d'aide ou d'échec précédent s'efface dès que les deux cases sont cochées
+function consentMajBouton() {
+  consentBoutonEtat();
+  const c1 = document.getElementById('consent-c1'), c2 = document.getElementById('consent-c2'), m = document.getElementById('consent-msg');
+  if (m && c1 && c2 && c1.checked && c2.checked) m.textContent = '';
+}
+// Appelée par showScreen : quand l'écran vient d'être imposé, les cases repartent décochées ; au retour d'une page légale, elles restent comme elles étaient
+function consentAfficher() {
+  if (_consentRaz) {
+    _consentRaz = false;
+    ['consent-c1', 'consent-c2'].forEach(id => { const c = document.getElementById(id); if (c) c.checked = false; });
+    const m = document.getElementById('consent-msg'); if (m) m.textContent = '';
+    const b = document.getElementById('consent-btn'); if (b) b.textContent = 'Continuer';
+  }
+  consentMajBouton();
+}
+async function consentValider() {
+  if (_consentValide) return;
+  const c1 = document.getElementById('consent-c1'), c2 = document.getElementById('consent-c2'), m = document.getElementById('consent-msg'), b = document.getElementById('consent-btn');
+  if (!c1 || !c2 || !currentUser || consentOk(currentUser)) return;                              // rien à faire si l'accord est déjà donné (un second appel n'envoie rien de plus)
+  if (!(c1.checked && c2.checked)) { if (m) m.textContent = 'Coche les deux cases pour continuer.'; return; }
+  _consentValide = true;
+  if (b) { b.disabled = true; b.textContent = 'Enregistrement…'; }
+  try {
+    const uid = currentUser.id;
+    consentAttenteEcrire(uid, new Date(routMaintenant()).toISOString(), CONSENT_VERSION);       // d'abord sur l'appareil : la personne entre tout de suite si le compte ne répond pas
+    await Promise.race([consentEnvoyer(), new Promise(resolve => setTimeout(resolve, 4000))]);
+    if (!currentUser || currentUser.id !== uid) return;                                          // déconnexion pendant l'envoi
+    if (!consentOk(currentUser)) { if (m) m.textContent = 'Ton accord n’a pas pu être enregistré pour l’instant. Réessaie dans un moment.'; return; }
+    const suite = _consentSuite || 'home'; _consentSuite = null;
+    go(suite);
+  } finally {
+    _consentValide = false;
+    if (b) b.textContent = 'Continuer';
+    consentBoutonEtat();                                                                         // (sans effacer le message d'échec qui vient d'être écrit)
+  }
+}
+// « Me déconnecter » : même chemin que partout (les données non envoyées sont signalées avant de partir)
+function consentPartir() { handleLogout(); }
+// Date de l'accord, en toutes lettres, pour « Confidentialité et données »
+function consentDateTexte(iso) {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ── 2. Pages légales (provisoires) ──────────────────────────────────────────
+function legalOuvrir(page, retour) {
+  _legalRetour = retour === 'consentement' ? 'consentement' : 'donnees';
+  go(page === 'confidentialite' ? 'legal-confidentialite' : page === 'conditions' ? 'legal-conditions' : 'legal-mentions');
+}
+// Lien dans une phrase (case à cocher) : n'ouvre pas la page « # » et ne coche rien
+function legalLien(ev, page, retour) {
+  if (ev && ev.preventDefault) ev.preventDefault();
+  legalOuvrir(page, retour);
+  return false;
+}
+function legalRetour() { go(_legalRetour); }
+
+// ── « Confidentialité et données » : à l'ouverture, la mention du consentement et un export remis à zéro ──
+function donneesMaj() {
+  const n = document.getElementById('donnees-consent'), c = consentDe(currentUser);
+  if (n) n.textContent = c && consentDateTexte(c.date) ? 'Consentement donné le ' + consentDateTexte(c.date) + ' (version ' + c.version + ')' : '';
+  if (!_exportEnCours) { _exportPret = null; exportAfficher('donnees', '', false, false); }
+}
+
+// ── 3. Exporter mes données ─────────────────────────────────────────────────
+function exportIds(zone) {
+  return zone === 'suppr' ? { etat: 'suppr-export-etat', pret: 'suppr-export-pret', btn: 'suppr-exporter' } : { etat: 'donnees-export-etat', pret: 'donnees-export-pret', btn: 'donnees-export' };
+}
+// Texte d'état et bouton « Enregistrer le fichier » de la zone qui exporte (la page ou la fenêtre de suppression) ; l'autre zone est vidée
+function exportAfficher(zone, texte, erreur, pret) {
+  ['donnees', 'suppr'].forEach(z => {
+    const ids = exportIds(z), e = document.getElementById(ids.etat), p = document.getElementById(ids.pret), actif = z === zone;
+    if (e) { e.textContent = actif ? (texte || '') : ''; e.classList.toggle('err', actif && !!erreur); }
+    if (p) p.hidden = !(actif && pret);
+  });
+}
+function exportBoutons(occupe) {
+  ['donnees', 'suppr'].forEach(z => {
+    const b = document.getElementById(exportIds(z).btn);
+    if (b) { b.disabled = !!occupe; b.setAttribute('aria-busy', occupe ? 'true' : 'false'); }
+  });
+}
+// Remet l'appareil à jour avant d'exporter : ce qui reste à envoyer part, la base est relue (8 s au plus). Hors ligne : on part de ce qui est sur l'appareil. Renvoie true si la base a bien été relue.
+async function exportRafraichir(uid) {
+  if (!sb || navigator.onLine === false) return false;
+  const avant = _syncLastPullOk;
+  try { await Promise.race([syncPullUser(uid), new Promise(resolve => setTimeout(resolve, 8000))]); } catch (e) {}
+  return _syncLastPullOk !== avant && !!currentUser && currentUser.id === uid;
+}
+// Tous les fichiers du dossier de photos de la personne, chemins complets (« identifiant/AAAA-MM-JJ.jpg »). La liste vient par pages de 100 ; un sous-dossier éventuel est parcouru aussi.
+// Un « dossier » est une entrée sans identifiant ni informations (id null) ; tout le reste est un fichier : dans le doute, on le compte (la suppression le dira si elle n'arrive pas à l'enlever).
+async function photosListerDossier(uid, prefixe, profondeur) {
+  const base = prefixe || uid, prof = profondeur || 0, out = [];
+  for (let page = 0; page < 100; page++) {
+    const res = await withTimeout(sb.storage.from('skin-photos').list(base, { limit: 100, offset: page * 100, sortBy: { column: 'name', order: 'asc' } }), 20000, 'liste des photos');
+    if (res && res.error) throw res.error;
+    const part = (res && res.data) || [];
+    for (const f of part) {
+      if (!f || !f.name) continue;
+      if (f.id === null && !f.metadata) {
+        if (prof < 3) { const sous = await photosListerDossier(uid, base + '/' + f.name, prof + 1); sous.forEach(p => out.push(p)); }
+      } else out.push(base + '/' + f.name);
+    }
+    if (part.length < 100) return out;
+  }
+  throw new Error('liste des photos trop longue');
+}
+// La liste des photos de l'export : celle du stockage (complète) ; sinon l'historique de l'appareil (90 dernières au plus). Les photos gardées seulement sur l'appareil (pas encore envoyées) sont signalées.
+async function exportPhotos(uid) {
+  let noms = null;
+  if (sb && navigator.onLine !== false) {
+    try { noms = await photosListerDossier(uid); } catch (e) { console.warn('[Nara] liste des photos pour l’export :', e && e.message || e); }
+  }
+  const liste = [], dates = {};
+  const nomDe = ch => String(ch || '').split('/').pop();
+  if (noms) noms.forEach(p => { const f = nomDe(p), m = /^(\d{4}-\d{2}-\d{2})/.exec(f); if (f === '.emptyFolderPlaceholder') return; liste.push({ date: m ? m[1] : null, fichier: f }); if (m) dates[m[1]] = true; });          // (le repère de dossier vide du tableau de bord Supabase n'est pas une photo)
+  else loadSkinPhotoHistory().forEach(h => { if (h && h.date) { liste.push({ date: h.date, fichier: nomDe(h.path) || null }); dates[h.date] = true; } });
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = /^nara_photo_(\d{4}-\d{2}-\d{2})$/.exec(localStorage.key(i) || '');
+    if (m && !dates[m[1]] && String(localStorage.getItem(localStorage.key(i)) || '').indexOf('data:') === 0) { liste.push({ date: m[1], fichier: null, pas_encore_envoyee: true }); dates[m[1]] = true; }
+  }
+  liste.sort((a, b) => ((a.date || '') < (b.date || '') ? -1 : (a.date || '') > (b.date || '') ? 1 : ((a.fichier || '') < (b.fichier || '') ? -1 : 1)));
+  return { liste: liste, complete: !!noms };
+}
+// Une valeur gardée sur l'appareil : lue comme JSON, sans image intégrée (une photo gardée sur l'appareil n'est pas dans le fichier, seulement dans la liste)
+function exportValeur(brut) {
+  let v;
+  try { v = JSON.parse(brut); } catch (e) { v = brut; }
+  const net = x => {
+    if (typeof x === 'string') return (x.indexOf('data:') === 0 && x.length > 200) ? '(image gardée sur l’appareil, non incluse)' : x;
+    if (Array.isArray(x)) return x.map(net);
+    if (x && typeof x === 'object') { const o = {}; Object.keys(x).forEach(k => { o[k] = net(x[k]); }); return o; }
+    return x;
+  };
+  return net(v);
+}
+function exportTries(paires) { const o = {}; paires.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0).forEach(p => { o[p[0]] = p[1]; }); return o; }
+// Le contenu du fichier : tout ce que l'appareil garde pour ce compte, rangé par thème ; ce qui n'est pas connu va dans « autres_donnees_de_l_appareil » (rien n'est oublié).
+function exportConstruire(user, ctx) {
+  const pj = [], pc = [], pr = [], pq = {}, etat = [], autres = [];
+  let suivis = [], profil = null, cycle = null, cycleHist = [], test = null, testHist = [], alertes = null, calibDate = null, calibPlusTard = null;
+  const alim = { aliments_recents: [], epices_recentes: [], aliments_retires: [], epices_retirees: [] };
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i) || '';
+    if (k.indexOf('nara_') !== 0) continue;
+    if (/^nara_(sync_meta|prenom_attente|consent_attente|skin_photos)$/.test(k) || /^nara_photo_/.test(k)) continue;                                    // technique, ou photos (liste à part)
+    if (/^nara_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_/.test(k)) continue;                                                       // copies rangées par compte : doublons
+    let m;
+    if ((m = /^nara_journal_(\d{4}-\d{2}-\d{2})$/.exec(k))) pj.push([m[1], exportValeur(localStorage.getItem(k))]);
+    else if ((m = /^nara_cal_(\d{4}-\d{2}-\d{2})$/.exec(k))) pc.push([m[1], exportValeur(localStorage.getItem(k))]);
+    else if ((m = /^nara_rjour_(\d{4}-\d{2}-\d{2})$/.exec(k))) pr.push([m[1], exportValeur(localStorage.getItem(k))]);
+    else if ((m = /^nara_log_(\d{4}-\d{2}-\d{2})_(.+)$/.exec(k))) { if (SYNC_QUICK.indexOf(m[2]) >= 0) (pq[m[1]] = pq[m[1]] || {})[m[2]] = exportValeur(localStorage.getItem(k)); else autres.push([k, exportValeur(localStorage.getItem(k))]); }
+    else if ((m = /^nara_routine_(.+)$/.exec(k))) etat.push([m[1], exportValeur(localStorage.getItem(k))]);
+    else if (k === 'nara_suivis') suivis = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_profile') profil = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_cycle') cycle = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_cycle_history') cycleHist = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_food_test') test = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_food_test_history') testHist = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_food_history') alim.aliments_recents = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_spice_history') alim.epices_recentes = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_food_deleted') alim.aliments_retires = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_spice_deleted') alim.epices_retirees = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_alertes') alertes = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_cycle_calibrate_date') calibDate = exportValeur(localStorage.getItem(k));
+    else if (k === 'nara_cycle_calibrate_later') calibPlusTard = exportValeur(localStorage.getItem(k));
+    else autres.push([k, exportValeur(localStorage.getItem(k))]);
+  }
+  const quotidien = Object.keys(pq).map(d => [d, pq[d]]);
+  return {
+    export_nara: {
+      format: 1,
+      cree_le: new Date(routMaintenant()).toISOString(),
+      version_de_l_appli: APP_VERSION,
+      hors_connexion: !ctx.enLigne,
+      elements_pas_encore_envoyes: syncUnsentCount(),
+      liste_des_photos_complete: !!ctx.photos.complete
+    },
+    compte: { email: (user && user.email) || null, prenom: userPrenom(user) || null, consentement: consentDe(user) },
+    journal: exportTries(pj),
+    calendrier_du_transit: exportTries(pc),
+    saisies_rapides: exportTries(quotidien),
+    routines: { etat: exportTries(etat), jour_par_jour: exportTries(pr) },
+    suivis: suivis,
+    profil_sante: profil,
+    cycle: { reglages: cycle, historique: cycleHist },
+    alimentation: { test_en_cours: test, historique_des_tests: testHist, aliments_recents: alim.aliments_recents, epices_recentes: alim.epices_recentes, aliments_retires: alim.aliments_retires, epices_retirees: alim.epices_retirees },
+    reglages: { alertes_masquees: alertes, rappel_de_calibrage_du_cycle: { derniere_date: calibDate, plus_tard: calibPlusTard } },
+    photos: ctx.photos.liste,
+    autres_donnees_de_l_appareil: exportTries(autres)
+  };
+}
+function exportFichier(user, ctx) {
+  return new File([JSON.stringify(exportConstruire(user, ctx), null, 2)], 'nara-export-' + localDateStr() + '.json', { type: 'application/json' });
+}
+// iPhone / iPad et mode « application » : le fichier passe par le partage du système (« Enregistrer dans Fichiers »…), plus fiable qu'un téléchargement dans une application installée
+function exportPartagerDePreference() {
+  try { return document.documentElement.classList.contains('ios') || (!!window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); } catch (e) { return false; }
+}
+function exportTelecharger(f) {
+  const url = URL.createObjectURL(f), a = document.createElement('a');
+  a.href = url; a.download = f.name; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 10000);
+}
+// Remet le fichier : 'ok' (partagé ou téléchargé) · 'annule' (la personne a fermé le partage) · 'geste' (le système demande un nouvel appui : le temps écoulé depuis le premier appui est trop long)
+async function exportLivrer(f, appuiFrais) {
+  if (exportPartagerDePreference() && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+    let envoi = null;
+    try {
+      if (navigator.canShare({ files: [f] })) envoi = f;
+      else { const t = new File([f], f.name, { type: 'text/plain' }); if (navigator.canShare({ files: [t] })) envoi = t; }          // certains systèmes ne partagent pas le type « JSON » mais partagent un fichier texte du même nom
+    } catch (e) {}
+    if (envoi) {
+      try { await navigator.share({ files: [envoi], title: 'Mes données Nara' }); return 'ok'; }
+      catch (e) {
+        const n = e && e.name;
+        if (n === 'AbortError') return 'annule';
+        if (n === 'NotAllowedError' && !appuiFrais) return 'geste';
+        console.warn('[Nara] partage du fichier impossible, téléchargement à la place :', e && e.message || e);
+      }
+    }
+  }
+  exportTelecharger(f);
+  return 'ok';
+}
+function exportNote(ctx) {
+  const n = syncUnsentCount();
+  return (ctx.enLigne ? '' : ' Tu es hors connexion : le fichier contient ce qui est gardé sur cet appareil.') + (n ? ' ' + (n === 1 ? '1 élément pas encore envoyé en ligne y est inclus.' : n + ' éléments pas encore envoyés en ligne y sont inclus.') : '');
+}
+async function exportLancer(zone) {
+  if (_exportEnCours || _supprEnCours) return;
+  zone = zone === 'suppr' ? 'suppr' : 'donnees';
+  if (!currentUser || !sb) return;
+  const uid = currentUser.id;
+  _exportEnCours = true; _exportPret = null; _exportZone = zone;
+  exportBoutons(true);
+  exportAfficher(zone, 'Préparation de ton export…', false, false);
+  try {
+    const enLigne = await exportRafraichir(uid);
+    if (!currentUser || currentUser.id !== uid) return;
+    const ctx = { enLigne: enLigne, photos: await exportPhotos(uid) };
+    if (!currentUser || currentUser.id !== uid) return;
+    const f = exportFichier(currentUser, ctx);
+    _exportPret = f; _exportNoteTexte = exportNote(ctx);
+    const r = await exportLivrer(f, false);
+    if (r === 'geste') exportAfficher(zone, 'Ton export est prêt. Touche « Enregistrer le fichier » pour le garder.' + _exportNoteTexte, false, true);
+    else if (r === 'annule') exportAfficher(zone, 'Export annulé. Tu peux recommencer quand tu veux.', false, false);
+    else exportAfficher(zone, 'Ton export est prêt ✓ (' + f.name + ').' + _exportNoteTexte, false, false);
+  } catch (e) {
+    console.warn('[Nara] export :', e && e.message || e);
+    exportAfficher(zone, 'L’export n’a pas pu être préparé pour l’instant. Réessaie dans un moment.', true, false);
+  } finally { _exportEnCours = false; exportBoutons(false); }
+}
+// Deuxième appui (le système a demandé un geste neuf) : le fichier déjà prêt est remis tout de suite, sans attente
+async function exportEnregistrer() {
+  const f = _exportPret;
+  if (!f) return;
+  try {
+    const r = await exportLivrer(f, true);
+    if (r === 'annule') exportAfficher(_exportZone, 'Export annulé : touche « Enregistrer le fichier » pour le garder.', false, true);
+    else exportAfficher(_exportZone, 'Ton export est prêt ✓ (' + f.name + ').' + _exportNoteTexte, false, false);
+  } catch (e) {
+    console.warn('[Nara] enregistrement du fichier :', e && e.message || e);
+    exportAfficher(_exportZone, 'Le fichier n’a pas pu être enregistré. Réessaie dans un moment.', true, true);
+  }
+}
+
+// ── 4. Supprimer mon compte ─────────────────────────────────────────────────
+function supprOuvrir() {
+  if (_supprEnCours) return;
+  const ov = document.getElementById('suppr-overlay');
+  if (!ov) return;
+  supprEtape(1);
+  exportAfficher('suppr', '', false, false);
+  ov.classList.add('open');
+}
+function supprEtape(n) {
+  const e1 = document.getElementById('suppr-e1'), e2 = document.getElementById('suppr-e2');
+  if (e1) e1.hidden = n !== 1;
+  if (e2) e2.hidden = n !== 2;
+  supprMessage('', false);
+  if (n === 2) {
+    const c = document.getElementById('suppr-champ');
+    if (c) { c.value = ''; setTimeout(() => { try { c.focus(); } catch (e) {} }, 60); }
+    supprSaisie();
+  }
+}
+function supprMessage(texte, erreur) {
+  const e = document.getElementById('suppr-etat');
+  if (e) { e.textContent = texte || ''; e.classList.toggle('err', !!erreur); }
+}
+// « Supprimer définitivement » ne se réveille que quand « SUPPRIMER » est écrit (majuscules ou minuscules, espaces autour ignorés)
+function supprSaisie() {
+  const c = document.getElementById('suppr-champ'), ok = document.getElementById('suppr-ok');
+  if (ok) ok.disabled = _supprEnCours || !c || c.value.trim().toUpperCase() !== 'SUPPRIMER';
+}
+function supprOccupe(oui) {
+  const carte = document.getElementById('suppr-carte'), c = document.getElementById('suppr-champ'), a = document.getElementById('suppr-annuler-2');
+  if (carte) carte.setAttribute('aria-busy', oui ? 'true' : 'false');
+  if (c) c.disabled = !!oui;
+  if (a) a.disabled = !!oui;
+  supprSaisie();
+}
+function supprFermer(force) {
+  if (_supprEnCours && !force) return;
+  const ov = document.getElementById('suppr-overlay'), c = document.getElementById('suppr-champ');
+  if (ov) ov.classList.remove('open');
+  if (c) { c.value = ''; try { c.blur(); } catch (e) {} }
+  supprMessage('', false);
+  if (_exportZone === 'suppr' && !_exportEnCours) _exportPret = null;
+  exportAfficher('suppr', '', false, false);
+}
+// Que dit l'erreur ? 'absente' (la fonction SQL n'est pas installée) · 'session' · 'reseau' · 'restantes' (des photos n'ont pas pu partir) · 'autre'
+function supprErreurSorte(e) {
+  const msg = String((e && e.message) || '').toLowerCase(), code = String((e && (e.code || e.error_code)) || '').toLowerCase(), st = Number(e && (e.status || e.statusCode)) || 0;
+  if (msg === 'photos_restantes') return 'restantes';
+  if (code === 'pgrst202' || code === '42883' || /could not find the function|schema cache|does not exist/.test(msg) || st === 404) return 'absente';
+  if (/non_connecte|jwt|token|not authenticated|unauthori[sz]ed/.test(msg + ' ' + code) || st === 401 || st === 403) return 'session';
+  if (/fetch|network|timeout|offline|load failed|ne répond pas/.test(msg)) return 'reseau';
+  return 'autre';
+}
+function supprTexteErreur(e, etape) {
+  const sorte = supprErreurSorte(e);
+  if (etape === 'compte') return 'Tes photos ont été effacées, mais ton compte existe encore : réessaie pour terminer la suppression.';
+  if (etape === 'photos') return sorte === 'restantes'
+    ? 'Certaines photos n’ont pas pu être effacées. Ton compte et tes données sont toujours là : réessaie dans un moment.'
+    : 'La suppression n’a pas pu continuer. Ton compte et tes données sont toujours là (certaines photos ont peut-être déjà été effacées) : réessaie dans un moment.';
+  if (sorte === 'session') return 'Pour ta sécurité, ta session doit être renouvelée : reconnecte-toi, puis réessaie. Rien n’a été effacé.';
+  if (sorte === 'absente') return 'La suppression du compte n’est pas encore installée sur le service en ligne. Rien n’a été effacé.';
+  if (sorte === 'reseau') return 'La connexion n’a pas abouti. Rien n’a été effacé : réessaie dans un moment.';
+  return 'Ton compte n’a pas pu être supprimé pour l’instant. Rien n’a été effacé : réessaie dans un moment.';
+}
+function supprErreur(res) {
+  const e = new Error((res && res.error && res.error.message) || 'erreur');
+  e.code = res && res.error && res.error.code; e.status = res && res.status;
+  return e;
+}
+// Efface tous les fichiers du dossier de photos de la personne, puis relit le dossier : il doit être vide, sinon on s'arrête AVANT de toucher au compte
+async function supprPhotos(uid) {
+  let avant = null;
+  for (let tour = 0; tour < 5; tour++) {
+    const fichiers = await photosListerDossier(uid);
+    if (!fichiers.length) return;
+    if (avant !== null && fichiers.length >= avant) throw new Error('photos_restantes');          // la dernière suppression n'a rien enlevé (droits refusés…)
+    avant = fichiers.length;
+    for (let i = 0; i < fichiers.length; i += 100) {
+      const res = await withTimeout(sb.storage.from('skin-photos').remove(fichiers.slice(i, i + 100)), 30000, 'suppression des photos');
+      if (res && res.error) throw res.error;
+    }
+  }
+  throw new Error('photos_restantes');
+}
+// Le compte est supprimé : tout ce que l'appareil gardait part, la session aussi (même si la déconnexion locale échoue), retour à l'accueil. Ne lève jamais d'erreur.
+async function supprFinir() {
+  try { currentUser = null; syncOnLogout(); clearLocalCache(); } catch (e) {}
+  try { await Promise.race([sb.auth.signOut({ scope: 'local' }), new Promise(resolve => setTimeout(resolve, 4000))]); } catch (e) { console.warn('[Nara] déconnexion locale :', e && e.message || e); }
+  try {
+    const cles = [];
+    for (let i = 0; i < localStorage.length; i++) { const n = localStorage.key(i) || ''; if (/^sb-.*-auth-token/.test(n)) cles.push(n); }
+    cles.forEach(n => localStorage.removeItem(n));
+  } catch (e) {}
+  try { syncResetMemory(); } catch (e) {}
+  try { document.getElementById('home-user-name').textContent = '—'; espaceMajCompte(null); } catch (e) {}
+  _supprEnCours = false;
+  supprFermer(true);
+  supprOccupe(false);
+  go('onboarding');
+  showToast('Ton compte a été supprimé');
+}
+async function supprConfirmer() {
+  if (_supprEnCours) return;
+  const champ = document.getElementById('suppr-champ');
+  if (!champ || champ.value.trim().toUpperCase() !== 'SUPPRIMER') return;
+  if (!sb || !currentUser) { supprMessage('Ta session n’est plus connectée : reconnecte-toi, puis réessaie. Rien n’a été effacé.', true); return; }
+  if (navigator.onLine === false) { supprMessage('Connexion nécessaire pour supprimer ton compte. Rien n’a été effacé.', true); return; }
+  const moi = currentUser, uid = moi.id;
+  let etape = 'verif', gele = false;
+  _supprEnCours = true; supprOccupe(true); supprMessage('Suppression en cours… ne ferme pas l’application.', false);
+  try {
+    const t = await withTimeout(sb.rpc('nara_supprimer_mon_compte', { verifier_seulement: true }), 15000, 'vérification');          // essai à blanc : rien n'est effacé
+    if (t && t.error) throw supprErreur(t);
+    if (!t || t.data !== true) throw new Error('réponse inattendue');
+    etape = 'photos';
+    currentUser = null; gele = true; syncOnLogout();                                                                                  // comme à la déconnexion : plus aucun envoi pendant l'effacement
+    if (_syncFlushP) await Promise.race([_syncFlushP, new Promise(resolve => setTimeout(resolve, 10000))]);                          // un envoi déjà parti se termine avant qu'on liste les photos
+    await supprPhotos(uid);
+    etape = 'compte';
+    const r = await withTimeout(sb.rpc('nara_supprimer_mon_compte'), 30000, 'suppression du compte');                              // lignes des deux tables + compte, en une seule transaction
+    if (r && r.error) throw supprErreur(r);
+    if (!r || r.data !== true) throw new Error('réponse inattendue');
+    etape = 'fini';
+  } catch (e) {
+    console.warn('[Nara] suppression du compte interrompue (' + etape + ') :', e && e.message || e);
+    if (gele) { currentUser = moi; try { syncPullUser(moi.id); } catch (x) {} }                                                     // la personne reste connectée : la synchro repart
+    _supprEnCours = false; supprOccupe(false);
+    supprMessage(supprTexteErreur(e, etape), true);
+    return;
+  }
+  await supprFinir();
+}
 
 // ===== INSCRIPTION =====
 async function handleSignup() {
@@ -5044,6 +5655,7 @@ function hideBootLoader() {
 try {
   if (sb && sb.auth && typeof sb.auth.onAuthStateChange === 'function') {
     sb.auth.onAuthStateChange(async (event, session) => {
+      if (_supprEnCours) return;                // suppression du compte en cours (lot 20) : la session est gérée par la suppression elle-même
       if (session?.user) {
         currentUser = session.user;
         updateHomeUser(currentUser);
@@ -5858,6 +6470,8 @@ const BNAV_MAP = {
   espace: null,
   donnees: null,
   compte: null,                 // « Mon compte » (lot 19) : page de détail ouverte depuis « Mon espace », pas de barre du bas
+  consentement: null,           // « Avant de commencer » (lot 20) : pas de barre du bas
+  'legal-mentions': null, 'legal-confidentialite': null, 'legal-conditions': null,   // pages légales (lot 20) : pas de barre du bas
   profile: null,
   'profile-invite': null,
   'profile-later': null,
@@ -5896,9 +6510,11 @@ function couleurHaut(id) {
 
 function showScreen(id, btn) {
   if (id === 'recipes') { libVueCourante = 'recettes'; id = 'library'; }   // l'ancien écran « Recettes » est la vue « Recettes » de la Bibliothèque : go('recipes') y mène toujours
+  // Lot 20 : tant que l'accord n'est pas donné, une personne connectée ne voit que l'écran de consentement (et les pages légales) ; elle reprend ensuite là où elle allait
+  if (currentUser && CONSENT_LIBRES.indexOf(id) < 0 && !consentOk(currentUser)) { _consentSuite = id; _consentRaz = true; id = 'consentement'; btn = null; }
   if (id !== 'recipe-detail' && id !== 'article-detail' && !_routNav) routRetourVers = null;   // la mémoire « je viens d'une routine » ne survit qu'aux écrans ouverts depuis une routine
   if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
-  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees' && id !== 'compte' && id !== 'cycle' && id !== 'cycle-reglages') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
+  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees' && id !== 'compte' && id.indexOf('legal-') !== 0 && id !== 'cycle' && id !== 'cycle-reglages') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
   _routNav = false;
   if (id !== 'home') _alrSuite = null;                                                           // « Ajouter dans Mes nouveaux suivis ? » (carte des signaux) ne survit pas à l'Accueil
   if (id !== 'home') _homeCycleOuvert = false;                                                  // la carte Cycle de l'Accueil se referme quand on quitte l'Accueil
@@ -5935,6 +6551,8 @@ function showScreen(id, btn) {
   if (id === 'espace') try { renderEspace(); } catch(e) { console.warn('[Nara] renderEspace:', e); }
   if (id === 'compte') try { renderCompte(); } catch(e) { console.warn('[Nara] renderCompte:', e); }
   else if (_compteOuvert) try { compteQuitter(); } catch(e) { console.warn('[Nara] compteQuitter:', e); }          // en quittant « Mon compte » : champs vidés, volet du mot de passe replié
+  if (id === 'consentement') try { consentAfficher(); } catch(e) { console.warn('[Nara] consentAfficher:', e); }
+  if (id === 'donnees') try { donneesMaj(); } catch(e) { console.warn('[Nara] donneesMaj:', e); }
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
   if (id === 'suivis') try { suivisVueCourante = 'encours'; _suiviFin = null; renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
   if (id === 'cycle') try { renderCyclePage(); } catch(e) { console.warn('[Nara] renderCyclePage:', e); }
@@ -17688,6 +18306,32 @@ window.__naraBooted = true; // atteint uniquement si le script principal s'est e
         <button class="profile-consent-btn" id="profile-consent-btn" onclick="profileConsentOk()">
           Accéder à mon profil santé →
         </button>
+      </div>
+    </div>
+
+    <!-- MODALE SUPPRIMER MON COMPTE (lot 20) : en deux temps. 1) le message (« Toutes tes données et tes photos seront définitivement effacées ») avec la proposition d'exporter d'abord ; 2) écrire « SUPPRIMER » pour valider. Hors de #app : elle prend la hauteur visible (--app-h), le clavier ne la cache pas. -->
+    <div class="suppr-overlay" id="suppr-overlay" role="dialog" aria-modal="true" aria-labelledby="suppr-titre">
+      <div class="suppr-carte" id="suppr-carte">
+        <div id="suppr-e1">
+          <div class="suppr-ico" aria-hidden="true">🗑️</div>
+          <div class="suppr-titre" id="suppr-titre">Supprimer mon compte ?</div>
+          <p class="suppr-texte">Toutes tes données et tes photos seront définitivement effacées.</p>
+          <p class="suppr-texte suppr-doux">Tu ne pourras pas les récupérer. Tu peux d'abord en garder une copie.</p>
+          <button type="button" class="compte-btn" id="suppr-exporter" onclick="exportLancer('suppr')">Exporter mes données d'abord</button>
+          <div class="suppr-etat" id="suppr-export-etat" role="status" aria-live="polite"></div>
+          <button type="button" class="compte-btn" id="suppr-export-pret" onclick="exportEnregistrer()" hidden>Enregistrer le fichier</button>
+          <button type="button" class="suppr-btn-rouge" id="suppr-continuer" onclick="supprEtape(2)">Continuer</button>
+          <button type="button" class="compte-lien" id="suppr-annuler-1" onclick="supprFermer()">Annuler</button>
+        </div>
+        <div id="suppr-e2" hidden>
+          <div class="suppr-ico" aria-hidden="true">🗑️</div>
+          <div class="suppr-titre">Dernière étape</div>
+          <p class="suppr-texte">Pour confirmer, écris <strong>SUPPRIMER</strong> ci-dessous.</p>
+          <input class="espace-champ" id="suppr-champ" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="SUPPRIMER" aria-label="Écris SUPPRIMER pour confirmer" oninput="supprSaisie()">
+          <div class="suppr-etat" id="suppr-etat" role="status" aria-live="polite"></div>
+          <button type="button" class="suppr-btn-rouge" id="suppr-ok" onclick="supprConfirmer()" disabled>Supprimer définitivement</button>
+          <button type="button" class="compte-lien" id="suppr-annuler-2" onclick="supprFermer()">Annuler</button>
+        </div>
       </div>
     </div>
 

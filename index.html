@@ -242,29 +242,26 @@ if (typeof supabase === 'undefined') {
     -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
   }
   .espace-bulle:active { transform: scale(0.94); }
-  #screen-espace, #screen-donnees { background: var(--cream); }
+  #screen-espace, #screen-donnees, #screen-compte { background: var(--cream); }
   .espace-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
     padding: 18px clamp(16px, 6vw, 28px) calc(24px + env(safe-area-inset-bottom, 0px));
   }
   .espace-scroll::-webkit-scrollbar { display: none; }
   /* Carte du compte */
-  .espace-compte { background: white; border: 1.5px solid var(--oat); border-radius: 20px; padding: 16px; margin-bottom: 28px; }
-  .espace-compte-ligne { display: flex; align-items: center; gap: 14px; }
-  .espace-compte-texte { flex: 1; min-width: 0; }
-  .espace-prenom { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400; color: var(--text-dark); line-height: 1.15; overflow-wrap: anywhere; }
-  .espace-prenom.vide { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text-light); }
-  .espace-email { font-size: 0.74rem; color: var(--text-light); margin-top: 3px; overflow-wrap: anywhere; }
-  .espace-modifier {
-    flex-shrink: 0; min-height: 44px; padding: 0 2px 0 10px; border: 0; background: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--sage);
+  .espace-compte {
+    display: block; width: 100%; box-sizing: border-box; text-align: left; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--text-dark);
+    background: white; border: 1.5px solid var(--oat); border-radius: 20px; padding: 16px; margin-bottom: 28px;
     -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
-  .espace-compte.edit .espace-modifier { display: none; }
+  .espace-compte:active { background: var(--honey); }
+  .espace-compte-ligne { display: flex; align-items: center; gap: 14px; }
+  .espace-compte-texte { flex: 1; min-width: 0; }
+  .espace-prenom { display: block; font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400; color: var(--text-dark); line-height: 1.15; overflow-wrap: anywhere; }
+  .espace-prenom.vide { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text-light); }
+  .espace-email { display: block; font-size: 0.74rem; color: var(--text-light); margin-top: 3px; overflow-wrap: anywhere; }
   .espace-attente { display: none; margin-top: 12px; padding: 9px 12px; border-radius: 12px; background: var(--honey); font-size: 0.72rem; line-height: 1.45; color: var(--text-mid); }
   .espace-attente.on { display: block; }
-  .espace-edition { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--oat); }
-  .espace-compte.edit .espace-edition { display: block; }
   .espace-label { display: block; margin-bottom: 6px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-light); }
   .espace-champ {
     width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1.5px solid var(--oat); border-radius: 14px; background: var(--cream);
@@ -302,6 +299,48 @@ if (typeof supabase === 'undefined') {
     font-family: 'DM Sans', sans-serif; font-size: 0.9rem; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
   }
   .espace-sortie:active { background: #FBEFED; }
+
+  /* ===== MON COMPTE (lot 19) : page ouverte en touchant la carte du compte de « Mon espace » ; cartes blanches à bordure de la palette, bouton principal #C2C395 sur texte #4f5140 ; pas de barre du bas ===== */
+  label.espace-groupe-titre { display: block; }
+  .compte-carte { background: white; border: 1.5px solid var(--oat); border-radius: 20px; padding: 16px; margin-bottom: 28px; }
+  .compte-email { font-size: 0.95rem; line-height: 1.4; color: var(--text-dark); overflow-wrap: anywhere; }
+  .compte-note { margin-top: 8px; font-size: 0.72rem; line-height: 1.4; color: var(--text-light); }
+  .compte-btn {
+    display: block; width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 16px; border-radius: 14px; border: 0; background: #C2C395; color: #4f5140; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .compte-btn:active { background: #b4b586; }
+  .compte-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .compte-btn-sec { background: transparent; color: var(--text-mid); border: 1.5px solid var(--oat); font-weight: 400; }
+  .compte-btn-sec:active { background: var(--honey); }
+  .espace-msg + .compte-btn { margin-top: 6px; }
+  .compte-horsligne { display: none; }
+  .compte-horsligne.on { display: block; }
+  .compte-mdp-form { display: none; }
+  .compte-carte.mdp-ouvert .compte-mdp-form { display: block; }
+  .compte-carte.mdp-ouvert #compte-mdp-ouvrir { display: none; }
+  .compte-suite { margin-top: 14px; }
+  .compte-mdp-champ { position: relative; }
+  .compte-mdp-champ .espace-champ { display: block; padding-right: 52px; }
+  .compte-oeil {
+    position: absolute; top: 50%; right: 2px; transform: translateY(-50%); width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--text-mid); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .compte-oeil svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .compte-oeil .compte-oeil-barre { display: none; }
+  .compte-oeil.on { color: var(--sage); }
+  .compte-oeil.on .compte-oeil-barre { display: inline; }
+  .compte-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); opacity: 0; pointer-events: none; }
+  .compte-btns { display: flex; gap: 10px; margin-top: 16px; }
+  .compte-btns .compte-btn { flex: 1; }
+  .compte-msg { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #FBEFED; font-size: 0.78rem; line-height: 1.45; color: #B5524C; }
+  .compte-msg:not(:empty) { display: block; }
+  .compte-msg.ok { background: var(--honey); color: var(--olive-fonce); }
+  .compte-lien {
+    display: block; min-height: 44px; margin-top: 4px; padding: 0; border: 0; background: none; cursor: pointer; text-decoration: underline;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--sage); -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+  }
+  .compte-lien[hidden] { display: none; }
 
   /* .screen: défini dans le premier bloc style */
 
@@ -3795,27 +3834,17 @@ if (typeof supabase === 'undefined') {
         <div class="screen-title">Mon espace</div>
       </div>
       <div class="espace-scroll" id="espace-scroll">
-        <!-- Carte du compte : initiale, prénom (modifiable), e-mail (affiché seulement, jamais modifié ici) -->
-        <div class="espace-compte" id="espace-compte">
-          <div class="espace-compte-ligne">
-            <div class="espace-rond espace-rond-grand" id="espace-initiale" aria-hidden="true"><span class="espace-lettre"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.6-3.7 3.4-5.8 7.2-5.8s6.6 2.1 7.2 5.8"/></svg></div>
-            <div class="espace-compte-texte">
-              <div class="espace-prenom" id="espace-prenom"></div>
-              <div class="espace-email" id="espace-email"></div>
-            </div>
-            <button type="button" class="espace-modifier" id="espace-modifier" onclick="espaceModifierPrenom()">Modifier ›</button>
-          </div>
-          <div class="espace-attente" id="espace-attente" role="status">Ton nouveau prénom est gardé sur cet appareil. Il sera enregistré dans ton compte dès que la connexion revient.</div>
-          <form class="espace-edition" id="espace-edition" onsubmit="espaceEnregistrerPrenom(event)" novalidate>
-            <label class="espace-label" for="espace-prenom-champ">Ton prénom</label>
-            <input class="espace-champ" id="espace-prenom-champ" type="text" maxlength="40" autocomplete="given-name" autocapitalize="words" enterkeyhint="done" placeholder="Ton prénom">
-            <div class="espace-msg" id="espace-msg" role="alert"></div>
-            <div class="espace-btns">
-              <button type="button" class="espace-btn espace-btn-sec" onclick="espaceAnnulerPrenom()">Annuler</button>
-              <button type="submit" class="espace-btn">Enregistrer</button>
-            </div>
-          </form>
-        </div>
+        <!-- Carte du compte (lot 19) : initiale, prénom, e-mail — affichés seulement. La toucher ouvre la page « Mon compte » (prénom, e-mail, mot de passe) ; flèche retour de cette page : ici. -->
+        <button type="button" class="espace-compte" id="espace-compte" onclick="espaceAller('compte')">
+          <span class="espace-compte-ligne">
+            <span class="espace-rond espace-rond-grand" id="espace-initiale" aria-hidden="true"><span class="espace-lettre"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.6-3.7 3.4-5.8 7.2-5.8s6.6 2.1 7.2 5.8"/></svg></span>
+            <span class="espace-compte-texte">
+              <span class="espace-prenom" id="espace-prenom"></span>
+              <span class="espace-email" id="espace-email"></span>
+            </span>
+            <span class="espace-ligne-fleche" aria-hidden="true">›</span>
+          </span>
+        </button>
 
         <div class="espace-groupe-titre">Ma santé</div>
         <div class="espace-groupe">
@@ -3848,6 +3877,59 @@ if (typeof supabase === 'undefined') {
         <button type="button" class="espace-sortie" onclick="handleLogout()">Se déconnecter</button>
         <!-- Mention de version, tout en bas (appui long : diagnostic d'affichage caché) -->
         <div class="app-version" id="app-version"></div>
+      </div>
+    </div>
+
+    <!-- SCREEN MON COMPTE (lot 19) : ouvert en touchant la carte du compte de « Mon espace » ; flèche retour vers Mon espace, pas de barre du bas (comme les autres pages de détail).
+         Prénom (modifiable : la modification vient de « Mon espace », sans doublon), adresse e-mail (affichée seulement), mot de passe (sb.auth.updateUser({ password })). Rendu et états par renderCompte() / compteMaj() -->
+    <div class="screen" id="screen-compte">
+      <div class="profile-header">
+        <div class="back-btn" role="button" aria-label="Retour" onclick="espaceRetourDepuis()">←</div>
+        <div class="screen-title">Mon compte</div>
+      </div>
+      <div class="espace-scroll" id="compte-scroll">
+        <label class="espace-groupe-titre" for="compte-prenom-champ">Prénom</label>
+        <div class="compte-carte">
+          <form id="compte-prenom-form" onsubmit="compteEnregistrerPrenom(event)" novalidate>
+            <input class="espace-champ" id="compte-prenom-champ" type="text" maxlength="40" autocomplete="given-name" autocapitalize="words" enterkeyhint="done" placeholder="Ton prénom" oninput="comptePrenomSaisie()">
+            <div class="espace-msg" id="compte-prenom-msg" role="alert"></div>
+            <button type="submit" class="compte-btn" id="compte-prenom-btn" disabled>Enregistrer</button>
+          </form>
+          <div class="espace-attente" id="compte-attente" role="status">Ton nouveau prénom est gardé sur cet appareil. Il sera enregistré dans ton compte dès que la connexion revient.</div>
+        </div>
+
+        <div class="espace-groupe-titre">Adresse e-mail</div>
+        <div class="compte-carte">
+          <div class="compte-email" id="compte-email"></div>
+          <div class="compte-note">Modifiable bientôt</div>
+        </div>
+
+        <div class="espace-groupe-titre">Mot de passe</div>
+        <div class="compte-carte" id="compte-mdp-carte">
+          <button type="button" class="compte-btn" id="compte-mdp-ouvrir" onclick="compteMdpOuvrir()">Changer mon mot de passe</button>
+          <div class="compte-note compte-horsligne" id="compte-mdp-horsligne" role="status">Connexion nécessaire pour changer ton mot de passe</div>
+          <form class="compte-mdp-form" id="compte-mdp-form" onsubmit="compteMdpEnvoyer(event)" novalidate>
+            <!-- identifiant du compte, invisible : il permet au trousseau de l'appareil de mettre à jour le mot de passe enregistré -->
+            <input class="compte-vh" id="compte-mdp-user" type="text" name="username" autocomplete="username" tabindex="-1" aria-hidden="true" readonly>
+            <label class="espace-label" for="compte-mdp-1">Nouveau mot de passe</label>
+            <div class="compte-mdp-champ">
+              <input class="espace-champ" id="compte-mdp-1" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next">
+              <button type="button" class="compte-oeil" id="compte-oeil-1" aria-label="Afficher le mot de passe" aria-pressed="false" onclick="compteOeil(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="compte-oeil-barre" d="M4 4l16 16"/></svg></button>
+            </div>
+            <div class="compte-note">8 caractères minimum</div>
+            <label class="espace-label compte-suite" for="compte-mdp-2">Confirmer le mot de passe</label>
+            <div class="compte-mdp-champ">
+              <input class="espace-champ" id="compte-mdp-2" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+              <button type="button" class="compte-oeil" id="compte-oeil-2" aria-label="Afficher le mot de passe" aria-pressed="false" onclick="compteOeil(2)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="compte-oeil-barre" d="M4 4l16 16"/></svg></button>
+            </div>
+            <div class="compte-btns">
+              <button type="button" class="compte-btn compte-btn-sec" onclick="compteMdpFermer(true)">Annuler</button>
+              <button type="submit" class="compte-btn" id="compte-mdp-ok">Enregistrer</button>
+            </div>
+          </form>
+          <div class="compte-msg" id="compte-mdp-msg" role="status"></div>
+          <button type="button" class="compte-lien" id="compte-reco" onclick="handleLogout()" hidden>Me reconnecter</button>
+        </div>
       </div>
     </div>
 
@@ -4087,7 +4169,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '25/11 · 21 h 05';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '25/11 · 23 h 12';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // iPhone / iPad (iPadOS se présente comme un Mac tactile) : le CSS en a besoin pour la marge sous la barre d'état
 (function () { try { const ua = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.documentElement.classList.add('ios'); } catch (e) {} })();
 
@@ -4425,14 +4507,14 @@ function updateAuthBadge(user) {}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PRÉNOM ET « MON ESPACE » (prompt 11, livraison B)
-// Le prénom vient du compte (user_metadata.prenom, saisi à l'inscription) et se modifie à tout moment dans « Mon espace ».
+// Le prénom vient du compte (user_metadata.prenom, saisi à l'inscription) et se modifie à tout moment dans « Mon compte » (page ouverte par la carte du compte de « Mon espace », lot 19).
 // Un nouveau prénom est d'abord gardé sur l'appareil (clé nara_prenom_attente), puis envoyé au compte (sb.auth.updateUser). Ce n'est pas une donnée de table : aucun syncMark…, aucun syncUpsert.
 // Tant qu'il n'est pas parti (hors ligne, serveur injoignable), c'est lui qui s'affiche ; il repart au retour du réseau, au retour dans l'app et à chaque session connue.
-// L'adresse e-mail s'affiche seulement : elle ne se modifie pas ici. Aucun numéro de téléphone.
+// L'adresse e-mail s'affiche seulement (« Mon compte » : « Modifiable bientôt ») : elle ne se modifie pas. Aucun numéro de téléphone.
 // ══════════════════════════════════════════════════════════════════════════════
 const PRENOM_ATTENTE_CLE = 'nara_prenom_attente';    // { uid, prenom } : nouveau prénom pas encore enregistré dans le compte (effacé avec le reste des données Nara à la déconnexion)
 let _prenomEnvoi = null;       // envoi en cours (un seul à la fois)
-let espaceRetour = false;      // une page (profil santé, mon cycle, nouveaux suivis, confidentialité) vient d'être ouverte depuis « Mon espace » : sa flèche retour y ramène
+let espaceRetour = false;      // une page (mon compte, profil santé, mon cycle, nouveaux suivis, confidentialité) vient d'être ouverte depuis « Mon espace » : sa flèche retour y ramène
 
 function prenomAttenteLire() {
   try {
@@ -4507,7 +4589,7 @@ async function prenomConfirmerDepart() {
 }
 
 // ── Mon espace ──
-// Bulle de l'Accueil et carte du compte : initiale (ou silhouette sans prénom), prénom, e-mail (affiché seulement), note « pas encore envoyé »
+// Bulle de l'Accueil et carte du compte de « Mon espace » : initiale (ou silhouette sans prénom), prénom, e-mail (affichés seulement) ; la page « Mon compte » suit dans la foulée (compteMaj)
 function espaceMajCompte(user) {
   const prenom = user ? prenomAffiche(userPrenom(user)) : '';
   const ini = prenom ? Array.from(prenom)[0] : '';
@@ -4518,48 +4600,174 @@ function espaceMajCompte(user) {
     const l = r.querySelector('.espace-lettre');
     if (l) l.textContent = ini;
   });
-  const nom = document.getElementById('espace-prenom'), mail = document.getElementById('espace-email'), btn = document.getElementById('espace-modifier'), att = document.getElementById('espace-attente');
+  const nom = document.getElementById('espace-prenom'), mail = document.getElementById('espace-email'), carte = document.getElementById('espace-compte');
   if (nom) { nom.textContent = prenom || 'Ajoute ton prénom'; nom.classList.toggle('vide', !prenom); }
   if (mail) mail.textContent = (user && user.email) || '';
-  if (btn) btn.textContent = prenom ? 'Modifier ›' : 'Ajouter ›';
-  const a = user ? prenomAttenteLire() : null;
-  if (att) att.classList.toggle('on', !!(a && a.uid === user.id));
+  if (carte) carte.setAttribute('aria-label', 'Mon compte' + (prenom ? ' : ' + prenom : '') + (user && user.email ? ', ' + user.email : ''));
+  compteMaj(user);                 // la page « Mon compte » (e-mail, note « gardé sur l'appareil », boutons) suit
 }
 function renderEspace() {
   const v = document.getElementById('app-version');
   if (v) v.textContent = 'Version du ' + APP_VERSION;
-  espaceAnnulerPrenom();
   espaceMajCompte(currentUser);
 }
-function espaceModifierPrenom() {
-  if (!currentUser) return;
-  const carte = document.getElementById('espace-compte'), champ = document.getElementById('espace-prenom-champ'), msg = document.getElementById('espace-msg');
-  if (!carte || !champ) return;
-  champ.value = userPrenom(currentUser);
-  if (msg) msg.textContent = '';
-  carte.classList.add('edit');
-  champ.focus();
-  try { champ.setSelectionRange(champ.value.length, champ.value.length); } catch (e) {}
+// ── Mon compte (lot 19) ──
+// Page ouverte en touchant la carte du compte de « Mon espace » (espaceAller('compte')) : prénom (modifiable), adresse e-mail (affichée seulement : « Modifiable bientôt »), mot de passe.
+// Le prénom suit le même chemin qu'avant (sa modification a été DÉPLACÉE ici depuis « Mon espace », sans doublon) : d'abord sur l'appareil (nara_prenom_attente), affiché tout de suite (« Bonjour », bulle, carte de « Mon espace »),
+// puis envoyé au compte (sb.auth.updateUser({ data: { prenom } }), prenomEnvoyer). Le mot de passe passe par sb.auth.updateUser({ password }) : il ne vit que dans les deux champs, vidés après l'envoi, au repli du volet et en quittant la page —
+// jamais dans le stockage de l'appareil, ni dans le diagnostic, ni dans la console. Aucune table : aucun syncMark…, aucun syncUpsert.
+let _compteOuvert = false;       // la page est affichée : ses champs sont à vider en la quittant
+let _compteMdpEnvoi = false;     // un changement de mot de passe est en cours (un seul à la fois)
+const COMPTE_MDP_MIN = 8;
+const COMPTE_TEXTES = {
+  ok: 'Ton mot de passe a bien été changé 🌿',
+  court: 'Ton mot de passe doit faire au moins 8 caractères.',
+  different: 'Les deux mots de passe ne sont pas identiques. Vérifie-les et réessaie.',
+  session: 'Pour ta sécurité, ta session doit être renouvelée : reconnecte-toi, puis réessaie.',
+  meme: 'Choisis un mot de passe différent de l’ancien.',
+  faible: 'Ce mot de passe est trop simple : essaie avec plus de caractères, des chiffres ou des majuscules.',
+  reseau: 'La connexion n’a pas abouti. Réessaie dans un moment.',
+  autre: 'Ton mot de passe n’a pas pu être changé pour l’instant. Réessaie dans un moment.'
+};
+
+function compteHorsLigne() { return navigator.onLine === false; }
+
+// « Enregistrer » (prénom) est grisé tant que le champ est identique au prénom du compte
+function compteMajBoutonPrenom() {
+  const champ = document.getElementById('compte-prenom-champ'), btn = document.getElementById('compte-prenom-btn');
+  if (!champ || !btn) return;
+  btn.disabled = !currentUser || (champ.value || '').replace(/\s+/g, ' ').trim() === userPrenom(currentUser);
 }
-function espaceAnnulerPrenom() {
-  const carte = document.getElementById('espace-compte'), champ = document.getElementById('espace-prenom-champ'), msg = document.getElementById('espace-msg');
-  if (carte) carte.classList.remove('edit');
+// À chaque lettre : le message d'erreur s'efface et le bouton se réveille
+function comptePrenomSaisie() {
+  const msg = document.getElementById('compte-prenom-msg');
   if (msg) msg.textContent = '';
-  if (champ && document.activeElement === champ) champ.blur();
+  compteMajBoutonPrenom();
 }
-async function espaceEnregistrerPrenom(ev) {
+// Hors ligne : « Changer mon mot de passe » (et « Enregistrer » si le volet est ouvert) sont grisés, avec « Connexion nécessaire pour changer ton mot de passe »
+function compteMajEtat() {
+  const off = compteHorsLigne();
+  const ouvrir = document.getElementById('compte-mdp-ouvrir'), ok = document.getElementById('compte-mdp-ok'), note = document.getElementById('compte-mdp-horsligne');
+  if (ouvrir) ouvrir.disabled = off;
+  if (ok) { ok.disabled = off || _compteMdpEnvoi; ok.textContent = _compteMdpEnvoi ? 'Enregistrement…' : 'Enregistrer'; }
+  if (note) note.classList.toggle('on', off);
+}
+// Appelée par espaceMajCompte : à chaque changement de compte, de prénom ou de session (user vide = personne de connecté)
+function compteMaj(user) {
+  const mail = document.getElementById('compte-email'), ident = document.getElementById('compte-mdp-user'), att = document.getElementById('compte-attente');
+  if (mail) mail.textContent = (user && user.email) || '';
+  if (ident) ident.value = (user && user.email) || '';
+  const a = user ? prenomAttenteLire() : null;
+  if (att) att.classList.toggle('on', !!(a && a.uid === user.id));
+  compteMajBoutonPrenom();
+  compteMajEtat();
+}
+function renderCompte() {
+  _compteOuvert = true;
+  const champ = document.getElementById('compte-prenom-champ'), msg = document.getElementById('compte-prenom-msg');
+  if (champ) champ.value = currentUser ? userPrenom(currentUser) : '';          // pré-rempli (un prénom pas encore parti l'emporte, comme partout)
+  if (msg) msg.textContent = '';
+  compteMdpFermer(true);
+  compteMaj(currentUser);
+}
+// En quittant la page : rien ne reste dans les champs (ni prénom non enregistré, ni mot de passe)
+function compteQuitter() {
+  _compteOuvert = false;
+  const champ = document.getElementById('compte-prenom-champ'), msg = document.getElementById('compte-prenom-msg');
+  if (champ) { champ.value = ''; if (document.activeElement === champ) champ.blur(); }
+  if (msg) msg.textContent = '';
+  compteMdpFermer(true);
+}
+
+// Prénom : mêmes règles qu'avant (espaces réduits, 40 caractères au plus, vide refusé, identique = rien à faire)
+async function compteEnregistrerPrenom(ev) {
   if (ev && ev.preventDefault) ev.preventDefault();
   if (!currentUser) return;
-  const champ = document.getElementById('espace-prenom-champ'), msg = document.getElementById('espace-msg');
+  const champ = document.getElementById('compte-prenom-champ'), msg = document.getElementById('compte-prenom-msg');
   const v = (champ.value || '').replace(/\s+/g, ' ').trim();
   if (!v) { msg.textContent = 'Écris ton prénom pour l’enregistrer.'; champ.focus(); return; }
-  if (v === userPrenom(currentUser)) { espaceAnnulerPrenom(); return; }          // rien à changer
+  if (v === userPrenom(currentUser)) { champ.value = v; compteMajBoutonPrenom(); return; }          // rien à changer
   prenomAttenteEcrire(currentUser.id, v);          // d'abord sur l'appareil…
-  updateHomeUser(currentUser);                     // …affiché tout de suite (« Bonjour », bulle, carte)…
-  espaceAnnulerPrenom();
+  updateHomeUser(currentUser);                     // …affiché tout de suite (« Bonjour », bulle, carte de « Mon espace », note « gardé sur l'appareil »)…
+  champ.value = v;
+  if (document.activeElement === champ) champ.blur();
+  compteMajBoutonPrenom();
   const parti = await prenomEnvoyer();             // …puis enregistré dans le compte
   showToast(parti ? 'Prénom enregistré ✓' : 'Prénom gardé sur l’appareil');
 }
+
+// Mot de passe : texte, type ('ok' réussite · 'err' erreur · 'session' erreur + « Me reconnecter » · '' effacer)
+function compteMdpMessage(texte, type) {
+  const m = document.getElementById('compte-mdp-msg'), r = document.getElementById('compte-reco');
+  if (m) { m.textContent = texte || ''; m.classList.toggle('ok', type === 'ok'); m.setAttribute('role', type === 'ok' || !type ? 'status' : 'alert'); }
+  if (r) r.hidden = type !== 'session';
+}
+function compteMdpOuvrir() {
+  if (compteHorsLigne()) return;                   // hors ligne : le bouton est grisé (compteMajEtat)
+  const carte = document.getElementById('compte-mdp-carte'), c1 = document.getElementById('compte-mdp-1');
+  if (!carte) return;
+  compteMdpMessage('', '');
+  carte.classList.add('mdp-ouvert');
+  if (c1) c1.focus();
+}
+// Replie le volet et vide les deux champs (ils redeviennent masqués) ; efface aussi le message si « tout »
+function compteMdpFermer(tout) {
+  const carte = document.getElementById('compte-mdp-carte');
+  if (carte) carte.classList.remove('mdp-ouvert');
+  [1, 2].forEach(n => {
+    const c = document.getElementById('compte-mdp-' + n), o = document.getElementById('compte-oeil-' + n);
+    if (c) { c.value = ''; c.type = 'password'; if (document.activeElement === c) c.blur(); }
+    if (o) { o.classList.remove('on'); o.setAttribute('aria-pressed', 'false'); o.setAttribute('aria-label', 'Afficher le mot de passe'); }
+  });
+  if (tout) compteMdpMessage('', '');
+}
+// Bouton œil : montre ou masque le mot de passe de CE champ (n = 1 : nouveau mot de passe · 2 : confirmation)
+function compteOeil(n) {
+  const c = document.getElementById('compte-mdp-' + n), o = document.getElementById('compte-oeil-' + n);
+  if (!c || !o) return;
+  const voir = c.type === 'password';
+  c.type = voir ? 'text' : 'password';
+  o.classList.toggle('on', voir);
+  o.setAttribute('aria-pressed', voir ? 'true' : 'false');
+  o.setAttribute('aria-label', voir ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+}
+// Que dit le compte ? 'session' (session à renouveler, reconnexion demandée) · 'meme' · 'faible' · 'reseau' · 'autre'
+function compteMdpErreurSorte(err) {
+  const msg = String((err && err.message) || '').toLowerCase(), code = String((err && (err.code || err.error_code)) || '').toLowerCase(), st = Number(err && err.status) || 0;
+  if (/session|jwt|token|reauth|unauthori[sz]ed|not authenticated|nonce/.test(msg + ' ' + code) || st === 401 || st === 403) return 'session';
+  if (code === 'same_password' || /different from the old|same password/.test(msg)) return 'meme';
+  if (code === 'weak_password' || /weak|password should|at least \d+ char/.test(msg)) return 'faible';
+  if (/fetch|network|timeout|offline|load failed|ne répond pas/.test(msg)) return 'reseau';
+  return 'autre';
+}
+async function compteMdpEnvoyer(ev) {
+  if (ev && ev.preventDefault) ev.preventDefault();
+  if (_compteMdpEnvoi) return;
+  const c1 = document.getElementById('compte-mdp-1'), c2 = document.getElementById('compte-mdp-2');
+  if (!c1 || !c2) return;
+  if (compteHorsLigne()) { compteMajEtat(); return; }
+  const p1 = c1.value, p2 = c2.value;
+  if (p1.length < COMPTE_MDP_MIN) { compteMdpMessage(COMPTE_TEXTES.court, 'err'); c1.focus(); return; }
+  if (p1 !== p2) { compteMdpMessage(COMPTE_TEXTES.different, 'err'); c2.focus(); return; }
+  if (!sb || !currentUser) { compteMdpMessage(COMPTE_TEXTES.session, 'session'); return; }
+  _compteMdpEnvoi = true; compteMdpMessage('', ''); compteMajEtat();
+  try {
+    const res = await withTimeout(sb.auth.updateUser({ password: p1 }), 15000, 'changement du mot de passe');
+    if (res && res.error) throw res.error;
+    compteMdpFermer(false);                        // volet replié, champs vidés
+    compteMdpMessage(COMPTE_TEXTES.ok, 'ok');
+    if (!_compteOuvert) showToast('Mot de passe changé ✓');       // la personne a quitté la page pendant l'envoi
+  } catch (e) {
+    const sorte = compteMdpErreurSorte(e);
+    console.warn('[Nara] mot de passe pas changé (' + sorte + ') :', e && e.message || e);          // jamais le mot de passe lui-même
+    compteMdpMessage(COMPTE_TEXTES[sorte] || COMPTE_TEXTES.autre, sorte === 'session' ? 'session' : 'err');
+  } finally {
+    _compteMdpEnvoi = false; compteMajEtat();
+  }
+}
+window.addEventListener('online', compteMajEtat);
+window.addEventListener('offline', compteMajEtat);
+
 // Les lignes de « Mon espace » : la flèche retour de la page ouverte ramène ici
 function espaceAller(id) {
   espaceRetour = true;
@@ -5649,6 +5857,7 @@ const BNAV_MAP = {
   gallery: null,
   espace: null,
   donnees: null,
+  compte: null,                 // « Mon compte » (lot 19) : page de détail ouverte depuis « Mon espace », pas de barre du bas
   profile: null,
   'profile-invite': null,
   'profile-later': null,
@@ -5689,7 +5898,7 @@ function showScreen(id, btn) {
   if (id === 'recipes') { libVueCourante = 'recettes'; id = 'library'; }   // l'ancien écran « Recettes » est la vue « Recettes » de la Bibliothèque : go('recipes') y mène toujours
   if (id !== 'recipe-detail' && id !== 'article-detail' && !_routNav) routRetourVers = null;   // la mémoire « je viens d'une routine » ne survit qu'aux écrans ouverts depuis une routine
   if (id !== 'recipe-detail' && id !== 'article-detail') artRetourRecette = null;              // « je viens d'une recette » ne survit qu'aux écrans recette / article
-  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees' && id !== 'cycle' && id !== 'cycle-reglages') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
+  if (id !== 'espace' && id !== 'profile' && id !== 'suivis' && id !== 'donnees' && id !== 'compte' && id !== 'cycle' && id !== 'cycle-reglages') espaceRetour = false;   // « je viens de Mon espace » ne survit qu'aux pages ouvertes depuis Mon espace
   _routNav = false;
   if (id !== 'home') _alrSuite = null;                                                           // « Ajouter dans Mes nouveaux suivis ? » (carte des signaux) ne survit pas à l'Accueil
   if (id !== 'home') _homeCycleOuvert = false;                                                  // la carte Cycle de l'Accueil se referme quand on quitte l'Accueil
@@ -5724,6 +5933,8 @@ function showScreen(id, btn) {
   }
   if (id === 'journal') jrnAfficherVue();
   if (id === 'espace') try { renderEspace(); } catch(e) { console.warn('[Nara] renderEspace:', e); }
+  if (id === 'compte') try { renderCompte(); } catch(e) { console.warn('[Nara] renderCompte:', e); }
+  else if (_compteOuvert) try { compteQuitter(); } catch(e) { console.warn('[Nara] compteQuitter:', e); }          // en quittant « Mon compte » : champs vidés, volet du mot de passe replié
   if (id === 'profile') try { renderProfile(); } catch(e) { console.warn('[Nara] renderProfile:', e); }
   if (id === 'suivis') try { suivisVueCourante = 'encours'; _suiviFin = null; renderSuivis(); } catch(e) { console.warn('[Nara] renderSuivis:', e); }
   if (id === 'cycle') try { renderCyclePage(); } catch(e) { console.warn('[Nara] renderCyclePage:', e); }

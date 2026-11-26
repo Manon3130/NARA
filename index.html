@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr" class="bar-off">
 <head>
 <meta charset="UTF-8">
@@ -96,7 +96,7 @@ if (typeof supabase === 'undefined') {
     overscroll-behavior: none;
   }
   /* ===== STRUCTURE EN ÉTAGES (prompt 11, barre corrigée au correctif A1) =====
-     #app = colonne de hauteur --app-h (mesurée en JS sur window.innerHeight ; visualViewport seulement quand un champ de saisie a le focus (clavier) ; 100dvh avant la première mesure ; jamais 100 %, 100svh ni documentElement.clientHeight : voir ci-dessous)
+     #app = colonne de hauteur --app-h (mesurée en JS sur window.innerHeight, clavier ouvert compris : le clavier n'enlève rien à #app, c'est la zone du champ qui s'écarte, voir kbAjuster ; 100dvh avant la première mesure ; jamais 100 %, 100svh ni documentElement.clientHeight : voir ci-dessous)
        étage 0  #app-band : bande du haut, hauteur = marge sous la barre d'état, fond PLEIN (rien ne défile ici)
        étage 1  #stage    : zone de contenu, tous les écrans, sur TOUTE la hauteur restante de #app ; seules leurs zones de défilement défilent, et elles commencent sous la bande
        étage 2  #bnav     : la barre du bas, DERNIER enfant de #app, en position absolue en bas de #app (pas de position fixe), SANS fond ni hauteur réservée :
@@ -368,7 +368,7 @@ if (typeof supabase === 'undefined') {
   #donnees-suppr { background: #FBEFED; }                      /* « Supprimer mon compte » : le même bouton que « Se déconnecter » (texte et bordure rouge doux), avec un fond rouge doux pour qu'on ne le confonde pas */
   #donnees-suppr:active { background: #F6DFDB; }
   .donnees-suppr-note { margin: 8px 4px 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-light); text-align: center; }
-  /* Fenêtre « Supprimer mon compte » : le message, puis « SUPPRIMER » à écrire. Hauteur = zone visible (--app-h) : le clavier ne la cache pas. */
+  /* Fenêtre « Supprimer mon compte » : le message, puis « SUPPRIMER » à écrire. Hauteur = la fenêtre (--app-h) ; quand le clavier s'ouvre, JS (kbAjuster) ajoute au bas de la fenêtre un padding égal au clavier : la carte reste centrée au-dessus. */
   .suppr-overlay {
     position: fixed; top: 0; left: 0; right: 0; height: 100dvh; height: var(--app-h, 100dvh); z-index: 850; display: none; align-items: center; justify-content: center;
     box-sizing: border-box; padding: clamp(16px, 6vw, 28px); background: rgba(40,35,25,0.55);
@@ -4118,11 +4118,11 @@ if (typeof supabase === 'undefined') {
         <div class="donnees-suppr-note">Effacer ton compte et tes données</div>
       </div>
     </div>
-    <!-- SCREEN MON RAPPORT (lot 21) : ouvert par « Mon rapport » (Mon espace, groupe MA SANTÉ) ; flèche retour vers Mon espace, pas de barre du bas.
+    <!-- SCREEN MON RAPPORT (lot 21) : ouvert par « Mon rapport » (Mon espace, groupe MA SANTÉ) ou par le bouton « Générer mon rapport PDF » d'Insights (lot 22) ; flèche retour vers Mon espace, ou vers Insights dans le second cas (rapportRetour) ; pas de barre du bas.
          Période, éléments à inclure, questions pour le rendez-vous, puis le PDF de 2 pages A4 est créé sur l'appareil (rapportCreer) : rien n'est envoyé à un serveur. -->
     <div class="screen" id="screen-rapport">
       <div class="profile-header">
-        <div class="back-btn" role="button" aria-label="Retour" onclick="espaceRetourDepuis()">←</div>
+        <div class="back-btn" role="button" aria-label="Retour" onclick="rapportRetour()">←</div>
         <div class="screen-title">Mon rapport</div>
       </div>
       <div class="espace-scroll" id="rapport-scroll">
@@ -4391,7 +4391,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '26/11 · 17 h 50';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '26/11 · 21 h 34';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // Lot 20 — consentement, pages légales, export, suppression du compte : constantes et états déclarés ICI, en haut du script, parce que showScreen les lit dès le premier écran affiché (code : « CONSENTEMENT, PAGES LÉGALES, EXPORT… », avant l'inscription).
 const CONSENT_VERSION = '1.0';                        // version du texte de consentement et des pages légales : la changer redemande l'accord à tout le monde
 const CONSENT_CLE_ATTENTE = 'nara_consent_attente';   // { uid, date, version } : accord donné mais pas encore enregistré dans le compte (hors ligne) ; effacé avec le reste des données Nara à la déconnexion
@@ -5512,6 +5512,9 @@ let _rapOpt = { cycle: true, suivis: true, photos: false };
 let _rapDu = '', _rapAu = '';             // dates de la période personnalisée
 let _rapEnCours = false;                  // un rapport se crée (un seul à la fois)
 let _rapPret = null;                      // { f, uid } : le PDF prêt, gardé pour le bouton « Enregistrer le PDF »
+let _rapOrigine = '';                    // lot 22 : '' = ouverte depuis « Mon espace » · 'insights' = ouverte par le bouton d'Insights (la flèche retour y ramène)
+let _rapDemande = null;                  // lot 22 : { du, au } demandés par Insights ; lue une seule fois par rapportAfficher
+let _rapInsDefil = 0;                    // lot 22 : position de la page Insights au moment du toucher, rendue au retour
 
 // ── Dates (textes AAAA-MM-JJ ; calcul avec routEcart / routAjouter) ──
 function rapDateOk(d) {
@@ -5577,14 +5580,32 @@ function rapportEtat(texte, erreur, pret) {
 }
 // Un choix change après la création d'un PDF : le fichier gardé ne correspond plus à l'écran, il est oublié
 function rapportOublier() { if (_rapEnCours) return; _rapPret = null; rapportEtat('', false, false); }
-// À chaque ouverture de la page : valeurs d'origine (2 semaines, cycle et suivis inclus, photos non incluses, questions vides)
+// À chaque ouverture de la page : valeurs d'origine (2 semaines, cycle et suivis inclus, photos non incluses, questions vides).
+// Lot 22 : ouverte par le bouton « Générer mon rapport PDF » d'Insights, c'est la MÊME page, avec la période qu'Insights regarde (rapportPeriodeImposer) ; sa flèche retour ramène alors à Insights (rapportRetour).
 function rapportAfficher() {
+  const dem = _rapDemande; _rapDemande = null;                                          // lue une seule fois : l'ouverture suivante (depuis « Mon espace ») repart des valeurs d'origine
+  _rapOrigine = dem ? 'insights' : '';
   if (_rapEnCours) { rapportMaj(); return; }
   const auj = getTodayStr();
   _rapPeriode = '2'; _rapOpt = { cycle: true, suivis: true, photos: false }; _rapPret = null;
   _rapAu = auj; _rapDu = routAjouter(auj, -27);
+  if (dem) rapportPeriodeImposer(dem.du, dem.au);
   const q = document.getElementById('rapport-questions'); if (q) q.value = '';
   rapportChampsDates(); rapportEtat('', false, false); rapportMaj();
+}
+// La période demandée : « 2 sem. » ou « 4 sem. » si elle correspond exactement à l'un de ces deux choix (14 ou 28 jours finissant aujourd'hui), sinon « Personnalisée » avec ses deux dates
+function rapportPeriodeImposer(du, au) {
+  const auj = getTodayStr();
+  if (au === auj && du === routAjouter(auj, -13)) { _rapPeriode = '2'; return; }
+  if (au === auj && du === routAjouter(auj, -27)) { _rapPeriode = '4'; return; }
+  _rapPeriode = 'perso'; _rapDu = du; _rapAu = au;
+}
+// Flèche retour : vers Insights (à la même place dans la page) si la page a été ouverte depuis son bouton, sinon vers « Mon espace » comme avant
+function rapportRetour() {
+  if (_rapOrigine !== 'insights') { espaceRetourDepuis(); return; }
+  _rapOrigine = '';
+  go('insights');
+  try { const sc = document.getElementById('insights-page-scroll'); if (sc) sc.scrollTop = _rapInsDefil; } catch (e) {}
 }
 function rapportChoisirPeriode(p) {
   if (_rapEnCours) return;
@@ -7446,7 +7467,7 @@ function go(screenId) {
 
 // ── Mesure de la zone visible : hauteur de #app (--app-h), clavier, page sous la barre d'état ──────────────────────────────────────────────
 // #app est une colonne de la hauteur EXACTE de la zone visible (lot 18) : window.innerHeight. Jamais documentElement.clientHeight, 100 % ni 100svh (en mode écran d'accueil, iOS les calcule sans la barre d'état : 812 au lieu de 874 sur un iPhone 17).
-// visualViewport n'est lu que quand un champ de saisie a le focus : c'est lui qui rétrécit quand le clavier s'ouvre (innerHeight, lui, ne bouge pas sur iOS). html, body et #app prennent la même hauteur (--app-h).
+// #app GARDE sa pleine hauteur quand le clavier s'ouvre (lot 22) : visualViewport (qui rétrécit sous le clavier, alors qu'innerHeight ne bouge pas sur iOS) ne sert plus qu'à mesurer le clavier (kbAjuster : padding-bas de la zone du champ). html, body et #app prennent la même hauteur (--app-h).
 // Mesure refaite à chaque redimensionnement, rotation, retour dans l'app, à la sortie d'un champ (focusout, puis 300 ms plus tard : iOS signale parfois la fin du clavier en retard) et en rafale au lancement (appMesurerRafale).
 // Clavier ouvert = un champ a le focus ET la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
 function appEstChamp(el) { return !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName || '') || el.isContentEditable === true); }
@@ -7455,16 +7476,108 @@ function appEstChamp(el) { return !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.t
 function appSousBarre() {
   try { return navigator.standalone === true && window.innerHeight > window.innerWidth && (screen.height - window.innerHeight) <= 3; } catch (e) { return false; }
 }
+// ── Clavier (lot 22) : le clavier ne rétrécit plus l'app, c'est la zone du champ qui s'écarte ──────────────────────────────────────────────────────────
+// Avant (lot 18), #app prenait la hauteur de visualViewport tant qu'un champ avait le focus : l'app rétrécissait au-dessus du clavier et laissait un grand bloc beige. Maintenant #app GARDE sa pleine hauteur (window.innerHeight).
+// Quand un champ a le focus ET que visualViewport est plus bas que la fenêtre de plus de 120 px (c'est le clavier), kbAjuster (appelée par appMesurer) :
+//  1. donne à la zone du champ un padding-bas égal à la hauteur du clavier (innerHeight − visualViewport.height), en plus de son espace habituel (style en ligne, retiré ensuite) :
+//     · écran à zone qui défile (Mon compte, Mon rapport, Journal, Profil santé, Mes nouveaux suivis, Mon cycle…) : cette zone ;
+//     · fenêtre superposée (mot de passe oublié, suppression du compte, journal rapide, test d'un aliment) : la fenêtre elle-même ; sa carte est plafonnée à la partie libre (elle défile en dedans) ;
+//     · écran sans zone qui défile (connexion, inscription) : l'écran lui-même ; le formulaire, calé en bas, remonte juste au-dessus du clavier ;
+//  2. amène le champ au milieu de la partie visible : scrollIntoView (block: 'center'), puis correction sur la partie réellement libre de la zone (visualViewport.offsetTop et hauteur : iOS peut décaler la page) ;
+//  3. à la sortie du champ (ou si le clavier se referme), retire le padding et remet la page en haut (window.scrollTo(0, 0) : iOS la laisse parfois décalée).
+// La barre du bas reste cachée tant que le clavier est ouvert (classe kb-open, posée par appMesurer). Rien n'est écrit sur l'appareil ni dans le compte.
+let _kb = null;                                                          // la zone actuellement écartée du clavier : { zone, avant, base, carte, carteAvant, carteMax, champ, K, pan, n } ; null = aucune
+function kbBandeH() { const b = document.getElementById('app-band'); return b ? b.offsetHeight : 0; }                       // hauteur de la bande sous la barre d'état (0 hors mode écran d'accueil)
+function kbBandeBas() { const b = document.getElementById('app-band'); return b ? b.getBoundingClientRect().bottom : 0; }   // le champ ne se centre jamais sous cette bande
+// La zone à écarter du clavier : { type, zone, defile } ; defile = la zone qui défile où on peut centrer le champ (absente pour un écran sans défilement)
+function kbZoneDe(champ) {
+  let fixe = null, defile = null, o = champ.parentElement;
+  const app = document.getElementById('app');
+  while (o && o !== app && o !== document.body && o !== document.documentElement) {
+    const cs = getComputedStyle(o);
+    if (cs.position === 'fixed') fixe = o;                                                                                                // le plus haut des ancêtres en position fixe (hors #app) : la fenêtre superposée
+    else if (!fixe && !defile && /^(auto|scroll)$/.test(cs.overflowY) && o.clientHeight >= 80) defile = o;                               // la zone qui défile la plus proche (en dessous de la fenêtre superposée, s'il y en a une)
+    o = o.parentElement;
+  }
+  if (fixe) return { type: 'fenetre', zone: fixe, defile: defile };
+  if (defile) return { type: 'defile', zone: defile, defile: defile };
+  const ecran = champ.closest ? champ.closest('.screen') : null;
+  return ecran ? { type: 'ecran', zone: ecran, defile: null } : null;
+}
+// Rend la zone telle qu'elle était (padding, carte) ; remonter = remet aussi la page en haut (sortie du champ / clavier refermé), pas quand on passe d'une zone à une autre
+function kbLiberer(remonter) {
+  const k = _kb;
+  if (!k) return;
+  _kb = null;
+  try { k.zone.style.paddingBottom = k.avant; if (k.carte) k.carte.style.maxHeight = k.carteAvant; } catch (e) {}
+  if (remonter) { try { window.scrollTo(0, 0); } catch (e) {} }
+}
+// Amène le champ au milieu de la partie visible de sa zone : scrollIntoView, puis correction sur la partie réellement libre (ni sous le clavier, ni au-dessus de la partie visible décalée par iOS, ni sous la bande du haut)
+function kbAmener(champ, defile, vv) {
+  try { champ.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) {}
+  try {
+    if (defile) {
+      const r = defile.getBoundingClientRect(), pan = vv.offsetTop || 0;
+      const haut = Math.max(r.top, pan, kbBandeBas()), bas = Math.min(r.bottom, pan + vv.height);
+      if (bas - haut > 60) {
+        const f = champ.getBoundingClientRect(), ecart = (f.top + f.bottom) / 2 - (haut + bas) / 2;
+        if (Math.abs(ecart) > 1) defile.scrollTop += ecart;
+      }
+    }
+  } catch (e) {}
+  try {                                                                                                                                  // scrollIntoView ne doit jamais faire défiler #app, #stage ni l'écran (ils ne défilent pas)
+    ['app', 'stage'].forEach(id => { const e = document.getElementById(id); if (e && (e.scrollTop || e.scrollLeft)) { e.scrollTop = 0; e.scrollLeft = 0; } });
+    const s = champ.closest ? champ.closest('.screen') : null;
+    if (s && s !== defile && (s.scrollTop || s.scrollLeft)) { s.scrollTop = 0; s.scrollLeft = 0; }
+  } catch (e) {}
+}
+// Appelée par appMesurer à chaque mesure : champ = un champ de saisie a le focus. Idempotente : seule une vraie nouveauté (autre champ, clavier plus ou moins haut, page décalée par iOS) recentre le champ.
+function kbAjuster(champ) {
+  const vv = window.visualViewport, el = document.activeElement;
+  const K = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;                                                          // hauteur du clavier
+  if (!champ || !vv || K <= 120 || !appEstChamp(el)) { kbLiberer(true); return; }
+  const z = kbZoneDe(el);
+  if (!z) { kbLiberer(true); return; }
+  if (_kb && _kb.zone !== z.zone) kbLiberer(false);                                                                                     // autre fenêtre ou autre écran : l'ancienne zone est rendue telle quelle
+  if (!_kb) _kb = { zone: z.zone, avant: z.zone.style.paddingBottom, base: z.type === 'ecran' ? 16 : (parseFloat(getComputedStyle(z.zone).paddingBottom) || 0), carte: null, carteAvant: '', carteMax: null, champ: null, K: -1, pan: -1, n: 0 };
+  const k = _kb;
+  k.zone.style.paddingBottom = (k.base + K) + 'px';                                                                                     // son espace habituel + la hauteur du clavier
+  if (z.type === 'fenetre') {                                                                                                           // la carte de la fenêtre ne dépasse jamais la partie libre (sinon son haut sortirait de l'écran)
+    let c = el; while (c && c.parentElement !== z.zone) c = c.parentElement;
+    if (c !== k.carte) {
+      if (k.carte) k.carte.style.maxHeight = k.carteAvant;
+      k.carte = c || null; k.carteAvant = c ? c.style.maxHeight : '';
+      const m = c ? getComputedStyle(c).maxHeight : '';
+      k.carteMax = m === 'none' ? Infinity : (/px$/.test(m) ? parseFloat(m) : null);                                                   // en % (carte « Supprimer mon compte », 100 %), elle suit déjà la partie libre
+    }
+    if (c && k.carteMax !== null) {
+      const cs = getComputedStyle(z.zone), libre = z.zone.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - kbBandeH() - 8;
+      c.style.maxHeight = Math.max(160, Math.min(k.carteMax, Math.floor(libre))) + 'px';
+    }
+  }
+  const pan = Math.round(vv.offsetTop || 0);
+  if (k.champ !== el) k.n = 0;
+  const nouveau = k.champ !== el || k.K !== K || k.pan !== pan;
+  k.champ = el; k.K = K; k.pan = pan;
+  if (nouveau && k.n++ < 8) kbAmener(el, z.defile, vv);                                                                                // 8 recentrages au plus par champ : jamais de boucle avec les événements d'iOS
+}
+// Un champ prend le focus : mesure aussitôt, puis quand iOS a annoncé la hauteur du clavier (l'animation se termine en retard, parfois sans événement)
+function appFocusEntree(ev) {
+  if (!appEstChamp(ev && ev.target)) return;
+  appMesurer(true);
+  setTimeout(appMesurerFenetre, 120); setTimeout(appMesurerFenetre, 350); setTimeout(appMesurerFenetre, 700);
+}
 function appMesurer(champ) {                                             // champ : true / false = un champ de saisie a (ou n'a pas) le focus ; absent = on le lit (document.activeElement)
   try {
     const vv = window.visualViewport, h = document.documentElement;
     if (vv && vv.scale && Math.abs(vv.scale - 1) > 0.02) return;        // pincement en cours : la zone visible n'est pas la fenêtre
     if (champ === undefined) champ = appEstChamp(document.activeElement);
-    const haut = Math.round((champ && vv && vv.height) || window.innerHeight || 0);
+    const haut = Math.round(window.innerHeight || 0);                    // lot 22 : #app garde sa pleine hauteur, clavier ouvert ou non
     if (haut < 200) return;                                              // mesure absurde (démarrage) : on garde la précédente
     if (h.style.getPropertyValue('--app-h') !== haut + 'px') h.style.setProperty('--app-h', haut + 'px');   // seulement si elle change : la rafale ci-dessous ne provoque aucun recalcul inutile
     h.classList.toggle('kb-open', !!champ && (vv ? (window.innerHeight - vv.height) > 120 : true));
     h.classList.toggle('sb-sous', appSousBarre());
+    try { kbAjuster(!!champ); } catch (e) {}                             // lot 22 : la zone du champ s'écarte du clavier (ou reprend sa place)
     diagHauteur();                                                       // diagnostic caché : trace des changements de hauteur depuis le lancement
   } catch (e) {}
 }
@@ -7496,7 +7609,8 @@ function appMesurerRafale() {
     window.addEventListener('load', appMesurerRafale);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appMesurerRafale(); });
     document.addEventListener('focusout', () => { setTimeout(appMesurerFenetre, 0); setTimeout(appMesurerFenetre, 300); });   // sortie d'un champ : remesure aussitôt (on sait alors si un autre champ prend le focus), puis 300 ms plus tard (iOS signale parfois la fin du clavier en retard)
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', appMesurerFenetre);
+    document.addEventListener('focusin', appFocusEntree);                // lot 22 : un champ prend le focus → mesure aussitôt, puis quand iOS a annoncé la hauteur du clavier
+    if (window.visualViewport) { window.visualViewport.addEventListener('resize', appMesurerFenetre); window.visualViewport.addEventListener('scroll', appMesurerFenetre); }   // « scroll » : iOS décale la page quand le clavier s'ouvre, le champ est recentré dans la partie réellement visible
     appMesurerRafale();
   } catch (e) {}
 })();
@@ -11772,15 +11886,6 @@ function renderRepasResume(data) {
   return parts.length > 0 ? parts.join(' · ') : 'Aucun repas noté';
 }
 
-function handlePdfReport() {
-  const pdfBtn = document.getElementById('pdf-btn-insights');
-  if (pdfBtn && pdfBtn.getAttribute('aria-disabled') === 'true') {
-    showToast('Continue ton journal pour d\u00e9bloquer le rapport \uD83C\uDF3F');
-    return;
-  }
-  showToast('Rapport PDF en pr\u00e9paration\u2026 \uD83D\uDCC4');
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 // BRIQUE 1 — Comparaison avant / après « Mes nouveaux suivis »
 // • Fenêtre : jusqu'à 56 jours (8 semaines) avant et après le début du suivi.
@@ -12123,19 +12228,21 @@ function insightsEmptyHtml(ctx) {
       </div>`;
 }
 
-// Bouton « Générer mon rapport PDF » : grisé et non cliquable (« Bientôt disponible ») tant que la génération n'est pas branchée.
-// Mettre INS_PDF_BRANCHE à true rétablit le comportement d'origine (actif dès 14 entrées, handlePdfReport).
-const INS_PDF_BRANCHE = false;
-function insightsPdfHtml(totalEntries) {
-  const SEUIL_PDF = 14;
-  const actif = INS_PDF_BRANCHE && totalEntries >= SEUIL_PDF;
-  const reste = SEUIL_PDF - totalEntries;
-  const sous = !INS_PDF_BRANCHE ? 'Bientôt disponible'
-    : (actif ? 'À partager avec ton dermatologue ou gastro-entérologue' : 'Disponible dans ' + reste + ' entrée' + (reste > 1 ? 's' : '') + ' de plus');
+// Bouton « Générer mon rapport PDF » (Vue d'ensemble d'Insights) : toujours actif (lot 22). Il ouvre la page « Mon rapport », la même que depuis « Mon espace » (go('rapport') → rapportAfficher : aucune copie de la page ni du code du rapport),
+// sur la période qu'Insights regarde : les 30 derniers jours, aujourd'hui compris (les mêmes que les entrées comptées par renderInsightsPage). La flèche retour de « Mon rapport » ramène à Insights (rapportRetour).
+function insightsPeriodeRapport() {
+  const auj = getTodayStr();
+  return { du: routAjouter(auj, -29), au: auj };
+}
+function insightsOuvrirRapport() {
+  try { const sc = document.getElementById('insights-page-scroll'); _rapInsDefil = sc ? sc.scrollTop : 0; } catch (e) { _rapInsDefil = 0; }
+  _rapDemande = insightsPeriodeRapport();
+  try { go('rapport'); } finally { _rapDemande = null; }                                 // lue pendant go() (showScreen → rapportAfficher) ; effacée même si l'ouverture est détournée (consentement)
+}
+function insightsPdfHtml() {
   return '<div class="section-title" style="margin-top:8px">Rapport médecin</div>'
-    + '<div class="pdf-btn" id="pdf-btn-insights"' + (INS_PDF_BRANCHE ? ' onclick="handlePdfReport()"' : ' aria-disabled="true"')
-    + ' style="opacity:' + (actif ? '1;cursor:pointer' : '0.45;cursor:not-allowed') + (INS_PDF_BRANCHE ? '' : ';pointer-events:none') + '">'
-    + '<div class="pdf-icon">📄</div><div><div class="pdf-title">Générer mon rapport PDF</div><div class="pdf-sub" id="pdf-btn-sub">' + sous + '</div></div>'
+    + '<div class="pdf-btn" id="pdf-btn-insights" role="button" tabindex="0" onclick="insightsOuvrirRapport()" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); insightsOuvrirRapport(); }">'
+    + '<div class="pdf-icon">📄</div><div><div class="pdf-title">Générer mon rapport PDF</div><div class="pdf-sub" id="pdf-btn-sub">À partager avec ton dermatologue ou gastro-entérologue</div></div>'
     + '<span style="color:var(--text-light);font-size:1.1rem;margin-left:auto">→</span></div>';
 }
 

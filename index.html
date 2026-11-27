@@ -73,7 +73,7 @@ if (typeof supabase === 'undefined') {
   window._supabaseLoadFailed = true;
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Inter:wght@400&display=swap" rel="stylesheet">
 <style>
   /* ===== VARIABLES + RESET — doit être en premier ===== */
   :root {
@@ -101,7 +101,7 @@ if (typeof supabase === 'undefined') {
     overflow: hidden;
     /* html, body et #app ont TOUJOURS la même couleur : celle du haut de la page affichée (variable --current-screen-bg, posée par showScreen) ;
        #FFFAF2 (crème, comme les écrans) sur les 5 onglets et partout dans l'app ; miel à la connexion ; couleur de l'en-tête sur une routine, un article, une recette.
-       Valeur de départ = miel : l'écran affiché avant toute navigation est l'accueil de l'app (onboarding, fond miel). */
+       Valeur de départ = miel (celle du chargement) ; l'accueil de l'app (onboarding) a son propre fond crème : accueilCouleurs() pose ses couleurs dès qu'il s'affiche. */
     background: var(--current-screen-bg, #F6EAD4);
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -155,7 +155,7 @@ if (typeof supabase === 'undefined') {
   }
 
   /* Fonds couleur par screen — valeurs hardcodées comme fallback */
-  #screen-onboarding  { background: #F6EAD4; }
+  #screen-onboarding  { background: #FDF6EC; }
   #screen-signup      { background: #F6EAD4; }
   #screen-login       { background: #F6EAD4; }
   #screen-home        { background: #FFFAF2; }
@@ -448,21 +448,63 @@ if (typeof supabase === 'undefined') {
 
 
 
-  /* ===== ONBOARDING ===== */
-  #screen-onboarding { background: var(--honey, #F6EAD4); justify-content: flex-end; align-items: center; padding-bottom: clamp(40px, 8vh, 64px); }
-  .onboarding-bg { position: absolute; inset: 0; overflow: hidden; }
+  /* ===== ONBOARDING — l'écran d'accueil : la perle (lot 25) =====
+     Reprise fidèle de la maquette « accueil-perle » : fond crème dégradé, trois taches de couleur floues qui dérivent, nuages vaporeux, perle 3D nacrée (le <canvas> est créé et retiré par le script : perleDemarrer / perleArreter),
+     « NARA » + la phrase, puis les deux boutons (mêmes fonctions qu'avant : go('signup') et go('login')). Tout est préfixé « acc- » pour ne rien croiser avec le reste de l'app.
+     .blob1-3 et float1-2 (juste après) restent : ils servent aux écrans de connexion et d'inscription. */
+  #screen-onboarding { background: linear-gradient(180deg, #FDF6EC 0%, #FBF3E4 55%, #F8EBE2 100%); isolation: isolate; justify-content: flex-start; align-items: stretch; padding: 0; }
+  /* Les décors (taches, nuages) dépassent volontairement de l'écran : ce conteneur coupe ce qui dépasse (sans z-index : les décors gardent leur place devant / derrière la perle) */
+  .acc-deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  /* Taches de couleur qui flottent (rose poudré, vert tendre, pêche) */
+  .acc-blob { position: absolute; border-radius: 50%; filter: blur(44px); opacity: .8; z-index: 0; pointer-events: none; }
+  .acc-b1 { width: 70%; aspect-ratio: 1; background: #F2D2C8; top: -8%; right: -22%; animation: accDrift1 22s ease-in-out infinite; }
+  .acc-b2 { width: 60%; aspect-ratio: 1; background: #E3E5CB; top: 30%; left: -26%; animation: accDrift2 26s ease-in-out infinite; }
+  .acc-b3 { width: 60%; aspect-ratio: 1; background: #F5DDD3; top: 46%; right: -24%; animation: accDrift3 30s ease-in-out infinite; }
+  @keyframes accDrift1 { 50% { transform: translate(-16%, 12%) scale(1.1); } }
+  @keyframes accDrift2 { 50% { transform: translate(20%, -8%) scale(.92); } }
+  @keyframes accDrift3 { 50% { transform: translate(-14%, -12%) scale(1.08); } }
+  /* Nuages moelleux (plusieurs bosses, flous, sans contour net) : derrière la perle, et un petit devant */
+  .acc-clouds { position: absolute; inset: 0; pointer-events: none; }
+  .acc-back { z-index: 1; }
+  .acc-front { z-index: 3; }
+  .acc-puff { position: absolute; border-radius: 999px; filter: blur(5px); opacity: .92; background: radial-gradient(ellipse at 50% 40%, #fff 0%, rgba(255,255,255,.9) 50%, rgba(255,246,243,0) 75%); }
+  .acc-puff::before, .acc-puff::after { content: ""; position: absolute; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #fff 0%, rgba(255,255,255,.85) 50%, rgba(255,255,255,0) 74%); }
+  .acc-puff::before { width: 52%; aspect-ratio: 1; left: 12%; bottom: 22%; }
+  .acc-puff::after { width: 40%; aspect-ratio: 1; right: 12%; bottom: 30%; }
+  .acc-p1 { width: 52%; height: 7.5%; left: -16%; top: 43%; animation: accFloat1 16s ease-in-out infinite; }
+  .acc-p2 { width: 50%; height: 7%; right: -14%; top: 45%; animation: accFloat2 19s ease-in-out infinite; }
+  .acc-p3 { width: 30%; height: 5%; left: 4%; top: 10%; opacity: .9; animation: accFloat2 22s ease-in-out infinite; }
+  .acc-p4 { width: 26%; height: 4.5%; right: 6%; top: 17%; opacity: .85; animation: accFloat1 25s ease-in-out infinite; }
+  .acc-p5 { width: 60%; height: 6%; left: 20%; top: 47%; opacity: .7; animation: accFloat1 18s ease-in-out infinite reverse; }
+  .acc-p6 { width: 40%; height: 5%; left: -6%; top: 62%; opacity: .7; animation: accFloat2 24s ease-in-out infinite; }
+  .acc-p7 { width: 36%; height: 5%; right: -8%; top: 68%; opacity: .65; animation: accFloat1 21s ease-in-out infinite; }
+  @keyframes accFloat1 { 50% { transform: translateX(8%); } }
+  @keyframes accFloat2 { 50% { transform: translateX(-9%); } }
+  /* La perle : <canvas> 3D (créé par le script, apparaît en fondu) et perle de secours en CSS (si la 3D n'est pas disponible) */
+  .acc-gl { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; display: block; pointer-events: none; opacity: 0; transition: opacity .9s ease; }
+  .acc-gl.acc-pret { opacity: 1; }
+  .acc-fallback { position: absolute; left: 50%; top: 27%; width: 44%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; z-index: 2; display: none;
+    background: radial-gradient(circle at 34% 28%, #fff 0 6%, rgba(255,255,255,.4) 16%, transparent 32%), radial-gradient(circle at 50% 46%, #F8E2DA, #EDC7BC 58%, #D8A89C);
+    box-shadow: inset -16px -20px 36px rgba(150,100,90,.3), inset 14px 14px 28px rgba(255,255,255,.6), 0 26px 44px -18px rgba(190,140,130,.45); animation: accBreathe 8s ease-in-out infinite; }
+  .acc-fallback.acc-on { display: block; }
+  @keyframes accBreathe { 50% { transform: translate(-50%, -52%) scale(1.06); } }
+  /* Textes et boutons */
+  .acc-content { position: relative; z-index: 3; flex: none; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 0 26px calc(26px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
+  .acc-spacer { flex: 0 0 52%; }
+  .acc-texts { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 4%; }
+  .acc-mark { font: 400 16px 'Inter', system-ui, sans-serif; letter-spacing: .62em; margin-right: -.62em; color: #C79A92; }
+  .acc-tag { font: italic 400 20px/1.35 'Cormorant Garamond', 'Times New Roman', serif; color: #9a8378; margin-top: 12px; text-align: center; }
+  .acc-actions { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  #screen-onboarding .btn-primary, #screen-onboarding .btn-secondary { width: 100%; margin: 0; border-radius: 18px; padding: 16px; font: 500 15px 'DM Sans', system-ui, sans-serif; letter-spacing: .06em; text-align: center; border: 1.5px solid transparent; box-sizing: border-box; cursor: pointer; -webkit-appearance: none; appearance: none; }
+  #screen-onboarding .btn-primary { background: #C2C395; color: #4f5140; box-shadow: 0 8px 18px -10px rgba(130,132,90,.6); }
+  #screen-onboarding .btn-secondary { background: rgba(255,250,242,.7); border-color: #E7D8CB; color: #6b6155; }
+  /* « Réduire les animations » (iOS) : l'accueil reste immobile (la perle 3D ne dessine alors qu'une image fixe) */
+  @media (prefers-reduced-motion: reduce) { #screen-onboarding *, #screen-onboarding *::before, #screen-onboarding *::after { animation: none !important; transition: none !important; } }
   .blob1 { position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, var(--blush) 0%, transparent 70%); top: -60px; right: -60px; opacity: 0.7; animation: float1 6s ease-in-out infinite; }
   .blob2 { position: absolute; width: 250px; height: 250px; background: radial-gradient(circle, var(--avocado) 0%, transparent 70%); top: 150px; left: -80px; opacity: 0.5; animation: float2 8s ease-in-out infinite; }
   .blob3 { position: absolute; width: 200px; height: 200px; background: radial-gradient(circle, var(--peach) 0%, transparent 70%); bottom: 200px; right: 20px; opacity: 0.6; animation: float1 7s ease-in-out infinite reverse; }
   @keyframes float1 { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
   @keyframes float2 { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(15px) scale(0.97); } }
-  .onboarding-content { position: relative; z-index: 2; text-align: center; padding: 0 32px; }
-  .onboarding-logo { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 15vw, 5rem); font-weight: 300; color: var(--sage); letter-spacing: 0.2em; line-height: 1; margin-bottom: 8px; }
-  .onboarding-tagline { font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--text-mid); letter-spacing: 0.08em; margin-bottom: 48px; }
-  .btn-primary { width: 100%; padding: 18px; background: var(--sage); color: white; border: none; border-radius: 16px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; margin-bottom: 12px; }
-  .btn-secondary { width: 100%; padding: 18px; background: transparent; color: var(--text-mid); border: 1.5px solid var(--oat); border-radius: 16px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; letter-spacing: 0.08em; cursor: pointer; }
-  .onboarding-top { position: absolute; top: calc(clamp(60px, 12vh, 100px) - var(--safe-top)); left: 0; right: 0; text-align: center; z-index: 2; }
-  .onboarding-illustration { font-size: clamp(3rem, 12vw, 5rem); margin-bottom: 16px; display: block; animation: float1 4s ease-in-out infinite; }
 
   /* ===== HOME ===== */
   #screen-home { background: var(--cream); }
@@ -3416,19 +3458,24 @@ if (typeof supabase === 'undefined') {
   <div id="app-band"></div>
   <!-- Étage 1 : zone de contenu. Tous les écrans sont ici ; seules leurs zones de défilement défilent. -->
   <div id="stage">
-    <!-- SCREEN 1 — ONBOARDING -->
+    <!-- SCREEN 1 — ONBOARDING (l'accueil : la perle, lot 25). Le <canvas> de la perle 3D est créé puis retiré par le script (perleDemarrer / perleArreter), juste après .acc-fallback. -->
     <div class="screen active" id="screen-onboarding">
-      <div class="onboarding-bg">
-        <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+      <div class="acc-deco" aria-hidden="true">
+        <div class="acc-blob acc-b1"></div><div class="acc-blob acc-b2"></div><div class="acc-blob acc-b3"></div>
+        <div class="acc-clouds acc-back"><div class="acc-puff acc-p3"></div><div class="acc-puff acc-p4"></div><div class="acc-puff acc-p1"></div><div class="acc-puff acc-p2"></div><div class="acc-puff acc-p6"></div><div class="acc-puff acc-p7"></div></div>
+        <div class="acc-clouds acc-front"><div class="acc-puff acc-p5"></div></div>
       </div>
-      <div class="onboarding-top">
-        <span class="onboarding-illustration">🌿</span>
-        <div class="onboarding-logo">nara</div>
-        <div class="onboarding-tagline">Ta peau parle.<br>Apprends à l'écouter.</div>
-      </div>
-      <div class="onboarding-content">
-        <button class="btn-primary" onclick="go('signup')">Créer mon compte</button>
-        <button class="btn-secondary" onclick="go('login')">J'ai déjà un compte</button>
+      <div class="acc-fallback" aria-hidden="true"></div>
+      <div class="acc-content">
+        <div class="acc-spacer"></div>
+        <div class="acc-texts">
+          <div class="acc-mark">NARA</div>
+          <div class="acc-tag">La beauté commence<br>à l'intérieur.</div>
+        </div>
+        <div class="acc-actions">
+          <button class="btn-primary" onclick="go('signup')">Créer mon compte</button>
+          <button class="btn-secondary" onclick="go('login')">J'ai déjà un compte</button>
+        </div>
       </div>
     </div>
 
@@ -4407,7 +4454,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '27/11 · 11 h 02';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '27/11 · 19 h 51';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // Lot 20 — consentement, pages légales, export, suppression du compte : constantes et états déclarés ICI, en haut du script, parce que showScreen les lit dès le premier écran affiché (code : « CONSENTEMENT, PAGES LÉGALES, EXPORT… », avant l'inscription).
 const CONSENT_VERSION = '1.0';                        // version du texte de consentement et des pages légales : la changer redemande l'accord à tout le monde
 const CONSENT_CLE_ATTENTE = 'nara_consent_attente';   // { uid, date, version } : accord donné mais pas encore enregistré dans le compte (hors ligne) ; effacé avec le reste des données Nara à la déconnexion
@@ -7409,7 +7456,7 @@ function updateBottomNav(screenId) {
 
 // Couleur du HAUT de chaque écran (bande du haut, html, body et #app)
 const SCREEN_BG = {
-  onboarding: '#F6EAD4', signup: '#F6EAD4', login: '#F6EAD4',
+  onboarding: '#FDF6EC', signup: '#F6EAD4', login: '#F6EAD4',      // accueil : le haut du dégradé crème (lot 25)
   home: '#FFFAF2', journal: '#FFFAF2', insights: '#FFFAF2',
   library: '#FFFAF2', routines: '#FFFAF2',
   'article-detail': '#FFFAF2', 'routine-detail': '#FFFAF2', 'recipe-detail': '#FFFAF2',
@@ -19294,6 +19341,274 @@ function calDeleteDay() {
 }
 
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ÉCRAN D'ACCUEIL (lot 25) — la perle : sphère nacrée 3D, bulles irisées, étincelles
+// L'écran #screen-onboarding (« Créer mon compte » / « J'ai déjà un compte ») a trois couches :
+//  • le CSS (taches de couleur, nuages) : il ne tourne que tant que l'écran est affiché (un écran caché est en display: none) ;
+//  • la perle 3D (three.js 0.149.0, version FIXE, chargée depuis le CDN) : elle ne se charge et ne démarre que lorsque l'accueil est VRAIMENT affiché
+//    (chargement terminé, écran actif) : une personne déjà connectée ne télécharge rien ;
+//  • la perle de secours en CSS (.acc-fallback, classe acc-on) : si three.js ne se charge pas, si WebGL manque, si le chargement dépasse 3 s ou si le contexte WebGL est perdu.
+// perleArreter() arrête TOUT dès qu'on quitte l'accueil : plus d'image calculée, canvas retiré, contexte WebGL libéré (rien ne tourne une fois connectée).
+// L'accueil est suivi par un observateur (accueilVerifier) : classe « active » de l'écran + masquage du chargement. Aucune fonction de navigation n'est modifiée.
+// « Réduire les animations » (iOS) : une seule image fixe, ni boucle, ni mouvement CSS.
+// Léger sur iPhone : définition plafonnée à 2 ; si le rythme tombe sous ~24 images/s, on retire des bulles (36 → 22 → 13 → 8) et, en tout dernier recours seulement, on baisse la définition.
+// Rien n'est écrit sur l'appareil ni dans le compte.
+// ══════════════════════════════════════════════════════════════════════════════
+const PERLE_THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js';   // version FIXE (jamais « latest »), celle de la maquette validée
+let _perle = null;         // l'animation en cours { ecran, canvas, renderer, scene, … } ; null = rien ne tourne
+let _perleScript = null;   // le chargement de three.js en cours (une seule demande à la fois)
+
+// Charge three.js une seule fois ; refuse si le CDN est injoignable (la perle de secours prend alors le relais, sans erreur)
+function perleCharger() {
+  if (window.THREE && window.THREE.WebGLRenderer) return Promise.resolve();
+  if (_perleScript) return _perleScript;
+  _perleScript = new Promise(function (ok, ko) {
+    const s = document.createElement('script');
+    const echec = function () { _perleScript = null; try { s.remove(); } catch (e) {} ko(new Error('three.js indisponible')); };
+    s.src = PERLE_THREE_URL; s.async = true; s.crossOrigin = 'anonymous';
+    s.onload = function () { if (window.THREE && window.THREE.WebGLRenderer) ok(); else echec(); };
+    s.onerror = echec;
+    document.head.appendChild(s);
+  });
+  return _perleScript;
+}
+
+// Montre / cache la perle de secours en CSS
+function perleSecours(p, oui) { try { if (p.secours) p.secours.classList.toggle('acc-on', !!oui); } catch (e) {} }
+
+// Rythme : sous ~24 images/s, on retire des bulles (36 → 22 → 13 → 8), puis, en dernier recours, on baisse la définition.
+// Les 45 premières images (compilation des shaders, apparition en fondu) et les pauses (app en arrière-plan) ne comptent pas ; dès qu'une mesure est bonne, on arrête de mesurer.
+function perleMesurer(p) {
+  if (!p.surveille) return;
+  const t = performance.now(), dt = p.dernier ? t - p.dernier : 0;
+  p.dernier = t;
+  if (++p.k <= 45 || dt <= 0 || dt > 250) return;
+  p.somme += dt; p.n++;
+  if (p.n < 60) return;
+  const moy = p.somme / p.n; p.somme = 0; p.n = 0;
+  if (moy <= 42) { p.surveille = false; return; }
+  if (p.nBulles > 8) p.nBulles = Math.max(8, Math.round(p.nBulles * 0.6));
+  else { p.surveille = false; if (p.baisser) p.baisser(); }
+}
+
+// Libère tout ce que la perle a pris : image en attente, observateur, mémoire de la carte graphique, contexte WebGL, canvas
+function perleLiberer(p) {
+  try { if (p.raf) cancelAnimationFrame(p.raf); } catch (e) {}
+  p.raf = 0;
+  clearTimeout(p.tSecours); clearTimeout(p.tFond);
+  try { if (p.ro) p.ro.disconnect(); } catch (e) {}
+  p.ro = null;
+  try { if (p.canvas) { p.canvas.removeEventListener('webglcontextlost', p.perdu); p.canvas.removeEventListener('webglcontextrestored', p.retrouve); } } catch (e) {}
+  try {
+    if (p.scene) p.scene.traverse(function (o) {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { if (m.map) m.map.dispose(); m.dispose(); });
+    });
+  } catch (e) {}
+  try { if (p.scene && p.scene.environment) p.scene.environment.dispose(); } catch (e) {}
+  try { if (p.envTex) p.envTex.dispose(); } catch (e) {}
+  try { if (p.pmrem) p.pmrem.dispose(); } catch (e) {}
+  try { if (p.renderer) { p.renderer.dispose(); p.renderer.forceContextLoss(); } } catch (e) {}
+  try { if (p.canvas) p.canvas.remove(); } catch (e) {}
+  p.renderer = p.scene = p.envTex = p.pmrem = p.canvas = p.resize = p.baisser = null;
+}
+
+// La 3D est impossible (CDN injoignable, pas de WebGL, erreur) : on garde la perle de secours, sans erreur affichée ; on ne réessaie pas tant qu'on reste sur l'accueil
+function perleEchec(p, e) {
+  p.echec = true;
+  perleLiberer(p);
+  perleSecours(p, true);
+  if (e) console.warn('[Nara] perle 3D indisponible :', e && e.message ? e.message : e);
+}
+
+// Construit la scène de la maquette (mêmes réglages, même rendu) et lance la boucle
+function perleConstruire(p) {
+  const T = window.THREE, ecran = p.ecran, reduit = p.reduit;
+  const canvas = p.canvas = document.createElement('canvas');
+  canvas.className = 'acc-gl'; canvas.setAttribute('aria-hidden', 'true');
+  ecran.insertBefore(canvas, p.secours && p.secours.parentNode === ecran ? p.secours.nextSibling : null);   // juste APRÈS la perle de secours : la 3D apparaît par-dessus
+  const renderer = p.renderer = new T.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+
+  const scene = p.scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 0, 10);
+
+  // Environnement doux (studio rosé) pour les reflets nacrés
+  const env = document.createElement('canvas'); env.width = 512; env.height = 256;
+  const g = env.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0, '#ffffff'); grd.addColorStop(.35, '#FBEDE6'); grd.addColorStop(.6, '#F2D6CC'); grd.addColorStop(1, '#E9E2C9');
+  g.fillStyle = grd; g.fillRect(0, 0, 512, 256);
+  [[120, 70, 70, 'rgba(255,255,255,.95)'], [380, 60, 55, 'rgba(255,245,250,.9)'], [260, 170, 80, 'rgba(220,230,205,.6)'], [40, 150, 60, 'rgba(255,220,230,.7)']].forEach(function (a) {
+    const x = a[0], y = a[1], r = a[2], c = a[3];
+    const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c); rg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = rg; g.fillRect(0, 0, 512, 256);
+  });
+  const envTex = p.envTex = new T.CanvasTexture(env); envTex.mapping = T.EquirectangularReflectionMapping; envTex.encoding = T.sRGBEncoding;
+  const pmrem = p.pmrem = new T.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromEquirectangular(envTex).texture;
+
+  // Texture nacrée (veines douces) pour voir la rotation
+  const nc = document.createElement('canvas'); nc.width = 1024; nc.height = 512;
+  const n = nc.getContext('2d');
+  n.fillStyle = '#EEB9AE'; n.fillRect(0, 0, 1024, 512);
+  const cols = ['rgba(255,226,222,.5)', 'rgba(226,160,150,.45)', 'rgba(248,206,198,.55)', 'rgba(255,240,240,.4)', 'rgba(232,176,168,.4)'];
+  for (let i = 0; i < 140; i++) {
+    const x = Math.random() * 1024, y = Math.random() * 512, r = 30 + Math.random() * 90;
+    const rg = n.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, cols[i % cols.length]); rg.addColorStop(1, 'rgba(255,255,255,0)');
+    n.fillStyle = rg; n.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const nacre = new T.CanvasTexture(nc); nacre.encoding = T.sRGBEncoding; nacre.wrapS = T.RepeatWrapping;
+
+  const pearlMat = new T.MeshPhysicalMaterial({ map: nacre, color: 0xffffff, roughness: .22, metalness: 0, clearcoat: 1, clearcoatRoughness: .12,
+    sheen: 1, sheenColor: new T.Color('#ffc9d6'), sheenRoughness: .4, iridescence: .85, iridescenceIOR: 1.35, iridescenceThicknessRange: [180, 520], envMapIntensity: 1.2 });
+  const pearl = new T.Mesh(new T.SphereGeometry(1.25, 128, 128), pearlMat);
+  scene.add(pearl);
+
+  const key = new T.DirectionalLight(0xffffff, 1.6); key.position.set(-3, 4, 5); scene.add(key);
+  const rim = new T.DirectionalLight(0xffd9d0, 1.1); rim.position.set(4, -1, -3); scene.add(rim);
+  const fill = new T.PointLight(0xe5ead0, .8, 20); fill.position.set(3, -3, 4); scene.add(fill);
+  scene.add(new T.AmbientLight(0xfff1ea, .35));
+
+  // Ombre douce sous la perle
+  const sc = document.createElement('canvas'); sc.width = sc.height = 128; const s = sc.getContext('2d');
+  const sg = s.createRadialGradient(64, 64, 0, 64, 64, 64); sg.addColorStop(0, 'rgba(170,120,105,.45)'); sg.addColorStop(1, 'rgba(170,120,105,0)'); s.fillStyle = sg; s.fillRect(0, 0, 128, 128);
+  const shadow = new T.Mesh(new T.PlaneGeometry(2.6, .7), new T.MeshBasicMaterial({ map: new T.CanvasTexture(sc), transparent: true, depthWrite: false }));
+  scene.add(shadow);
+
+  // Bulles irisées qui montent
+  const bubbleMat = new T.MeshPhysicalMaterial({ color: 0xfff4f6, roughness: .05, transparent: true, opacity: .62, iridescence: 1, iridescenceIOR: 1.3, iridescenceThicknessRange: [200, 700], clearcoat: 1, envMapIntensity: 1.6, depthWrite: false });
+  const bubbles = [];
+  for (let i = 0; i < 36; i++) {
+    const r = .08 + Math.random() * .2;
+    const m = new T.Mesh(new T.SphereGeometry(r, 32, 32), bubbleMat);
+    m.userData = { x: (Math.random() - .5) * 4.2, y: -5 + Math.random() * 10, z: (Math.random() - .3) * 2, speed: .18 + Math.random() * .25, phase: Math.random() * 6.28, r: r };
+    scene.add(m); bubbles.push(m);
+  }
+  // Petites étincelles
+  const sparkGeo = new T.BufferGeometry(); const N = 40, pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - .5) * 5; pos[i * 3 + 1] = (Math.random() - .5) * 9; pos[i * 3 + 2] = (Math.random() - .5) * 2; }
+  sparkGeo.setAttribute('position', new T.BufferAttribute(pos, 3));
+  const dot = document.createElement('canvas'); dot.width = dot.height = 32; const d = dot.getContext('2d');
+  const dg = d.createRadialGradient(16, 16, 0, 16, 16, 16); dg.addColorStop(0, 'rgba(255,255,255,1)'); dg.addColorStop(.4, 'rgba(255,236,230,.7)'); dg.addColorStop(1, 'rgba(255,255,255,0)'); d.fillStyle = dg; d.fillRect(0, 0, 32, 32);
+  const sparks = new T.Points(sparkGeo, new T.PointsMaterial({ size: .12, map: new T.CanvasTexture(dot), transparent: true, depthWrite: false, opacity: .9 }));
+  scene.add(sparks);
+
+  let pearlY = 0, horloge = null;                                                            // l'horloge est créée après le premier calcul de taille, comme dans la maquette
+  // Une image : la perle respire sur 8 s (4 s en grossissant légèrement et en montant, 4 s en revenant), tourne lentement ; les bulles montent, les étincelles scintillent
+  const rendre = function () {
+    const t = reduit ? 0 : horloge.getElapsedTime();
+    const respire = (1 - Math.cos(t * Math.PI * 2 / 8)) / 2;   // 0 → 1 → 0 sur 8 s
+    const base = pearl.userData.base || 1;
+    pearl.scale.setScalar(base * (1 + .06 * respire));
+    pearl.position.set(0, pearlY + .12 * respire, 0);
+    pearl.rotation.y = t * .25; pearl.rotation.x = Math.sin(t * .3) * .15;
+    shadow.material.opacity = .95 - .35 * respire; shadow.scale.set(base * (1 - .15 * respire), base * (1 - .15 * respire), 1);
+    bubbles.forEach(function (b, i) {
+      const u = b.userData; let y = u.y + t * u.speed; y = ((y + 5) % 10) - 5;
+      b.position.set(u.x + Math.sin(t * .6 + u.phase) * .25, y, u.z);
+      const near = Math.hypot(b.position.x, b.position.y - pearlY) < 1.5 * base; b.visible = !near && i < p.nBulles;   // p.nBulles : 36 au départ, moins si l'appareil peine (perleMesurer)
+    });
+    sparks.material.opacity = .55 + .35 * Math.sin(t * 1.7); sparks.rotation.z = t * .02;
+    renderer.render(scene, camera);
+  };
+  const resize = p.resize = function () {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    const vis = 2 * Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;   // hauteur visible
+    pearlY = vis * (0.5 - 0.27);                                                          // perle à 27 % du haut
+    const sc2 = Math.min(1, (vis * camera.aspect) / 3.1); pearl.scale.setScalar(sc2); pearl.userData.base = sc2;
+    shadow.position.set(0, pearlY - 1.55 * sc2, -.2); shadow.scale.setScalar(sc2);
+    if (reduit && p.pret) rendre();                                                       // sans boucle : on redessine l'image fixe après un redimensionnement
+  };
+  p.baisser = function () { renderer.setPixelRatio(1); resize(); };                        // dernier recours si l'appareil peine encore avec 8 bulles
+
+  const boucle = function () {
+    if (_perle !== p || p.arret) return;
+    rendre();
+    if (!p.pret) {
+      p.pret = true; clearTimeout(p.tSecours);
+      requestAnimationFrame(function () { if (_perle === p && p.canvas) p.canvas.classList.add('acc-pret'); });   // fondu d'apparition, une fois la première image dessinée
+      if (p.secours && p.secours.classList.contains('acc-on')) p.tFond = setTimeout(function () { if (_perle === p) perleSecours(p, false); }, 1000);   // arrivée tardive : la 3D apparaît par-dessus, puis la perle de secours s'efface
+    }
+    if (reduit) return;                                                                    // mouvement réduit : une seule image fixe
+    perleMesurer(p);
+    p.raf = requestAnimationFrame(boucle);
+  };
+
+  if (typeof ResizeObserver === 'function') { p.ro = new ResizeObserver(resize); p.ro.observe(canvas); }
+  resize();
+  horloge = new T.Clock();
+  p.perdu = function () { if (_perle === p && !p.arret) perleSecours(p, true); };          // contexte WebGL perdu (iOS en libère parfois) : la perle de secours prend le relais
+  p.retrouve = function () { if (_perle === p && !p.arret) perleSecours(p, false); };
+  canvas.addEventListener('webglcontextlost', p.perdu);
+  canvas.addEventListener('webglcontextrestored', p.retrouve);
+  boucle();
+}
+
+// Démarre la perle (l'accueil vient de s'afficher) : la perle de secours n'apparaît que si la 3D n'est pas prête au bout de 3 s ou impossible
+function perleDemarrer() {
+  if (_perle) return;
+  const ecran = document.getElementById('screen-onboarding');
+  if (!ecran) return;
+  let reduit = false; try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  const p = _perle = { ecran: ecran, secours: ecran.querySelector('.acc-fallback'), reduit: reduit, canvas: null, renderer: null, scene: null, envTex: null, pmrem: null, resize: null, baisser: null, perdu: null, retrouve: null,
+    ro: null, raf: 0, pret: false, echec: false, arret: false, nBulles: 36, surveille: !reduit, k: 0, n: 0, somme: 0, dernier: 0, tSecours: 0, tFond: 0 };
+  p.tSecours = setTimeout(function () { if (_perle === p && !p.pret) perleSecours(p, true); }, 3000);
+  perleCharger().then(function () {
+    if (_perle !== p) return;                                   // on a quitté l'accueil pendant le chargement
+    try { perleConstruire(p); } catch (e) { perleEchec(p, e); }
+  }, function () { if (_perle === p) perleEchec(p, null); });
+}
+
+// Arrête TOUT : plus rien ne tourne une fois l'accueil quitté
+function perleArreter() {
+  const p = _perle;
+  if (!p) return;
+  _perle = null;
+  p.arret = true;
+  perleLiberer(p);
+  perleSecours(p, false);
+}
+
+// L'accueil est-il vraiment sous les yeux ? (écran actif ET chargement de démarrage terminé)
+function accueilVisible() {
+  const e = document.getElementById('screen-onboarding'), l = document.getElementById('boot-loader');
+  return !!e && e.classList.contains('active') && (!l || !l.isConnected || l.style.display === 'none');
+}
+// Couleur du haut de l'accueil (bande du haut, html, body, #app, barre d'état Android) : au démarrage sans session, aucune navigation n'a eu lieu, ces couleurs sont encore celles du chargement (miel)
+function accueilCouleurs() {
+  const c = couleurHaut('onboarding'), r = document.documentElement.style;
+  r.setProperty('--current-screen-bg', c); r.setProperty('--band-bg', c);
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', c);
+}
+function accueilVerifier() {
+  let visible = false;
+  try { visible = accueilVisible(); } catch (e) {}
+  if (visible) { try { accueilCouleurs(); } catch (e) {} perleDemarrer(); }
+  else perleArreter();
+}
+function accueilInit() {
+  const ecran = document.getElementById('screen-onboarding'), chargement = document.getElementById('boot-loader');
+  if (!ecran) return;
+  if (typeof MutationObserver === 'function') {
+    const obs = new MutationObserver(accueilVerifier);
+    obs.observe(ecran, { attributes: true, attributeFilter: ['class'] });                                   // l'écran devient actif / cesse de l'être (go, showScreen)
+    if (chargement) obs.observe(chargement, { attributes: true, attributeFilter: ['style', 'class'] });      // le chargement de démarrage se masque (hideBootLoader)
+  }
+  try {                                                                                                     // « Réduire les animations » changé pendant que l'accueil est affiché : on repart avec le bon réglage
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const change = function () { if (_perle) { perleArreter(); accueilVerifier(); } };
+    if (mq.addEventListener) mq.addEventListener('change', change); else if (mq.addListener) mq.addListener(change);
+  } catch (e) {}
+  accueilVerifier();
+}
+try { accueilInit(); } catch (e) { console.warn('[Nara] accueil:', e); }
 
 // Filet de sécurité : si jamais initSession ne termine pas dans les 10s
 // (cas extrême, ex. Supabase totalement injoignable), on masque quand même

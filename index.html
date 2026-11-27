@@ -96,7 +96,7 @@ if (typeof supabase === 'undefined') {
     overscroll-behavior: none;
   }
   /* ===== STRUCTURE EN ÉTAGES (prompt 11, barre corrigée au correctif A1) =====
-     #app = colonne de hauteur --app-h (mesurée en JS sur window.innerHeight, clavier ouvert compris : le clavier n'enlève rien à #app, c'est la zone du champ qui s'écarte, voir kbAjuster ; 100dvh avant la première mesure ; jamais 100 %, 100svh ni documentElement.clientHeight : voir ci-dessous)
+     #app = colonne de hauteur --app-h (mesurée en JS sur window.innerHeight ; clavier ouvert, #app est collée à la zone visible : top = visualViewport.offsetTop, height = visualViewport.height, voir kbAjuster ; 100dvh avant la première mesure ; jamais 100 %, 100svh ni documentElement.clientHeight : voir ci-dessous)
        étage 0  #app-band : bande du haut, hauteur = marge sous la barre d'état, fond PLEIN (rien ne défile ici)
        étage 1  #stage    : zone de contenu, tous les écrans, sur TOUTE la hauteur restante de #app ; seules leurs zones de défilement défilent, et elles commencent sous la bande
        étage 2  #bnav     : la barre du bas, DERNIER enfant de #app, en position absolue en bas de #app (pas de position fixe), SANS fond ni hauteur réservée :
@@ -368,7 +368,7 @@ if (typeof supabase === 'undefined') {
   #donnees-suppr { background: #FBEFED; }                      /* « Supprimer mon compte » : le même bouton que « Se déconnecter » (texte et bordure rouge doux), avec un fond rouge doux pour qu'on ne le confonde pas */
   #donnees-suppr:active { background: #F6DFDB; }
   .donnees-suppr-note { margin: 8px 4px 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-light); text-align: center; }
-  /* Fenêtre « Supprimer mon compte » : le message, puis « SUPPRIMER » à écrire. Hauteur = la fenêtre (--app-h) ; quand le clavier s'ouvre, JS (kbAjuster) ajoute au bas de la fenêtre un padding égal au clavier : la carte reste centrée au-dessus. */
+  /* Fenêtre « Supprimer mon compte » : le message, puis « SUPPRIMER » à écrire. Hauteur = la fenêtre (--app-h) ; quand le clavier s'ouvre, JS (kbAjuster) la colle à la zone visible (top = visualViewport.offsetTop, height = visualViewport.height) : la carte reste centrée au-dessus du clavier. */
   .suppr-overlay {
     position: fixed; top: 0; left: 0; right: 0; height: 100dvh; height: var(--app-h, 100dvh); z-index: 850; display: none; align-items: center; justify-content: center;
     box-sizing: border-box; padding: clamp(16px, 6vw, 28px); background: rgba(40,35,25,0.55);
@@ -4391,7 +4391,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '26/11 · 21 h 34';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '27/11 · 0 h 34';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // Lot 20 — consentement, pages légales, export, suppression du compte : constantes et états déclarés ICI, en haut du script, parce que showScreen les lit dès le premier écran affiché (code : « CONSENTEMENT, PAGES LÉGALES, EXPORT… », avant l'inscription).
 const CONSENT_VERSION = '1.0';                        // version du texte de consentement et des pages légales : la changer redemande l'accord à tout le monde
 const CONSENT_CLE_ATTENTE = 'nara_consent_attente';   // { uid, date, version } : accord donné mais pas encore enregistré dans le compte (hors ligne) ; effacé avec le reste des données Nara à la déconnexion
@@ -4521,14 +4521,14 @@ function diagMesurer() {
 }
 function diagSignature(m) {
   if (!m) return '';
-  return [m.ih, m.vh, m.vt, m.sy, m.ecr, m.eb, (m.nav || []).map(n => diagN(n.b)).join(','), (m.app ? diagN(m.app.b) : ''), (m.bande ? diagN(m.bande.b) : ''), (m.pile || []).join('<')].join('|');
+  return [m.ih, m.vh, m.vt, m.vs, m.sy, m.ecr, m.et, m.eb, (m.nav || []).map(n => diagN(n.b)).join(','), (m.app ? diagN(m.app.h) + '/' + diagN(m.app.b) : ''), (m.bande ? diagN(m.bande.b) : ''), (m.pile || []).join('<')].join('|');
 }
 function diagLigne(m) {
   if (!m) return '(pas de relevé : l\'app était en arrière-plan)';
   const p = ['fen ' + m.iw + '×' + diagN(m.ih)];
-  if (m.vh != null) p.push('vv ' + diagN(m.vw) + '×' + diagN(m.vh) + ' +' + diagN(m.vt));
-  p.push('#app ' + (m.app ? diagN(m.app.b - m.app.h) : '—'));
-  p.push('défil ' + diagN(m.sy));
+  if (m.vh != null) p.push('vv ' + diagN(m.vw) + '×' + diagN(m.vh) + ' · vv.offsetTop ' + diagN(m.vt) + ' · zoom ' + diagN(m.vs));
+  p.push('window.scrollY ' + diagN(m.sy));
+  p.push('#app haut ' + (m.app ? diagN(m.app.h) : '—') + ' · hauteur ' + (m.app ? diagN(m.app.b - m.app.h) : '—'));
   p.push('écran ' + (m.ecr || '—') + (m.et != null ? ' ' + diagN(m.et) + '→' + diagN(m.eb) : ''));
   p.push(m.nav.length ? 'barre' + (m.nav.length > 1 ? ' ×' + m.nav.length : '') + ' bas ' + m.nav.map(n => diagN(n.b)).join(' / ') + ' (écart ' + m.nav.map(n => diagN(m.ih - n.b)).join(' / ') + ')' : 'barre —');
   if (m.enf && m.enf.length) p.push('enfants : ' + m.enf.join(' ; '));
@@ -4585,6 +4585,7 @@ function diagTexte() {
   add('visualViewport : ' + (vv ? diagN(vv.width) + ' × ' + diagN(vv.height) + ' · décalage haut ' + diagN(vv.offsetTop) + ' · gauche ' + diagN(vv.offsetLeft) + ' · zoom ' + diagN(vv.scale) : 'indisponible'));
   add('écart screen.height − innerHeight : ' + ecart(screen.height - m.ih) + (vv ? ' · écart innerHeight − visualViewport (haut + hauteur) : ' + ecart(m.ih - (vv.offsetTop + vv.height)) : ''));
   add('défilement de la page : y ' + diagN(m.sy) + ' · x ' + diagN(window.scrollX || 0) + ' · body.scrollTop ' + diagN(d.body.scrollTop) + ' · scrollingElement.scrollTop ' + diagN(d.scrollingElement ? d.scrollingElement.scrollTop : NaN));
+  try { add('clavier (lot 23) : ' + (_kb ? 'zone écartée ' + diagNomEl(_kb.zone) + ' (' + _kb.type + ')' : 'aucune zone écartée') + ' · #app en ligne : top « ' + (app ? app.style.top : '') + ' » height « ' + (app ? app.style.height : '') + ' » · fenêtre au repos ' + diagN(_appRepos.h) + ' · kb-open ' + oui(h.classList.contains('kb-open'))); } catch (e) {}
   add('');
   add('— MARGES SÛRES ET HAUTEURS (px) —');
   if (s.bord) add('marges de sécurité : haut ' + diagN(s.bord.haut) + ' · droite ' + diagN(s.bord.droite) + ' · bas ' + diagN(s.bord.bas) + ' · gauche ' + diagN(s.bord.gauche));
@@ -4703,6 +4704,7 @@ function diagOuvrir() {
     document.addEventListener('visibilitychange', () => diagNoter('app ' + (document.visibilityState === 'visible' ? 'revenue au premier plan' : 'passée en arrière-plan')));
     window.addEventListener('resize', () => diagNoterLimite('fenêtre redimensionnée'));
     window.addEventListener('orientationchange', () => diagNoter('rotation de l\'écran'));
+    window.addEventListener('scroll', () => diagNoterLimite('page défilée (window scroll)'), { passive: true });
     document.addEventListener('focusin', e => { if (champ(e.target)) diagNoter('clavier : champ ' + diagNomEl(e.target) + ' touché'); });
     document.addEventListener('focusout', e => { if (champ(e.target)) diagNoter('clavier : champ ' + diagNomEl(e.target) + ' quitté'); });
     if (window.visualViewport) {
@@ -7467,36 +7469,66 @@ function go(screenId) {
 
 // ── Mesure de la zone visible : hauteur de #app (--app-h), clavier, page sous la barre d'état ──────────────────────────────────────────────
 // #app est une colonne de la hauteur EXACTE de la zone visible (lot 18) : window.innerHeight. Jamais documentElement.clientHeight, 100 % ni 100svh (en mode écran d'accueil, iOS les calcule sans la barre d'état : 812 au lieu de 874 sur un iPhone 17).
-// #app GARDE sa pleine hauteur quand le clavier s'ouvre (lot 22) : visualViewport (qui rétrécit sous le clavier, alors qu'innerHeight ne bouge pas sur iOS) ne sert plus qu'à mesurer le clavier (kbAjuster : padding-bas de la zone du champ). html, body et #app prennent la même hauteur (--app-h).
+// Clavier ouvert (lot 23) : sur iOS 27, innerHeight rétrécit ET le document défile ; kbAjuster remet le document en haut et colle #app à la zone visible (top = visualViewport.offsetTop, height = visualViewport.height). Hors clavier, html, body et #app prennent la même hauteur (--app-h).
 // Mesure refaite à chaque redimensionnement, rotation, retour dans l'app, à la sortie d'un champ (focusout, puis 300 ms plus tard : iOS signale parfois la fin du clavier en retard) et en rafale au lancement (appMesurerRafale).
-// Clavier ouvert = un champ a le focus ET la zone visible est nettement plus basse que la fenêtre : la barre se cache (classe kb-open).
+// Clavier ouvert = un champ a le focus ET la zone visible est nettement plus basse que la fenêtre AU REPOS (kbClavier) : la barre se cache (classe kb-open).
 function appEstChamp(el) { return !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName || '') || el.isContentEditable === true); }
 // La page passe-t-elle SOUS la barre d'état ? Oui seulement en mode écran d'accueil (iOS), à la verticale, quand la zone visible occupe TOUT l'écran : c'est le réglage « black-translucent », encore actif sur une icône ajoutée avant le lot 18 (iOS fige le réglage à l'ajout).
 // Avec « default », la zone visible est plus basse que l'écran de la hauteur de la barre d'état (812 pour 874) : ni plancher ni bande. Résultat : classe « sb-sous » de <html> (voir le plancher de --safe-top, dans le CSS).
 function appSousBarre() {
   try { return navigator.standalone === true && window.innerHeight > window.innerWidth && (screen.height - window.innerHeight) <= 3; } catch (e) { return false; }
 }
-// ── Clavier (lot 22) : le clavier ne rétrécit plus l'app, c'est la zone du champ qui s'écarte ──────────────────────────────────────────────────────────
-// Avant (lot 18), #app prenait la hauteur de visualViewport tant qu'un champ avait le focus : l'app rétrécissait au-dessus du clavier et laissait un grand bloc beige. Maintenant #app GARDE sa pleine hauteur (window.innerHeight).
-// Quand un champ a le focus ET que visualViewport est plus bas que la fenêtre de plus de 120 px (c'est le clavier), kbAjuster (appelée par appMesurer) :
-//  1. donne à la zone du champ un padding-bas égal à la hauteur du clavier (innerHeight − visualViewport.height), en plus de son espace habituel (style en ligne, retiré ensuite) :
-//     · écran à zone qui défile (Mon compte, Mon rapport, Journal, Profil santé, Mes nouveaux suivis, Mon cycle…) : cette zone ;
-//     · fenêtre superposée (mot de passe oublié, suppression du compte, journal rapide, test d'un aliment) : la fenêtre elle-même ; sa carte est plafonnée à la partie libre (elle défile en dedans) ;
-//     · écran sans zone qui défile (connexion, inscription) : l'écran lui-même ; le formulaire, calé en bas, remonte juste au-dessus du clavier ;
-//  2. amène le champ au milieu de la partie visible : scrollIntoView (block: 'center'), puis correction sur la partie réellement libre de la zone (visualViewport.offsetTop et hauteur : iOS peut décaler la page) ;
-//  3. à la sortie du champ (ou si le clavier se referme), retire le padding et remet la page en haut (window.scrollTo(0, 0) : iOS la laisse parfois décalée).
+// ── Clavier (lot 23) : l'app se cale sur la zone réellement visible ──────────────────────────────────────────────────────────────────────────────
+// Relevé sur iPhone (iOS 27.2, app installée), clavier ouvert : window.innerHeight rétrécit (812 → 533), visualViewport est encore plus bas (434, puis 416) et iOS FAIT DÉFILER LE DOCUMENT
+// (window.scrollY = 279, visualViewport.offsetTop = 279) : #app, posée en haut du document, remonte au-dessus de la zone visible (écran −279 → 254) et il ne reste que le fond beige de <html>.
+// Tant qu'un champ de saisie a le focus (kbAjuster, appelée par appMesurer à chaque mesure) :
+//  1. le document ne défile jamais : à chaque événement scroll de window et resize / scroll de visualViewport, window.scrollTo(0, 0) (seules les zones internes défilent) ;
+//  2. clavier ouvert, #app est collée à la zone visible : top = visualViewport.offsetTop, height = visualViewport.height, relevés à chaque événement ; la fenêtre superposée du champ
+//     (mot de passe oublié, journal rapide, test d'un aliment, suppression du compte) est collée de la même façon ;
+//  3. le champ actif est amené au milieu de la zone qui défile de l'écran (scrollIntoView, block: 'center') ; cette zone reçoit un padding-bas (la moitié de sa hauteur) pour que les derniers champs puissent y arriver ;
+//  4. à la sortie du champ (ou clavier refermé) : #app et la fenêtre reprennent top 0 et pleine hauteur (innerHeight), window.scrollTo(0, 0), le padding est retiré.
+// Clavier ouvert = un champ a le focus ET la zone visible est plus basse de plus de 120 px que la fenêtre AU REPOS (la fenêtre clavier fermé : sur iOS 27 innerHeight rétrécit lui aussi avec le clavier).
 // La barre du bas reste cachée tant que le clavier est ouvert (classe kb-open, posée par appMesurer). Rien n'est écrit sur l'appareil ni dans le compte.
-let _kb = null;                                                          // la zone actuellement écartée du clavier : { zone, avant, base, carte, carteAvant, carteMax, champ, K, pan, n } ; null = aucune
+let _kb = null;                                                          // ce qui a été déplacé pour le clavier : { zone, type, pins, avant, base, carte, carteAvant, carteMax, ecran, champ, top, haut, n } ; null = rien
+let _appRepos = { l: 0, h: 0 };                                          // la fenêtre au repos (clavier fermé) pour cette largeur : sa plus grande hauteur vue
 function kbBandeH() { const b = document.getElementById('app-band'); return b ? b.offsetHeight : 0; }                       // hauteur de la bande sous la barre d'état (0 hors mode écran d'accueil)
 function kbBandeBas() { const b = document.getElementById('app-band'); return b ? b.getBoundingClientRect().bottom : 0; }   // le champ ne se centre jamais sous cette bande
-// La zone à écarter du clavier : { type, zone, defile } ; defile = la zone qui défile où on peut centrer le champ (absente pour un écran sans défilement)
+// La fenêtre au repos : mémorisée quand aucun champ n'a le focus et que la zone visible occupe toute la fenêtre ; on ne la baisse jamais (le clavier rétrécit la fenêtre sur iOS 27) ; autre largeur (rotation) : on repart de la fenêtre actuelle
+function kbRepos(vv, champ) {
+  const l = window.innerWidth || 0, h = window.innerHeight || 0;
+  if (_appRepos.l !== l) _appRepos = { l: l, h: h };
+  else if (!champ && (!vv || vv.height >= h - 2) && h > _appRepos.h) _appRepos.h = h;
+  return _appRepos.h;
+}
+// Ce que le clavier prend (px) : de combien la zone visible est plus basse que la fenêtre au repos (ou que la fenêtre actuelle)
+function kbClavier(vv, champ) {
+  if (!vv) return champ ? 999 : 0;
+  const repos = kbRepos(vv, champ), ih = window.innerHeight || 0;
+  return Math.max(0, Math.round(Math.max(repos - vv.height, repos - ih, ih - vv.height)));
+}
+// Le document ne défile jamais tant qu'un champ a le focus : iOS le fait défiler pour montrer le champ, ce qui emporte #app au-dessus de la zone visible.
+// Garde-fou : si iOS remettait le décalage à chaque remise en haut, on ne se bat pas plus de 12 fois par seconde (#app suit de toute façon visualViewport.offsetTop)
+let _kbRemises = [];
+function kbVerrou() {
+  try {
+    const s = document.scrollingElement, page = !!(window.scrollY || window.scrollX), racine = !!(s && (s.scrollTop || s.scrollLeft));
+    if (!page && !racine) return;
+    const t = performance.now();                                            // horloge monotone du navigateur (la date du jour, elle, ne vient que de routMaintenant)
+    _kbRemises = _kbRemises.filter(x => t - x < 1000);
+    if (_kbRemises.length >= 12) return;
+    _kbRemises.push(t);
+    if (page) window.scrollTo(0, 0);
+    if (racine) { s.scrollTop = 0; s.scrollLeft = 0; }
+  } catch (e) {}
+}
+// La zone à écarter du clavier : { type, zone, defile } ; defile = la zone qui défile où on peut centrer le champ (absente pour un écran sans défilement : connexion, inscription)
 function kbZoneDe(champ) {
   let fixe = null, defile = null, o = champ.parentElement;
   const app = document.getElementById('app');
   while (o && o !== app && o !== document.body && o !== document.documentElement) {
     const cs = getComputedStyle(o);
     if (cs.position === 'fixed') fixe = o;                                                                                                // le plus haut des ancêtres en position fixe (hors #app) : la fenêtre superposée
-    else if (!fixe && !defile && /^(auto|scroll)$/.test(cs.overflowY) && o.clientHeight >= 80) defile = o;                               // la zone qui défile la plus proche (en dessous de la fenêtre superposée, s'il y en a une)
+    else if (!fixe && !defile && /^(auto|scroll)$/.test(cs.overflowY) && (o.clientHeight >= 80 || o.scrollHeight > o.clientHeight + 1)) defile = o;   // la zone qui défile la plus proche (en dessous de la fenêtre superposée, s'il y en a une) : haute d'au moins 80 px, ou vraiment défilante (petit écran)
     o = o.parentElement;
   }
   if (fixe) return { type: 'fenetre', zone: fixe, defile: defile };
@@ -7504,62 +7536,94 @@ function kbZoneDe(champ) {
   const ecran = champ.closest ? champ.closest('.screen') : null;
   return ecran ? { type: 'ecran', zone: ecran, defile: null } : null;
 }
-// Rend la zone telle qu'elle était (padding, carte) ; remonter = remet aussi la page en haut (sortie du champ / clavier refermé), pas quand on passe d'une zone à une autre
+// Colle un élément en position fixe (#app, fenêtre superposée) à la zone visible ; ses réglages d'origine (en ligne) sont gardés pour kbLiberer
+function kbEpingler(k, el, top, haut) {
+  let p = null;
+  for (let i = 0; i < k.pins.length; i++) if (k.pins[i].el === el) p = k.pins[i];
+  if (!p) { p = { el: el, top: el.style.top, height: el.style.height, bottom: el.style.bottom }; k.pins.push(p); }
+  const t = top + 'px', h = haut + 'px';
+  if (el.style.top !== t) el.style.top = t;
+  if (el.style.height !== h) el.style.height = h;
+  if (el.style.bottom !== 'auto') el.style.bottom = 'auto';
+}
+// Rend tout tel que c'était (#app, fenêtre, padding, carte, écran) ; remonter = window.scrollTo(0, 0) (sortie du champ / clavier refermé), pas quand on passe d'une zone à une autre
 function kbLiberer(remonter) {
   const k = _kb;
   if (!k) return;
   _kb = null;
-  try { k.zone.style.paddingBottom = k.avant; if (k.carte) k.carte.style.maxHeight = k.carteAvant; } catch (e) {}
+  try {
+    k.pins.forEach(p => { p.el.style.top = p.top; p.el.style.height = p.height; p.el.style.bottom = p.bottom; });
+    k.zone.style.paddingBottom = k.avant;
+    if (k.carte) k.carte.style.maxHeight = k.carteAvant;
+    if (k.ecran) { k.zone.style.justifyContent = k.ecran.jc; k.zone.style.overflowY = k.ecran.ov; if (k.ecran.wrap) k.ecran.wrap.style.marginTop = k.ecran.mt; }
+  } catch (e) {}
   if (remonter) { try { window.scrollTo(0, 0); } catch (e) {} }
 }
-// Amène le champ au milieu de la partie visible de sa zone : scrollIntoView, puis correction sur la partie réellement libre (ni sous le clavier, ni au-dessus de la partie visible décalée par iOS, ni sous la bande du haut)
-function kbAmener(champ, defile, vv) {
+// Amène le champ au milieu de la partie visible de sa zone : scrollIntoView, puis correction sur la partie réellement visible (bande = la zone visible, ni sous la bande du haut) ; le document, #app, #stage et l'écran ne défilent jamais
+function kbAmener(champ, defile, bande) {
   try { champ.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) {}
   try {
-    if (defile) {
-      const r = defile.getBoundingClientRect(), pan = vv.offsetTop || 0;
-      const haut = Math.max(r.top, pan, kbBandeBas()), bas = Math.min(r.bottom, pan + vv.height);
+    if (defile && bande) {
+      const r = defile.getBoundingClientRect();
+      const haut = Math.max(r.top, bande.top, kbBandeBas()), bas = Math.min(r.bottom, bande.bottom);
       if (bas - haut > 60) {
         const f = champ.getBoundingClientRect(), ecart = (f.top + f.bottom) / 2 - (haut + bas) / 2;
         if (Math.abs(ecart) > 1) defile.scrollTop += ecart;
       }
     }
   } catch (e) {}
-  try {                                                                                                                                  // scrollIntoView ne doit jamais faire défiler #app, #stage ni l'écran (ils ne défilent pas)
+  try {
     ['app', 'stage'].forEach(id => { const e = document.getElementById(id); if (e && (e.scrollTop || e.scrollLeft)) { e.scrollTop = 0; e.scrollLeft = 0; } });
     const s = champ.closest ? champ.closest('.screen') : null;
     if (s && s !== defile && (s.scrollTop || s.scrollLeft)) { s.scrollTop = 0; s.scrollLeft = 0; }
   } catch (e) {}
+  kbVerrou();
 }
-// Appelée par appMesurer à chaque mesure : champ = un champ de saisie a le focus. Idempotente : seule une vraie nouveauté (autre champ, clavier plus ou moins haut, page décalée par iOS) recentre le champ.
+// Appelée par appMesurer à chaque mesure : champ = un champ de saisie a le focus. Idempotente : seule une vraie nouveauté (autre champ, zone visible plus haute ou plus basse, page décalée par iOS) recentre le champ.
 function kbAjuster(champ) {
   const vv = window.visualViewport, el = document.activeElement;
-  const K = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;                                                          // hauteur du clavier
-  if (!champ || !vv || K <= 120 || !appEstChamp(el)) { kbLiberer(true); return; }
-  const z = kbZoneDe(el);
-  if (!z) { kbLiberer(true); return; }
-  if (_kb && _kb.zone !== z.zone) kbLiberer(false);                                                                                     // autre fenêtre ou autre écran : l'ancienne zone est rendue telle quelle
-  if (!_kb) _kb = { zone: z.zone, avant: z.zone.style.paddingBottom, base: z.type === 'ecran' ? 16 : (parseFloat(getComputedStyle(z.zone).paddingBottom) || 0), carte: null, carteAvant: '', carteMax: null, champ: null, K: -1, pan: -1, n: 0 };
+  if (!champ || !appEstChamp(el)) { kbLiberer(true); return; }
+  kbVerrou();                                                                                                                           // 1. le document ne défile jamais tant qu'un champ a le focus
+  if (!vv || kbClavier(vv, true) <= 120) { kbLiberer(true); return; }                                                                   // pas de clavier à l'écran (clavier physique, ordinateur) : rien à écarter
+  const z = kbZoneDe(el), app = document.getElementById('app');
+  if (!z || !app) { kbLiberer(true); return; }
+  if (_kb && _kb.zone !== z.zone) kbLiberer(false);                                                                                     // autre fenêtre ou autre écran : l'ancienne est rendue telle quelle
+  if (!_kb) _kb = { zone: z.zone, type: z.type, pins: [], avant: z.zone.style.paddingBottom, base: z.type === 'ecran' ? 16 : (parseFloat(getComputedStyle(z.zone).paddingBottom) || 0), carte: null, carteAvant: '', carteMax: null, ecran: null, champ: null, top: NaN, haut: NaN, n: 0 };
   const k = _kb;
-  k.zone.style.paddingBottom = (k.base + K) + 'px';                                                                                     // son espace habituel + la hauteur du clavier
-  if (z.type === 'fenetre') {                                                                                                           // la carte de la fenêtre ne dépasse jamais la partie libre (sinon son haut sortirait de l'écran)
+  const top = Math.round((vv.offsetTop || 0) * 100) / 100, haut = Math.round(Math.min(vv.height, window.innerHeight || vv.height) * 100) / 100;
+  kbEpingler(k, app, top, haut);                                                                                                        // 2. #app (et la fenêtre superposée du champ) collée à la zone visible
+  if (k.type === 'fenetre') kbEpingler(k, z.zone, top, haut);
+  let defile = z.defile;
+  if (k.type === 'ecran') {                                                                                                             // k.type : le type vu au premier passage (une fois l'écran rendu défilant, kbZoneDe le verrait comme « defile »)                                                                                                             // connexion, inscription : l'écran défile pendant le clavier (le formulaire reste calé en bas s'il tient, sinon on peut le faire défiler)
+    if (!k.ecran) {
+      let w = el; while (w && w.parentElement !== z.zone) w = w.parentElement;
+      k.ecran = { wrap: w || null, jc: z.zone.style.justifyContent, ov: z.zone.style.overflowY, mt: w ? w.style.marginTop : '' };
+      z.zone.style.justifyContent = 'flex-start'; z.zone.style.overflowY = 'auto'; if (w) w.style.marginTop = 'auto';
+    }
+    defile = z.zone;
+  }
+  if (k.type === 'fenetre') {                                                                                                           // la carte de la fenêtre ne dépasse jamais la zone visible (sinon son haut sortirait de l'écran)
     let c = el; while (c && c.parentElement !== z.zone) c = c.parentElement;
     if (c !== k.carte) {
       if (k.carte) k.carte.style.maxHeight = k.carteAvant;
       k.carte = c || null; k.carteAvant = c ? c.style.maxHeight : '';
       const m = c ? getComputedStyle(c).maxHeight : '';
-      k.carteMax = m === 'none' ? Infinity : (/px$/.test(m) ? parseFloat(m) : null);                                                   // en % (carte « Supprimer mon compte », 100 %), elle suit déjà la partie libre
+      k.carteMax = m === 'none' ? Infinity : (/px$/.test(m) ? parseFloat(m) : null);                                                   // en % (carte « Supprimer mon compte », 100 %), elle suit déjà la zone visible
     }
     if (c && k.carteMax !== null) {
       const cs = getComputedStyle(z.zone), libre = z.zone.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - kbBandeH() - 8;
       c.style.maxHeight = Math.max(160, Math.min(k.carteMax, Math.floor(libre))) + 'px';
     }
+  } else {                                                                                                                              // 3. padding-bas : la moitié de la zone, pour que même le dernier champ puisse arriver au milieu (connexion, inscription : 16 px, le formulaire n'a rien sous lui)
+    let pb = k.type === 'ecran' ? k.base : k.base + Math.ceil(z.zone.clientHeight / 2);
+    if (k.type !== 'ecran') pb = Math.max(k.base, Math.min(pb, z.zone.clientHeight - (parseFloat(getComputedStyle(z.zone).paddingTop) || 0) - 24));   // petite zone : jamais plus de padding que la zone n'en peut recevoir sans déborder de son écran
+    const pad = pb + 'px';
+    if (z.zone.style.paddingBottom !== pad) z.zone.style.paddingBottom = pad;
   }
-  const pan = Math.round(vv.offsetTop || 0);
   if (k.champ !== el) k.n = 0;
-  const nouveau = k.champ !== el || k.K !== K || k.pan !== pan;
-  k.champ = el; k.K = K; k.pan = pan;
-  if (nouveau && k.n++ < 8) kbAmener(el, z.defile, vv);                                                                                // 8 recentrages au plus par champ : jamais de boucle avec les événements d'iOS
+  const nouveau = k.champ !== el || k.top !== top || k.haut !== haut;
+  k.champ = el; k.top = top; k.haut = haut;
+  if (nouveau && k.n++ < 8) kbAmener(el, defile, app.getBoundingClientRect());                                                        // 8 recentrages au plus par champ : jamais de boucle avec les événements d'iOS
 }
 // Un champ prend le focus : mesure aussitôt, puis quand iOS a annoncé la hauteur du clavier (l'animation se termine en retard, parfois sans événement)
 function appFocusEntree(ev) {
@@ -7572,12 +7636,14 @@ function appMesurer(champ) {                                             // cham
     const vv = window.visualViewport, h = document.documentElement;
     if (vv && vv.scale && Math.abs(vv.scale - 1) > 0.02) return;        // pincement en cours : la zone visible n'est pas la fenêtre
     if (champ === undefined) champ = appEstChamp(document.activeElement);
-    const haut = Math.round(window.innerHeight || 0);                    // lot 22 : #app garde sa pleine hauteur, clavier ouvert ou non
+    const haut = Math.round(window.innerHeight || 0);                    // --app-h = la fenêtre (iOS 27 la rétrécit avec le clavier) ; clavier ouvert, #app est collée à la zone visible (kbAjuster)
     if (haut < 200) return;                                              // mesure absurde (démarrage) : on garde la précédente
     if (h.style.getPropertyValue('--app-h') !== haut + 'px') h.style.setProperty('--app-h', haut + 'px');   // seulement si elle change : la rafale ci-dessous ne provoque aucun recalcul inutile
-    h.classList.toggle('kb-open', !!champ && (vv ? (window.innerHeight - vv.height) > 120 : true));
-    h.classList.toggle('sb-sous', appSousBarre());
-    try { kbAjuster(!!champ); } catch (e) {}                             // lot 22 : la zone du champ s'écarte du clavier (ou reprend sa place)
+    if (!champ) kbRepos(vv, false);                                      // fenêtre au repos : mémorisée seulement quand aucun champ n'a le focus
+    const ouvert = !!champ && kbClavier(vv, true) > 120;                 // clavier ouvert : un champ a le focus ET la zone visible est nettement plus basse que la fenêtre au repos
+    h.classList.toggle('kb-open', ouvert);
+    if (!ouvert) h.classList.toggle('sb-sous', appSousBarre());          // clavier ouvert : « sous la barre d'état » reste ce qu'il était (innerHeight rétrécit alors, le test ne vaut plus)
+    try { kbAjuster(!!champ); } catch (e) {}                             // la page ne défile pas, #app se cale sur la zone visible, le champ est centré (ou tout reprend sa place)
     diagHauteur();                                                       // diagnostic caché : trace des changements de hauteur depuis le lancement
   } catch (e) {}
 }
@@ -7609,7 +7675,8 @@ function appMesurerRafale() {
     window.addEventListener('load', appMesurerRafale);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appMesurerRafale(); });
     document.addEventListener('focusout', () => { setTimeout(appMesurerFenetre, 0); setTimeout(appMesurerFenetre, 300); });   // sortie d'un champ : remesure aussitôt (on sait alors si un autre champ prend le focus), puis 300 ms plus tard (iOS signale parfois la fin du clavier en retard)
-    document.addEventListener('focusin', appFocusEntree);                // lot 22 : un champ prend le focus → mesure aussitôt, puis quand iOS a annoncé la hauteur du clavier
+    document.addEventListener('focusin', appFocusEntree);                // un champ prend le focus → mesure aussitôt, puis quand iOS a annoncé la hauteur du clavier
+    window.addEventListener('scroll', appMesurerFenetre, { passive: true });   // lot 23 : iOS fait défiler le document pour montrer le champ → remis en haut aussitôt (kbVerrou), #app suit la zone visible
     if (window.visualViewport) { window.visualViewport.addEventListener('resize', appMesurerFenetre); window.visualViewport.addEventListener('scroll', appMesurerFenetre); }   // « scroll » : iOS décale la page quand le clavier s'ouvre, le champ est recentré dans la partie réellement visible
     appMesurerRafale();
   } catch (e) {}

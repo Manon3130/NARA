@@ -100,7 +100,7 @@ if (typeof supabase === 'undefined') {
     width: 100%; height: 100dvh; height: var(--app-h, 100dvh);      /* la même hauteur que #app (lot 18) : --app-h, mesurée sur window.innerHeight ; jamais 100 % ni 100svh */
     overflow: hidden;
     /* html, body et #app ont TOUJOURS la même couleur : celle du haut de la page affichée (variable --current-screen-bg, posée par showScreen) ;
-       #FFFAF2 (crème, comme les écrans) sur les 5 onglets et partout dans l'app ; miel à la connexion ; couleur de l'en-tête sur une routine, un article, une recette.
+       #FFFAF2 (crème, comme les écrans) sur les 5 onglets et partout dans l'app ; #FDF6EC (le haut du dégradé crème) à l'accueil, à la connexion et à l'inscription ; couleur de l'en-tête sur une routine, un article, une recette.
        Valeur de départ = miel (celle du chargement) ; l'accueil de l'app (onboarding) a son propre fond crème : accueilCouleurs() pose ses couleurs dès qu'il s'affiche. */
     background: var(--current-screen-bg, #F6EAD4);
     font-family: 'DM Sans', sans-serif;
@@ -156,8 +156,8 @@ if (typeof supabase === 'undefined') {
 
   /* Fonds couleur par screen — valeurs hardcodées comme fallback */
   #screen-onboarding  { background: #FDF6EC; }
-  #screen-signup      { background: #F6EAD4; }
-  #screen-login       { background: #F6EAD4; }
+  #screen-signup      { background: #FDF6EC; }
+  #screen-login       { background: #FDF6EC; }
   #screen-home        { background: #FFFAF2; }
   #screen-journal     { background: #FFFAF2; }
   #screen-insights    { background: #FFFAF2; }
@@ -169,32 +169,21 @@ if (typeof supabase === 'undefined') {
   #screen-recipe-detail    { background: #FFFAF2; }
 </style>
 <style>
-  /* ===== AUTH SCREENS ===== */
+  /* ===== AUTH SCREENS — connexion et inscription (lot 26) =====
+     Habillage d'après la maquette « connexion-inscription » : fond crème dégradé, 3 taches floues qui dérivent, nuages vaporeux, bulles irisées qui montent (en CSS), petite perle 3D rose nacré en haut
+     (le <canvas> est créé et retiré par le script : perleDemarrer / perleArreter ; perle de secours en CSS si la 3D manque), « NARA » + une phrase, puis le formulaire dans une carte blanche légèrement transparente (flou d'arrière-plan).
+     Tout ce qui est nouveau est préfixé « aut- ». Les champs, les boutons et leurs fonctions sont ceux d'avant (mêmes id, mêmes onclick).
+     Structure attendue par le correctif clavier du lot 23 (kbAjuster, type « écran ») : aucune zone de défilement à l'intérieur, .auth-form-wrap est l'enfant direct de l'écran, le padding-bas est porté par l'écran
+     (clavier ouvert, il passe à 16 px et l'écran défile si le formulaire ne tient pas). */
   #screen-signup, #screen-login {
-    background: var(--honey, #F6EAD4);
-    justify-content: flex-end; align-items: center;
-    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, #FDF6EC 0%, #FBF3E4 55%, #F8EBE2 100%);
+    isolation: isolate;
+    justify-content: flex-start; align-items: stretch;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   }
-  .auth-blob-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .auth-form-wrap {
-    position: relative; z-index: 2; width: 100%; padding: 0 clamp(16px, 6vw, 28px);
-  }
-  .auth-logo {
-    font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 300;
-    color: var(--sage); letter-spacing: 0.2em; text-align: center;
-    display: block; margin-bottom: 4px;
-  }
-  .auth-tagline {
-    font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; font-style: italic;
-    color: var(--text-mid); text-align: center; margin-bottom: 28px; display: block;
-  }
-  .auth-card {
-    background: white; border-radius: 24px; padding: 24px 22px; margin-bottom: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-  }
-  .auth-card-title {
-    font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 400;
-    color: var(--text-dark); margin-bottom: 20px; text-align: center;
+    position: relative; z-index: 3; width: 100%; flex: 1 0 auto; box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center; padding: 52px 20px 0;
   }
   .auth-field { margin-bottom: 14px; }
   .auth-field label {
@@ -217,12 +206,6 @@ if (typeof supabase === 'undefined') {
   }
   .auth-btn-primary:hover { background: #6b6e52; }
   .auth-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .auth-switch {
-    text-align: center; font-size: 0.78rem; color: var(--text-light); margin-top: 4px;
-  }
-  .auth-switch span {
-    color: var(--sage); cursor: pointer; font-weight: 500; text-decoration: underline;
-  }
   .auth-error {
     background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px;
     padding: 10px 14px; font-size: 0.78rem; color: #dc2626; margin-bottom: 12px;
@@ -233,13 +216,116 @@ if (typeof supabase === 'undefined') {
     padding: 10px 14px; font-size: 0.78rem; color: #16a34a; margin-bottom: 12px;
     display: none;
   }
-  .auth-divider { height: 1px; background: var(--oat); margin: 14px 0; }
   .auth-spinner {
     width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
     border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite;
     display: none;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* — Décor : trois taches de couleur floues qui dérivent (rose poudré, vert tendre, pêche), nuages vaporeux, bulles irisées qui montent.
+       Le conteneur coupe ce qui dépasse de l'écran ; il n'a pas de z-index : le décor reste derrière le contenu (z-index 0 taches · 1 nuages · 2 bulles · 3 fondu du haut et contenu). */
+  .aut-deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .aut-blob { position: absolute; border-radius: 50%; filter: blur(44px); opacity: .8; z-index: 0; }
+  .aut-b1 { width: 70%; aspect-ratio: 1; background: #F2D2C8; top: -10%; right: -24%; animation: autD1 22s ease-in-out infinite; }
+  .aut-b2 { width: 60%; aspect-ratio: 1; background: #E3E5CB; top: 22%; left: -28%; animation: autD2 26s ease-in-out infinite; }
+  .aut-b3 { width: 60%; aspect-ratio: 1; background: #F5DDD3; bottom: -6%; right: -22%; animation: autD3 30s ease-in-out infinite; }
+  @keyframes autD1 { 50% { transform: translate(-16%, 12%) scale(1.1); } }
+  @keyframes autD2 { 50% { transform: translate(20%, -8%) scale(.92); } }
+  @keyframes autD3 { 50% { transform: translate(-14%, -12%) scale(1.08); } }
+  .aut-puff { position: absolute; border-radius: 999px; filter: blur(5px); opacity: .9; z-index: 1;
+    background: radial-gradient(ellipse at 50% 40%, #fff 0%, rgba(255,255,255,.9) 50%, rgba(255,246,243,0) 75%); }
+  .aut-puff::before, .aut-puff::after { content: ""; position: absolute; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #fff 0%, rgba(255,255,255,.85) 50%, rgba(255,255,255,0) 74%); }
+  .aut-puff::before { width: 52%; aspect-ratio: 1; left: 12%; bottom: 22%; }
+  .aut-puff::after { width: 40%; aspect-ratio: 1; right: 12%; bottom: 30%; }
+  .aut-q1 { width: 46%; height: 6%; left: -12%; top: 9%; animation: autF1 18s ease-in-out infinite; }
+  .aut-q2 { width: 42%; height: 5.5%; right: -10%; top: 17%; animation: autF2 21s ease-in-out infinite; }
+  .aut-q3 { width: 52%; height: 6%; left: -16%; top: 30%; opacity: .75; animation: autF2 24s ease-in-out infinite; }
+  .aut-q4 { width: 50%; height: 6%; right: -14%; bottom: 7%; opacity: .8; animation: autF1 20s ease-in-out infinite; }
+  @keyframes autF1 { 50% { transform: translateX(8%); } }
+  @keyframes autF2 { 50% { transform: translateX(-9%); } }
+  .aut-bubbles { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .aut-bub { position: absolute; bottom: -40px; border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 10%, rgba(255,255,255,.2) 24%, transparent 40%),
+      conic-gradient(from 30deg, rgba(255,214,226,.55), rgba(221,232,206,.5), rgba(232,226,255,.45), rgba(255,226,214,.55), rgba(255,214,226,.55));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), inset -3px -4px 8px rgba(214,160,150,.18);
+    animation: autRise linear infinite; }
+  @keyframes autRise { 0% { transform: translate(0,0); opacity: 0; } 10% { opacity: .85; } 50% { transform: translate(14px,-55vh); } 90% { opacity: .75; } 100% { transform: translate(-8px,-110vh); opacity: 0; } }
+  /* — Fondu du haut (accueil, connexion, inscription) : le décor s'estompe vers #FDF6EC (la couleur de la bande du haut, de html, de body et de la barre d'état) sur 80 px, pour qu'on ne voie aucune jonction.
+       Il passe devant le décor (taches, nuages, bulles, 3D de l'accueil) et derrière le contenu (perle, textes, formulaire, boutons).
+       Accueil : posé en haut du décor. Connexion et inscription : « collant » (sticky) en haut de l'écran, avec une marge basse négative (il ne prend aucune place) : quand le clavier est ouvert et que l'écran défile,
+       le fondu reste en haut et le décor qui défile dessous ne laisse toujours voir aucune jonction. */
+  .acc-fondu, .aut-fondu { height: 80px; z-index: 3; pointer-events: none;
+    background: linear-gradient(180deg, rgba(253,246,236,1) 0%, rgba(253,246,236,.96) 12%, rgba(253,246,236,.81) 28%, rgba(253,246,236,.56) 46%, rgba(253,246,236,.3) 64%, rgba(253,246,236,.09) 82%, rgba(253,246,236,0) 100%); }
+  .acc-fondu { position: absolute; left: 0; right: 0; top: 0; }
+  .aut-fondu { position: sticky; top: 0; flex: none; margin-bottom: -80px; }
+  /* — En haut : la petite perle (<canvas> créé par le script) puis « NARA » et la phrase */
+  .aut-brand { display: flex; flex-direction: column; align-items: center; margin-top: 4%; }
+  .aut-orb { position: relative; width: 78px; height: 78px; margin-bottom: 10px; display: grid; place-items: center; }
+  .aut-gl { position: absolute; inset: -14px; width: calc(100% + 28px); height: calc(100% + 28px); pointer-events: none; opacity: 0; transition: opacity .9s ease; }
+  .aut-gl.acc-pret { opacity: 1; }
+  /* Perle de secours en CSS (3D absente, trop lente à arriver ou impossible) : mêmes règles que la maquette */
+  .aut-pearl { position: relative; width: 54px; aspect-ratio: 1; border-radius: 50%; margin-bottom: 14px; animation: autBreathe 8s ease-in-out infinite;
+    background: radial-gradient(circle at 33% 28%, #fff 0 8%, rgba(255,255,255,.55) 20%, transparent 36%),
+      radial-gradient(circle at 72% 78%, rgba(194,195,149,.25), transparent 50%),
+      radial-gradient(circle at 46% 44%, #FCEEE9 0%, #F5D8D0 60%, #E9BDB2 100%);
+    box-shadow: inset -5px -7px 12px rgba(180,130,120,.16), inset 5px 5px 10px rgba(255,255,255,.7), 0 10px 18px -8px rgba(200,150,140,.35); }
+  .aut-pearl { position: relative; overflow: hidden; }
+  .aut-pearl::before { content: ""; position: absolute; inset: -20%; border-radius: 50%; mix-blend-mode: soft-light; opacity: .95;
+    background: conic-gradient(from 0deg, transparent 0 8%, rgba(214,232,206,.95) 18%, transparent 30%, rgba(255,206,222,.95) 46%, transparent 58%, rgba(255,255,255,.9) 72%, transparent 84%);
+    animation: autSpin 9s linear infinite; }
+  .aut-pearl::after { content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-linear-gradient(100deg, rgba(255,255,255,0) 0 14%, rgba(255,240,236,.45) 20%, rgba(255,255,255,0) 28%);
+    background-size: 220% 100%; animation: autRoll 7s linear infinite; mix-blend-mode: screen; opacity: .7; }
+  @keyframes autSpin { to { transform: rotate(360deg); } }
+  @keyframes autRoll { from { background-position: 0 0; } to { background-position: -220% 0; } }
+  /* Reflets nacrés qui tournent, comme la perle de l'accueil */
+  .aut-pearl::before { content: ""; position: absolute; inset: -20%; border-radius: 50%; mix-blend-mode: soft-light; opacity: .95;
+    background: conic-gradient(from 0deg, transparent 0 8%, rgba(255,255,255,.9) 18%, transparent 30%, rgba(236,180,170,.8) 46%, transparent 58%, rgba(214,228,200,.7) 72%, transparent 84%, rgba(255,255,255,.8) 94%);
+    animation: autSpin 9s linear infinite; }
+  .aut-pearl::after { content: ""; position: absolute; width: 34%; height: 22%; left: 20%; top: 16%; border-radius: 50%; background: rgba(255,255,255,.85); filter: blur(2px); transform: rotate(-28deg); }
+  @keyframes autBreathe { 50% { transform: translateY(-4px) scale(1.07); } }
+  .aut-orb .aut-pearl { margin: 0; display: none; }
+  .aut-orb .aut-pearl.acc-on { display: block; }
+  .aut-mark { font: 400 15px 'Inter', system-ui, sans-serif; letter-spacing: .62em; margin-right: -.62em; color: #C79A92; }
+  .aut-sub { font: italic 400 18px 'Cormorant Garamond', 'Times New Roman', serif; color: #9a8378; margin-top: 8px; }
+  /* — Le formulaire : carte blanche légèrement transparente (flou d'arrière-plan) ; mêmes champs et mêmes boutons qu'avant, seulement habillés.
+       La fenêtre « Mot de passe oublié » (dans l'écran de connexion) reste telle qu'elle était : ses champs et son bouton gardent les règles générales ci-dessus. */
+  .auth-card {
+    width: 100%; box-sizing: border-box; margin-top: 7%; background: rgba(255,255,255,.72);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,.9); border-radius: 26px; padding: 20px 18px 18px;
+    box-shadow: 0 18px 40px -20px rgba(190,140,130,.45);
+  }
+  .auth-card-title { font: 500 24px 'Cormorant Garamond', 'Times New Roman', serif; text-align: center; margin: 0 0 14px; color: #4f4840; }
+  .auth-card .auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .auth-card .auth-field label { margin: 0; font: 500 10.5px 'DM Sans', system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #9a8f82; }
+  .auth-card .auth-input { padding: 12px 14px; border: 1.5px solid #E7DCCB; border-radius: 14px; background: #FFFAF2; font: 400 14px 'DM Sans', system-ui, sans-serif; }
+  .auth-card .auth-input:focus { border-color: var(--sage); }
+  .auth-card .auth-input::placeholder { color: #b3a898; }
+  .auth-card .auth-btn-primary { margin-top: 4px; border-radius: 16px; padding: 14px; background: #C2C395; color: #4f5140; font: 500 15px 'DM Sans', system-ui, sans-serif; letter-spacing: .05em; box-shadow: 0 8px 18px -10px rgba(130,132,90,.6); }
+  .auth-card .auth-btn-primary:hover { background: #C2C395; }
+  .auth-card .auth-spinner { border: 2px solid rgba(79,81,64,.25); border-top-color: #4f5140; }
+  .aut-forgot { text-align: center; font-size: 13px; color: #9a8f82; margin-top: 14px; padding-top: 12px; border-top: 1px solid #E7DCCB; }
+  .aut-forgot span { cursor: pointer; padding: 6px 4px; }
+  .auth-switch { margin-top: auto; padding-top: 16px; text-align: center; font-size: 13px; color: #9a8f82; }
+  .auth-switch span { color: #7d6a60; cursor: pointer; font-weight: 400; text-decoration: underline; text-underline-offset: 3px; padding: 6px 0; }
+  /* Écrans courts (620 px de haut ou moins : petit Android, très ancien iPhone) : mêmes éléments, marges resserrées pour que tout le formulaire tienne sans défiler (au-dessus de 620 px, rien ne change : la maquette est reprise telle quelle) */
+  @media (max-height: 620px) {
+    #screen-signup, #screen-login { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+    .auth-form-wrap { padding-top: 20px; }
+    .aut-brand { margin-top: 0; }
+    .aut-orb { margin-bottom: 4px; }
+    .aut-sub { margin-top: 4px; }
+    .auth-card { margin-top: 12px; padding: 16px 16px 14px; }
+    .auth-card-title { margin-bottom: 10px; }
+    .auth-card .auth-field { gap: 4px; margin-bottom: 8px; }
+    .auth-switch { padding-top: 8px; }
+  }
+  /* « Réduire les animations » (iOS) : ni taches, ni nuages, ni bulles, ni perle de secours ne bougent (la perle 3D ne dessine alors qu'une image fixe) ; les bulles restent en bas de l'écran, hors de vue ; le rond de chargement du bouton, lui, continue de tourner */
+  @media (prefers-reduced-motion: reduce) {
+    .aut-deco *, .aut-deco *::before, .aut-deco *::after, .aut-orb *, .aut-orb *::before, .aut-orb *::after { animation: none !important; transition: none !important; }
+    .aut-bub { opacity: .6; }
+  }
 
   /* ===== MON ESPACE (prompt 11, livraison B) : la bulle ronde d'initiale de l'Accueil ouvre cette PAGE ===== */
   .espace-rond {
@@ -451,7 +537,7 @@ if (typeof supabase === 'undefined') {
   /* ===== ONBOARDING — l'écran d'accueil : la perle (lot 25) =====
      Reprise fidèle de la maquette « accueil-perle » : fond crème dégradé, trois taches de couleur floues qui dérivent, nuages vaporeux, perle 3D nacrée (le <canvas> est créé et retiré par le script : perleDemarrer / perleArreter),
      « NARA » + la phrase, puis les deux boutons (mêmes fonctions qu'avant : go('signup') et go('login')). Tout est préfixé « acc- » pour ne rien croiser avec le reste de l'app.
-     .blob1-3 et float1-2 (juste après) restent : ils servent aux écrans de connexion et d'inscription. */
+     Lot 26 : « .acc-fondu » estompe le décor vers #FDF6EC (la couleur de la bande du haut, de html et de body) sur les 80 premiers px : plus de jonction sous l'heure et la batterie (voir le bloc AUTH SCREENS). */
   #screen-onboarding { background: linear-gradient(180deg, #FDF6EC 0%, #FBF3E4 55%, #F8EBE2 100%); isolation: isolate; justify-content: flex-start; align-items: stretch; padding: 0; }
   /* Les décors (taches, nuages) dépassent volontairement de l'écran : ce conteneur coupe ce qui dépasse (sans z-index : les décors gardent leur place devant / derrière la perle) */
   .acc-deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
@@ -500,11 +586,7 @@ if (typeof supabase === 'undefined') {
   #screen-onboarding .btn-secondary { background: rgba(255,250,242,.7); border-color: #E7D8CB; color: #6b6155; }
   /* « Réduire les animations » (iOS) : l'accueil reste immobile (la perle 3D ne dessine alors qu'une image fixe) */
   @media (prefers-reduced-motion: reduce) { #screen-onboarding *, #screen-onboarding *::before, #screen-onboarding *::after { animation: none !important; transition: none !important; } }
-  .blob1 { position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, var(--blush) 0%, transparent 70%); top: -60px; right: -60px; opacity: 0.7; animation: float1 6s ease-in-out infinite; }
-  .blob2 { position: absolute; width: 250px; height: 250px; background: radial-gradient(circle, var(--avocado) 0%, transparent 70%); top: 150px; left: -80px; opacity: 0.5; animation: float2 8s ease-in-out infinite; }
-  .blob3 { position: absolute; width: 200px; height: 200px; background: radial-gradient(circle, var(--peach) 0%, transparent 70%); bottom: 200px; right: 20px; opacity: 0.6; animation: float1 7s ease-in-out infinite reverse; }
   @keyframes float1 { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
-  @keyframes float2 { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(15px) scale(0.97); } }
 
   /* ===== HOME ===== */
   #screen-home { background: var(--cream); }
@@ -3464,6 +3546,7 @@ if (typeof supabase === 'undefined') {
         <div class="acc-blob acc-b1"></div><div class="acc-blob acc-b2"></div><div class="acc-blob acc-b3"></div>
         <div class="acc-clouds acc-back"><div class="acc-puff acc-p3"></div><div class="acc-puff acc-p4"></div><div class="acc-puff acc-p1"></div><div class="acc-puff acc-p2"></div><div class="acc-puff acc-p6"></div><div class="acc-puff acc-p7"></div></div>
         <div class="acc-clouds acc-front"><div class="acc-puff acc-p5"></div></div>
+        <div class="acc-fondu" aria-hidden="true"></div>
       </div>
       <div class="acc-fallback" aria-hidden="true"></div>
       <div class="acc-content">
@@ -3479,14 +3562,35 @@ if (typeof supabase === 'undefined') {
       </div>
     </div>
 
-    <!-- SCREEN 2 — INSCRIPTION -->
+    <!-- SCREEN 2 — INSCRIPTION (lot 26 : habillage d'après la maquette « connexion-inscription » ; mêmes champs, mêmes id, mêmes fonctions qu'avant). Le <canvas> de la petite perle 3D est créé puis retiré par le script (perleDemarrer / perleArreter), dans .aut-orb. -->
     <div class="screen" id="screen-signup">
-      <div class="auth-blob-bg">
-        <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+      <div class="aut-deco" aria-hidden="true">
+        <div class="aut-blob aut-b1"></div><div class="aut-blob aut-b2"></div><div class="aut-blob aut-b3"></div>
+        <div class="aut-puff aut-q1"></div><div class="aut-puff aut-q2"></div><div class="aut-puff aut-q3"></div><div class="aut-puff aut-q4"></div>
+        <div class="aut-bubbles">
+          <div class="aut-bub" style="width:25.9px;height:25.9px;left:63.2%;animation-duration:15.6s;animation-delay:-17.1s"></div>
+          <div class="aut-bub" style="width:20.6px;height:20.6px;left:26.2%;animation-duration:24.8s;animation-delay:-22.0s"></div>
+          <div class="aut-bub" style="width:22.8px;height:22.8px;left:61.3%;animation-duration:15.8s;animation-delay:-7.3s"></div>
+          <div class="aut-bub" style="width:25.8px;height:25.8px;left:68.8%;animation-duration:22.0s;animation-delay:-11.3s"></div>
+          <div class="aut-bub" style="width:23.1px;height:23.1px;left:60.0%;animation-duration:20.6s;animation-delay:-18.3s"></div>
+          <div class="aut-bub" style="width:19.5px;height:19.5px;left:16.9%;animation-duration:18.3s;animation-delay:-13.6s"></div>
+          <div class="aut-bub" style="width:9.2px;height:9.2px;left:79.0%;animation-duration:19.8s;animation-delay:-11.3s"></div>
+          <div class="aut-bub" style="width:28.2px;height:28.2px;left:3.5%;animation-duration:17.6s;animation-delay:-9.3s"></div>
+          <div class="aut-bub" style="width:8.6px;height:8.6px;left:71.6%;animation-duration:22.0s;animation-delay:-23.4s"></div>
+          <div class="aut-bub" style="width:17.3px;height:17.3px;left:10.6%;animation-duration:16.5s;animation-delay:-12.9s"></div>
+          <div class="aut-bub" style="width:23.5px;height:23.5px;left:7.0%;animation-duration:14.9s;animation-delay:-15.5s"></div>
+          <div class="aut-bub" style="width:15.0px;height:15.0px;left:30.9%;animation-duration:25.7s;animation-delay:-21.9s"></div>
+          <div class="aut-bub" style="width:29.2px;height:29.2px;left:51.4%;animation-duration:24.3s;animation-delay:-1.9s"></div>
+          <div class="aut-bub" style="width:27.0px;height:27.0px;left:63.0%;animation-duration:16.1s;animation-delay:-8.2s"></div>
+        </div>
       </div>
+      <div class="aut-fondu" aria-hidden="true"></div>
       <div class="auth-form-wrap">
-        <span class="auth-logo">nara</span>
-        <span class="auth-tagline">Commence ton suivi holistique</span>
+        <div class="aut-brand">
+          <div class="aut-orb"><div class="aut-pearl" aria-hidden="true"></div></div>
+          <div class="aut-mark">NARA</div>
+          <div class="aut-sub">Commence ton suivi</div>
+        </div>
         <div class="auth-card">
           <div class="auth-card-title">Créer mon compte</div>
           <div class="auth-error" id="signup-error"></div>
@@ -3496,7 +3600,7 @@ if (typeof supabase === 'undefined') {
             <input class="auth-input" type="text" id="signup-prenom" placeholder="Ton prénom" autocomplete="given-name">
           </div>
           <div class="auth-field">
-            <label>Email</label>
+            <label>E-mail</label>
             <input class="auth-input" type="email" id="signup-email" placeholder="ton.email@exemple.fr" autocomplete="email">
           </div>
           <div class="auth-field">
@@ -3514,20 +3618,41 @@ if (typeof supabase === 'undefined') {
       </div>
     </div>
 
-    <!-- SCREEN 3 — CONNEXION -->
+    <!-- SCREEN 3 — CONNEXION (lot 26 : habillage d'après la maquette « connexion-inscription » ; mêmes champs, mêmes id, mêmes fonctions qu'avant). Le <canvas> de la petite perle 3D est créé puis retiré par le script (perleDemarrer / perleArreter), dans .aut-orb. -->
     <div class="screen" id="screen-login">
-      <div class="auth-blob-bg">
-        <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+      <div class="aut-deco" aria-hidden="true">
+        <div class="aut-blob aut-b1"></div><div class="aut-blob aut-b2"></div><div class="aut-blob aut-b3"></div>
+        <div class="aut-puff aut-q1"></div><div class="aut-puff aut-q2"></div><div class="aut-puff aut-q3"></div><div class="aut-puff aut-q4"></div>
+        <div class="aut-bubbles">
+          <div class="aut-bub" style="width:25.6px;height:25.6px;left:42.7%;animation-duration:22.3s;animation-delay:-5.5s"></div>
+          <div class="aut-bub" style="width:28.8px;height:28.8px;left:32.1%;animation-duration:25.5s;animation-delay:-16.6s"></div>
+          <div class="aut-bub" style="width:14.6px;height:14.6px;left:73.3%;animation-duration:15.0s;animation-delay:-14.1s"></div>
+          <div class="aut-bub" style="width:22.4px;height:22.4px;left:34.6%;animation-duration:15.7s;animation-delay:-21.6s"></div>
+          <div class="aut-bub" style="width:20.6px;height:20.6px;left:54.7%;animation-duration:17.6s;animation-delay:-7.8s"></div>
+          <div class="aut-bub" style="width:15.5px;height:15.5px;left:73.5%;animation-duration:16.6s;animation-delay:-10.6s"></div>
+          <div class="aut-bub" style="width:19.7px;height:19.7px;left:50.0%;animation-duration:15.6s;animation-delay:-15.5s"></div>
+          <div class="aut-bub" style="width:27.0px;height:27.0px;left:14.8%;animation-duration:25.3s;animation-delay:-10.3s"></div>
+          <div class="aut-bub" style="width:20.4px;height:20.4px;left:5.7%;animation-duration:14.9s;animation-delay:-19.9s"></div>
+          <div class="aut-bub" style="width:25.1px;height:25.1px;left:71.3%;animation-duration:25.9s;animation-delay:-13.0s"></div>
+          <div class="aut-bub" style="width:12.6px;height:12.6px;left:48.2%;animation-duration:22.4s;animation-delay:-13.0s"></div>
+          <div class="aut-bub" style="width:17.5px;height:17.5px;left:76.3%;animation-duration:20.3s;animation-delay:-20.8s"></div>
+          <div class="aut-bub" style="width:26.0px;height:26.0px;left:81.2%;animation-duration:15.6s;animation-delay:-12.5s"></div>
+          <div class="aut-bub" style="width:12.7px;height:12.7px;left:68.9%;animation-duration:21.1s;animation-delay:-20.6s"></div>
+        </div>
       </div>
+      <div class="aut-fondu" aria-hidden="true"></div>
       <div class="auth-form-wrap">
-        <span class="auth-logo">nara</span>
-        <span class="auth-tagline">Bon retour parmi nous</span>
+        <div class="aut-brand">
+          <div class="aut-orb"><div class="aut-pearl" aria-hidden="true"></div></div>
+          <div class="aut-mark">NARA</div>
+          <div class="aut-sub">Bon retour parmi nous</div>
+        </div>
         <div class="auth-card">
           <div class="auth-card-title">Me connecter</div>
           <div class="auth-error" id="login-error"></div>
           <div class="auth-success" id="login-success"></div>
           <div class="auth-field">
-            <label>Email</label>
+            <label>E-mail</label>
             <input class="auth-input" type="email" id="login-email" placeholder="ton.email@exemple.fr" autocomplete="email">
           </div>
           <div class="auth-field">
@@ -3538,10 +3663,7 @@ if (typeof supabase === 'undefined') {
             <span id="login-btn-text">Se connecter →</span>
             <div class="auth-spinner" id="login-spinner"></div>
           </button>
-          <div class="auth-divider"></div>
-          <div class="auth-switch" style="font-size:0.72rem">
-            <span onclick="openForgotPasswordModal()" style="font-weight:400;text-decoration:none;color:var(--text-light)">Mot de passe oublié ?</span>
-          </div>
+          <div class="aut-forgot"><span onclick="openForgotPasswordModal()">Mot de passe oublié ?</span></div>
         </div>
         <div class="auth-switch">
           Pas encore de compte ? <span onclick="go('signup')">S'inscrire</span>
@@ -4454,7 +4576,7 @@ let _photoLinks = {};              // chemin → { url, exp }
 let _photoFlight = {};             // chemin → demande de lien en cours (évite les doublons)
 let _photoBatch = null;            // demandes de liens groupées, en attente d'envoi
 let _photoObserver = null;         // surveillance des images de photos à afficher
-const APP_VERSION = '27/11 · 19 h 51';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
+const APP_VERSION = '28/11 · 6 h 38';   // date et heure (Paris) de la livraison, affichée tout en bas de « Mon espace »
 // Lot 20 — consentement, pages légales, export, suppression du compte : constantes et états déclarés ICI, en haut du script, parce que showScreen les lit dès le premier écran affiché (code : « CONSENTEMENT, PAGES LÉGALES, EXPORT… », avant l'inscription).
 const CONSENT_VERSION = '1.0';                        // version du texte de consentement et des pages légales : la changer redemande l'accord à tout le monde
 const CONSENT_CLE_ATTENTE = 'nara_consent_attente';   // { uid, date, version } : accord donné mais pas encore enregistré dans le compte (hors ligne) ; effacé avec le reste des données Nara à la déconnexion
@@ -7456,7 +7578,7 @@ function updateBottomNav(screenId) {
 
 // Couleur du HAUT de chaque écran (bande du haut, html, body et #app)
 const SCREEN_BG = {
-  onboarding: '#FDF6EC', signup: '#F6EAD4', login: '#F6EAD4',      // accueil : le haut du dégradé crème (lot 25)
+  onboarding: '#FDF6EC', signup: '#FDF6EC', login: '#FDF6EC',      // accueil, inscription, connexion : le haut du dégradé crème (lots 25 et 26)
   home: '#FFFAF2', journal: '#FFFAF2', insights: '#FFFAF2',
   library: '#FFFAF2', routines: '#FFFAF2',
   'article-detail': '#FFFAF2', 'routine-detail': '#FFFAF2', 'recipe-detail': '#FFFAF2',
@@ -19358,6 +19480,10 @@ function calDeleteDay() {
 const PERLE_THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js';   // version FIXE (jamais « latest »), celle de la maquette validée
 let _perle = null;         // l'animation en cours { ecran, canvas, renderer, scene, … } ; null = rien ne tourne
 let _perleScript = null;   // le chargement de three.js en cours (une seule demande à la fois)
+// Lot 26 : la perle sert aussi à la connexion et à l'inscription (une PETITE perle 3D sous « NARA » : même technique, même version de three.js, même perle de secours en CSS, même arrêt en quittant l'écran).
+// Trois écrans ont une perle : l'accueil (grande perle, bulles, étincelles), la connexion et l'inscription (petite perle). UNE seule perle tourne à la fois (_perle) :
+// en passant de l'un à l'autre, l'ancienne est arrêtée et libérée AVANT que la nouvelle démarre.
+const PERLE_ECRANS = ['screen-onboarding', 'screen-login', 'screen-signup'];
 
 // Charge three.js une seule fois ; refuse si le CDN est injoignable (la perle de secours prend alors le relais, sans erreur)
 function perleCharger() {
@@ -19551,18 +19677,87 @@ function perleConstruire(p) {
   boucle();
 }
 
-// Démarre la perle (l'accueil vient de s'afficher) : la perle de secours n'apparaît que si la 3D n'est pas prête au bout de 3 s ou impossible
-function perleDemarrer() {
+// La petite perle de la connexion et de l'inscription (lot 26), d'après la maquette « connexion-inscription » : mêmes réglages, mêmes lumières, même mouvement
+// (elle tourne lentement sur elle-même et respire sur 8 s : 4 s en grossissant légèrement et en montant, 4 s en revenant). Même technique que la grande perle de l'accueil (perleConstruire) :
+// <canvas> créé ici et retiré par perleLiberer, une seule image fixe en « réduire les animations », perle de secours en CSS (.aut-pearl) si la 3D manque.
+function perleConstruirePetite(p) {
+  const T = window.THREE, ecran = p.ecran, reduit = p.reduit;
+  const orb = ecran.querySelector('.aut-orb');
+  if (!orb) throw new Error('emplacement de la perle introuvable');
+  // Texture nacrée claire
+  const nc = document.createElement('canvas'); nc.width = 512; nc.height = 256; const n = nc.getContext('2d');
+  n.fillStyle = '#F7DDD6'; n.fillRect(0, 0, 512, 256);
+  const cols = ['rgba(255,240,236,.6)', 'rgba(238,190,180,.45)', 'rgba(252,226,220,.6)', 'rgba(255,255,255,.55)', 'rgba(226,232,210,.35)'];
+  for (let i = 0; i < 90; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256, r = 18 + Math.random() * 50;
+    const g = n.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, cols[i % cols.length]); g.addColorStop(1, 'rgba(255,255,255,0)'); n.fillStyle = g; n.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  // Environnement doux pour les reflets
+  const ec = document.createElement('canvas'); ec.width = 256; ec.height = 128; const e = ec.getContext('2d');
+  const eg = e.createLinearGradient(0, 0, 0, 128); eg.addColorStop(0, '#ffffff'); eg.addColorStop(.4, '#FBEDE6'); eg.addColorStop(.7, '#F2D6CC'); eg.addColorStop(1, '#E9E2C9'); e.fillStyle = eg; e.fillRect(0, 0, 256, 128);
+  const rg = e.createRadialGradient(60, 35, 0, 60, 35, 36); rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); e.fillStyle = rg; e.fillRect(0, 0, 256, 128);
+  const canvas = p.canvas = document.createElement('canvas');
+  canvas.className = 'aut-gl'; canvas.setAttribute('aria-hidden', 'true');
+  orb.appendChild(canvas);                                                                  // après la perle de secours : la 3D apparaît par-dessus
+  const renderer = p.renderer = new T.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+  const scene = p.scene = new T.Scene(); const camera = new T.PerspectiveCamera(30, 1, .1, 50); camera.position.z = 6;
+  const envT = p.envTex = new T.CanvasTexture(ec); envT.mapping = T.EquirectangularReflectionMapping; envT.encoding = T.sRGBEncoding;
+  const pmrem = p.pmrem = new T.PMREMGenerator(renderer); scene.environment = pmrem.fromEquirectangular(envT).texture;
+  const tex = new T.CanvasTexture(nc); tex.encoding = T.sRGBEncoding; tex.wrapS = T.RepeatWrapping;
+  const mat = new T.MeshPhysicalMaterial({ map: tex, roughness: .2, clearcoat: 1, clearcoatRoughness: .1, sheen: 1, sheenColor: new T.Color('#ffd9e2'), sheenRoughness: .4, iridescence: .8, iridescenceIOR: 1.35, iridescenceThicknessRange: [180, 520], envMapIntensity: 1.2 });
+  const m = new T.Mesh(new T.SphereGeometry(1.05, 96, 96), mat); scene.add(m);
+  const k = new T.DirectionalLight(0xffffff, 1.5); k.position.set(-3, 4, 5); scene.add(k);
+  const rim = new T.DirectionalLight(0xffdcd3, 1); rim.position.set(4, -1, -3); scene.add(rim);
+  scene.add(new T.AmbientLight(0xfff3ee, .45));
+
+  let horloge = null;                                                                       // l'horloge est créée après le premier calcul de taille, comme dans la maquette
+  const rendre = function () {
+    const t = reduit ? 0 : horloge.getElapsedTime(), b = (1 - Math.cos(t * Math.PI * 2 / 8)) / 2;   // b : 0 → 1 → 0 sur 8 s
+    m.rotation.y = t * .35; m.rotation.x = Math.sin(t * .3) * .15; m.scale.setScalar(1 + .06 * b); m.position.y = .08 * b;
+    renderer.render(scene, camera);
+  };
+  const resize = p.resize = function () {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (reduit && p.pret) rendre();                                                         // sans boucle : on redessine l'image fixe après un redimensionnement
+  };
+  const boucle = function () {
+    if (_perle !== p || p.arret) return;
+    rendre();
+    if (!p.pret) {
+      p.pret = true; clearTimeout(p.tSecours);
+      requestAnimationFrame(function () { if (_perle === p && p.canvas) p.canvas.classList.add('acc-pret'); });   // fondu d'apparition, une fois la première image dessinée
+      if (p.secours && p.secours.classList.contains('acc-on')) p.tFond = setTimeout(function () { if (_perle === p) perleSecours(p, false); }, 1000);   // arrivée tardive : la 3D apparaît par-dessus, puis la perle de secours s'efface
+    }
+    if (reduit) return;                                                                     // mouvement réduit : une seule image fixe
+    p.raf = requestAnimationFrame(boucle);
+  };
+
+  if (typeof ResizeObserver === 'function') { p.ro = new ResizeObserver(resize); p.ro.observe(canvas); }
+  resize();
+  horloge = new T.Clock();
+  p.perdu = function () { if (_perle === p && !p.arret) perleSecours(p, true); };          // contexte WebGL perdu (iOS en libère parfois) : la perle de secours prend le relais
+  p.retrouve = function () { if (_perle === p && !p.arret) perleSecours(p, false); };
+  canvas.addEventListener('webglcontextlost', p.perdu);
+  canvas.addEventListener('webglcontextrestored', p.retrouve);
+  boucle();
+}
+
+// Démarre la perle de l'écran affiché (accueil : grande perle ; connexion, inscription : petite perle) : la perle de secours n'apparaît que si la 3D n'est pas prête au bout de 3 s ou impossible
+function perleDemarrer(id) {
   if (_perle) return;
-  const ecran = document.getElementById('screen-onboarding');
+  const ecran = document.getElementById(id || 'screen-onboarding');
   if (!ecran) return;
+  const petite = ecran.id !== 'screen-onboarding';
   let reduit = false; try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-  const p = _perle = { ecran: ecran, secours: ecran.querySelector('.acc-fallback'), reduit: reduit, canvas: null, renderer: null, scene: null, envTex: null, pmrem: null, resize: null, baisser: null, perdu: null, retrouve: null,
+  const p = _perle = { ecran: ecran, petite: petite, secours: ecran.querySelector(petite ? '.aut-pearl' : '.acc-fallback'), reduit: reduit, canvas: null, renderer: null, scene: null, envTex: null, pmrem: null, resize: null, baisser: null, perdu: null, retrouve: null,
     ro: null, raf: 0, pret: false, echec: false, arret: false, nBulles: 36, surveille: !reduit, k: 0, n: 0, somme: 0, dernier: 0, tSecours: 0, tFond: 0 };
   p.tSecours = setTimeout(function () { if (_perle === p && !p.pret) perleSecours(p, true); }, 3000);
   perleCharger().then(function () {
-    if (_perle !== p) return;                                   // on a quitté l'accueil pendant le chargement
-    try { perleConstruire(p); } catch (e) { perleEchec(p, e); }
+    if (_perle !== p) return;                                   // on a quitté l'écran pendant le chargement
+    try { (petite ? perleConstruirePetite : perleConstruire)(p); } catch (e) { perleEchec(p, e); }
   }, function () { if (_perle === p) perleEchec(p, null); });
 }
 
@@ -19576,10 +19771,12 @@ function perleArreter() {
   perleSecours(p, false);
 }
 
-// L'accueil est-il vraiment sous les yeux ? (écran actif ET chargement de démarrage terminé)
+// Un des trois écrans à perle (accueil, connexion, inscription) est-il vraiment sous les yeux ? (écran actif ET chargement de démarrage terminé) → son id, sinon null
 function accueilVisible() {
-  const e = document.getElementById('screen-onboarding'), l = document.getElementById('boot-loader');
-  return !!e && e.classList.contains('active') && (!l || !l.isConnected || l.style.display === 'none');
+  const l = document.getElementById('boot-loader');
+  if (l && l.isConnected && l.style.display !== 'none') return null;
+  for (let i = 0; i < PERLE_ECRANS.length; i++) { const e = document.getElementById(PERLE_ECRANS[i]); if (e && e.classList.contains('active')) return e.id; }
+  return null;
 }
 // Couleur du haut de l'accueil (bande du haut, html, body, #app, barre d'état Android) : au démarrage sans session, aucune navigation n'a eu lieu, ces couleurs sont encore celles du chargement (miel)
 function accueilCouleurs() {
@@ -19588,20 +19785,20 @@ function accueilCouleurs() {
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', c);
 }
 function accueilVerifier() {
-  let visible = false;
-  try { visible = accueilVisible(); } catch (e) {}
-  if (visible) { try { accueilCouleurs(); } catch (e) {} perleDemarrer(); }
-  else perleArreter();
+  let id = null;
+  try { id = accueilVisible(); } catch (e) {}
+  if (_perle && _perle.ecran.id !== id) perleArreter();                // on a quitté l'écran de la perle, ou on est passé de l'un des trois à un autre : l'ancienne perle est arrêtée et libérée AVANT d'en démarrer une autre
+  if (id) { if (id === 'screen-onboarding') { try { accueilCouleurs(); } catch (e) {} } perleDemarrer(id); }
 }
 function accueilInit() {
-  const ecran = document.getElementById('screen-onboarding'), chargement = document.getElementById('boot-loader');
-  if (!ecran) return;
+  const ecrans = PERLE_ECRANS.map(function (i) { return document.getElementById(i); }).filter(Boolean), chargement = document.getElementById('boot-loader');
+  if (!ecrans.length) return;
   if (typeof MutationObserver === 'function') {
     const obs = new MutationObserver(accueilVerifier);
-    obs.observe(ecran, { attributes: true, attributeFilter: ['class'] });                                   // l'écran devient actif / cesse de l'être (go, showScreen)
+    ecrans.forEach(function (e) { obs.observe(e, { attributes: true, attributeFilter: ['class'] }); });      // un des écrans devient actif / cesse de l'être (go, showScreen)
     if (chargement) obs.observe(chargement, { attributes: true, attributeFilter: ['style', 'class'] });      // le chargement de démarrage se masque (hideBootLoader)
   }
-  try {                                                                                                     // « Réduire les animations » changé pendant que l'accueil est affiché : on repart avec le bon réglage
+  try {                                                                                                     // « Réduire les animations » changé pendant qu'un de ces écrans est affiché : on repart avec le bon réglage
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const change = function () { if (_perle) { perleArreter(); accueilVerifier(); } };
     if (mq.addEventListener) mq.addEventListener('change', change); else if (mq.addListener) mq.addListener(change);
